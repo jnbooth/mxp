@@ -1,0 +1,11 @@
+[package]
+name = "mxp"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+casefold = { git = "https://github.com/jnbooth/casefold", version = "0.1.0" }
+enumeration = { git = "https://github.com/jnbooth/enumeration", version = "0.4.2" }
+enumeration_derive = { git = "https://github.com/jnbooth/enumeration", version = "0.4.2" }
