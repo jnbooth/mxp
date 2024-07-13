@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 casefold = { git = "https://github.com/jnbooth/casefold", version = "0.1.0" }
-enumeration = { git = "https://github.com/jnbooth/enumeration", version = "0.4.2" }
-enumeration_derive = { git = "https://github.com/jnbooth/enumeration", version = "0.4.2" }
+enumeration = { git = "https://github.com/jnbooth/enumeration", version = "0.5.0" }
+enumeration_derive = { git = "https://github.com/jnbooth/enumeration", version = "0.5.0" }
+flate2 = "1.0.28"

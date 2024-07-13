@@ -13,27 +13,6 @@ impl Default for SendTo {
     }
 }
 
-impl SendTo {
-    pub fn attach(self, s: &str) -> String {
-        match self {
-            Self::World => ["send:", s].concat(),
-            Self::Input => ["echo:", s].concat(),
-            _ if s.starts_with("echo:") || s.starts_with("send:") => ["http://", s].concat(),
-            Self::Internet => s.to_owned(),
-        }
-    }
-
-    pub fn detach(s: &str) -> (Self, &str) {
-        if let Some(world) = s.strip_prefix("send:") {
-            (Self::World, world)
-        } else if let Some(input) = s.strip_prefix("echo:") {
-            (Self::Input, input)
-        } else {
-            (Self::Internet, s)
-        }
-    }
-}
-
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Link {
     pub action: String,
@@ -46,30 +25,30 @@ pub struct Link {
 }
 
 impl Link {
-    pub fn new(action: &str, hint: Option<&str>, sendto: SendTo) -> Self {
-        let mut actions = action.split('|');
-        let action = sendto.attach(actions.next().unwrap());
-        match hint {
+    pub fn new(action: &str, hints: Option<&str>, sendto: SendTo) -> Self {
+        let (action, actions) = split_list(action);
+        match hints {
             None => Self {
                 action,
                 hint: None,
-                prompts: actions.map(ToOwned::to_owned).collect(),
+                prompts: actions,
                 sendto,
             },
-            Some(hint) => {
-                let mut hints = hint.split('|').map(ToOwned::to_owned);
-                let first_hint = hints.next().unwrap();
-                let mut prompts: Vec<_> = hints.collect();
-                if prompts.is_empty() {
-                    prompts = actions.map(ToOwned::to_owned).collect();
-                }
+            Some(hints) => {
+                let (hint, prompts) = split_list(hints);
                 Self {
                     action,
-                    hint: Some(first_hint),
-                    prompts,
+                    hint: Some(hint),
+                    prompts: if prompts.is_empty() { actions } else { prompts },
                     sendto,
                 }
             }
         }
     }
+}
+
+fn split_list(list: &str) -> (String, Vec<String>) {
+    let mut iter = list.split('|');
+    let first = iter.next().unwrap().to_owned();
+    (first, iter.map(ToOwned::to_owned).collect())
 }
