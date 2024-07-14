@@ -9,7 +9,7 @@ pub enum ParseError {
 }
 
 impl Display for ParseError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
             Self::Mxp(err) => err.fmt(f),
             Self::Io(err) => err.fmt(f),

@@ -1,3 +1,5 @@
+use std::fmt::{self, Display, Formatter};
+
 use enumeration::EnumSet;
 
 use super::span::{Heading, TextStyle};
@@ -21,4 +23,17 @@ pub struct TextFragment {
     pub(super) heading: Option<Heading>,
     /// Which variable to set (FLAG in MXP).
     pub(super) variable: Option<String>,
+}
+
+impl AsRef<[u8]> for TextFragment {
+    #[inline]
+    fn as_ref(&self) -> &[u8] {
+        self.text.as_slice()
+    }
+}
+
+impl Display for TextFragment {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        String::from_utf8_lossy(&self.text).fmt(f)
+    }
 }
