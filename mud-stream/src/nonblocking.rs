@@ -1,5 +1,4 @@
-use crate::style::OutputFragment;
-use crate::transformer::{Transformer, TransformerConfig};
+use mud_transformer::{OutputFragment, Transformer, TransformerConfig};
 use std::io::IoSlice;
 use std::pin::Pin;
 use std::task::{Context, Poll};

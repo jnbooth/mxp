@@ -96,7 +96,6 @@ impl<'a> Drain<'a> {
     }
 }
 
-#[cfg(feature = "async")]
 impl<'a> bytes::Buf for Drain<'a> {
     fn remaining(&self) -> usize {
         self.buf.len().saturating_sub(self.cursor)

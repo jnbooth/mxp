@@ -1,5 +1,5 @@
 #[cfg(feature = "sync")]
-pub mod sync;
+pub mod blocking;
 
 #[cfg(feature = "async")]
-pub mod tokio;
+pub mod nonblocking;

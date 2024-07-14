@@ -1,5 +1,4 @@
-use crate::style::OutputFragment;
-use crate::transformer::{Transformer, TransformerConfig};
+use mud_transformer::{OutputFragment, Transformer, TransformerConfig};
 use std::io::{self, IoSlice, Read, Write};
 use std::net::TcpStream;
 use std::vec;

@@ -3,8 +3,7 @@ use enumeration::EnumSet;
 use super::fragment::{OutputFragment, TextFragment};
 use super::output::Output;
 use super::span::{Heading, InList, SpanList, TextFormat, TextStyle};
-use crate::color::WorldColor;
-use crate::mxp::Link;
+use mxp::WorldColor;
 use std::{mem, vec};
 
 fn get_color(
@@ -220,7 +219,7 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_mxp_action(&mut self, action: Link) {
+    pub fn set_mxp_action(&mut self, action: mxp::Link) {
         if self.spans.set_action(action) {
             self.flush_mxp();
         }

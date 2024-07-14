@@ -5,10 +5,10 @@ use enumeration::Enum;
 use super::config::{AutoConnect, TransformerConfig, UseMxp};
 use super::input::{self, BufferedInput};
 use super::phase::Phase;
-use crate::color::{HexColor, WorldColor};
 use crate::escape::{ansi, telnet, utf8};
-use crate::mxp;
 use crate::style::{BufferedOutput, Heading, InList, OutputFragment, TextFormat, TextStyle};
+use mxp;
+use mxp::{HexColor, WorldColor};
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str, connect: Option<AutoConnect>) {
     if connect != Some(AutoConnect::Mxp) || auth.is_empty() {
@@ -683,13 +683,15 @@ impl Transformer {
 
             ansi::FG_256_COLOR => self.phase = Phase::Foreground256Start,
             ansi::BG_256_COLOR => self.phase = Phase::Background256Start,
-            _ => {
-                if let Some(fg) = WorldColor::fg_from_ansi(code) {
-                    self.output.set_ansi_foreground(fg);
-                } else if let Some(bg) = WorldColor::bg_from_ansi(code) {
-                    self.output.set_ansi_background(bg);
-                }
-            }
+            ansi::FG_DEFAULT => self.output.set_ansi_foreground(WorldColor::WHITE),
+            ansi::BG_DEFAULT => self.output.set_ansi_background(WorldColor::BLACK),
+            _ if code >= ansi::FG_BLACK && code <= ansi::FG_WHITE => self
+                .output
+                .set_ansi_foreground(WorldColor::Ansi(code - ansi::FG_BLACK)),
+            _ if code >= ansi::BG_BLACK && code <= ansi::BG_WHITE => self
+                .output
+                .set_ansi_background(WorldColor::Ansi(code - ansi::BG_BLACK)),
+            _ => (),
         }
     }
 

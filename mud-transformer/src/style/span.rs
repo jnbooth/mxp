@@ -1,8 +1,7 @@
 use std::ops::Index;
 
-use crate::color::WorldColor;
-use crate::mxp::Link;
 use enumeration::{Enum, EnumSet};
+use mxp::WorldColor;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum TextStyle {
@@ -46,7 +45,7 @@ pub struct Span {
     pub(super) format: EnumSet<TextFormat>,
     pub(super) foreground: Option<WorldColor>,
     pub(super) background: Option<WorldColor>,
-    pub(super) action: Option<Link>,
+    pub(super) action: Option<mxp::Link>,
     pub(super) list: Option<InList>,
     pub(super) heading: Option<Heading>,
     /// Which variable to set (FLAG in MXP).
@@ -233,7 +232,7 @@ impl SpanList {
         set_prop!(self, background);
     }
 
-    pub fn set_action(&mut self, action: Link) -> bool {
+    pub fn set_action(&mut self, action: mxp::Link) -> bool {
         set_prop!(self, action);
     }
 

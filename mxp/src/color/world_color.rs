@@ -1,6 +1,5 @@
 use super::hex_color::HexColor;
 use super::xterm::xterm;
-use crate::escape::ansi;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum WorldColor {
@@ -44,26 +43,6 @@ impl WorldColor {
     pub const BRIGHT_PURPLE: Self = Self::Ansi(13);
     pub const BRIGHT_CYAN: Self = Self::Ansi(14);
     pub const BRIGHT_WHITE: Self = Self::Ansi(15);
-
-    pub const fn fg_from_ansi(code: u8) -> Option<WorldColor> {
-        if code == ansi::FG_DEFAULT {
-            Some(Self::WHITE)
-        } else if code >= ansi::FG_BLACK && code <= ansi::FG_WHITE {
-            Some(Self::Ansi((code - ansi::FG_BLACK)))
-        } else {
-            None
-        }
-    }
-
-    pub const fn bg_from_ansi(code: u8) -> Option<WorldColor> {
-        if code == ansi::BG_DEFAULT {
-            Some(Self::BLACK)
-        } else if code >= ansi::BG_BLACK && code <= ansi::BG_WHITE {
-            Some(Self::Ansi((code - ansi::BG_BLACK)))
-        } else {
-            None
-        }
-    }
 }
 
 impl Default for WorldColor {

@@ -1,0 +1,9 @@
+[package]
+name = "mud-bin-examples"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+mud-transformer = { path = "../mud-transformer" }
+mud-stream = { path = "../mud-stream" }
+tokio = { version = "1.38.0", features = ["full"] }
