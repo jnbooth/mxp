@@ -10,3 +10,9 @@ casefold = { git = "https://github.com/jnbooth/casefold", version = "0.1.0" }
 enumeration = { git = "https://github.com/jnbooth/enumeration", version = "0.5.0" }
 enumeration_derive = { git = "https://github.com/jnbooth/enumeration", version = "0.5.0" }
 flate2 = "1.0.28"
+
+[features]
+default = ["async", "sync"]
+
+async = []
+sync = []

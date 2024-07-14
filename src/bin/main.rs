@@ -1,6 +1,15 @@
-use mxp::{Transformer, TransformerConfig};
+use std::io;
+use std::net::TcpStream;
 
-fn main() {
-    let mut transformer = Transformer::new(TransformerConfig::default());
-    transformer.interpret_char(0);
+use mxp::{sync, TransformerConfig};
+
+fn main() -> io::Result<()> {
+    let stream = TcpStream::connect(("discworld.atuin.net", 4242))?;
+    let mut stream = sync::MudStream::new(stream, TransformerConfig::new());
+    let mut stdout = io::stdout().lock();
+    loop {
+        if stream.read(&mut stdout)? == 0 {
+            return Ok(());
+        }
+    }
 }

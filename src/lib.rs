@@ -3,6 +3,9 @@ extern crate enumeration;
 #[macro_use]
 extern crate enumeration_derive;
 
+mod adapter;
+pub use adapter::*;
+
 mod color;
 
 mod escape;
