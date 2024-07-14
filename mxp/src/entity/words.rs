@@ -1,6 +1,7 @@
 use std::str::{self, CharIndices};
 
-use super::validation::{validate, MxpError, ParseError};
+use super::error::{Error as MxpError, ParseError};
+use super::validation::validate;
 
 #[derive(Clone, Debug)]
 pub struct Words<'a> {

@@ -6,7 +6,8 @@ use std::{slice, str};
 use casefold::ascii::{CaseFold, CaseFoldMap};
 use enumeration::{Enum, EnumSet};
 
-use super::validation::{validate, MxpError, ParseError};
+use super::error::{Error as MxpError, ParseError};
+use super::validation::validate;
 use super::words::Words;
 
 pub type Argument = String;

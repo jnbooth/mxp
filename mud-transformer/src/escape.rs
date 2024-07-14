@@ -82,13 +82,6 @@ pub mod telnet {
     pub const ACCEPT: u8 = 0x02;
     pub const REJECT: u8 = 0x03;
 
-    macro_rules! ttype {
-        ($($b:literal),*) => (&[IAC, SB, TERMINAL_TYPE, TTYPE_IS, $($b,)* IAC, SE])
-    }
-    pub const TTYPE_ANSI: &[u8] = ttype!(b'A', b'N', b'S', b'I');
-    pub const TTYPE_XTERM: &[u8] = ttype!(b'M', b'T', b'T', b'S', b' ', b'9');
-    pub const TTYPE_UTF8: &[u8] = ttype!(b'M', b'T', b'T', b'S', b' ', b'1', b'3');
-
     macro_rules! charset {
         ($($b:literal),*) => (&[IAC, SB, CHARSET, ACCEPT, $($b,)* IAC, SE])
     }
@@ -145,16 +138,6 @@ pub mod telnet {
             }
         }
         escaped
-    }
-
-    pub fn wrap_ttype<T: AsRef<[u8]>>(ttype: T) -> Vec<u8> {
-        let bytes = ttype.as_ref();
-        let trimmed = if bytes.len() > 20 {
-            &bytes[..20]
-        } else {
-            bytes
-        };
-        [&[IAC, SB, TERMINAL_TYPE, TTYPE_IS], trimmed, &[IAC, SE]].concat()
     }
 
     pub fn find_charset(data: &[u8], utf8: bool) -> &'static [u8] {

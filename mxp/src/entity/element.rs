@@ -5,7 +5,8 @@ use enumeration::EnumSet;
 
 use super::argument::{Arg, Arguments, Keyword};
 use super::atom::{Atom, TagFlag};
-use super::validation::{validate, MxpError, ParseError};
+use super::error::{Error as MxpError, ParseError};
+use super::validation::validate;
 use super::words::Words;
 
 /// List of arguments to an MXP tag.
@@ -38,6 +39,28 @@ impl ElementItem {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum CollectedElement<'a> {
+    Definition(&'a str),
+    TagClose(&'a str),
+    TagOpen(&'a str),
+}
+
+impl<'a> CollectedElement<'a> {
+    pub fn from_str(text: &'a str) -> Result<Self, ParseError> {
+        let tag = *text
+            .as_bytes()
+            .first()
+            .ok_or_else(|| ParseError::new("collected element", MxpError::EmptyElement))?;
+
+        match tag {
+            b'!' => Ok(Self::Definition(&text[1..])),
+            b'/' => Ok(Self::TagClose(&text[1..])),
+            _ => Ok(Self::TagOpen(&text)),
+        }
+    }
+}
+
 /// User-defined MXP tags that we recognise, e.g. <boldcolor>.
 /// For example: <!ELEMENT boldtext '<COLOR &col;><B>' ATT='col=red'>
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -59,6 +82,22 @@ pub struct Element {
 }
 
 impl Element {
+    pub const fn flags(&self) -> EnumSet<TagFlag> {
+        if self.open && self.command {
+            enums![TagFlag::Open, TagFlag::Command]
+        } else if self.open {
+            enums![TagFlag::Open]
+        } else if self.command {
+            enums![TagFlag::Command]
+        } else {
+            enums![]
+        }
+    }
+
+    pub fn collect(text: &str) -> Result<CollectedElement, ParseError> {
+        CollectedElement::from_str(text)
+    }
+
     fn parse_items(argument: Option<&Arg>) -> Result<Vec<ElementItem>, ParseError> {
         let definitions = match argument {
             Some(definitions) => definitions,
@@ -127,26 +166,24 @@ impl Element {
     }
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum ElementComponent<'a> {
     Atom(&'static Atom),
     Custom(&'a Element),
 }
 
 impl<'a> ElementComponent<'a> {
-    pub fn flags(&self) -> EnumSet<TagFlag> {
+    pub fn name(&self) -> &str {
+        match self {
+            Self::Atom(atom) => atom.name.as_str(),
+            Self::Custom(el) => el.name.as_str(),
+        }
+    }
+
+    pub const fn flags(&self) -> EnumSet<TagFlag> {
         match self {
             Self::Atom(atom) => atom.flags,
-            Self::Custom(el) => {
-                let mut flags = enums![];
-                if el.open {
-                    flags.insert(TagFlag::Open);
-                }
-                if el.command {
-                    flags.insert(TagFlag::Command);
-                }
-                flags
-            }
+            Self::Custom(el) => el.flags(),
         }
     }
 

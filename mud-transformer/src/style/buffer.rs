@@ -63,6 +63,10 @@ impl BufferedOutput {
         self.fragments.drain(..)
     }
 
+    pub fn drain_complete(&mut self) -> vec::Drain<OutputFragment> {
+        self.fragments.drain(..self.fragments.len() - 1)
+    }
+
     fn flush_last(&mut self, i: usize) {
         if self.buf.is_empty() {
             return;

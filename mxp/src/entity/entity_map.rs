@@ -5,7 +5,7 @@ use casefold::ascii::CaseFoldMap;
 use super::argument::{ArgumentIndex, Arguments};
 use super::element::Element;
 
-use super::validation::{MxpError, ParseError};
+use super::error::{Error as MxpError, ParseError};
 
 fn decode_amps<'a, F>(mut s: &str, mut f: F) -> Result<String, ParseError>
 where

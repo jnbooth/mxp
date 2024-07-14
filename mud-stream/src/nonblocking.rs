@@ -33,7 +33,7 @@ impl MudStream {
         }
         let received = &self.buf[..n];
         for &c in received {
-            self.transformer.interpret_char(c);
+            self.transformer.read_byte(c);
         }
         self.stream
             .write_all_buf(&mut self.transformer.drain_input())

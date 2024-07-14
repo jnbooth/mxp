@@ -43,6 +43,12 @@ impl BufferedInput {
         self.buf.extend_from_slice(bytes);
     }
 
+    pub fn append_vectored(&mut self, messages: &[&str]) {
+        for message in messages {
+            self.buf.extend_from_slice(message.as_bytes());
+        }
+    }
+
     pub fn get_mut(&mut self) -> &mut Vec<u8> {
         &mut self.buf
     }

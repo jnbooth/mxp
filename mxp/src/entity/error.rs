@@ -3,88 +3,8 @@ use std::str;
 
 use enumeration::Enum;
 
-use super::atom::Tag;
-
-pub fn is_valid(target: &str) -> bool {
-    let s: &[u8] = target.as_ref();
-    !s.is_empty()
-        && s[0].is_ascii_alphabetic()
-        && s.iter()
-            .all(|&c| c.is_ascii_alphanumeric() || c == b'_' || c == b'-' || c == b'.')
-}
-
-pub fn validate(target: &str, error: MxpError) -> Result<(), ParseError> {
-    if is_valid(target) {
-        Ok(())
-    } else {
-        Err(ParseError::new(target, error))
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ParseError {
-    target: String,
-    error: MxpError,
-}
-impl Display for ParseError {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "{:?}: \"{}\"", self.error, self.target)
-    }
-}
-impl std::error::Error for ParseError {}
-
-impl ParseError {
-    #[allow(private_bounds)]
-    pub fn new<T: ParseErrorTarget>(target: T, error: MxpError) -> Self {
-        Self {
-            target: target.into_target(),
-            error,
-        }
-    }
-}
-
-trait ParseErrorTarget {
-    fn into_target(self) -> String;
-}
-
-impl ParseErrorTarget for String {
-    fn into_target(self) -> String {
-        self
-    }
-}
-
-impl ParseErrorTarget for &String {
-    fn into_target(self) -> String {
-        self.clone()
-    }
-}
-
-impl ParseErrorTarget for &str {
-    fn into_target(self) -> String {
-        self.to_owned()
-    }
-}
-
-impl ParseErrorTarget for &[u8] {
-    fn into_target(self) -> String {
-        String::from_utf8_lossy(self).into_owned()
-    }
-}
-
-impl ParseErrorTarget for &Vec<u8> {
-    fn into_target(self) -> String {
-        String::from_utf8_lossy(self).into_owned()
-    }
-}
-
-impl ParseErrorTarget for &Tag {
-    fn into_target(self) -> String {
-        self.name.clone()
-    }
-}
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum MxpError {
+pub enum Error {
     ///  eg. < ... \n
     UnterminatedElement,
     ///  eg. <!-- ... \n
@@ -178,4 +98,62 @@ pub enum MxpError {
     OpenTagNotThere,
     ///  cannot close tag - it was opened in secure mode
     TagOpenedInSecureMode,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ParseError {
+    target: String,
+    error: Error,
+}
+
+impl Display for ParseError {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{:?}: \"{}\"", self.error, self.target)
+    }
+}
+
+impl std::error::Error for ParseError {}
+
+impl ParseError {
+    #[allow(private_bounds)]
+    pub fn new<T: ParseErrorTarget>(target: T, error: Error) -> Self {
+        Self {
+            target: target.into_target(),
+            error,
+        }
+    }
+}
+
+trait ParseErrorTarget {
+    fn into_target(self) -> String;
+}
+
+impl ParseErrorTarget for String {
+    fn into_target(self) -> String {
+        self
+    }
+}
+
+impl ParseErrorTarget for &String {
+    fn into_target(self) -> String {
+        self.clone()
+    }
+}
+
+impl ParseErrorTarget for &str {
+    fn into_target(self) -> String {
+        self.to_owned()
+    }
+}
+
+impl ParseErrorTarget for &[u8] {
+    fn into_target(self) -> String {
+        String::from_utf8_lossy(self).into_owned()
+    }
+}
+
+impl ParseErrorTarget for &Vec<u8> {
+    fn into_target(self) -> String {
+        String::from_utf8_lossy(self).into_owned()
+    }
 }

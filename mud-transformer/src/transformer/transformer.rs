@@ -3,6 +3,7 @@ use std::{mem, vec};
 use super::config::{AutoConnect, TransformerConfig, UseMxp};
 use super::input::{self, BufferedInput};
 use super::phase::Phase;
+use super::tag::{Tag, TagList};
 use crate::escape::{ansi, telnet, utf8};
 use crate::style::{BufferedOutput, Heading, InList, OutputFragment, TextFormat, TextStyle};
 use mxp;
@@ -42,9 +43,8 @@ pub struct Transformer {
     mxp_mode_previous: mxp::Mode,
     mxp_quote_terminator: Option<u8>,
     mxp_string: Vec<u8>,
-    mxp_active_tags: Vec<mxp::Tag>,
-    mxp_elements: mxp::ElementMap,
-    mxp_entities: mxp::EntityMap,
+    mxp_active_tags: TagList,
+    mxp_state: mxp::State,
 
     subnegotiation_type: u8,
     subnegotiation_data: Vec<u8>,
@@ -87,9 +87,8 @@ impl Transformer {
             mxp_mode_previous: mxp::Mode::OPEN,
             mxp_quote_terminator: None,
             mxp_string: Vec::new(),
-            mxp_active_tags: Vec::new(),
-            mxp_elements: mxp::ElementMap::new(),
-            mxp_entities: mxp::EntityMap::new(),
+            mxp_active_tags: TagList::new(),
+            mxp_state: mxp::State::new(),
 
             subnegotiation_type: 0,
             subnegotiation_data: Vec::new(),
@@ -121,11 +120,15 @@ impl Transformer {
         self.output.drain()
     }
 
+    pub fn drain_output_complete(&mut self) -> vec::Drain<OutputFragment> {
+        self.output.drain_complete()
+    }
+
     pub fn drain_input(&mut self) -> input::Drain {
         self.input.drain()
     }
 
-    pub(super) fn handle_mxp_error(&self, err: mxp::ParseError) {
+    fn handle_mxp_error(&self, err: mxp::ParseError) {
         eprintln!("MXP Error: {}", err);
     }
 
@@ -142,17 +145,14 @@ impl Transformer {
         }
     }
 
-    pub(super) fn mxp_off(&mut self, completely: bool) {
+    fn mxp_off(&mut self, completely: bool) {
         self.output.reset();
 
         if !self.mxp_active {
             return;
         }
 
-        let closed = match self.mxp_active_tags.iter().rposition(|x| x.no_reset) {
-            None => 0,
-            Some(i) => i + 1,
-        };
+        let closed = self.mxp_active_tags.last_resettable_index();
         self.mxp_close_tags_from(closed);
         self.mxp_script = false;
 
@@ -169,7 +169,7 @@ impl Transformer {
         // self.plugins.send_to_all(Callback::MxpStop, ());
     }
 
-    pub(super) fn mxp_on(&mut self, pueblo: bool, manual: bool) {
+    fn mxp_on(&mut self, pueblo: bool, manual: bool) {
         if self.mxp_active {
             return;
         }
@@ -187,45 +187,14 @@ impl Transformer {
         self.mxp_mode_default = mxp::Mode::OPEN;
         self.mxp_mode = mxp::Mode::OPEN;
         self.mxp_active_tags.clear();
-        self.mxp_elements.clear();
-    }
-
-    fn mxp_findtag(&self, secure: bool, name: &str) -> Result<(usize, &mxp::Tag), mxp::ParseError> {
-        for (i, tag) in self.mxp_active_tags.iter().enumerate().rev() {
-            if tag.name.eq_ignore_ascii_case(name) {
-                if !secure && tag.secure {
-                    return Err(mxp::ParseError::new(
-                        name,
-                        mxp::Error::TagOpenedInSecureMode,
-                    ));
-                } else {
-                    return Ok((i, tag));
-                }
-            }
-            if !secure && tag.secure {
-                return Err(mxp::ParseError::new(
-                    tag,
-                    mxp::Error::OpenTagBlockedBySecureTag,
-                ));
-            }
-        }
-        Err(mxp::ParseError::new(name, mxp::Error::OpenTagNotThere))
+        self.mxp_state.clear();
     }
 
     fn mxp_endtag(&mut self, tag_body: &str) -> Result<(), mxp::ParseError> {
         let was_secure = self.mxp_mode.is_secure();
         self.mxp_restore_mode();
-        let mut words = mxp::Words::new(tag_body);
-        let name = words.validate_next_or(mxp::Error::InvalidElementName)?;
-
-        if words.next().is_some() {
-            return Err(mxp::ParseError::new(
-                tag_body,
-                mxp::Error::ArgumentsToClosingTag,
-            ));
-        }
-
-        let (closed, _tag) = self.mxp_findtag(was_secure, name)?;
+        let name = Tag::parse_closing_tag(tag_body)?;
+        let (closed, _tag) = self.mxp_active_tags.find_last(was_secure, name)?;
         /*
         if let Some(template) = &tag.anchor_template {
             let select = self.cursor.document().select(tag.text_index..);
@@ -249,70 +218,14 @@ impl Transformer {
                 mxp::Error::DefinitionWhenNotSecure,
             ));
         }
-        let mut words = mxp::Words::new(tag);
-
-        let definition = words.validate_next_or(mxp::Error::InvalidDefinition)?;
-        let name = words.validate_next_or(mxp::Error::InvalidElementName)?;
-        match definition.to_lowercase().as_str() {
-            "element" | "el" => self.mxp_make_element(name, words),
-            "entity" | "en" => self.mxp_make_entity(name, words),
-            "attlist" | "at" => self.mxp_make_attributes(name, words),
-            _ => Err(mxp::ParseError::new(
-                definition,
-                mxp::Error::InvalidDefinition,
-            )),
-        }
+        self.mxp_state.define(tag)
     }
 
-    fn mxp_make_element(&mut self, name: &str, words: mxp::Words) -> Result<(), mxp::ParseError> {
-        let args = mxp::Arguments::parse_words(words)?;
-        if args.has_keyword(mxp::Keyword::Delete) {
-            self.mxp_elements.remove(&name);
-            return Ok(());
-        }
-        let el = mxp::Element::parse(name.to_owned(), args)?;
-        self.mxp_elements.insert(name.to_owned(), el);
-        Ok(())
-    }
-
-    fn mxp_make_entity(&mut self, key: &str, mut words: mxp::Words) -> Result<(), mxp::ParseError> {
-        if mxp::EntityMap::global(key).is_some() {
-            return Err(mxp::ParseError::new(key, mxp::Error::CannotRedefineEntity));
-        }
-        match words.next() {
-            Some(body) // once told me
-                if !words.any(|word| {
-                    word.eq_ignore_ascii_case("delete") || word.eq_ignore_ascii_case("remove")
-                }) =>
-            {
-                let value = self.mxp_entities.decode(body)?;
-                // self.plugins.send_to_all(Callback::MxpSetEntity, format!("{}={}", key, value));
-                self.mxp_entities.insert(key.to_owned(), value)
-            }
-            _ => self.mxp_entities.remove(key),
-        };
-        Ok(())
-    }
-
-    fn mxp_make_attributes(&mut self, key: &str, words: mxp::Words) -> Result<(), mxp::ParseError> {
-        self.mxp_elements
-            .get_mut(key)
-            .ok_or_else(|| mxp::ParseError::new(key, mxp::Error::UnknownElementInAttlist))?
-            .attributes
-            .append(words)
-    }
-
-    pub(super) fn mxp_collected_element(&mut self) -> Result<(), mxp::ParseError> {
-        let tag = *self
-            .mxp_string
-            .first()
-            .ok_or_else(|| mxp::ParseError::new("collected element", mxp::Error::EmptyElement))?;
-        let text = self.take_mxp_string()?;
-
-        match tag {
-            b'!' => self.mxp_definition(&text[1..]),
-            b'/' => self.mxp_endtag(&text[1..]),
-            _ => self.mxp_start_tag(&text),
+    fn mxp_collected_element(&mut self) -> Result<(), mxp::ParseError> {
+        match mxp::Element::collect(&self.take_mxp_string()?)? {
+            mxp::CollectedElement::Definition(text) => self.mxp_definition(text),
+            mxp::CollectedElement::TagClose(text) => self.mxp_endtag(text),
+            mxp::CollectedElement::TagOpen(text) => self.mxp_start_tag(text),
         }
     }
 
@@ -321,18 +234,14 @@ impl Transformer {
         self.mxp_restore_mode();
         let mut words = mxp::Words::new(tag);
         let name = words.validate_next_or(mxp::Error::InvalidElementName)?;
-        let component = self.mxp_elements.get_component(name)?;
-        let flags = component.flags();
-        self.mxp_active_tags.push(mxp::Tag {
-            name: name.to_owned(),
-            secure,
-            no_reset: flags.contains(mxp::TagFlag::NoReset),
-            span_index: self.output.span_len(),
-            anchor_template: None,
-        });
-        if !flags.contains(mxp::TagFlag::Open) && !secure {
-            return Err(mxp::ParseError::new(name, mxp::Error::ElementWhenNotSecure));
+        let component = self.mxp_state.get_component(name)?;
+        let tag = Tag::new(component, secure, self.output.span_len())?;
+        self.mxp_active_tags.push(tag);
+
+        if let Some(variable) = component.variable() {
+            self.output.set_mxp_variable(variable);
         }
+
         // let argstring = words.as_str();
         let mut args = mxp::Arguments::parse_words(words)?;
 
@@ -347,36 +256,16 @@ impl Transformer {
             return Ok(());
         }
         */
-
-        if let Some(variable) = component.variable() {
-            self.output.set_mxp_variable(variable);
-        }
-
         match component {
             mxp::ElementComponent::Atom(atom) => {
-                for value in args.values_mut() {
-                    *value = self.mxp_entities.decode(value)?;
-                }
+                self.mxp_state.decode_args(&mut args)?;
                 self.mxp_open_atom(atom.action, args);
             }
             mxp::ElementComponent::Custom(el) => {
                 // create a temporary vector to avoid borrow conflict
                 // could clone the element instead, but that seems like a waste
-                let actions: Result<Vec<_>, mxp::ParseError> = el
-                    .items
-                    .iter()
-                    .map(|item| {
-                        let mut newargs = mxp::Arguments::new();
-                        for (i, arg) in &item.arguments {
-                            let val = self.mxp_entities.decode_el(el, arg, &args)?;
-                            match i {
-                                mxp::ArgumentIndex::Positional(..) => newargs.push(val),
-                                mxp::ArgumentIndex::Named(key) => newargs.set(key, val),
-                            }
-                        }
-                        Ok((item.atom.action, newargs))
-                    })
-                    .collect();
+                let actions: Result<Vec<_>, mxp::ParseError> =
+                    self.mxp_state.decode_element(el, &args).collect();
                 for (action, newargs) in actions? {
                     self.mxp_open_atom(action, newargs);
                 }
@@ -404,58 +293,40 @@ impl Transformer {
             Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
             Action::Italic => self.output.set_mxp_flag(TextStyle::Italic),
             Action::Color => {
-                let mut scanner = args.scan();
-                if let Some(fg) = scanner.next_or(&["fore"]).and_then(HexColor::named) {
+                let mxp::ColorArgs { fore, back } = (&args).into();
+                if let Some(fg) = fore.and_then(HexColor::named) {
                     self.output.set_mxp_foreground(fg);
                 }
-                if let Some(bg) = scanner.next_or(&["back"]).and_then(HexColor::named) {
+                if let Some(bg) = back.and_then(HexColor::named) {
                     self.output.set_mxp_background(bg);
                 }
             }
-            Action::High => {
-                self.output.set_mxp_flag(TextStyle::Highlight);
-            }
+            Action::High => self.output.set_mxp_flag(TextStyle::Highlight),
             Action::Send => {
-                let mut scanner = args.scan();
-                let action = scanner
-                    .next_or(&["href", "xch_cmd"])
-                    .unwrap_or(SPECIAL_LINK);
-                let hint = scanner.next_or(&["hint", "xch_hint"]);
-                let sendto = if args.has_keyword(Keyword::Prompt) {
-                    SendTo::Input
-                } else {
-                    SendTo::World
-                };
+                let mxp::SendArgs { href, hint, sendto } = (&args).into();
+                let action = href.unwrap_or(SPECIAL_LINK);
                 self.output.set_mxp_action(Link::new(action, hint, sendto));
                 if action.contains(SPECIAL_LINK) {
-                    if let Some(tag) = self.mxp_active_tags.last_mut() {
-                        let template = if args.has_keyword(Keyword::Prompt) {
-                            format!("echo:{}", action)
-                        } else {
-                            format!("send:{}", action)
-                        };
-                        tag.anchor_template = Some(template);
-                    }
+                    let template = if sendto == SendTo::Input {
+                        format!("echo:{}", action)
+                    } else {
+                        format!("send:{}", action)
+                    };
+                    self.mxp_active_tags.set_anchor_template(template);
                 }
             }
             Action::Hyperlink => {
-                let mut scanner = args.scan();
-                let action = scanner.next_or(&["href"]).unwrap_or(SPECIAL_LINK);
+                let mxp::HyperlinkArgs { href } = (&args).into();
+                let action = href.unwrap_or(SPECIAL_LINK);
                 self.output
                     .set_mxp_action(Link::new(action, None, SendTo::Internet));
                 if action.contains(SPECIAL_LINK) {
-                    if let Some(tag) = self.mxp_active_tags.last_mut() {
-                        tag.anchor_template = Some(action.to_owned());
-                    }
+                    self.mxp_active_tags.set_anchor_template(action.to_owned());
                 }
             }
             Action::Font => {
-                let mut scanner = args.scan();
-                for fg in scanner
-                    .next_or(&["color", "fgcolor"])
-                    .unwrap_or("")
-                    .split(',')
-                {
+                let mxp::FontArgs { fgcolor, bgcolor } = (&args).into();
+                for fg in fgcolor {
                     match fg.to_lowercase().as_str() {
                         "blink" => self.output.set_mxp_flag(TextStyle::Blink),
                         "italic" => self.output.set_mxp_flag(TextStyle::Italic),
@@ -469,35 +340,24 @@ impl Transformer {
                         }
                     };
                 }
-                if let Some(bg) = scanner
-                    .next_or(&["back", "bgcolor"])
-                    .and_then(HexColor::named)
-                {
+                if let Some(bg) = bgcolor.and_then(HexColor::named) {
                     self.output.set_mxp_background(bg);
                 }
             }
-            Action::Version => {
-                self.input.append(b"\x1B[1zVERSION MXP=\"");
-                self.input.append(mxp::VERSION.as_bytes());
-                self.input.append(b"\" CLIENT=");
-                self.input.append(self.config.app_name.as_bytes());
-                self.input.append(b" VERSION=\"");
-                self.input.append(self.config.version.as_bytes());
-                self.input.append(b"\" REGISTERED=YES>\n");
-            }
+            Action::Version => self.input.append_vectored(&mxp::responses::identify(
+                &self.config.app_name,
+                &self.config.version,
+            )),
             Action::Afk => {
-                let mut scanner = args.scan();
                 if let Some(afk) = self.input.afk() {
-                    let challenge = scanner.next_or(&["challenge"]).unwrap_or("");
-                    self.input.append(b"\x1B[1z<AFK ");
-                    self.input.append(afk.as_secs().to_string().as_bytes());
-                    self.input.append(challenge.as_bytes());
-                    self.input.append(b">\n");
+                    let mxp::AfkArgs { challenge } = (&args).into();
+                    self.input.append_vectored(&mxp::responses::afk(
+                        &afk.as_secs().to_string(),
+                        challenge.unwrap_or(""),
+                    ))
                 }
             }
-            Action::Support => {
-                Atom::fmt_supported(self.input.get_mut(), args);
-            }
+            Action::Support => Atom::fmt_supported(self.input.get_mut(), args),
             Action::User => input_mxp_auth(
                 &mut self.input,
                 &self.config.player,
@@ -534,12 +394,8 @@ impl Transformer {
                 }
             }
             Action::P => self.output.set_format(TextFormat::Paragraph),
-            Action::Script => {
-                self.mxp_script = true;
-            }
-            Action::Hr => {
-                self.output.append_hr();
-            }
+            Action::Script => self.mxp_script = true,
+            Action::Hr => self.output.append_hr(),
             Action::Pre => self.output.set_format(TextFormat::Pre),
             Action::Ul => self.output.set_mxp_list(InList::Unordered),
             Action::Ol => self.output.set_mxp_list(InList::Ordered(0)),
@@ -585,19 +441,16 @@ impl Transformer {
     }
 
     fn mxp_close_tags_from(&mut self, pos: usize) {
-        let tag = match self.mxp_active_tags.get(pos) {
-            Some(tag) => tag,
-            None => return,
-        };
-        self.output.truncate_spans(tag.span_index);
-        self.mxp_active_tags.truncate(pos);
+        if let Some(span_index) = self.mxp_active_tags.truncate(pos) {
+            self.output.truncate_spans(span_index);
+        }
     }
 
-    pub(super) fn mxp_collected_entity(&mut self) -> Result<(), mxp::ParseError> {
+    fn mxp_collected_entity(&mut self) -> Result<(), mxp::ParseError> {
         let mxp_string = self.take_mxp_string()?;
         let name = mxp_string.trim();
         mxp::validate(name, mxp::Error::InvalidEntityName)?;
-        if let Some(entity) = self.mxp_entities.get(name)? {
+        if let Some(entity) = self.mxp_state.get_entity(name)? {
             self.mxp_active = false;
             self.output.append(entity);
             self.mxp_active = true;
@@ -605,15 +458,12 @@ impl Transformer {
         Ok(())
     }
 
-    pub(super) fn mxp_mode_change(&mut self, newmode: Option<mxp::Mode>) {
+    fn mxp_mode_change(&mut self, newmode: Option<mxp::Mode>) {
         let oldmode = self.mxp_mode;
         let newmode = newmode.unwrap_or(self.mxp_mode_default);
         let closing = oldmode.is_open() && !newmode.is_open();
         if closing {
-            let closed = match self.mxp_active_tags.iter().rposition(|x| x.secure) {
-                None => 0,
-                Some(i) => i + 1,
-            };
+            let closed = self.mxp_active_tags.last_unsecure_index();
             self.mxp_close_tags_from(closed);
         }
         match newmode {
@@ -744,7 +594,7 @@ impl Transformer {
         }
     }
 
-    pub fn interpret_char(&mut self, c: u8) -> Option<SideEffect> {
+    pub fn read_byte(&mut self, c: u8) -> Option<SideEffect> {
         let last_char = self.output.last().unwrap_or(b'\n');
 
         if last_char == b'\r' && c != b'\n' {
@@ -817,7 +667,7 @@ impl Transformer {
                         self.phase = Phase::Normal;
                         // self.plugins.send_to_all(Callback::IacGa, ());
                         if self.config.convert_ga_to_newline {
-                            self.output.append(b'\n');
+                            self.output.start_line();
                         }
                     }
                     telnet::SB => self.phase = Phase::Sb,
@@ -946,38 +796,38 @@ impl Transformer {
                     }
                     telnet::TERMINAL_TYPE => {
                         if self.subnegotiation_data.first() == Some(&telnet::TTYPE_SEND) {
-                            match self.ttype_sequence {
+                            self.input.append(&[
+                                telnet::IAC,
+                                telnet::SB,
+                                telnet::TERMINAL_TYPE,
+                                telnet::TTYPE_IS,
+                            ]);
+                            let ttype = match self.ttype_sequence {
                                 0 => {
                                     self.ttype_sequence += 1;
-                                    self.input.append(&[
-                                        telnet::IAC,
-                                        telnet::SB,
-                                        telnet::TERMINAL_TYPE,
-                                        telnet::TTYPE_IS,
-                                    ]);
                                     let ttype = self.config.terminal_identification.as_bytes();
-                                    let trimmed = if ttype.len() > 20 {
+                                    if ttype.len() > 20 {
                                         &ttype[..20]
                                     } else {
                                         ttype
-                                    };
-                                    self.input.append(trimmed);
-                                    self.input.append(&[telnet::IAC, telnet::SE]);
+                                    }
                                 }
                                 1 => {
                                     self.ttype_sequence += 1;
-                                    self.input.append(telnet::TTYPE_ANSI)
+                                    b"ANSI"
                                 }
-                                _ if self.config.utf_8 => self.input.append(telnet::TTYPE_UTF8),
-                                _ => self.input.append(telnet::TTYPE_XTERM),
-                            }
+                                _ if self.config.utf_8 => b"MTTS 13",
+                                _ => b"MTTS 9",
+                            };
+                            self.input.append(ttype);
+                            self.input.append(&[telnet::IAC, telnet::SE]);
                         }
                     }
                     telnet::CHARSET => {
                         let data = &self.subnegotiation_data;
                         if data.len() >= 3 && data[0] == 1 {
-                            self.input
-                                .append(telnet::find_charset(data, self.config.utf_8));
+                            let charset = telnet::find_charset(data, self.config.utf_8);
+                            self.input.append(charset);
                         }
                     }
                     telnet::MUD_SPECIFIC => {

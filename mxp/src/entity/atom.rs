@@ -6,21 +6,6 @@ use enumeration::{self, enums, Enum, EnumSet};
 
 use super::argument::Arguments;
 
-/// Outstanding (unclosed) tags.
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Tag {
-    /// Name of tag we opened
-    pub name: String,
-    /// Was it secure mode at the time?
-    pub secure: bool,
-    /// Protected from reset?
-    pub no_reset: bool,
-    /// Index in a style's span list.
-    pub span_index: usize,
-    /// Special replacement sequence for clickable links that use the text they contain.
-    pub anchor_template: Option<String>,
-}
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum TagFlag {
     /// Tag is an open one (otherwise secure)
