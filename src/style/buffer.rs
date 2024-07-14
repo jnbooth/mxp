@@ -5,7 +5,7 @@ use super::output::Output;
 use super::span::{Heading, InList, SpanList, TextFormat, TextStyle};
 use crate::color::WorldColor;
 use crate::mxp::Link;
-use std::vec;
+use std::{mem, vec};
 
 fn get_color(
     span_color: &Option<WorldColor>,
@@ -48,48 +48,64 @@ impl BufferedOutput {
         }
     }
 
-    /*
-    pub fn enable_mxp_colors(&mut self) {
-        self.ignore_mxp_colors = false;
+    pub fn last(&self) -> Option<u8> {
+        self.buf.last().copied()
     }
-    */
 
     pub fn disable_mxp_colors(&mut self) {
         self.ignore_mxp_colors = true;
+    }
+
+    pub fn enable_mxp_colors(&mut self) {
+        self.ignore_mxp_colors = false;
     }
 
     pub fn drain(&mut self) -> vec::Drain<OutputFragment> {
         self.fragments.drain(..)
     }
 
-    fn flush_at(&mut self, i: usize) {
+    fn flush_last(&mut self, i: usize) {
         if self.buf.is_empty() {
             return;
         }
-        let span = match self.spans.get_at(i) {
-            Some(span) => span,
-            None => return,
-        };
-        let ignore_colors = self.ignore_mxp_colors;
-        let fragment = TextFragment {
-            text: self.buf.clone(),
-            flags: span.flags | self.ansi_flags,
-            foreground: get_color(&span.foreground, self.ansi_foreground, ignore_colors),
-            background: get_color(&span.background, self.ansi_background, ignore_colors),
-            action: span.action.clone(),
-            heading: span.heading,
-            variable: span.variable.clone(),
+        let text = mem::take(&mut self.buf);
+        let fragment = if self.spans.len() < i {
+            TextFragment {
+                text,
+                flags: self.ansi_flags,
+                foreground: self.ansi_foreground,
+                background: self.ansi_background,
+                action: None,
+                heading: None,
+                variable: None,
+            }
+        } else {
+            let span = &self.spans[self.spans.len() - i];
+            let ignore_colors = self.ignore_mxp_colors;
+            TextFragment {
+                text,
+                flags: span.flags | self.ansi_flags,
+                foreground: get_color(&span.foreground, self.ansi_foreground, ignore_colors),
+                background: get_color(&span.background, self.ansi_background, ignore_colors),
+                action: span.action.clone(),
+                heading: span.heading,
+                variable: span.variable.clone(),
+            }
         };
         self.fragments.push(OutputFragment::Text(fragment));
-        self.buf.clear();
-    }
-
-    fn flush(&mut self) {
-        self.flush_at(self.spans.len() - 1);
     }
 
     fn flush_mxp(&mut self) {
-        self.flush_at(self.spans.len() - 2);
+        self.flush_last(2);
+    }
+
+    fn flush(&mut self) {
+        self.flush_last(1);
+    }
+
+    pub fn start_line(&mut self) {
+        self.buf.push(b'\n');
+        self.flush();
     }
 
     pub fn append<O: Output>(&mut self, output: O) {
@@ -174,15 +190,17 @@ impl BufferedOutput {
         self.spans.truncate(i);
     }
 
+    pub fn format(&self) -> EnumSet<TextFormat> {
+        self.spans.format()
+    }
+
     pub fn set_format(&mut self, format: TextFormat) {
         self.spans.set_format(format);
     }
 
-    /*
-    pub fn has_format(&mut self, format: TextFormat) -> bool {
-        self.spans.has_format(format)
+    pub fn unset_format(&mut self, format: TextFormat) {
+        self.spans.unset_format(format);
     }
-    */
 
     pub fn set_mxp_flag(&mut self, flag: TextStyle) {
         if self.spans.set_flag(flag) && !self.ansi_flags.contains(flag) {

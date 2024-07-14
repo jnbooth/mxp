@@ -1,4 +1,5 @@
-use std::vec;
+use std::time::Instant;
+use std::{mem, vec};
 
 use enumeration::Enum;
 
@@ -14,14 +15,15 @@ fn input_mxp_auth(bufinput: &mut Vec<u8>, auth: &str, connect: Option<AutoConnec
         return;
     }
     bufinput.extend_from_slice(auth.as_bytes());
-    bufinput.push(b'\n');
+    bufinput.extend_from_slice(b"\r\n");
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum InterpretCharOutcome {
+pub enum SideEffect {
     EnableCompression,
     DisableCompression,
-    SendPacket(Vec<u8>),
+    Beep,
+    EraseLine,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
@@ -50,7 +52,6 @@ pub struct Transformer {
     no_echo: bool,
 
     mxp_script: bool,
-    ignore_newlines: bool,
     suppress_newline: bool,
     mxp_mode_default: mxp::Mode,
     mxp_mode: mxp::Mode,
@@ -76,8 +77,9 @@ pub struct Transformer {
     ansi_blue: u8,
 
     utf8_sequence: Vec<u8>,
-    bufinput: Vec<u8>,
     output: BufferedOutput,
+    input: Vec<u8>,
+    last_input: Option<Instant>,
 }
 
 impl Default for Transformer {
@@ -104,7 +106,6 @@ impl Transformer {
             no_echo: false,
 
             mxp_script: false,
-            ignore_newlines: false,
             suppress_newline: false,
             mxp_mode_default: mxp::Mode::OPEN,
             mxp_mode: mxp::Mode::OPEN,
@@ -130,13 +131,37 @@ impl Transformer {
             ansi_blue: 0,
 
             utf8_sequence: Vec::with_capacity(4),
-            bufinput: Vec::new(),
-            output: BufferedOutput::new(),
+            output,
+            input: Vec::new(),
+            last_input: None,
         }
+    }
+
+    pub fn set_config(&mut self, config: TransformerConfig) {
+        if config.ignore_mxp_colors {
+            self.output.disable_mxp_colors();
+        } else {
+            self.output.enable_mxp_colors();
+        }
+        if !config.send_mxp_afk_response {
+            self.last_input = None;
+        }
+        self.config = config;
     }
 
     pub fn drain_output(&mut self) -> vec::Drain<OutputFragment> {
         self.output.drain()
+    }
+
+    pub fn input(&self) -> &[u8] {
+        &self.input
+    }
+
+    pub fn flush_input(&mut self) {
+        self.input.clear();
+        if self.config.send_mxp_afk_response {
+            self.last_input = Some(Instant::now());
+        }
     }
 
     pub(super) fn handle_mxp_error(&self, err: mxp::ParseError) {
@@ -144,12 +169,10 @@ impl Transformer {
     }
 
     fn take_mxp_string(&mut self) -> Result<String, mxp::ParseError> {
-        let mxp_string = String::from_utf8(self.mxp_string.clone()).map_err(|e| {
+        String::from_utf8(mem::take(&mut self.mxp_string)).map_err(|e| {
             let bytes_debug = format!("{:?}", e.as_bytes());
             mxp::ParseError::new(bytes_debug, mxp::Error::MalformedBytes)
-        });
-        self.mxp_string.clear();
-        mxp_string
+        })
     }
 
     fn mxp_restore_mode(&mut self) {
@@ -501,47 +524,41 @@ impl Transformer {
                 }
             }
             Action::Version => {
-                self.bufinput.extend_from_slice(b"\x1B[1zVERSION MXP=\"");
-                self.bufinput.extend_from_slice(mxp::VERSION.as_bytes());
-                self.bufinput.extend_from_slice(b"\" CLIENT=");
-                self.bufinput
+                self.input.extend_from_slice(b"\x1B[1zVERSION MXP=\"");
+                self.input.extend_from_slice(mxp::VERSION.as_bytes());
+                self.input.extend_from_slice(b"\" CLIENT=");
+                self.input
                     .extend_from_slice(self.config.app_name.as_bytes());
-                self.bufinput.extend_from_slice(b" VERSION=\"");
-                self.bufinput
-                    .extend_from_slice(self.config.version.as_bytes());
-                self.bufinput.extend_from_slice(b"\" REGISTERED=YES>\n");
+                self.input.extend_from_slice(b" VERSION=\"");
+                self.input.extend_from_slice(self.config.version.as_bytes());
+                self.input.extend_from_slice(b"\" REGISTERED=YES>\n");
             }
-            /*
             Action::Afk => {
                 let mut scanner = args.scan();
-                if self.send_mxp_afk_response {
+                if let Some(last_input) = &self.last_input {
                     let challenge = scanner.next_or(&["challenge"]).unwrap_or("");
-                    write!(
-                        &mut self.bufinput,
-                        "\x1B[1z<AFK {} {}>\n",
-                        self.latest.input.elapsed().as_secs(),
-                        challenge
-                    );
+                    self.input.extend_from_slice(b"\x1B[1z<AFK ");
+                    self.input
+                        .extend_from_slice(last_input.elapsed().as_secs().to_string().as_bytes());
+                    self.input.extend_from_slice(challenge.as_bytes());
+                    self.input.extend_from_slice(b">\n");
                 }
             }
-            */
             Action::Support => {
-                Atom::fmt_supported(&mut self.bufinput, args);
+                Atom::fmt_supported(&mut self.input, args);
             }
             Action::User => input_mxp_auth(
-                &mut self.bufinput,
+                &mut self.input,
                 &self.config.player,
                 self.config.connect_method,
             ),
             Action::Password => input_mxp_auth(
-                &mut self.bufinput,
+                &mut self.input,
                 &self.config.password,
                 self.config.connect_method,
             ),
             Action::Br => {
-                self.output.append(b'\n');
-                // span.foreground = WorldColor::WHITE;
-                // span.background = WorldColor::BLACK;
+                self.output.start_line();
             }
             Action::Reset => {
                 self.mxp_off(false);
@@ -560,9 +577,9 @@ impl Transformer {
                 }
 
                 if args.has_keyword(Keyword::IgnoreNewlines) {
-                    self.ignore_newlines = true;
+                    self.output.set_format(TextFormat::Paragraph);
                 } else if args.has_keyword(Keyword::UseNewlines) {
-                    self.ignore_newlines = false;
+                    self.output.unset_format(TextFormat::Paragraph);
                 }
             }
             Action::P => self.output.set_format(TextFormat::Paragraph),
@@ -572,12 +589,16 @@ impl Transformer {
             Action::Hr => {
                 self.output.append_hr();
             }
-            Action::Pre => self.output.set_format(TextFormat::Preformatted),
+            Action::Pre => self.output.set_format(TextFormat::Pre),
             Action::Ul => self.output.set_mxp_list(InList::Unordered),
             Action::Ol => self.output.set_mxp_list(InList::Ordered(0)),
             Action::Li => match self.output.next_list_item() {
-                Some(0) => self.output.append("• "),
+                Some(0) => {
+                    self.output.start_line();
+                    self.output.append("• ");
+                }
                 Some(i) => {
+                    self.output.start_line();
                     self.output.append(&i.to_string());
                     self.output.append(b". ");
                 }
@@ -770,8 +791,12 @@ impl Transformer {
         }
     }
 
-    pub fn interpret_char(&mut self, c: u8) -> Option<InterpretCharOutcome> {
-        use InterpretCharOutcome as Outcome;
+    pub fn interpret_char(&mut self, c: u8) -> Option<SideEffect> {
+        let last_char = self.output.last().unwrap_or(b'\n');
+
+        if last_char == b'\r' && c != b'\n' {
+            return Some(SideEffect::EraseLine);
+        }
 
         if self.phase == Phase::Utf8Character && !utf8::is_continuation(c) {
             self.output.append(&mut self.utf8_sequence);
@@ -883,7 +908,7 @@ impl Transformer {
                     _ => false,
                 };
                 let verb = if will { telnet::DO } else { telnet::DONT };
-                self.bufinput.extend_from_slice(&[telnet::IAC, verb, c]);
+                self.input.extend_from_slice(&[telnet::IAC, verb, c]);
             }
 
             Phase::Wont => {
@@ -891,7 +916,7 @@ impl Transformer {
                 if !self.config.no_echo_off {
                     self.no_echo = false;
                 }
-                self.bufinput
+                self.input
                     .extend_from_slice(&[telnet::IAC, telnet::DONT, c]);
             }
 
@@ -922,7 +947,7 @@ impl Transformer {
                     _ => false,
                 };
                 let verb = if will { telnet::DO } else { telnet::DONT };
-                self.bufinput.extend_from_slice(&[telnet::IAC, verb, c]);
+                self.input.extend_from_slice(&[telnet::IAC, verb, c]);
             }
 
             Phase::Dont => {
@@ -932,7 +957,7 @@ impl Transformer {
                     telnet::TERMINAL_TYPE => self.ttype_sequence = 0,
                     _ => (),
                 }
-                self.bufinput
+                self.input
                     .extend_from_slice(&[telnet::IAC, telnet::WONT, c]);
             }
 
@@ -951,7 +976,7 @@ impl Transformer {
 
             Phase::CompressWill if c == telnet::SE => {
                 self.mccp_ver = Some(Mccp::V1);
-                return Some(Outcome::EnableCompression);
+                return Some(SideEffect::EnableCompression);
             }
             Phase::CompressWill => self.phase = Phase::Normal,
 
@@ -965,7 +990,7 @@ impl Transformer {
                     telnet::COMPRESS2 => {
                         if !self.config.disable_compression {
                             self.mccp_ver = Some(Mccp::V2);
-                            return Some(Outcome::EnableCompression);
+                            return Some(SideEffect::EnableCompression);
                         }
                     }
                     telnet::MXP => {
@@ -978,7 +1003,7 @@ impl Transformer {
                             match self.ttype_sequence {
                                 0 => {
                                     self.ttype_sequence += 1;
-                                    self.bufinput.extend_from_slice(&[
+                                    self.input.extend_from_slice(&[
                                         telnet::IAC,
                                         telnet::SB,
                                         telnet::TERMINAL_TYPE,
@@ -990,24 +1015,24 @@ impl Transformer {
                                     } else {
                                         ttype
                                     };
-                                    self.bufinput.extend_from_slice(trimmed);
-                                    self.bufinput.extend_from_slice(&[telnet::IAC, telnet::SE]);
+                                    self.input.extend_from_slice(trimmed);
+                                    self.input.extend_from_slice(&[telnet::IAC, telnet::SE]);
                                 }
                                 1 => {
                                     self.ttype_sequence += 1;
-                                    self.bufinput.extend_from_slice(telnet::TTYPE_ANSI)
+                                    self.input.extend_from_slice(telnet::TTYPE_ANSI)
                                 }
                                 _ if self.config.utf_8 => {
-                                    self.bufinput.extend_from_slice(telnet::TTYPE_UTF8)
+                                    self.input.extend_from_slice(telnet::TTYPE_UTF8)
                                 }
-                                _ => self.bufinput.extend_from_slice(telnet::TTYPE_XTERM),
+                                _ => self.input.extend_from_slice(telnet::TTYPE_XTERM),
                             }
                         }
                     }
                     telnet::CHARSET => {
                         let data = &self.subnegotiation_data;
                         if data.len() >= 3 && data[0] == 1 {
-                            self.bufinput
+                            self.input
                                 .extend_from_slice(telnet::find_charset(data, self.config.utf_8));
                         }
                     }
@@ -1110,8 +1135,6 @@ impl Transformer {
                         self.phase = Phase::Iac;
                     }
                 }
-                b'\r' => (),
-                b'\n' if self.ignore_newlines => (),
                 b'<' if self.mxp_active && self.mxp_mode.is_mxp() => {
                     self.mxp_string.clear();
                     self.phase = Phase::MxpElement;
@@ -1119,6 +1142,34 @@ impl Transformer {
                 b'&' if self.mxp_active && self.mxp_mode.is_mxp() => {
                     self.mxp_string.clear();
                     self.phase = Phase::MxpEntity;
+                }
+                b'\x07' => return Some(SideEffect::Beep),
+                b'\t' if self.output.format().contains(TextFormat::Paragraph) => {
+                    if last_char != b' ' {
+                        self.output.append(b' ');
+                    }
+                }
+                b'\r' => (),
+                b' ' if last_char == b' '
+                    && self.output.format().contains(TextFormat::Paragraph) => {}
+                b'\n' => {
+                    if self.mxp_active && !self.pueblo_active {
+                        self.mxp_mode_change(None);
+                    }
+                    let format = self.output.format();
+                    if format.contains(TextFormat::Paragraph) {
+                        match last_char {
+                            b'\n' => {
+                                self.output.start_line();
+                                self.output.start_line();
+                            }
+                            b'.' => self.output.append(b"  "),
+                            b' ' | b'\t' | b'\x0C' => (),
+                            _ => self.output.append(b' '),
+                        }
+                    } else if !self.suppress_newline && !format.contains(TextFormat::Pre) {
+                        self.output.start_line();
+                    }
                 }
                 _ if utf8::is_higher_order(c) => {
                     self.utf8_sequence.push(c);

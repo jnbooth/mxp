@@ -1,3 +1,5 @@
+use std::ops::Index;
+
 use crate::color::WorldColor;
 use crate::mxp::Link;
 use enumeration::{Enum, EnumSet};
@@ -16,7 +18,7 @@ pub enum TextStyle {
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum TextFormat {
     Paragraph,
-    Preformatted,
+    Pre,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -75,8 +77,9 @@ impl Span {
 
 macro_rules! set_flag {
     ($self:ident, $p:ident, $val:ident) => {
-        let span = match $self.spans.get_mut(0) {
-            Some(span) if !span.populated && !span.$p.contains($val) => {
+        let span = match $self.get_mut() {
+            Some(span) if span.$p.contains($val) => return false,
+            Some(span) if !span.populated => {
                 span.$p.insert($val);
                 return false;
             }
@@ -102,7 +105,8 @@ macro_rules! set_prop {
     };
     ($self:ident, $p:ident, $val:expr) => {
         let span = match $self.get_mut() {
-            Some(span) if !span.populated && span.$p != $val => {
+            Some(span) if span.$p == $val => return false,
+            Some(span) if !span.populated => {
                 span.$p = $val;
                 return false;
             }
@@ -132,6 +136,17 @@ impl Default for SpanList {
     }
 }
 
+impl<I> Index<I> for SpanList
+where
+    Vec<Span>: Index<I, Output = Span>,
+{
+    type Output = Span;
+
+    fn index(&self, index: I) -> &Self::Output {
+        self.spans.index(index)
+    }
+}
+
 impl SpanList {
     pub const fn new() -> Self {
         Self { spans: Vec::new() }
@@ -145,18 +160,12 @@ impl SpanList {
         self.spans.last_mut()
     }
 
-    pub fn get_at(&self, i: usize) -> Option<&Span> {
-        self.spans.get(i)
-    }
-
-    /*
-    pub fn has_format(&self, format: TextFormat) -> bool {
+    pub fn format(&self) -> EnumSet<TextFormat> {
         match self.get() {
-            Some(span) => span.format.contains(format),
-            None => false,
+            Some(span) => span.format.clone(),
+            None => EnumSet::new(),
         }
     }
-    */
 
     pub fn truncate(&mut self, i: usize) {
         self.spans.truncate(i)
@@ -192,6 +201,28 @@ impl SpanList {
 
     pub fn set_format(&mut self, format: TextFormat) -> bool {
         set_flag!(self, format, format);
+    }
+
+    pub fn unset_format(&mut self, format: TextFormat) -> bool {
+        let span = match self.get_mut() {
+            Some(span) if !span.format.contains(format) => return false,
+            Some(span) if !span.populated => {
+                span.format.remove(format);
+                return false;
+            }
+            Some(span) => {
+                let mut format_flags = span.format.clone();
+                format_flags.remove(format);
+                Span {
+                    populated: false,
+                    format: format_flags,
+                    ..span.clone()
+                }
+            }
+            None => return false,
+        };
+        self.spans.push(span);
+        return true;
     }
 
     pub fn set_foreground(&mut self, foreground: WorldColor) -> bool {
