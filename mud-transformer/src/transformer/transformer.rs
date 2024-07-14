@@ -1,7 +1,5 @@
 use std::{mem, vec};
 
-use enumeration::Enum;
-
 use super::config::{AutoConnect, TransformerConfig, UseMxp};
 use super::input::{self, BufferedInput};
 use super::phase::Phase;
@@ -26,18 +24,6 @@ pub enum SideEffect {
     EraseLine,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum Mccp {
-    V1,
-    V2,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum ListMode {
-    Ordered,
-    Unordered,
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Transformer {
     config: TransformerConfig,
@@ -46,8 +32,6 @@ pub struct Transformer {
 
     mxp_active: bool,
     pueblo_active: bool,
-    compressing: bool,
-    mccp_ver: Option<Mccp>,
     supports_mccp_2: bool,
     no_echo: bool,
 
@@ -61,12 +45,7 @@ pub struct Transformer {
     mxp_active_tags: Vec<mxp::Tag>,
     mxp_elements: mxp::ElementMap,
     mxp_entities: mxp::EntityMap,
-    last_outstanding_tag_count: u64,
-    list_mode: Option<ListMode>,
-    list_index: u16,
 
-    linecount: u64,
-    last_line_with_iac_ga: u64,
     subnegotiation_type: u8,
     subnegotiation_data: Vec<u8>,
     ttype_sequence: u8,
@@ -98,8 +77,6 @@ impl Transformer {
 
             mxp_active: false,
             pueblo_active: false,
-            compressing: false,
-            mccp_ver: None,
             supports_mccp_2: false,
             no_echo: false,
 
@@ -113,12 +90,7 @@ impl Transformer {
             mxp_active_tags: Vec::new(),
             mxp_elements: mxp::ElementMap::new(),
             mxp_entities: mxp::EntityMap::new(),
-            last_outstanding_tag_count: 0,
-            list_mode: None,
-            list_index: 0,
 
-            linecount: 0,
-            last_line_with_iac_ga: 0,
             subnegotiation_type: 0,
             subnegotiation_data: Vec::new(),
             ttype_sequence: 0,
@@ -183,8 +155,6 @@ impl Transformer {
         };
         self.mxp_close_tags_from(closed);
         self.mxp_script = false;
-        self.list_mode = None;
-        self.list_index = 0;
 
         if !completely {
             return;
@@ -209,8 +179,6 @@ impl Transformer {
         self.mxp_active = true;
         self.pueblo_active = pueblo;
         self.mxp_script = false;
-        self.last_outstanding_tag_count = 0;
-        self.list_mode = None;
 
         if manual {
             return;
@@ -847,7 +815,6 @@ impl Transformer {
                 match c {
                     telnet::EOR | telnet::GA => {
                         self.phase = Phase::Normal;
-                        self.last_line_with_iac_ga = self.linecount;
                         // self.plugins.send_to_all(Callback::IacGa, ());
                         if self.config.convert_ga_to_newline {
                             self.output.append(b'\n');
@@ -957,10 +924,7 @@ impl Transformer {
             Phase::Compress if c == telnet::WILL => self.phase = Phase::CompressWill,
             Phase::Compress => self.phase = Phase::Normal,
 
-            Phase::CompressWill if c == telnet::SE => {
-                self.mccp_ver = Some(Mccp::V1);
-                return Some(SideEffect::EnableCompression);
-            }
+            Phase::CompressWill if c == telnet::SE => return Some(SideEffect::EnableCompression),
             Phase::CompressWill => self.phase = Phase::Normal,
 
             Phase::SubnegotiationIac if c == telnet::IAC => {
@@ -972,7 +936,6 @@ impl Transformer {
                 match self.subnegotiation_type {
                     telnet::COMPRESS2 => {
                         if !self.config.disable_compression {
-                            self.mccp_ver = Some(Mccp::V2);
                             return Some(SideEffect::EnableCompression);
                         }
                     }
@@ -1116,14 +1079,6 @@ impl Transformer {
                         self.phase = Phase::Iac;
                     }
                 }
-                b'<' if self.mxp_active && self.mxp_mode.is_mxp() => {
-                    self.mxp_string.clear();
-                    self.phase = Phase::MxpElement;
-                }
-                b'&' if self.mxp_active && self.mxp_mode.is_mxp() => {
-                    self.mxp_string.clear();
-                    self.phase = Phase::MxpEntity;
-                }
                 b'\x07' => return Some(SideEffect::Beep),
                 b'\t' if self.output.format().contains(TextFormat::Paragraph) => {
                     if last_char != b' ' {
@@ -1155,6 +1110,19 @@ impl Transformer {
                 _ if utf8::is_higher_order(c) => {
                     self.utf8_sequence.push(c);
                     self.phase = Phase::Utf8Character;
+                }
+                _ if !self.mxp_active || !self.mxp_mode.is_mxp() => self.output.append(c),
+                b'<' => {
+                    self.mxp_string.clear();
+                    self.phase = Phase::MxpElement;
+                }
+                _ if self.mxp_mode == mxp::Mode::SECURE_ONCE => {
+                    self.mxp_mode = self.mxp_mode_previous
+                }
+                _ if self.mxp_script => (),
+                b'&' => {
+                    self.mxp_string.clear();
+                    self.phase = Phase::MxpEntity;
                 }
                 _ => self.output.append(c),
             },
