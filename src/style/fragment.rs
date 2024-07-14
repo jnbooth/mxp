@@ -13,6 +13,15 @@ pub enum OutputFragment {
     Text(TextFragment),
 }
 
+impl OutputFragment {
+    pub fn as_bytes(&self) -> Option<&[u8]> {
+        match self {
+            OutputFragment::Text(fragment) => Some(fragment.text.as_slice()),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TextFragment {
     pub(super) text: Vec<u8>,

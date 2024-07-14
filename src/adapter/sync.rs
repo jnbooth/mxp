@@ -1,7 +1,8 @@
 use crate::style::OutputFragment;
 use crate::transformer::{Transformer, TransformerConfig};
-use std::io::{self, Read, Write};
+use std::io::{self, IoSlice, Read, Write};
 use std::net::TcpStream;
+use std::vec;
 
 #[derive(Debug)]
 pub struct MudStream {
@@ -23,22 +24,34 @@ impl MudStream {
         self.stream
     }
 
-    pub fn read<W: Write>(&mut self, mut output: W) -> io::Result<usize> {
+    pub fn read(&mut self) -> io::Result<Option<vec::Drain<OutputFragment>>> {
         let n = self.stream.read(&mut self.buf)?;
         if n == 0 {
-            return Ok(n);
+            return Ok(None);
         }
         let received = &self.buf[..n];
         for &c in received {
             self.transformer.interpret_char(c);
         }
-        for fragment in self.transformer.drain_output() {
-            if let OutputFragment::Text(fragment) = fragment {
-                output.write_all(fragment.as_ref())?;
-            }
-        }
-        let mut input = self.transformer.drain_input();
-        input.write_all_to(&mut self.stream)?;
-        Ok(n)
+        self.transformer
+            .drain_input()
+            .write_all_to(&mut self.stream)?;
+        Ok(Some(self.transformer.drain_output()))
+    }
+}
+impl Write for MudStream {
+    #[inline]
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.stream.write(buf)
+    }
+
+    #[inline]
+    fn write_vectored(&mut self, bufs: &[IoSlice]) -> io::Result<usize> {
+        self.stream.write_vectored(bufs)
+    }
+
+    #[inline]
+    fn flush(&mut self) -> io::Result<()> {
+        self.stream.flush()
     }
 }
