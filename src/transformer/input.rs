@@ -84,6 +84,8 @@ impl<'a> Drain<'a> {
     }
 
     pub fn write_all_to<W: Write>(&mut self, mut writer: W) -> io::Result<()> {
+        writer.write_all(self.slice())?;
+        self.cursor = self.buf.len();
         let mut slice = &self.buf[self.cursor..];
         while !slice.is_empty() {
             let n = writer.write(slice)?;
@@ -91,6 +93,21 @@ impl<'a> Drain<'a> {
             self.cursor += n;
         }
         Ok(())
+    }
+}
+
+#[cfg(feature = "async")]
+impl<'a> bytes::Buf for Drain<'a> {
+    fn remaining(&self) -> usize {
+        self.buf.len().saturating_sub(self.cursor)
+    }
+
+    fn chunk(&self) -> &[u8] {
+        self.slice()
+    }
+
+    fn advance(&mut self, cnt: usize) {
+        self.cursor += cnt;
     }
 }
 

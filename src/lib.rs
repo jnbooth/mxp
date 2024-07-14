@@ -13,6 +13,7 @@ mod escape;
 mod mxp;
 
 mod style;
+pub use style::OutputFragment;
 
 mod transformer;
 pub use transformer::{Transformer, TransformerConfig};
