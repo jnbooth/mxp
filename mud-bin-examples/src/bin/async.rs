@@ -10,7 +10,7 @@ use tokio::net::TcpStream as AsyncTcpStream;
 async fn main() -> io::Result<()> {
     let stream = AsyncTcpStream::connect(("discworld.atuin.net", 4242)).await?;
     let mut stream = MudStream::new(stream, TransformerConfig::new());
-    let mut stdout = io::stdout().lock();
+    let mut stdout = io::stdout();
     let mut stdin = tokio::io::stdin();
     let mut input = [0; 1024];
     loop {

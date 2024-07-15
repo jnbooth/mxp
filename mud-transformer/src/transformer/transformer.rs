@@ -752,7 +752,7 @@ impl Transformer {
                     // _ => self.telnet_callbacks(c, "DO", "SENT_WILL"),
                     _ => false,
                 };
-                let verb = if will { telnet::DO } else { telnet::DONT };
+                let verb = if will { telnet::WILL } else { telnet::WONT };
                 self.input.append(&[telnet::IAC, verb, c]);
             }
 
