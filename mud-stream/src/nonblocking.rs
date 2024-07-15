@@ -1,8 +1,8 @@
-use mud_transformer::{OutputFragment, Transformer, TransformerConfig};
+use mud_transformer::{OutputDrain, Transformer, TransformerConfig};
+use std::io;
 use std::io::IoSlice;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use std::{io, vec};
 use tokio::io::{AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::net::TcpStream;
 
@@ -26,7 +26,7 @@ impl MudStream {
         self.stream
     }
 
-    pub async fn read(&mut self) -> io::Result<Option<vec::Drain<OutputFragment>>> {
+    pub async fn read(&mut self) -> io::Result<Option<OutputDrain>> {
         let n = self.stream.read(&mut self.buf).await?;
         if n == 0 {
             return Ok(None);

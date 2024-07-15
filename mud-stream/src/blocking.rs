@@ -1,7 +1,6 @@
-use mud_transformer::{OutputFragment, Transformer, TransformerConfig};
+use mud_transformer::{OutputDrain, Transformer, TransformerConfig};
 use std::io::{self, IoSlice, Read, Write};
 use std::net::TcpStream;
-use std::vec;
 
 #[derive(Debug)]
 pub struct MudStream {
@@ -23,7 +22,7 @@ impl MudStream {
         self.stream
     }
 
-    pub fn read(&mut self) -> io::Result<Option<vec::Drain<OutputFragment>>> {
+    pub fn read(&mut self) -> io::Result<Option<OutputDrain>> {
         let n = self.stream.read(&mut self.buf)?;
         if n == 0 {
             return Ok(None);

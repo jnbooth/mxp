@@ -5,8 +5,8 @@ extern crate enumeration_derive;
 
 mod escape;
 
-mod style;
-pub use style::OutputFragment;
+mod output;
+pub use output::{OutputDrain, OutputFragment};
 
 mod transformer;
-pub use transformer::{Transformer, TransformerConfig};
+pub use transformer::{SideEffect, Transformer, TransformerConfig};

@@ -1,10 +1,10 @@
+use bytes::BytesMut;
 use enumeration::EnumSet;
 
-use super::fragment::{OutputFragment, TextFragment};
+use super::fragment::{OutputDrain, OutputFragment, TextFragment};
 use super::output::Output;
 use super::span::{Heading, InList, SpanList, TextFormat, TextStyle};
 use mxp::WorldColor;
-use std::{mem, vec};
 
 fn get_color(
     span_color: &Option<WorldColor>,
@@ -23,7 +23,7 @@ pub struct BufferedOutput {
     ansi_flags: EnumSet<TextStyle>,
     ansi_foreground: WorldColor,
     ansi_background: WorldColor,
-    buf: Vec<u8>,
+    buf: BytesMut,
     fragments: Vec<OutputFragment>,
     ignore_mxp_colors: bool,
 }
@@ -35,13 +35,13 @@ impl Default for BufferedOutput {
 }
 
 impl BufferedOutput {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             spans: SpanList::new(),
             ansi_flags: EnumSet::new(),
             ansi_foreground: WorldColor::WHITE,
             ansi_background: WorldColor::BLACK,
-            buf: Vec::new(),
+            buf: BytesMut::new(),
             fragments: Vec::new(),
             ignore_mxp_colors: false,
         }
@@ -59,11 +59,11 @@ impl BufferedOutput {
         self.ignore_mxp_colors = false;
     }
 
-    pub fn drain(&mut self) -> vec::Drain<OutputFragment> {
+    pub fn drain(&mut self) -> OutputDrain {
         self.fragments.drain(..)
     }
 
-    pub fn drain_complete(&mut self) -> vec::Drain<OutputFragment> {
+    pub fn drain_complete(&mut self) -> OutputDrain {
         self.fragments.drain(..self.fragments.len() - 1)
     }
 
@@ -71,7 +71,7 @@ impl BufferedOutput {
         if self.buf.is_empty() {
             return;
         }
-        let text = mem::take(&mut self.buf);
+        let text = self.buf.split().freeze();
         let fragment = if self.spans.len() < i {
             TextFragment {
                 text,
@@ -107,7 +107,7 @@ impl BufferedOutput {
     }
 
     pub fn start_line(&mut self) {
-        self.buf.push(b'\n');
+        self.buf.extend_from_slice(b"\n");
         self.flush();
     }
 

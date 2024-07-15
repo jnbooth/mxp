@@ -5,7 +5,7 @@ use super::input::{self, BufferedInput};
 use super::phase::Phase;
 use super::tag::{Tag, TagList};
 use crate::escape::{ansi, telnet, utf8};
-use crate::style::{BufferedOutput, Heading, InList, OutputFragment, TextFormat, TextStyle};
+use crate::output::{BufferedOutput, Heading, InList, OutputDrain, TextFormat, TextStyle};
 use mxp;
 use mxp::{HexColor, WorldColor};
 
@@ -116,11 +116,11 @@ impl Transformer {
         self.config = config;
     }
 
-    pub fn drain_output(&mut self) -> vec::Drain<OutputFragment> {
+    pub fn drain_output(&mut self) -> OutputDrain {
         self.output.drain()
     }
 
-    pub fn drain_output_complete(&mut self) -> vec::Drain<OutputFragment> {
+    pub fn drain_output_complete(&mut self) -> OutputDrain {
         self.output.drain_complete()
     }
 

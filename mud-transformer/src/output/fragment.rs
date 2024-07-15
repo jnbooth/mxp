@@ -1,9 +1,13 @@
 use std::fmt::{self, Display, Formatter};
+use std::vec;
 
+use bytes::Bytes;
 use enumeration::EnumSet;
 
 use super::span::{Heading, TextStyle};
 use mxp::WorldColor;
+
+pub type OutputDrain<'a> = vec::Drain<'a, OutputFragment>;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum OutputFragment {
@@ -15,7 +19,7 @@ pub enum OutputFragment {
 impl OutputFragment {
     pub fn as_bytes(&self) -> Option<&[u8]> {
         match self {
-            OutputFragment::Text(fragment) => Some(fragment.text.as_slice()),
+            OutputFragment::Text(fragment) => Some(&fragment.text),
             _ => None,
         }
     }
@@ -23,7 +27,7 @@ impl OutputFragment {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TextFragment {
-    pub(super) text: Vec<u8>,
+    pub(super) text: Bytes,
     pub(super) flags: EnumSet<TextStyle>,
     pub(super) foreground: WorldColor,
     pub(super) background: WorldColor,
@@ -36,7 +40,7 @@ pub struct TextFragment {
 impl AsRef<[u8]> for TextFragment {
     #[inline]
     fn as_ref(&self) -> &[u8] {
-        self.text.as_slice()
+        &self.text
     }
 }
 
