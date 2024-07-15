@@ -1,4 +1,4 @@
-use std::{mem, vec};
+use std::mem;
 
 use super::config::{AutoConnect, TransformerConfig, UseMxp};
 use super::input::{self, BufferedInput};
@@ -75,7 +75,7 @@ impl Transformer {
         Self {
             phase: Phase::Normal,
 
-            mxp_active: false,
+            mxp_active: config.use_mxp == UseMxp::Always,
             pueblo_active: false,
             supports_mccp_2: false,
             no_echo: false,
@@ -111,6 +111,11 @@ impl Transformer {
             self.output.disable_mxp_colors();
         } else {
             self.output.enable_mxp_colors();
+        }
+        match config.use_mxp {
+            UseMxp::Always => self.mxp_on(false, false),
+            UseMxp::Never => self.mxp_off(true),
+            UseMxp::Command | UseMxp::Query => (),
         }
         self.input.set_remember(config.send_mxp_afk_response);
         self.config = config;

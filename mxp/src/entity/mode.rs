@@ -30,7 +30,7 @@ impl Mode {
     pub const fn is_mxp(self) -> bool {
         matches!(
             self,
-            Self::PERM_OPEN | Self::SECURE | Self::SECURE_ONCE | Self::PERM_SECURE
+            Self::OPEN | Self::PERM_OPEN | Self::SECURE | Self::SECURE_ONCE | Self::PERM_SECURE
         )
     }
 }
