@@ -145,8 +145,8 @@ pub struct Atom {
 }
 
 impl Atom {
-    fn all_atoms() -> &'static AtomMap {
-        static ALL_ATOMS: OnceLock<AtomMap> = OnceLock::new();
+    fn all_atoms() -> &'static CaseFoldMap<String, Atom> {
+        static ALL_ATOMS: OnceLock<CaseFoldMap<String, Atom>> = OnceLock::new();
         ALL_ATOMS.get_or_init(create_atoms)
     }
 
@@ -206,10 +206,8 @@ fn write_can_args(buf: &mut Vec<u8>, atom: &Atom) {
     }
 }
 
-type AtomMap = CaseFoldMap<String, Atom>;
-
-fn create_atoms() -> AtomMap {
-    let mut all: AtomMap = CaseFoldMap::new();
+fn create_atoms() -> CaseFoldMap<String, Atom> {
+    let mut all: CaseFoldMap<String, Atom> = CaseFoldMap::new();
     let mut add = |name: &'static str, flags, action, args: &[&'static str]| {
         all.insert(
             name.to_owned(),
