@@ -8,8 +8,8 @@ where
     W: Write,
 {
     for fragment in output {
-        if let Some(bytes) = fragment.as_bytes() {
-            writer.write_all(bytes)?;
+        if let OutputFragment::Text(fragment) = fragment {
+            write!(writer, "{}", fragment)?;
         }
     }
     Ok(())

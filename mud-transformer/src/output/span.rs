@@ -3,6 +3,8 @@ use std::ops::Index;
 use enumeration::{Enum, EnumSet};
 use mxp::WorldColor;
 
+use crate::escape::ansi;
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum TextStyle {
     Blink,
@@ -12,6 +14,20 @@ pub enum TextStyle {
     Italic,
     Strikeout,
     Underline,
+}
+
+impl TextStyle {
+    pub const fn ansi(self) -> Option<u8> {
+        match self {
+            Self::Blink => Some(ansi::BLINK),
+            Self::Bold => Some(ansi::BOLD),
+            Self::Highlight => None,
+            Self::Inverse => Some(ansi::INVERSE),
+            Self::Italic => Some(ansi::SLOW_BLINK),
+            Self::Strikeout => Some(ansi::STRIKEOUT),
+            Self::Underline => Some(ansi::UNDERLINE),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
