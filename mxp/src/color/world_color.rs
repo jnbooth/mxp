@@ -29,7 +29,7 @@ impl Display for WorldColor {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             WorldColor::Ansi(code) => write!(f, "Ansi({code})"),
-            WorldColor::Hex(code) => write!(f, "Hex(#{code:X})"),
+            WorldColor::Hex(code) => write!(f, "Hex(#{code:0>6X})"),
         }
     }
 }
