@@ -1,4 +1,6 @@
 use casefold::ascii::{CaseFold, CaseFoldMap};
+use std::num::ParseIntError;
+use std::str::FromStr;
 use std::sync::OnceLock;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -18,6 +20,34 @@ impl From<HexColor> for u32 {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum ParseHexColorError {
+    NotHex(String),
+    NotU32(ParseIntError),
+    OutOfRange(u32),
+}
+
+impl From<ParseIntError> for ParseHexColorError {
+    fn from(value: ParseIntError) -> Self {
+        Self::NotU32(value)
+    }
+}
+
+impl FromStr for HexColor {
+    type Err = ParseHexColorError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if !s.starts_with('#') {
+            return Err(ParseHexColorError::NotHex(s.to_owned()));
+        }
+        let code = u32::from_str_radix(&s[1..], 16)?;
+        if code > 0xFFFFFF {
+            return Err(ParseHexColorError::OutOfRange(code));
+        }
+        Ok(HexColor { code })
+    }
+}
+
 impl HexColor {
     pub const fn new(code: u32) -> Self {
         Self { code }
@@ -30,11 +60,26 @@ impl HexColor {
     }
 
     pub fn named(name: &str) -> Option<HexColor> {
+        if let Ok(color) = HexColor::from_str(name) {
+            return Some(color);
+        }
         static NAMED_COLORS: OnceLock<CaseFoldMap<String, HexColor>> = OnceLock::new();
         NAMED_COLORS
             .get_or_init(create_named_colors)
             .get(name)
             .copied()
+    }
+
+    pub const fn r(self) -> u32 {
+        self.code >> 16
+    }
+
+    pub const fn g(self) -> u32 {
+        (self.code >> 8) & 0xFF
+    }
+
+    pub const fn b(self) -> u32 {
+        self.code & 0xFF
     }
 }
 

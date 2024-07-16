@@ -10,9 +10,10 @@ fn get_color(
     span_color: &Option<WorldColor>,
     ansi_color: WorldColor,
     ignore_mxp: bool,
+    default: WorldColor,
 ) -> WorldColor {
     match span_color {
-        Some(span_color) if !ignore_mxp => *span_color,
+        Some(span_color) if !ignore_mxp && *span_color != default => *span_color,
         _ => ansi_color,
     }
 }
@@ -88,8 +89,18 @@ impl BufferedOutput {
             TextFragment {
                 text,
                 flags: span.flags | self.ansi_flags,
-                foreground: get_color(&span.foreground, self.ansi_foreground, ignore_colors),
-                background: get_color(&span.background, self.ansi_background, ignore_colors),
+                foreground: get_color(
+                    &span.foreground,
+                    self.ansi_foreground,
+                    ignore_colors,
+                    WorldColor::WHITE,
+                ),
+                background: get_color(
+                    &span.background,
+                    self.ansi_background,
+                    ignore_colors,
+                    WorldColor::BLACK,
+                ),
                 action: span.action.clone(),
                 heading: span.heading,
                 variable: span.variable.clone(),

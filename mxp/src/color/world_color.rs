@@ -1,11 +1,27 @@
 use super::hex_color::HexColor;
 use super::xterm::xterm;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialOrd, Ord, Hash)]
 pub enum WorldColor {
     Ansi(u8),
     Hex(HexColor),
 }
+
+impl PartialEq for WorldColor {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Ansi(l), Self::Ansi(r)) => l == r,
+            (Self::Hex(l), Self::Hex(r)) => l == r,
+            (Self::Ansi(0), Self::Hex(HexColor { code: 0 })) => true,
+            (Self::Hex(HexColor { code: 0 }), Self::Ansi(0)) => true,
+            (Self::Ansi(7), Self::Hex(HexColor { code: 0xFFFFFF })) => true,
+            (Self::Hex(HexColor { code: 0xFFFFFF }), Self::Ansi(7)) => true,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for WorldColor {}
 
 impl From<HexColor> for WorldColor {
     fn from(value: HexColor) -> Self {
