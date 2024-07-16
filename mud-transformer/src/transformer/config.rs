@@ -53,7 +53,7 @@ impl TransformerConfig {
             naws: false,
             utf_8: false,
             disable_compression: false,
-            use_mxp: UseMxp::Command,
+            use_mxp: UseMxp::Always,
             terminal_identification: "mushclient".to_owned(),
             ignore_mxp_colors: false,
         }

@@ -4,12 +4,22 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+pin-project-lite = { version = "0.2", optional = true }
 flate2 = { version = "1.0.28", optional = true }
 mud-transformer = { path = "../mud-transformer" }
-tokio = { version = "1.38.0", features = ["io-util", "net"], optional = true }
+
+[dependencies.async-compression]
+version = "0.4.11"
+features = ["tokio", "zlib"]
+optional = true
+
+[dependencies.tokio]
+version = "1.38.0"
+features = ["io-util", "net"]
+optional = true
 
 [features]
 default = ["async", "sync"]
 
-async = ["tokio"]
+async = ["async-compression", "pin-project-lite", "tokio"]
 sync = ["flate2"]
