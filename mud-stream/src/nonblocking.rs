@@ -148,19 +148,11 @@ impl<R: AsyncRead + Unpin> AsyncBufRead for ZState<R> {
         if !*project.has_prepend {
             project.reader.consume(amt);
             return;
-        }
-
-        let pos = project.prepend.position();
-        let len = project.prepend.get_ref().len();
-        let remaining = if pos >= len as u64 {
-            *project.has_prepend = false;
-            amt
-        } else {
-            let unused_space = pos as usize - len;
-            project.prepend.consume(unused_space);
-            amt - unused_space
         };
-        project.reader.consume(remaining);
+        project.prepend.consume(amt);
+        if project.prepend.position() >= project.prepend.get_ref().len() as u64 {
+            *project.has_prepend = false;
+        }
     }
 }
 
