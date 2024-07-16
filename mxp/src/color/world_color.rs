@@ -1,3 +1,5 @@
+use std::fmt::{self, Display, Formatter};
+
 use super::hex_color::HexColor;
 use super::xterm::xterm;
 
@@ -22,6 +24,15 @@ impl PartialEq for WorldColor {
 }
 
 impl Eq for WorldColor {}
+
+impl Display for WorldColor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            WorldColor::Ansi(code) => write!(f, "Ansi({code})"),
+            WorldColor::Hex(code) => write!(f, "Hex(#{code:X})"),
+        }
+    }
+}
 
 impl From<HexColor> for WorldColor {
     fn from(value: HexColor) -> Self {

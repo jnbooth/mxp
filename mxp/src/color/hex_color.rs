@@ -1,4 +1,5 @@
 use casefold::ascii::{CaseFold, CaseFoldMap};
+use std::fmt::{self, Display, Formatter};
 use std::num::ParseIntError;
 use std::str::FromStr;
 use std::sync::OnceLock;
@@ -6,6 +7,24 @@ use std::sync::OnceLock;
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct HexColor {
     pub code: u32,
+}
+
+impl Display for HexColor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "({}, {}, {})", self.r(), self.g(), self.b())
+    }
+}
+
+impl fmt::UpperHex for HexColor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        fmt::UpperHex::fmt(&self.code, f)
+    }
+}
+
+impl fmt::LowerHex for HexColor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        fmt::LowerHex::fmt(&self.code, f)
+    }
 }
 
 impl From<u32> for HexColor {
