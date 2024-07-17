@@ -17,13 +17,13 @@ impl Display for HexColor {
 
 impl fmt::UpperHex for HexColor {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        fmt::UpperHex::fmt(&self.code, f)
+        write!(f, "{:0>6X}", self.code)
     }
 }
 
 impl fmt::LowerHex for HexColor {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        fmt::LowerHex::fmt(&self.code, f)
+        write!(f, "{:0>6x}", self.code)
     }
 }
 
