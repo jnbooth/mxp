@@ -27,7 +27,7 @@ pub mod telnet {
     pub const SE: u8 = 0xF0;
     /// no operation
     pub const NOP: u8 = 0xF1;
-    /// DataMark', see RFC 854
+    /// DataMark, see RFC 854
     pub const DM: u8 = 0xF2;
     /// Break
     pub const BRK: u8 = 0xF3;
@@ -73,8 +73,14 @@ pub mod telnet {
     pub const MXP: u8 = 0x5B;
     /// http://zmp.sourcemud.org/spec.shtml
     pub const ZMP: u8 = 0x5D;
+    /// https://www.aardwolf.com/blog/2008/07/10/telnet-negotiation-control-mud-client-interaction/
+    pub const AARDWOLF: u8 = 0x66;
     /// http://www.ironrealms.com/rapture/manual/files/FeatATCP-txt.html
     pub const ATCP: u8 = 0xC8;
+    /// https://tintin.mudhalla.net/protocols/gmcp/
+    pub const GMCP: u8 = 0xC9;
+    /// reserved
+    pub const EXT: u8 = 0xFF;
 
     // Subnegotiation escape sequences
     pub const TTYPE_IS: u8 = 0x00;

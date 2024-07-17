@@ -19,10 +19,12 @@ fn input_mxp_auth(input: &mut BufferedInput, auth: &str, connect: Option<AutoCon
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum SideEffect {
-    EnableCompression,
-    DisableCompression,
     Beep,
+    DisableCompression,
+    EnableCompression,
+    EraseCharacter,
     EraseLine,
+    ErasePage,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -680,6 +682,14 @@ impl Transformer {
                     telnet::WONT => self.phase = Phase::Wont,
                     telnet::DO => self.phase = Phase::Do,
                     telnet::DONT => self.phase = Phase::Dont,
+                    telnet::EC => {
+                        self.phase = Phase::Normal;
+                        return Some(SideEffect::EraseCharacter);
+                    }
+                    telnet::EL => {
+                        self.phase = Phase::Normal;
+                        return Some(SideEffect::EraseLine);
+                    }
                     _ => self.phase = Phase::Normal,
                 }
             }
@@ -934,7 +944,12 @@ impl Transformer {
                         self.phase = Phase::Iac;
                     }
                 }
-                b'\x07' => return Some(SideEffect::Beep),
+                // BEL
+                0x07 => return Some(SideEffect::Beep),
+                // BS
+                0x08 => return Some(SideEffect::EraseCharacter),
+                // FF
+                0x0C => return Some(SideEffect::ErasePage),
                 b'\t' if self.output.format().contains(TextFormat::Paragraph) => {
                     if last_char != b' ' {
                         self.output.append(b' ');
@@ -955,7 +970,7 @@ impl Transformer {
                                 self.output.start_line();
                             }
                             b'.' => self.output.append(b"  "),
-                            b' ' | b'\t' | b'\x0C' => (),
+                            b' ' | b'\t' | 0x0C => (),
                             _ => self.output.append(b' '),
                         }
                     } else if !self.suppress_newline && !format.contains(TextFormat::Pre) {
