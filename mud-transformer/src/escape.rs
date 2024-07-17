@@ -129,6 +129,7 @@ pub mod telnet {
             self::MXP => "[MXP]",
             self::ZMP => "[ZMP]",
             self::ATCP => "[ATCP]",
+            self::GMCP => "[GMCP]",
             self::TTYPE_IS => "[TTYPE_IS]",
             self::ACCEPT => "[ACCEPT]",
             _ => return None,
