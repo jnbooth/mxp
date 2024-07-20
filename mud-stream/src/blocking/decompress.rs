@@ -1,74 +1,11 @@
 use flate2::read::ZlibDecoder;
-use mud_transformer::{OutputDrain, SideEffect, Transformer, TransformerConfig};
-use std::io::{self, Cursor, IoSlice, IoSliceMut, Read, Write};
+use std::io::{self, Cursor, IoSliceMut, Read};
 use std::{mem, vec};
 
-const COMPRESS_BUFFER: usize = 1024 * 20;
-const READ_BUFFER: usize = 1024 * 16; // needs to be <= COMPRESS_BUFFER
+use crate::config::COMPRESS_BUFFER;
 
 #[derive(Debug)]
-pub struct MudStream<T> {
-    buf: [u8; READ_BUFFER],
-    stream: DecompressStream<T>,
-    transformer: Transformer,
-}
-
-impl<T: Read + Write> MudStream<T> {
-    pub fn new(stream: T, config: TransformerConfig) -> Self {
-        Self {
-            buf: [0; READ_BUFFER],
-            stream: DecompressStream::new(stream),
-            transformer: Transformer::new(config),
-        }
-    }
-
-    pub fn into_inner(self) -> T {
-        self.stream.into_inner()
-    }
-
-    pub fn read(&mut self) -> io::Result<Option<OutputDrain>> {
-        let n = match self.stream.read(&mut self.buf) {
-            Ok(0) => return Ok(None),
-            Ok(n) => n,
-            Err(e) => return Err(e),
-        };
-        let mut iter = self.buf[..n].into_iter();
-        while let Some(&c) = iter.next() {
-            match self.transformer.read_byte(c) {
-                Some(SideEffect::DisableCompression) => self.stream.reset(),
-                Some(SideEffect::EnableCompression) => {
-                    let remaining: Vec<u8> = iter.as_slice().to_vec();
-                    iter.nth(remaining.len()); // advance to end
-                    self.stream.start_decompressing(remaining);
-                }
-                _ => (),
-            }
-            self.transformer
-                .drain_input()
-                .write_all_to(&mut self.stream.get_mut())?;
-        }
-        Ok(Some(self.transformer.drain_output()))
-    }
-}
-impl<T: Write> Write for MudStream<T> {
-    #[inline]
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.stream.get_mut().write(buf)
-    }
-
-    #[inline]
-    fn write_vectored(&mut self, bufs: &[IoSlice]) -> io::Result<usize> {
-        self.stream.get_mut().write_vectored(bufs)
-    }
-
-    #[inline]
-    fn flush(&mut self) -> io::Result<()> {
-        self.stream.get_mut().flush()
-    }
-}
-
-#[derive(Debug)]
-enum ZState<R> {
+pub enum ZState<R> {
     Prepend(Cursor<Vec<u8>>, R),
     Direct(R),
     Transitioning,
@@ -76,6 +13,14 @@ enum ZState<R> {
 
 impl<R> ZState<R> {
     pub fn into_inner(self) -> R {
+        match self {
+            Self::Prepend(_, reader) => reader,
+            Self::Direct(reader) => reader,
+            Self::Transitioning => unreachable!(),
+        }
+    }
+
+    pub fn get_ref(&self) -> &R {
         match self {
             Self::Prepend(_, reader) => reader,
             Self::Direct(reader) => reader,
@@ -121,7 +66,7 @@ impl<R: Read> Read for ZState<R> {
 }
 
 #[derive(Debug)]
-enum DecompressStream<R> {
+pub enum DecompressStream<R> {
     Uncompressed(R),
     Compressed(ZlibDecoder<ZState<R>>),
     Transitioning,
@@ -138,6 +83,14 @@ impl<R> DecompressStream<R> {
 
     pub const fn new(reader: R) -> Self {
         Self::Uncompressed(reader)
+    }
+
+    pub fn get_ref(&self) -> &R {
+        match self {
+            Self::Uncompressed(stream) => stream,
+            Self::Compressed(decompress) => decompress.get_ref().get_ref(),
+            Self::Transitioning => unreachable!(),
+        }
     }
 
     pub fn get_mut(&mut self) -> &mut R {
