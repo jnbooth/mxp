@@ -19,3 +19,6 @@ Cargo.lock
 *.pdb
 
 .DS_Store
+
+# Xcode
+xcuserdata/
