@@ -26,19 +26,35 @@ struct ClientView: View {
             try await bridge.connect()
             while true {
                 let fragment = try await bridge.get_output()
-                switch fragment {
-                case .Effect(.Beep):
-                    await handleBell()
-                case .LineBreak:
-                    handleBreak()
-                    willBreak = true
-                case .Text(let text):
-                    handleBreak()
-                    line += renderText(text, colors)
-                default:
-                    break
-                }
+                await self.receiveOutput(fragment)
             }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+    
+    func receiveOutput(_ fragment: OutputFragment) async {
+        switch fragment {
+        case .Effect(.Beep):
+            await handleBell()
+        case .LineBreak:
+            handleBreak()
+            willBreak = true
+        case .Text(let text):
+            handleBreak()
+            line += renderText(text, colors)
+        default:
+            break
+        }
+    }
+    
+    func sendInput(_ input: String) {
+        lines.append(MudLine.init(line))
+        line = AttributedString(input)
+        line.foregroundColor = .gray
+        willBreak = true
+        do {
+            try bridge.send_input(input + "\r\n")
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -58,16 +74,20 @@ struct ClientView: View {
     }
     
     func handleInput() {
-        lines.append(MudLine.init(line))
-        line = AttributedString(input)
-        line.foregroundColor = .gray
-        willBreak = true
-        do {
-            try bridge.send_input(input + "\r\n")
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        sendInput(input)
         input = ""
+    }
+    
+    func handleLink(_ url: URL) {
+        guard let (sendto, action) = deserializeActionUrl(url) else {
+            return
+        }
+        switch sendto {
+        case .Input:
+            input = action
+        case .World:
+            sendInput(action)
+        }
     }
 
     var body: some View {
@@ -90,6 +110,7 @@ struct ClientView: View {
             Text(errorMessage).foregroundStyle(.red)
         }
         .padding()
+        .monospaced().onOpenURL(perform: handleLink)
         .task {
             await connect()
         }

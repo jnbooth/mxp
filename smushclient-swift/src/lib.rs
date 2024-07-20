@@ -1,7 +1,7 @@
 use mud_stream::nonblocking::MudStream;
 use mud_transformer::EffectFragment;
 use mud_transformer::{OutputFragment, TextFragment, TextStyle};
-use mxp::WorldColor;
+use mxp::{Link, SendTo, WorldColor};
 use std::io;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
@@ -16,6 +16,20 @@ mod ffi {
         Hex(u32),
     }
 
+    enum SendTo {
+        World,
+        Input,
+        Internet,
+    }
+
+    #[swift_bridge(swift_repr = "struct")]
+    struct MxpLink {
+        action: String,
+        hint: String,
+        prompts: Vec<String>,
+        sendto: SendTo,
+    }
+
     extern "Rust" {
         type RustTextFragment;
         fn text(&self) -> &[u8];
@@ -28,6 +42,7 @@ mod ffi {
         fn is_italic(&self) -> bool;
         fn is_strikeout(&self) -> bool;
         fn is_underline(&self) -> bool;
+        fn link(&self) -> Option<MxpLink>;
     }
 
     enum EffectFragment {
@@ -42,6 +57,7 @@ mod ffi {
         Effect(EffectFragment),
         Hr,
         Image(String),
+        LineBreak,
         PageBreak,
         Text(RustTextFragment),
     }
@@ -154,16 +170,6 @@ impl RustMudBridge {
     }
 }
 
-impl ffi::MudColor {
-    #[inline]
-    const fn new(color: WorldColor) -> Self {
-        match color {
-            mxp::WorldColor::Ansi(code) => Self::Ansi(code),
-            mxp::WorldColor::Hex(color) => Self::Hex(color.code()),
-        }
-    }
-}
-
 impl From<WorldColor> for ffi::MudColor {
     #[inline]
     fn from(value: WorldColor) -> Self {
@@ -177,6 +183,12 @@ impl From<WorldColor> for ffi::MudColor {
 #[repr(transparent)]
 struct RustTextFragment {
     inner: TextFragment,
+}
+
+impl From<TextFragment> for RustTextFragment {
+    fn from(inner: TextFragment) -> Self {
+        Self { inner }
+    }
 }
 
 macro_rules! flag_method {
@@ -197,13 +209,21 @@ impl RustTextFragment {
     }
 
     #[inline]
-    const fn foreground(&self) -> ffi::MudColor {
-        ffi::MudColor::new(self.inner.foreground)
+    fn foreground(&self) -> ffi::MudColor {
+        self.inner.foreground.into()
     }
 
     #[inline]
-    const fn background(&self) -> ffi::MudColor {
-        ffi::MudColor::new(self.inner.background)
+    fn background(&self) -> ffi::MudColor {
+        self.inner.background.into()
+    }
+
+    #[inline]
+    fn link(&self) -> Option<ffi::MxpLink> {
+        match &self.inner.action {
+            Some(action) => Some(action.clone().into()),
+            None => None,
+        }
     }
 
     flag_method!(is_blink, TextStyle::Blink);
@@ -215,17 +235,40 @@ impl RustTextFragment {
     flag_method!(is_underline, TextStyle::Underline);
 }
 
-impl From<EffectFragment> for ffi::EffectFragment {
-    fn from(value: EffectFragment) -> Self {
-        match value {
-            EffectFragment::Backspace => Self::Backspace,
-            EffectFragment::Beep => Self::Beep,
-            EffectFragment::CarriageReturn => Self::CarriageReturn,
-            EffectFragment::EraseCharacter => Self::EraseCharacter,
-            EffectFragment::EraseLine => Self::EraseLine,
+macro_rules! impl_enum_from {
+    ($f:ty, $t:path, $($variant:ident),+ $(,)?) => {
+        impl From<$t> for $f {
+            fn from(value: $t) -> Self {
+                match value {
+                    $(<$t>::$variant => Self::$variant),+
+                }
+            }
         }
     }
 }
+
+impl_enum_from!(ffi::SendTo, SendTo, World, Input, Internet);
+
+impl From<Link> for ffi::MxpLink {
+    fn from(value: Link) -> Self {
+        Self {
+            action: value.action,
+            hint: value.hint.unwrap_or(String::new()),
+            prompts: value.prompts,
+            sendto: value.sendto.into(),
+        }
+    }
+}
+
+impl_enum_from!(
+    ffi::EffectFragment,
+    EffectFragment,
+    Backspace,
+    Beep,
+    CarriageReturn,
+    EraseCharacter,
+    EraseLine
+);
 
 impl From<OutputFragment> for ffi::OutputFragment {
     fn from(value: OutputFragment) -> Self {
@@ -233,8 +276,9 @@ impl From<OutputFragment> for ffi::OutputFragment {
             OutputFragment::Effect(effect) => Self::Effect(effect.into()),
             OutputFragment::Hr => Self::Hr,
             OutputFragment::Image(src) => Self::Image(src),
+            OutputFragment::LineBreak => Self::LineBreak,
             OutputFragment::PageBreak => Self::PageBreak,
-            OutputFragment::Text(text) => Self::Text(RustTextFragment { inner: text }),
+            OutputFragment::Text(text) => Self::Text(text.into()),
         }
     }
 }

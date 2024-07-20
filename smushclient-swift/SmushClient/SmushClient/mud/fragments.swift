@@ -21,10 +21,16 @@ func rgb(_ hex: UInt32) -> Color {
 }
 
 public func renderText(_ fragment: RustTextFragment, _ ansiColors: AnsiColors) -> AttributedString {
-    guard let utf8 = String(bytes: fragment.text(), encoding: .utf8) else {
+    guard let text = String(bytes: fragment.text(), encoding: .utf8) else {
         return AttributedString("�")
     }
-    var text = AttributedString(utf8)
+    var string = AttributedString(text)
+    if let link = fragment.link() {
+        let action = getAction(link.action, text)
+        string.link = serializeActionUrl(link.sendto, action)
+        string.underlineStyle = .single
+        string.toolTip = action
+    }
     let invert = fragment.is_inverse()
     let foreground = invert ? fragment.background() : fragment.foreground()
     let background = invert ? fragment.foreground() : fragment.background()
@@ -32,33 +38,33 @@ public func renderText(_ fragment: RustTextFragment, _ ansiColors: AnsiColors) -
     case .Ansi(7):
         break
     case .Ansi(let code):
-        text.foregroundColor = ansiColors[Int(code)]
+        string.foregroundColor = ansiColors[Int(code)]
     case .Hex(0xFFFFFF):
         break
     case .Hex(let hex):
-        text.foregroundColor = rgb(hex)
+        string.foregroundColor = rgb(hex)
     }
     switch background {
     case .Ansi(0):
         break
     case .Ansi(let code):
-        text.backgroundColor = ansiColors[Int(code)]
+        string.backgroundColor = ansiColors[Int(code)]
     case .Hex(0x000000):
         break
     case .Hex(let hex):
-        text.backgroundColor = rgb(hex)
+        string.backgroundColor = rgb(hex)
     }
     if fragment.is_strikeout() {
-        text.strikethroughStyle = .single
+        string.strikethroughStyle = .single
     }
     if fragment.is_underline() {
-        text.underlineStyle = .single
+        string.underlineStyle = .single
     }
-    var font = Font.system(.body, weight: fragment.is_bold() ? .bold : .medium).monospaced()
+    var font = Font.system(.body, weight: fragment.is_bold() ? .bold : .medium)
     if fragment.is_italic() {
         font = font.italic()
     }
-    text.font = font
-    return text
+    string.font = font
+    return string
 }
 
