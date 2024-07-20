@@ -12,7 +12,7 @@ pub fn xterm_colors() -> &'static [HexColor; 256] {
 }
 
 const fn create_xterm_colors() -> [HexColor; 256] {
-    let mut colors = [HexColor { code: 0 }; 256];
+    let mut colors = [HexColor::new(0); 256];
     colors[1] = HexColor::rgb(128, 0, 0); // maroon
     colors[2] = HexColor::rgb(0, 128, 0); // green
     colors[3] = HexColor::rgb(128, 128, 0); // olive

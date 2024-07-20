@@ -2,7 +2,7 @@ use std::fmt::{self, Display, Formatter};
 use std::vec;
 
 use bytes::Bytes;
-use enumeration::EnumSet;
+use enumeration::{Enum, EnumSet};
 
 use crate::escape::ansi;
 
@@ -31,14 +31,14 @@ pub enum EffectFragment {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TextFragment {
-    pub(super) text: Bytes,
-    pub(super) flags: EnumSet<TextStyle>,
-    pub(super) foreground: WorldColor,
-    pub(super) background: WorldColor,
-    pub(super) action: Option<mxp::Link>,
-    pub(super) heading: Option<Heading>,
+    pub text: Bytes,
+    pub flags: EnumSet<TextStyle>,
+    pub foreground: WorldColor,
+    pub background: WorldColor,
+    pub action: Option<mxp::Link>,
+    pub heading: Option<Heading>,
     /// Which variable to set (FLAG in MXP).
-    pub(super) variable: Option<String>,
+    pub variable: Option<String>,
 }
 
 impl AsRef<[u8]> for TextFragment {
@@ -58,7 +58,8 @@ impl Display for TextFragment {
             }
         }?;
         match self.background {
-            WorldColor::Ansi(0) | WorldColor::Hex(HexColor { code: 0 }) => Ok(()),
+            WorldColor::Ansi(0) => Ok(()),
+            WorldColor::Hex(HexColor::BLACK) => Ok(()),
             WorldColor::Ansi(code) => write!(f, ";{}", code + ansi::BG_BLACK),
             WorldColor::Hex(color) => write!(f, ";48;2;{};{};{}", color.r(), color.g(), color.b()),
         }?;

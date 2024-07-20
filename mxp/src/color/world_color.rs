@@ -14,10 +14,10 @@ impl PartialEq for WorldColor {
         match (self, other) {
             (Self::Ansi(l), Self::Ansi(r)) => l == r,
             (Self::Hex(l), Self::Hex(r)) => l == r,
-            (Self::Ansi(0), Self::Hex(HexColor { code: 0 })) => true,
-            (Self::Hex(HexColor { code: 0 }), Self::Ansi(0)) => true,
-            (Self::Ansi(7), Self::Hex(HexColor { code: 0xFFFFFF })) => true,
-            (Self::Hex(HexColor { code: 0xFFFFFF }), Self::Ansi(7)) => true,
+            (Self::Ansi(0), Self::Hex(HexColor::BLACK)) => true,
+            (Self::Hex(HexColor::BLACK), Self::Ansi(0)) => true,
+            (Self::Ansi(7), Self::Hex(HexColor::WHITE)) => true,
+            (Self::Hex(HexColor::WHITE), Self::Ansi(7)) => true,
             _ => false,
         }
     }
@@ -29,7 +29,7 @@ impl Display for WorldColor {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             WorldColor::Ansi(code) => write!(f, "Ansi({code})"),
-            WorldColor::Hex(code) => write!(f, "Hex(#{code:X})"),
+            WorldColor::Hex(color) => write!(f, "Hex(#{color:X})"),
         }
     }
 }
@@ -49,6 +49,15 @@ impl From<u8> for WorldColor {
 impl From<u32> for WorldColor {
     fn from(value: u32) -> Self {
         Self::Hex(HexColor::new(value))
+    }
+}
+
+impl From<WorldColor> for HexColor {
+    fn from(value: WorldColor) -> Self {
+        match value {
+            WorldColor::Hex(color) => color,
+            WorldColor::Ansi(code) => xterm(code),
+        }
     }
 }
 

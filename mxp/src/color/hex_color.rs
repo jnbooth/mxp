@@ -6,7 +6,7 @@ use std::sync::OnceLock;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct HexColor {
-    pub code: u32,
+    code: u32,
 }
 
 impl Display for HexColor {
@@ -68,6 +68,9 @@ impl FromStr for HexColor {
 }
 
 impl HexColor {
+    pub const BLACK: Self = Self { code: 0x000000 };
+    pub const WHITE: Self = Self { code: 0xFFFFFF };
+
     pub const fn new(code: u32) -> Self {
         Self { code }
     }
@@ -87,6 +90,10 @@ impl HexColor {
             .get_or_init(create_named_colors)
             .get(name)
             .copied()
+    }
+
+    pub const fn code(self) -> u32 {
+        self.code
     }
 
     pub const fn r(self) -> u32 {
