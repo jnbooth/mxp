@@ -13,18 +13,20 @@ pub type OutputDrain<'a> = vec::Drain<'a, OutputFragment>;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum OutputFragment {
+    Effect(EffectFragment),
     Hr,
     Image(String),
+    PageBreak,
     Text(TextFragment),
 }
 
-impl OutputFragment {
-    pub fn as_bytes(&self) -> Option<&[u8]> {
-        match self {
-            OutputFragment::Text(fragment) => Some(&fragment.text),
-            _ => None,
-        }
-    }
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+pub enum EffectFragment {
+    Backspace,
+    Beep,
+    CarriageReturn,
+    EraseCharacter,
+    EraseLine,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]

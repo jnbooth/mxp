@@ -1,6 +1,8 @@
 use bytes::BytesMut;
 use enumeration::EnumSet;
 
+use crate::output::fragment::EffectFragment;
+
 use super::fragment::{OutputDrain, OutputFragment, TextFragment};
 use super::output::Output;
 use super::span::{Heading, InList, SpanList, TextFormat, TextStyle};
@@ -113,7 +115,7 @@ impl BufferedOutput {
         self.flush_last(2);
     }
 
-    fn flush(&mut self) {
+    pub fn flush(&mut self) {
         self.flush_last(1);
     }
 
@@ -135,6 +137,16 @@ impl BufferedOutput {
     pub fn append_image(&mut self, src: String) {
         self.flush();
         self.fragments.push(OutputFragment::Image(src));
+    }
+
+    pub fn append_effect(&mut self, effect: EffectFragment) {
+        self.flush();
+        self.fragments.push(OutputFragment::Effect(effect));
+    }
+
+    pub fn append_page_break(&mut self) {
+        self.flush();
+        self.fragments.push(OutputFragment::PageBreak);
     }
 
     pub fn set_ansi_flag(&mut self, flag: TextStyle) {

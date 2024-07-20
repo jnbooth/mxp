@@ -6,6 +6,7 @@ use super::phase::Phase;
 use super::tag::{Tag, TagList};
 use crate::escape::{ansi, telnet, utf8};
 use crate::output::{BufferedOutput, Heading, InList, OutputDrain, TextFormat, TextStyle};
+use crate::EffectFragment;
 use mxp;
 use mxp::{HexColor, WorldColor};
 
@@ -19,12 +20,8 @@ fn input_mxp_auth(input: &mut BufferedInput, auth: &str, connect: Option<AutoCon
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum SideEffect {
-    Beep,
     DisableCompression,
     EnableCompression,
-    EraseCharacter,
-    EraseLine,
-    ErasePage,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -605,7 +602,8 @@ impl Transformer {
         let last_char = self.output.last().unwrap_or(b'\n');
 
         if last_char == b'\r' && c != b'\n' {
-            return Some(SideEffect::EraseLine);
+            self.output.append_effect(EffectFragment::CarriageReturn);
+            return None;
         }
 
         if self.phase == Phase::Utf8Character && !utf8::is_continuation(c) {
@@ -682,13 +680,17 @@ impl Transformer {
                     telnet::WONT => self.phase = Phase::Wont,
                     telnet::DO => self.phase = Phase::Do,
                     telnet::DONT => self.phase = Phase::Dont,
+                    telnet::AO => {
+                        self.phase = Phase::Normal;
+                        self.output.flush();
+                    }
                     telnet::EC => {
                         self.phase = Phase::Normal;
-                        return Some(SideEffect::EraseCharacter);
+                        self.output.append_effect(EffectFragment::EraseCharacter);
                     }
                     telnet::EL => {
                         self.phase = Phase::Normal;
-                        return Some(SideEffect::EraseLine);
+                        self.output.append_effect(EffectFragment::EraseLine);
                     }
                     _ => self.phase = Phase::Normal,
                 }
@@ -945,11 +947,20 @@ impl Transformer {
                     }
                 }
                 // BEL
-                0x07 => return Some(SideEffect::Beep),
+                0x07 => {
+                    self.output.append_effect(EffectFragment::Beep);
+                    return None;
+                }
                 // BS
-                0x08 => return Some(SideEffect::EraseCharacter),
+                0x08 => {
+                    self.output.append_effect(EffectFragment::Backspace);
+                    return None;
+                }
                 // FF
-                0x0C => return Some(SideEffect::ErasePage),
+                0x0C => {
+                    self.output.append_page_break();
+                    return None;
+                }
                 b'\t' if self.output.format().contains(TextFormat::Paragraph) => {
                     if last_char != b' ' {
                         self.output.append(b' ');

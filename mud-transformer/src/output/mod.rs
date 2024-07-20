@@ -2,7 +2,7 @@ mod buffer;
 pub use buffer::BufferedOutput;
 
 mod fragment;
-pub use fragment::{OutputDrain, OutputFragment};
+pub use fragment::{EffectFragment, OutputDrain, OutputFragment, TextFragment};
 
 mod output;
 
