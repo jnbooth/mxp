@@ -6,12 +6,12 @@ use mud_bin_examples::write_output;
 use mud_stream::nonblocking::MudStream;
 use mud_transformer::TransformerConfig;
 use tokio::io::AsyncWriteExt;
-use tokio::net::TcpStream as AsyncTcpStream;
+use tokio::net::TcpStream;
 use tokio::sync::mpsc;
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
-    let stream = AsyncTcpStream::connect(("discworld.atuin.net", 4242)).await?;
+    let stream = TcpStream::connect(("discworld.atuin.net", 4242)).await?;
     let mut stream = MudStream::new(stream, TransformerConfig::new());
     let mut stdout = io::stdout();
     let (tx_input, mut rx_input) = mpsc::channel(10);
