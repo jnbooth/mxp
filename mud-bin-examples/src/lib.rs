@@ -8,8 +8,14 @@ where
     W: Write,
 {
     for fragment in output {
-        if let OutputFragment::Text(fragment) = fragment {
-            write!(writer, "{}", fragment)?;
+        match fragment {
+            OutputFragment::Text(fragment) => {
+                write!(writer, "{}", fragment)?;
+            }
+            OutputFragment::LineBreak => {
+                writer.write(b"\n")?;
+            }
+            _ => (),
         }
     }
     Ok(())

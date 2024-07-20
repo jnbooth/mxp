@@ -11,57 +11,88 @@ struct ClientView: View {
     private var bridge: RustMudBridge
     @State private var input: String = ""
     @State private var errorMessage: String = ""
-    @State private var output: [TextFragment] = []
+    @State private var lines: [MudLine] = []
+    @State private var line: AttributedString = AttributedString()
     @State private var colors: AnsiColors = defaultAnsiColors()
-    
+    @State private var willBreak: Bool = false
+    @State private var ansiColors: AnsiColors = defaultAnsiColors()
+
     init(address: String, port: UInt16) {
-        self.bridge = RustMudBridge(address, port)
+        bridge = RustMudBridge(address, port)
     }
-    
-    func connect() {
-        Task {
-            do {
-                try await self.bridge.connect()
-                while true {
-                    let fragment = try await self.bridge.get_output()
-                    switch fragment {
-                    case .Text(let text):
-                        output.append(TextFragment(text))
-                    default:
-                        break
-                    }
+
+    func connect() async {
+        do {
+            try await bridge.connect()
+            while true {
+                let fragment = try await bridge.get_output()
+                switch fragment {
+                case .Effect(.Beep):
+                    await handleBell()
+                case .LineBreak:
+                    handleBreak()
+                    willBreak = true
+                case .Text(let text):
+                    handleBreak()
+                    line += renderText(text, colors)
+                default:
+                    break
                 }
-            } catch {
-                self.errorMessage = error.localizedDescription
             }
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func handleBell() async {
+        let _ = await MainActor.run {
+            NSApplication.shared.requestUserAttention(.criticalRequest)
         }
     }
     
+    func handleBreak() {
+        if willBreak {
+            line += AttributedString("\n")
+            willBreak = false
+        }
+    }
+    
+    func handleInput() {
+        lines.append(MudLine.init(line))
+        line = AttributedString(input)
+        line.foregroundColor = .gray
+        willBreak = true
+        do {
+            try bridge.send_input(input + "\r\n")
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        input = ""
+    }
+
     var body: some View {
         VStack(alignment: .leading) {
             ScrollView {
-                LazyVStack {
-                    ForEach(output) { fragment in
-                        fragment.render(colors)
+                ScrollViewReader { scrollView in
+                    LazyVStack(alignment: .leading) {
+                        ForEach(lines) { line in
+                            Text(line.text).textSelection(.enabled)
+                        }
+                        Text(line).id("line").textSelection(.enabled)
+                    }.onChange(of: line) {
+                        scrollView.scrollTo("line")
                     }
                 }
             }
             TextField("", text: $input)
-                .onSubmit {
-                    do {
-                        try self.bridge.send_input(input + "\r\n")
-                    } catch {
-                        self.errorMessage = error.localizedDescription
-                    }
-                    input = ""
-                }
-                .padding(.vertical)
-            HStack {
-                Button("Connect", action: connect)
-                Text(errorMessage).foregroundStyle(.red)
-            }
+                .onSubmit(handleInput)
+                .padding(.bottom)
+            Text(errorMessage).foregroundStyle(.red)
         }
         .padding()
+        .task {
+            await connect()
+        }
     }
 }
 

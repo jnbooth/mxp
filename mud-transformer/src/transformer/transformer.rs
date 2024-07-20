@@ -124,10 +124,6 @@ impl Transformer {
         self.output.drain()
     }
 
-    pub fn drain_output_complete(&mut self) -> OutputDrain {
-        self.output.drain_complete()
-    }
-
     pub fn drain_input(&mut self) -> input::Drain {
         self.input.drain()
     }

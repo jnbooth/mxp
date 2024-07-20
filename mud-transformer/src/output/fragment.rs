@@ -16,6 +16,7 @@ pub enum OutputFragment {
     Effect(EffectFragment),
     Hr,
     Image(String),
+    LineBreak,
     PageBreak,
     Text(TextFragment),
 }

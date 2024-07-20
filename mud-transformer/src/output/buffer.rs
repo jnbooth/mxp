@@ -66,10 +66,6 @@ impl BufferedOutput {
         self.fragments.drain(..)
     }
 
-    pub fn drain_complete(&mut self) -> OutputDrain {
-        self.fragments.drain(..self.fragments.len() - 1)
-    }
-
     fn flush_last(&mut self, i: usize) {
         if self.buf.is_empty() {
             return;
@@ -120,8 +116,8 @@ impl BufferedOutput {
     }
 
     pub fn start_line(&mut self) {
-        self.buf.extend_from_slice(b"\n");
         self.flush();
+        self.fragments.push(OutputFragment::LineBreak);
     }
 
     pub fn append<O: Output>(&mut self, output: O) {

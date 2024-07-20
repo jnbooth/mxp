@@ -8,8 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		094E723C2C4B0F160090712C /* ClientView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 094E723B2C4B0F160090712C /* ClientView.swift */; };
-		094E723E2C4B22190090712C /* MudOutput.swift in Sources */ = {isa = PBXBuildFile; fileRef = 094E723D2C4B22190090712C /* MudOutput.swift */; };
-		094E72402C4B284E0090712C /* ansi.swift in Sources */ = {isa = PBXBuildFile; fileRef = 094E723F2C4B284E0090712C /* ansi.swift */; };
+		094E723E2C4B22190090712C /* fragments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 094E723D2C4B22190090712C /* fragments.swift */; };
+		094E72402C4B284E0090712C /* AnsiColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 094E723F2C4B284E0090712C /* AnsiColors.swift */; };
 		09B28F8A2C487503009A95E5 /* SmushClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B28F892C487503009A95E5 /* SmushClientApp.swift */; };
 		09B28F8C2C487503009A95E5 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B28F8B2C487503009A95E5 /* ContentView.swift */; };
 		09B28F8E2C487504009A95E5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 09B28F8D2C487504009A95E5 /* Assets.xcassets */; };
@@ -20,6 +20,7 @@
 		09B352FA2C4AEEA7005C71C7 /* libsmushclient_swift.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 09B352F92C4AEE2F005C71C7 /* libsmushclient_swift.a */; };
 		09B353012C4AFE02005C71C7 /* SwiftBridgeCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B352FF2C4AEFF0005C71C7 /* SwiftBridgeCore.swift */; };
 		09B353022C4AFE06005C71C7 /* smushclient-swift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B352FC2C4AEFF0005C71C7 /* smushclient-swift.swift */; };
+		09FD867A2C4B854E0091FE37 /* MudLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09FD86792C4B854E0091FE37 /* MudLine.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -41,8 +42,8 @@
 
 /* Begin PBXFileReference section */
 		094E723B2C4B0F160090712C /* ClientView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientView.swift; sourceTree = "<group>"; };
-		094E723D2C4B22190090712C /* MudOutput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MudOutput.swift; sourceTree = "<group>"; };
-		094E723F2C4B284E0090712C /* ansi.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ansi.swift; sourceTree = "<group>"; };
+		094E723D2C4B22190090712C /* fragments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = fragments.swift; sourceTree = "<group>"; };
+		094E723F2C4B284E0090712C /* AnsiColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnsiColors.swift; sourceTree = "<group>"; };
 		094E72412C4B4AB50090712C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		09B28F862C487503009A95E5 /* SmushClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SmushClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		09B28F892C487503009A95E5 /* SmushClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmushClientApp.swift; sourceTree = "<group>"; };
@@ -61,6 +62,7 @@
 		09B352FC2C4AEFF0005C71C7 /* smushclient-swift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "smushclient-swift.swift"; sourceTree = "<group>"; };
 		09B352FE2C4AEFF0005C71C7 /* SwiftBridgeCore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SwiftBridgeCore.h; sourceTree = "<group>"; };
 		09B352FF2C4AEFF0005C71C7 /* SwiftBridgeCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftBridgeCore.swift; sourceTree = "<group>"; };
+		09FD86792C4B854E0091FE37 /* MudLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MudLine.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -115,10 +117,9 @@
 		09B28F882C487503009A95E5 /* SmushClient */ = {
 			isa = PBXGroup;
 			children = (
+				09FD86782C4B71140091FE37 /* mud */,
 				094E72412C4B4AB50090712C /* Info.plist */,
 				09B28F892C487503009A95E5 /* SmushClientApp.swift */,
-				094E723D2C4B22190090712C /* MudOutput.swift */,
-				094E723F2C4B284E0090712C /* ansi.swift */,
 				09B28F8B2C487503009A95E5 /* ContentView.swift */,
 				094E723B2C4B0F160090712C /* ClientView.swift */,
 				09B28F8D2C487504009A95E5 /* Assets.xcassets */,
@@ -178,6 +179,16 @@
 				09B352FF2C4AEFF0005C71C7 /* SwiftBridgeCore.swift */,
 			);
 			path = Generated;
+			sourceTree = "<group>";
+		};
+		09FD86782C4B71140091FE37 /* mud */ = {
+			isa = PBXGroup;
+			children = (
+				094E723F2C4B284E0090712C /* AnsiColors.swift */,
+				094E723D2C4B22190090712C /* fragments.swift */,
+				09FD86792C4B854E0091FE37 /* MudLine.swift */,
+			);
+			path = mud;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -337,9 +348,10 @@
 				094E723C2C4B0F160090712C /* ClientView.swift in Sources */,
 				09B353012C4AFE02005C71C7 /* SwiftBridgeCore.swift in Sources */,
 				09B28F8C2C487503009A95E5 /* ContentView.swift in Sources */,
-				094E72402C4B284E0090712C /* ansi.swift in Sources */,
+				094E72402C4B284E0090712C /* AnsiColors.swift in Sources */,
+				09FD867A2C4B854E0091FE37 /* MudLine.swift in Sources */,
 				09B28F8A2C487503009A95E5 /* SmushClientApp.swift in Sources */,
-				094E723E2C4B22190090712C /* MudOutput.swift in Sources */,
+				094E723E2C4B22190090712C /* fragments.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
