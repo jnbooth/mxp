@@ -19,6 +19,10 @@ public class MainViewController: NSViewController, NSTextFieldDelegate, NSTextVi
   weak var textStorage: NSTextStorage!
   var willBreak = false
   let defaults = AppDefaults()
+  
+  func handleError(_ error: Error) {
+    print(error.localizedDescription)
+  }
 
   override public func viewDidLoad() {
     textStorage = textView.textStorage
@@ -37,7 +41,7 @@ public class MainViewController: NSViewController, NSTextFieldDelegate, NSTextVi
           await receiveOutput(fragment)
         }
       } catch {
-        print(error.localizedDescription)
+        handleError(error)
       }
     }
   }
@@ -57,19 +61,15 @@ public class MainViewController: NSViewController, NSTextFieldDelegate, NSTextVi
     do {
       try sendInput(input)
     } catch {
-      print(error.localizedDescription)
+      handleError(error)
     }
     return true
   }
 
   public func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
     guard
-      let (sendto, action) =
-        switch link {
-        case let link as String: deserializeActionUrl(link)
-        case let link as URL: deserializeActionUrl(link.absoluteString)
-        default: nil
-        }
+      let actionUrl = link as? String,
+      let (sendto, action) = deserializeActionUrl(actionUrl)
     else {
       return false
     }
@@ -78,9 +78,14 @@ public class MainViewController: NSViewController, NSTextFieldDelegate, NSTextVi
       try handleLink(sendto, action)
       return true
     } catch {
-      print(error.localizedDescription)
+      handleError(error)
       return false
     }
+  }
+  
+  public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
+    let attributes = textStorage.attributes(at: charIndex, effectiveRange: nil)
+    return mxpActionMenu(attributes: attributes, action: #selector(handleChoice(_:)))
   }
 
   func receiveOutput(_ fragment: OutputFragment) async {
@@ -123,6 +128,14 @@ public class MainViewController: NSViewController, NSTextFieldDelegate, NSTextVi
     if willBreak {
       textStorage.append(NSAttributedString("\n"))
       willBreak = false
+    }
+  }
+  
+  @objc func handleChoice(_ item: NSMenuItem) {
+    do {
+      try sendInput(item.title)
+    } catch {
+      handleError(error)
     }
   }
 

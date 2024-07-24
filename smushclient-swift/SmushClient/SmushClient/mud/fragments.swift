@@ -1,5 +1,10 @@
 import AppKit
 
+extension NSAttributedString.Key {
+  static let choices: NSAttributedString.Key = .init("choices")
+  static let sendto: NSAttributedString.Key = .init("sendto")
+}
+
 enum RenderError: Error {
   case InvalidUtf8
 }
@@ -49,11 +54,7 @@ func renderText(_ fragment: RustTextFragment, _ ansiColors: AnsiColors) -> NSAtt
   }
 
   if let link = fragment.link() {
-    let action = getAction(link.action, text)
-    attrs[.link] = URL(string: serializeActionUrl(link.sendto, action))
-    attrs[.underlineStyle] = NSUnderlineStyle.single
-    attrs[.toolTip] = action
-    attrs[.cursor] = NSCursor.pointingHand
+    setupActionAttributes(link: link, text: text, attributes: &attrs)
   }
 
   if fragment.is_strikeout() {

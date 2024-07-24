@@ -15,13 +15,13 @@
 		091C030D2C5035ED0060A147 /* SmushClientUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C030C2C5035ED0060A147 /* SmushClientUITestsLaunchTests.swift */; };
 		091C03202C5036BE0060A147 /* smushclient-swift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C031B2C5036BE0060A147 /* smushclient-swift.swift */; };
 		091C03212C5036BE0060A147 /* SwiftBridgeCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C031E2C5036BE0060A147 /* SwiftBridgeCore.swift */; };
-		091C03282C5037100060A147 /* actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C03222C5037100060A147 /* actions.swift */; };
 		091C03292C5037100060A147 /* AnsiColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C03232C5037100060A147 /* AnsiColors.swift */; };
 		091C032A2C5037100060A147 /* fragments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C03242C5037100060A147 /* fragments.swift */; };
 		094C30FA2C5038D20079B229 /* libsmushclient_swift.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 094C30F82C50389A0079B229 /* libsmushclient_swift.a */; };
 		094C30FE2C5048CC0079B229 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 091C02F42C5035ED0060A147 /* Main.storyboard */; };
 		094C31062C5070120079B229 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 094C31052C5070120079B229 /* MainViewController.swift */; };
 		09BBB7542C509DFC00D2646C /* AppDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BBB7532C509DFC00D2646C /* AppDefaults.swift */; };
+		09CDA6232C517FFE006FC3C9 /* actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09CDA6222C517FFE006FC3C9 /* actions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,12 +57,12 @@
 		091C031B2C5036BE0060A147 /* smushclient-swift.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "smushclient-swift.swift"; sourceTree = "<group>"; };
 		091C031D2C5036BE0060A147 /* SwiftBridgeCore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SwiftBridgeCore.h; sourceTree = "<group>"; };
 		091C031E2C5036BE0060A147 /* SwiftBridgeCore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SwiftBridgeCore.swift; sourceTree = "<group>"; };
-		091C03222C5037100060A147 /* actions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = actions.swift; sourceTree = "<group>"; };
 		091C03232C5037100060A147 /* AnsiColors.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnsiColors.swift; sourceTree = "<group>"; };
 		091C03242C5037100060A147 /* fragments.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = fragments.swift; sourceTree = "<group>"; };
 		094C30F82C50389A0079B229 /* libsmushclient_swift.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsmushclient_swift.a; path = ../../target/debug/libsmushclient_swift.a; sourceTree = "<group>"; };
 		094C31052C5070120079B229 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
 		09BBB7532C509DFC00D2646C /* AppDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDefaults.swift; sourceTree = "<group>"; };
+		09CDA6222C517FFE006FC3C9 /* actions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = actions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -167,8 +167,8 @@
 		091C03272C5037100060A147 /* mud */ = {
 			isa = PBXGroup;
 			children = (
-				091C03222C5037100060A147 /* actions.swift */,
 				091C03232C5037100060A147 /* AnsiColors.swift */,
+				09CDA6222C517FFE006FC3C9 /* actions.swift */,
 				091C03242C5037100060A147 /* fragments.swift */,
 			);
 			path = mud;
@@ -369,8 +369,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				09BBB7542C509DFC00D2646C /* AppDefaults.swift in Sources */,
+				09CDA6232C517FFE006FC3C9 /* actions.swift in Sources */,
 				091C032A2C5037100060A147 /* fragments.swift in Sources */,
-				091C03282C5037100060A147 /* actions.swift in Sources */,
 				091C03202C5036BE0060A147 /* smushclient-swift.swift in Sources */,
 				091C02EF2C5035EC0060A147 /* AppDelegate.swift in Sources */,
 				091C03292C5037100060A147 /* AnsiColors.swift in Sources */,

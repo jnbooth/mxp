@@ -1,10 +1,8 @@
+import AppKit
+
 public enum InternalSendTo {
   case Input
   case World
-}
-
-public func getAction(_ action: RustString, _ text: String) -> String {
-  return action.toString().replacing("&text;", with: text)
 }
 
 public func serializeActionUrl(_ sendto: SendTo, _ action: String) -> String {
@@ -31,4 +29,49 @@ public func deserializeActionUrl(_ url: String) -> (InternalSendTo, Substring)? 
   default:
     return nil
   }
+}
+
+public func setupActionAttributes(link: MxpLink, text: String, attributes: inout  [NSAttributedString.Key: Any]) {
+  let action = link.action.toString().replacing("&text;", with: text)
+  if link.sendto == .Internet, let url = URL(string: action) {
+    attributes[.link] = url
+  } else {
+    attributes[.link] = serializeActionUrl(link.sendto, action)
+  }
+  // attrs[.underlineStyle] = NSUnderlineStyle.single
+  attributes[.toolTip] = action
+  // attrs[.cursor] = NSCursor.pointingHand
+  if link.prompts.isEmpty {
+    return
+  }
+  var choices: [String] = []
+  for prompt in link.prompts {
+    choices.append(prompt.as_str().toString())
+  }
+  attributes[.choices] = choices
+}
+
+public func mxpActionMenu(attributes: [NSAttributedString.Key : Any], action: Selector) -> NSMenu? {
+  guard
+    let actionUrl = attributes[.link] as? String,
+    let (sendto, mainAction) = deserializeActionUrl(actionUrl),
+    case .World = sendto
+  else {
+    return nil
+  }
+  let menu = NSMenu()
+  let mainItem = NSMenuItem()
+  mainItem.title = String(mainAction)
+  mainItem.action = action
+  menu.addItem(mainItem)
+  guard let choices = attributes[.choices] as? [String] else {
+    return menu
+  }
+  for choice in choices {
+    let item = NSMenuItem()
+    item.title = choice
+    item.action = action
+    menu.addItem(item)
+  }
+  return menu
 }
