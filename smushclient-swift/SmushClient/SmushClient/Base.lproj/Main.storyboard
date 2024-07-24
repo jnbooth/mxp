@@ -725,21 +725,22 @@
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <subviews>
                                                         <textView wantsLayer="YES" editable="NO" drawsBackground="NO" verticallyResizable="YES" allowsCharacterPickerTouchBarItem="NO" allowsDocumentBackgroundColorChange="YES" textCompletion="NO" id="8up-we-wXm">
-                                                            <rect key="frame" x="0.0" y="0.0" width="659" height="410"/>
+                                                            <rect key="frame" x="0.0" y="0.0" width="659" height="400"/>
                                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                             <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                             <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                            <size key="minSize" width="659" height="410"/>
+                                                            <size key="minSize" width="659" height="400"/>
                                                             <size key="maxSize" width="694" height="10000000"/>
                                                         </textView>
                                                     </subviews>
                                                 </clipView>
+                                                <edgeInsets key="contentInsets" left="0.0" right="0.0" top="0.0" bottom="10"/>
                                                 <scroller key="horizontalScroller" hidden="YES" wantsLayer="YES" verticalHuggingPriority="750" horizontal="YES" id="RGR-bL-Sya">
                                                     <rect key="frame" x="-100" y="-100" width="240" height="16"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                 </scroller>
                                                 <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="pjI-Vx-u5q">
-                                                    <rect key="frame" x="643" y="0.0" width="16" height="410"/>
+                                                    <rect key="frame" x="643" y="0.0" width="16" height="400"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                 </scroller>
                                             </scrollView>
