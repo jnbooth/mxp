@@ -1,10 +1,3 @@
-//
-//  SmushClientTests.swift
-//  SmushClientTests
-//
-//  Created by Joshua Booth on 7/17/24.
-//
-
 import XCTest
 @testable import SmushClient
 

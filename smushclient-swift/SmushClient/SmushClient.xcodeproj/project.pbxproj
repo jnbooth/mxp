@@ -7,83 +7,81 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		093AC9372C4C56210028CFBC /* actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 093AC9362C4C56210028CFBC /* actions.swift */; };
-		094E723C2C4B0F160090712C /* ClientView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 094E723B2C4B0F160090712C /* ClientView.swift */; };
-		094E723E2C4B22190090712C /* fragments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 094E723D2C4B22190090712C /* fragments.swift */; };
-		094E72402C4B284E0090712C /* AnsiColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 094E723F2C4B284E0090712C /* AnsiColors.swift */; };
-		09B28F8A2C487503009A95E5 /* SmushClientApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B28F892C487503009A95E5 /* SmushClientApp.swift */; };
-		09B28F8C2C487503009A95E5 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B28F8B2C487503009A95E5 /* ContentView.swift */; };
-		09B28F8E2C487504009A95E5 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 09B28F8D2C487504009A95E5 /* Assets.xcassets */; };
-		09B28F912C487504009A95E5 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 09B28F902C487504009A95E5 /* Preview Assets.xcassets */; };
-		09B28F9C2C487504009A95E5 /* SmushClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B28F9B2C487504009A95E5 /* SmushClientTests.swift */; };
-		09B28FA62C487504009A95E5 /* SmushClientUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B28FA52C487504009A95E5 /* SmushClientUITests.swift */; };
-		09B28FA82C487504009A95E5 /* SmushClientUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B28FA72C487504009A95E5 /* SmushClientUITestsLaunchTests.swift */; };
-		09B352FA2C4AEEA7005C71C7 /* libsmushclient_swift.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 09B352F92C4AEE2F005C71C7 /* libsmushclient_swift.a */; };
-		09B353012C4AFE02005C71C7 /* SwiftBridgeCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B352FF2C4AEFF0005C71C7 /* SwiftBridgeCore.swift */; };
-		09B353022C4AFE06005C71C7 /* smushclient-swift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09B352FC2C4AEFF0005C71C7 /* smushclient-swift.swift */; };
-		09FD867A2C4B854E0091FE37 /* MudLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09FD86792C4B854E0091FE37 /* MudLine.swift */; };
+		091C02EF2C5035EC0060A147 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C02EE2C5035EC0060A147 /* AppDelegate.swift */; };
+		091C02F32C5035ED0060A147 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 091C02F22C5035ED0060A147 /* Assets.xcassets */; };
+		091C02F62C5035ED0060A147 /* Base in Resources */ = {isa = PBXBuildFile; fileRef = 091C02F52C5035ED0060A147 /* Base */; };
+		091C03012C5035ED0060A147 /* SmushClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C03002C5035ED0060A147 /* SmushClientTests.swift */; };
+		091C030B2C5035ED0060A147 /* SmushClientUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C030A2C5035ED0060A147 /* SmushClientUITests.swift */; };
+		091C030D2C5035ED0060A147 /* SmushClientUITestsLaunchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C030C2C5035ED0060A147 /* SmushClientUITestsLaunchTests.swift */; };
+		091C03202C5036BE0060A147 /* smushclient-swift.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C031B2C5036BE0060A147 /* smushclient-swift.swift */; };
+		091C03212C5036BE0060A147 /* SwiftBridgeCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C031E2C5036BE0060A147 /* SwiftBridgeCore.swift */; };
+		091C03282C5037100060A147 /* actions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C03222C5037100060A147 /* actions.swift */; };
+		091C03292C5037100060A147 /* AnsiColors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C03232C5037100060A147 /* AnsiColors.swift */; };
+		091C032A2C5037100060A147 /* fragments.swift in Sources */ = {isa = PBXBuildFile; fileRef = 091C03242C5037100060A147 /* fragments.swift */; };
+		094C30FA2C5038D20079B229 /* libsmushclient_swift.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 094C30F82C50389A0079B229 /* libsmushclient_swift.a */; };
+		094C30FE2C5048CC0079B229 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 091C02F42C5035ED0060A147 /* Main.storyboard */; };
+		094C31062C5070120079B229 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 094C31052C5070120079B229 /* MainViewController.swift */; };
+		09BBB7542C509DFC00D2646C /* HiddenPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BBB7532C509DFC00D2646C /* HiddenPreferences.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		09B28F982C487504009A95E5 /* PBXContainerItemProxy */ = {
+		091C02FD2C5035ED0060A147 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 09B28F7E2C487503009A95E5 /* Project object */;
+			containerPortal = 091C02E32C5035EC0060A147 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 09B28F852C487503009A95E5;
+			remoteGlobalIDString = 091C02EA2C5035EC0060A147;
 			remoteInfo = SmushClient;
 		};
-		09B28FA22C487504009A95E5 /* PBXContainerItemProxy */ = {
+		091C03072C5035ED0060A147 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
-			containerPortal = 09B28F7E2C487503009A95E5 /* Project object */;
+			containerPortal = 091C02E32C5035EC0060A147 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 09B28F852C487503009A95E5;
+			remoteGlobalIDString = 091C02EA2C5035EC0060A147;
 			remoteInfo = SmushClient;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		093AC9362C4C56210028CFBC /* actions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = actions.swift; sourceTree = "<group>"; };
-		094E723B2C4B0F160090712C /* ClientView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClientView.swift; sourceTree = "<group>"; };
-		094E723D2C4B22190090712C /* fragments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = fragments.swift; sourceTree = "<group>"; };
-		094E723F2C4B284E0090712C /* AnsiColors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnsiColors.swift; sourceTree = "<group>"; };
-		094E72412C4B4AB50090712C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
-		09B28F862C487503009A95E5 /* SmushClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SmushClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		09B28F892C487503009A95E5 /* SmushClientApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmushClientApp.swift; sourceTree = "<group>"; };
-		09B28F8B2C487503009A95E5 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		09B28F8D2C487504009A95E5 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		09B28F902C487504009A95E5 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		09B28F922C487504009A95E5 /* SmushClient.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SmushClient.entitlements; sourceTree = "<group>"; };
-		09B28F972C487504009A95E5 /* SmushClientTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SmushClientTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		09B28F9B2C487504009A95E5 /* SmushClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmushClientTests.swift; sourceTree = "<group>"; };
-		09B28FA12C487504009A95E5 /* SmushClientUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SmushClientUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		09B28FA52C487504009A95E5 /* SmushClientUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmushClientUITests.swift; sourceTree = "<group>"; };
-		09B28FA72C487504009A95E5 /* SmushClientUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmushClientUITestsLaunchTests.swift; sourceTree = "<group>"; };
-		09B352F72C4AED59005C71C7 /* BridgingHeader.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BridgingHeader.h; sourceTree = "<group>"; };
-		09B352F92C4AEE2F005C71C7 /* libsmushclient_swift.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsmushclient_swift.a; path = ../../target/debug/libsmushclient_swift.a; sourceTree = "<group>"; };
-		09B352FB2C4AEFF0005C71C7 /* smushclient-swift.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "smushclient-swift.h"; sourceTree = "<group>"; };
-		09B352FC2C4AEFF0005C71C7 /* smushclient-swift.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "smushclient-swift.swift"; sourceTree = "<group>"; };
-		09B352FE2C4AEFF0005C71C7 /* SwiftBridgeCore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SwiftBridgeCore.h; sourceTree = "<group>"; };
-		09B352FF2C4AEFF0005C71C7 /* SwiftBridgeCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftBridgeCore.swift; sourceTree = "<group>"; };
-		09FD86792C4B854E0091FE37 /* MudLine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MudLine.swift; sourceTree = "<group>"; };
+		091C02EB2C5035EC0060A147 /* SmushClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SmushClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		091C02EE2C5035EC0060A147 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		091C02F22C5035ED0060A147 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		091C02F52C5035ED0060A147 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		091C02F72C5035ED0060A147 /* SmushClient.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SmushClient.entitlements; sourceTree = "<group>"; };
+		091C02FC2C5035ED0060A147 /* SmushClientTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SmushClientTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		091C03002C5035ED0060A147 /* SmushClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmushClientTests.swift; sourceTree = "<group>"; };
+		091C03062C5035ED0060A147 /* SmushClientUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SmushClientUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		091C030A2C5035ED0060A147 /* SmushClientUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmushClientUITests.swift; sourceTree = "<group>"; };
+		091C030C2C5035ED0060A147 /* SmushClientUITestsLaunchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmushClientUITestsLaunchTests.swift; sourceTree = "<group>"; };
+		091C03192C5036BE0060A147 /* BridgingHeader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BridgingHeader.h; sourceTree = "<group>"; };
+		091C031A2C5036BE0060A147 /* smushclient-swift.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "smushclient-swift.h"; sourceTree = "<group>"; };
+		091C031B2C5036BE0060A147 /* smushclient-swift.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "smushclient-swift.swift"; sourceTree = "<group>"; };
+		091C031D2C5036BE0060A147 /* SwiftBridgeCore.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SwiftBridgeCore.h; sourceTree = "<group>"; };
+		091C031E2C5036BE0060A147 /* SwiftBridgeCore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SwiftBridgeCore.swift; sourceTree = "<group>"; };
+		091C03222C5037100060A147 /* actions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = actions.swift; sourceTree = "<group>"; };
+		091C03232C5037100060A147 /* AnsiColors.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AnsiColors.swift; sourceTree = "<group>"; };
+		091C03242C5037100060A147 /* fragments.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = fragments.swift; sourceTree = "<group>"; };
+		094C30F82C50389A0079B229 /* libsmushclient_swift.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsmushclient_swift.a; path = ../../target/debug/libsmushclient_swift.a; sourceTree = "<group>"; };
+		094C31052C5070120079B229 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
+		09BBB7532C509DFC00D2646C /* HiddenPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HiddenPreferences.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		09B28F832C487503009A95E5 /* Frameworks */ = {
+		091C02E82C5035EC0060A147 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				09B352FA2C4AEEA7005C71C7 /* libsmushclient_swift.a in Frameworks */,
+				094C30FA2C5038D20079B229 /* libsmushclient_swift.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		09B28F942C487504009A95E5 /* Frameworks */ = {
+		091C02F92C5035ED0060A147 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		09B28F9E2C487504009A95E5 /* Frameworks */ = {
+		091C03032C5035ED0060A147 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -93,118 +91,117 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		09B28F7D2C487503009A95E5 = {
+		091C02E22C5035EC0060A147 = {
 			isa = PBXGroup;
 			children = (
-				09B353002C4AEFF0005C71C7 /* Generated */,
-				09B352F72C4AED59005C71C7 /* BridgingHeader.h */,
-				09B28F882C487503009A95E5 /* SmushClient */,
-				09B28F9A2C487504009A95E5 /* SmushClientTests */,
-				09B28FA42C487504009A95E5 /* SmushClientUITests */,
-				09B28F872C487503009A95E5 /* Products */,
-				09B352F82C4AEE2F005C71C7 /* Frameworks */,
+				091C03192C5036BE0060A147 /* BridgingHeader.h */,
+				091C031F2C5036BE0060A147 /* Generated */,
+				091C02ED2C5035EC0060A147 /* SmushClient */,
+				091C02FF2C5035ED0060A147 /* SmushClientTests */,
+				091C03092C5035ED0060A147 /* SmushClientUITests */,
+				091C02EC2C5035EC0060A147 /* Products */,
+				094C30F72C50389A0079B229 /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
-		09B28F872C487503009A95E5 /* Products */ = {
+		091C02EC2C5035EC0060A147 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				09B28F862C487503009A95E5 /* SmushClient.app */,
-				09B28F972C487504009A95E5 /* SmushClientTests.xctest */,
-				09B28FA12C487504009A95E5 /* SmushClientUITests.xctest */,
+				091C02EB2C5035EC0060A147 /* SmushClient.app */,
+				091C02FC2C5035ED0060A147 /* SmushClientTests.xctest */,
+				091C03062C5035ED0060A147 /* SmushClientUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		09B28F882C487503009A95E5 /* SmushClient */ = {
+		091C02ED2C5035EC0060A147 /* SmushClient */ = {
 			isa = PBXGroup;
 			children = (
-				09FD86782C4B71140091FE37 /* mud */,
-				094E72412C4B4AB50090712C /* Info.plist */,
-				09B28F892C487503009A95E5 /* SmushClientApp.swift */,
-				09B28F8B2C487503009A95E5 /* ContentView.swift */,
-				094E723B2C4B0F160090712C /* ClientView.swift */,
-				09B28F8D2C487504009A95E5 /* Assets.xcassets */,
-				09B28F922C487504009A95E5 /* SmushClient.entitlements */,
-				09B28F8F2C487504009A95E5 /* Preview Content */,
+				09BBB7552C509E0100D2646C /* persist */,
+				091C03272C5037100060A147 /* mud */,
+				091C02EE2C5035EC0060A147 /* AppDelegate.swift */,
+				094C31052C5070120079B229 /* MainViewController.swift */,
+				091C02F22C5035ED0060A147 /* Assets.xcassets */,
+				091C02F42C5035ED0060A147 /* Main.storyboard */,
+				091C02F72C5035ED0060A147 /* SmushClient.entitlements */,
 			);
 			path = SmushClient;
 			sourceTree = "<group>";
 		};
-		09B28F8F2C487504009A95E5 /* Preview Content */ = {
+		091C02FF2C5035ED0060A147 /* SmushClientTests */ = {
 			isa = PBXGroup;
 			children = (
-				09B28F902C487504009A95E5 /* Preview Assets.xcassets */,
-			);
-			path = "Preview Content";
-			sourceTree = "<group>";
-		};
-		09B28F9A2C487504009A95E5 /* SmushClientTests */ = {
-			isa = PBXGroup;
-			children = (
-				09B28F9B2C487504009A95E5 /* SmushClientTests.swift */,
+				091C03002C5035ED0060A147 /* SmushClientTests.swift */,
 			);
 			path = SmushClientTests;
 			sourceTree = "<group>";
 		};
-		09B28FA42C487504009A95E5 /* SmushClientUITests */ = {
+		091C03092C5035ED0060A147 /* SmushClientUITests */ = {
 			isa = PBXGroup;
 			children = (
-				09B28FA52C487504009A95E5 /* SmushClientUITests.swift */,
-				09B28FA72C487504009A95E5 /* SmushClientUITestsLaunchTests.swift */,
+				091C030A2C5035ED0060A147 /* SmushClientUITests.swift */,
+				091C030C2C5035ED0060A147 /* SmushClientUITestsLaunchTests.swift */,
 			);
 			path = SmushClientUITests;
 			sourceTree = "<group>";
 		};
-		09B352F82C4AEE2F005C71C7 /* Frameworks */ = {
+		091C031C2C5036BE0060A147 /* smushclient-swift */ = {
 			isa = PBXGroup;
 			children = (
-				09B352F92C4AEE2F005C71C7 /* libsmushclient_swift.a */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		09B352FD2C4AEFF0005C71C7 /* smushclient-swift */ = {
-			isa = PBXGroup;
-			children = (
-				09B352FB2C4AEFF0005C71C7 /* smushclient-swift.h */,
-				09B352FC2C4AEFF0005C71C7 /* smushclient-swift.swift */,
+				091C031A2C5036BE0060A147 /* smushclient-swift.h */,
+				091C031B2C5036BE0060A147 /* smushclient-swift.swift */,
 			);
 			path = "smushclient-swift";
 			sourceTree = "<group>";
 		};
-		09B353002C4AEFF0005C71C7 /* Generated */ = {
+		091C031F2C5036BE0060A147 /* Generated */ = {
 			isa = PBXGroup;
 			children = (
-				09B352FD2C4AEFF0005C71C7 /* smushclient-swift */,
-				09B352FE2C4AEFF0005C71C7 /* SwiftBridgeCore.h */,
-				09B352FF2C4AEFF0005C71C7 /* SwiftBridgeCore.swift */,
+				091C031C2C5036BE0060A147 /* smushclient-swift */,
+				091C031D2C5036BE0060A147 /* SwiftBridgeCore.h */,
+				091C031E2C5036BE0060A147 /* SwiftBridgeCore.swift */,
 			);
 			path = Generated;
 			sourceTree = "<group>";
 		};
-		09FD86782C4B71140091FE37 /* mud */ = {
+		091C03272C5037100060A147 /* mud */ = {
 			isa = PBXGroup;
 			children = (
-				094E723F2C4B284E0090712C /* AnsiColors.swift */,
-				094E723D2C4B22190090712C /* fragments.swift */,
-				093AC9362C4C56210028CFBC /* actions.swift */,
-				09FD86792C4B854E0091FE37 /* MudLine.swift */,
+				091C03222C5037100060A147 /* actions.swift */,
+				091C03232C5037100060A147 /* AnsiColors.swift */,
+				091C03242C5037100060A147 /* fragments.swift */,
 			);
 			path = mud;
+			sourceTree = "<group>";
+		};
+		094C30F72C50389A0079B229 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				094C30F82C50389A0079B229 /* libsmushclient_swift.a */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		09BBB7552C509E0100D2646C /* persist */ = {
+			isa = PBXGroup;
+			children = (
+				09BBB7532C509DFC00D2646C /* HiddenPreferences.swift */,
+			);
+			path = persist;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		09B28F852C487503009A95E5 /* SmushClient */ = {
+		091C02EA2C5035EC0060A147 /* SmushClient */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 09B28FAB2C487504009A95E5 /* Build configuration list for PBXNativeTarget "SmushClient" */;
+			buildConfigurationList = 091C03102C5035ED0060A147 /* Build configuration list for PBXNativeTarget "SmushClient" */;
 			buildPhases = (
-				09B352F62C4AECB1005C71C7 /* ShellScript */,
-				09B28F822C487503009A95E5 /* Sources */,
-				09B28F832C487503009A95E5 /* Frameworks */,
-				09B28F842C487503009A95E5 /* Resources */,
+				094C30FB2C503EB20079B229 /* ShellScript */,
+				094C30F62C5037C00079B229 /* ShellScript */,
+				091C02E72C5035EC0060A147 /* Sources */,
+				091C02E82C5035EC0060A147 /* Frameworks */,
+				091C02E92C5035EC0060A147 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -212,69 +209,69 @@
 			);
 			name = SmushClient;
 			productName = SmushClient;
-			productReference = 09B28F862C487503009A95E5 /* SmushClient.app */;
+			productReference = 091C02EB2C5035EC0060A147 /* SmushClient.app */;
 			productType = "com.apple.product-type.application";
 		};
-		09B28F962C487504009A95E5 /* SmushClientTests */ = {
+		091C02FB2C5035ED0060A147 /* SmushClientTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 09B28FAE2C487504009A95E5 /* Build configuration list for PBXNativeTarget "SmushClientTests" */;
+			buildConfigurationList = 091C03132C5035ED0060A147 /* Build configuration list for PBXNativeTarget "SmushClientTests" */;
 			buildPhases = (
-				09B28F932C487504009A95E5 /* Sources */,
-				09B28F942C487504009A95E5 /* Frameworks */,
-				09B28F952C487504009A95E5 /* Resources */,
+				091C02F82C5035ED0060A147 /* Sources */,
+				091C02F92C5035ED0060A147 /* Frameworks */,
+				091C02FA2C5035ED0060A147 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				09B28F992C487504009A95E5 /* PBXTargetDependency */,
+				091C02FE2C5035ED0060A147 /* PBXTargetDependency */,
 			);
 			name = SmushClientTests;
 			productName = SmushClientTests;
-			productReference = 09B28F972C487504009A95E5 /* SmushClientTests.xctest */;
+			productReference = 091C02FC2C5035ED0060A147 /* SmushClientTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		09B28FA02C487504009A95E5 /* SmushClientUITests */ = {
+		091C03052C5035ED0060A147 /* SmushClientUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 09B28FB12C487504009A95E5 /* Build configuration list for PBXNativeTarget "SmushClientUITests" */;
+			buildConfigurationList = 091C03162C5035ED0060A147 /* Build configuration list for PBXNativeTarget "SmushClientUITests" */;
 			buildPhases = (
-				09B28F9D2C487504009A95E5 /* Sources */,
-				09B28F9E2C487504009A95E5 /* Frameworks */,
-				09B28F9F2C487504009A95E5 /* Resources */,
+				091C03022C5035ED0060A147 /* Sources */,
+				091C03032C5035ED0060A147 /* Frameworks */,
+				091C03042C5035ED0060A147 /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				09B28FA32C487504009A95E5 /* PBXTargetDependency */,
+				091C03082C5035ED0060A147 /* PBXTargetDependency */,
 			);
 			name = SmushClientUITests;
 			productName = SmushClientUITests;
-			productReference = 09B28FA12C487504009A95E5 /* SmushClientUITests.xctest */;
+			productReference = 091C03062C5035ED0060A147 /* SmushClientUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		09B28F7E2C487503009A95E5 /* Project object */ = {
+		091C02E32C5035EC0060A147 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1540;
 				LastUpgradeCheck = 1540;
 				TargetAttributes = {
-					09B28F852C487503009A95E5 = {
+					091C02EA2C5035EC0060A147 = {
 						CreatedOnToolsVersion = 15.4;
 					};
-					09B28F962C487504009A95E5 = {
+					091C02FB2C5035ED0060A147 = {
 						CreatedOnToolsVersion = 15.4;
-						TestTargetID = 09B28F852C487503009A95E5;
+						TestTargetID = 091C02EA2C5035EC0060A147;
 					};
-					09B28FA02C487504009A95E5 = {
+					091C03052C5035ED0060A147 = {
 						CreatedOnToolsVersion = 15.4;
-						TestTargetID = 09B28F852C487503009A95E5;
+						TestTargetID = 091C02EA2C5035EC0060A147;
 					};
 				};
 			};
-			buildConfigurationList = 09B28F812C487503009A95E5 /* Build configuration list for PBXProject "SmushClient" */;
+			buildConfigurationList = 091C02E62C5035EC0060A147 /* Build configuration list for PBXProject "SmushClient" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -282,36 +279,37 @@
 				en,
 				Base,
 			);
-			mainGroup = 09B28F7D2C487503009A95E5;
-			productRefGroup = 09B28F872C487503009A95E5 /* Products */;
+			mainGroup = 091C02E22C5035EC0060A147;
+			productRefGroup = 091C02EC2C5035EC0060A147 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				09B28F852C487503009A95E5 /* SmushClient */,
-				09B28F962C487504009A95E5 /* SmushClientTests */,
-				09B28FA02C487504009A95E5 /* SmushClientUITests */,
+				091C02EA2C5035EC0060A147 /* SmushClient */,
+				091C02FB2C5035ED0060A147 /* SmushClientTests */,
+				091C03052C5035ED0060A147 /* SmushClientUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		09B28F842C487503009A95E5 /* Resources */ = {
+		091C02E92C5035EC0060A147 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				09B28F912C487504009A95E5 /* Preview Assets.xcassets in Resources */,
-				09B28F8E2C487504009A95E5 /* Assets.xcassets in Resources */,
+				094C30FE2C5048CC0079B229 /* Main.storyboard in Resources */,
+				091C02F32C5035ED0060A147 /* Assets.xcassets in Resources */,
+				091C02F62C5035ED0060A147 /* Base in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		09B28F952C487504009A95E5 /* Resources */ = {
+		091C02FA2C5035ED0060A147 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		09B28F9F2C487504009A95E5 /* Resources */ = {
+		091C03042C5035ED0060A147 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -321,8 +319,32 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		09B352F62C4AECB1005C71C7 /* ShellScript */ = {
+		094C30F62C5037C00079B229 /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"$(PROJECT_DIR)/rust-files.xcfilelist",
+			);
+			inputPaths = (
+				"$(PROJECT_DIR)/xcode-build-rust.sh",
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(PROJECT_DIR)/Generated/smushclient-swift/smushclient-swift.swift",
+				"$(PROJECT_DIR)/Generated/smushclient-swift/SwiftBridgeCore.swift",
+				"$(PROJECT_DIR)/Generated/smushclient-swift/SwiftBridgeCore.h",
+				"$(PROJECT_DIR)/Generated/smushclient-swift/smushclient-swift.h",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "./xcode-build-rust.sh\n";
+		};
+		094C30FB2C503EB20079B229 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -333,66 +355,75 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(PROJECT_DIR)/Generated/smushclient-swift/smushclient-swift.swift",
-				"$(PROJECT_DIR)/Generated/smushclient-swift/SwiftBridgeCore.swift",
+				"$(PROJECT_DIR)/rust-files.xcfilelist",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/bash;
-			shellScript = "./xcode-build-rust.sh\n";
+			shellPath = /bin/sh;
+			shellScript = "echo \"\" > rust-files.xcfilelist\n\nfind ../.. -name SmushClient -prune -o -name '*.rs' -exec sh -c 'echo \"\\$(PROJECT_DIR)/$1\" >> rust-files.xcfilelist' shell {} \\;\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		09B28F822C487503009A95E5 /* Sources */ = {
+		091C02E72C5035EC0060A147 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				09B353022C4AFE06005C71C7 /* smushclient-swift.swift in Sources */,
-				093AC9372C4C56210028CFBC /* actions.swift in Sources */,
-				094E723C2C4B0F160090712C /* ClientView.swift in Sources */,
-				09B353012C4AFE02005C71C7 /* SwiftBridgeCore.swift in Sources */,
-				09B28F8C2C487503009A95E5 /* ContentView.swift in Sources */,
-				094E72402C4B284E0090712C /* AnsiColors.swift in Sources */,
-				09FD867A2C4B854E0091FE37 /* MudLine.swift in Sources */,
-				09B28F8A2C487503009A95E5 /* SmushClientApp.swift in Sources */,
-				094E723E2C4B22190090712C /* fragments.swift in Sources */,
+				09BBB7542C509DFC00D2646C /* HiddenPreferences.swift in Sources */,
+				091C032A2C5037100060A147 /* fragments.swift in Sources */,
+				091C03282C5037100060A147 /* actions.swift in Sources */,
+				091C03202C5036BE0060A147 /* smushclient-swift.swift in Sources */,
+				091C02EF2C5035EC0060A147 /* AppDelegate.swift in Sources */,
+				091C03292C5037100060A147 /* AnsiColors.swift in Sources */,
+				091C03212C5036BE0060A147 /* SwiftBridgeCore.swift in Sources */,
+				094C31062C5070120079B229 /* MainViewController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		09B28F932C487504009A95E5 /* Sources */ = {
+		091C02F82C5035ED0060A147 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				09B28F9C2C487504009A95E5 /* SmushClientTests.swift in Sources */,
+				091C03012C5035ED0060A147 /* SmushClientTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		09B28F9D2C487504009A95E5 /* Sources */ = {
+		091C03022C5035ED0060A147 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				09B28FA82C487504009A95E5 /* SmushClientUITestsLaunchTests.swift in Sources */,
-				09B28FA62C487504009A95E5 /* SmushClientUITests.swift in Sources */,
+				091C030D2C5035ED0060A147 /* SmushClientUITestsLaunchTests.swift in Sources */,
+				091C030B2C5035ED0060A147 /* SmushClientUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		09B28F992C487504009A95E5 /* PBXTargetDependency */ = {
+		091C02FE2C5035ED0060A147 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 09B28F852C487503009A95E5 /* SmushClient */;
-			targetProxy = 09B28F982C487504009A95E5 /* PBXContainerItemProxy */;
+			target = 091C02EA2C5035EC0060A147 /* SmushClient */;
+			targetProxy = 091C02FD2C5035ED0060A147 /* PBXContainerItemProxy */;
 		};
-		09B28FA32C487504009A95E5 /* PBXTargetDependency */ = {
+		091C03082C5035ED0060A147 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 09B28F852C487503009A95E5 /* SmushClient */;
-			targetProxy = 09B28FA22C487504009A95E5 /* PBXContainerItemProxy */;
+			target = 091C02EA2C5035EC0060A147 /* SmushClient */;
+			targetProxy = 091C03072C5035ED0060A147 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
+/* Begin PBXVariantGroup section */
+		091C02F42C5035ED0060A147 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				091C02F52C5035ED0060A147 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
 /* Begin XCBuildConfiguration section */
-		09B28FA92C487504009A95E5 /* Debug */ = {
+		091C030E2C5035ED0060A147 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -429,7 +460,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -455,7 +486,7 @@
 			};
 			name = Debug;
 		};
-		09B28FAA2C487504009A95E5 /* Release */ = {
+		091C030F2C5035ED0060A147 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -492,7 +523,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -510,7 +541,7 @@
 			};
 			name = Release;
 		};
-		09B28FAC2C487504009A95E5 /* Debug */ = {
+		091C03112C5035ED0060A147 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -519,29 +550,27 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"SmushClient/Preview Content\"";
 				DEVELOPMENT_TEAM = 274U4G4QQG;
 				ENABLE_HARDENED_RUNTIME = NO;
-				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = SmushClient/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/../../target/debug";
+				"LIBRARY_SEARCH_PATHS[arch=*]" = "$(PROJECT_DIR)/../../target/debug";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jnbooth.SmushClient;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "$(PROJECT_DIR)/BridgingHeader.h";
+				"SWIFT_OBJC_BRIDGING_HEADER[arch=*]" = "$(PROJECT_DIR)/BridgingHeader.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
-		09B28FAD2C487504009A95E5 /* Release */ = {
+		091C03122C5035ED0060A147 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -550,19 +579,17 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"SmushClient/Preview Content\"";
 				DEVELOPMENT_TEAM = 274U4G4QQG;
 				ENABLE_HARDENED_RUNTIME = NO;
-				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = SmushClient/Info.plist;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				INFOPLIST_KEY_NSMainStoryboardFile = Main;
+				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				LIBRARY_SEARCH_PATHS = "$(PROJECT_DIR)/../../target/release";
+				"LIBRARY_SEARCH_PATHS[arch=*]" = "$(PROJECT_DIR)/../../target/release";
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.jnbooth.SmushClient;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -572,7 +599,7 @@
 			};
 			name = Release;
 		};
-		09B28FAF2C487504009A95E5 /* Debug */ = {
+		091C03142C5035ED0060A147 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
@@ -583,7 +610,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jnbooth.SmushClientTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jnbooth.smushclient.SmushClientTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -591,7 +618,7 @@
 			};
 			name = Debug;
 		};
-		09B28FB02C487504009A95E5 /* Release */ = {
+		091C03152C5035ED0060A147 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
@@ -602,7 +629,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 14.5;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jnbooth.SmushClientTests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jnbooth.smushclient.SmushClientTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -610,7 +637,7 @@
 			};
 			name = Release;
 		};
-		09B28FB22C487504009A95E5 /* Debug */ = {
+		091C03172C5035ED0060A147 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
@@ -619,7 +646,7 @@
 				DEVELOPMENT_TEAM = 274U4G4QQG;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jnbooth.SmushClientUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jnbooth.smushclient.SmushClientUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -627,7 +654,7 @@
 			};
 			name = Debug;
 		};
-		09B28FB32C487504009A95E5 /* Release */ = {
+		091C03182C5035ED0060A147 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
@@ -636,7 +663,7 @@
 				DEVELOPMENT_TEAM = 274U4G4QQG;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.jnbooth.SmushClientUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jnbooth.smushclient.SmushClientUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
@@ -647,43 +674,43 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		09B28F812C487503009A95E5 /* Build configuration list for PBXProject "SmushClient" */ = {
+		091C02E62C5035EC0060A147 /* Build configuration list for PBXProject "SmushClient" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				09B28FA92C487504009A95E5 /* Debug */,
-				09B28FAA2C487504009A95E5 /* Release */,
+				091C030E2C5035ED0060A147 /* Debug */,
+				091C030F2C5035ED0060A147 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		09B28FAB2C487504009A95E5 /* Build configuration list for PBXNativeTarget "SmushClient" */ = {
+		091C03102C5035ED0060A147 /* Build configuration list for PBXNativeTarget "SmushClient" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				09B28FAC2C487504009A95E5 /* Debug */,
-				09B28FAD2C487504009A95E5 /* Release */,
+				091C03112C5035ED0060A147 /* Debug */,
+				091C03122C5035ED0060A147 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		09B28FAE2C487504009A95E5 /* Build configuration list for PBXNativeTarget "SmushClientTests" */ = {
+		091C03132C5035ED0060A147 /* Build configuration list for PBXNativeTarget "SmushClientTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				09B28FAF2C487504009A95E5 /* Debug */,
-				09B28FB02C487504009A95E5 /* Release */,
+				091C03142C5035ED0060A147 /* Debug */,
+				091C03152C5035ED0060A147 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		09B28FB12C487504009A95E5 /* Build configuration list for PBXNativeTarget "SmushClientUITests" */ = {
+		091C03162C5035ED0060A147 /* Build configuration list for PBXNativeTarget "SmushClientUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				09B28FB22C487504009A95E5 /* Debug */,
-				09B28FB32C487504009A95E5 /* Release */,
+				091C03172C5035ED0060A147 /* Debug */,
+				091C03182C5035ED0060A147 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
-	rootObject = 09B28F7E2C487503009A95E5 /* Project object */;
+	rootObject = 091C02E32C5035EC0060A147 /* Project object */;
 }

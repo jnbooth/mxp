@@ -1,10 +1,3 @@
-//
-//  SmushClientUITests.swift
-//  SmushClientUITests
-//
-//  Created by Joshua Booth on 7/17/24.
-//
-
 import XCTest
 
 final class SmushClientUITests: XCTestCase {
