@@ -709,27 +709,27 @@
                         <rect key="frame" x="0.0" y="0.0" width="659" height="456"/>
                         <autoresizingMask key="autoresizingMask" flexibleMinY="YES" flexibleMaxY="YES"/>
                         <subviews>
-                            <splitView dividerStyle="thin" id="NZ8-tO-mrv">
+                            <splitView autosaveName="inputHeight" dividerStyle="thin" id="NZ8-tO-mrv">
                                 <rect key="frame" x="0.0" y="25" width="659" height="431"/>
-                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <subviews>
                                     <visualEffectView fixedFrame="YES" blendingMode="behindWindow" material="underWindowBackground" state="followsWindowActiveState" id="SpW-rf-dfF">
-                                        <rect key="frame" x="0.0" y="0.0" width="659" height="387"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="659" height="410"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <subviews>
                                             <scrollView appearanceType="aqua" borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" horizontalScrollElasticity="none" id="bVh-cX-79L">
-                                                <rect key="frame" x="0.0" y="0.0" width="659" height="387"/>
+                                                <rect key="frame" x="0.0" y="0.0" width="659" height="410"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <clipView key="contentView" drawsBackground="NO" id="dGD-GN-xtI">
-                                                    <rect key="frame" x="0.0" y="0.0" width="659" height="387"/>
+                                                    <rect key="frame" x="0.0" y="0.0" width="659" height="410"/>
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <subviews>
                                                         <textView wantsLayer="YES" editable="NO" drawsBackground="NO" verticallyResizable="YES" allowsCharacterPickerTouchBarItem="NO" allowsDocumentBackgroundColorChange="YES" textCompletion="NO" id="8up-we-wXm">
-                                                            <rect key="frame" x="0.0" y="0.0" width="659" height="387"/>
+                                                            <rect key="frame" x="0.0" y="0.0" width="659" height="410"/>
                                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                             <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                             <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                            <size key="minSize" width="659" height="387"/>
+                                                            <size key="minSize" width="659" height="410"/>
                                                             <size key="maxSize" width="694" height="10000000"/>
                                                         </textView>
                                                     </subviews>
@@ -739,19 +739,17 @@
                                                     <autoresizingMask key="autoresizingMask"/>
                                                 </scroller>
                                                 <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="pjI-Vx-u5q">
-                                                    <rect key="frame" x="643" y="0.0" width="16" height="387"/>
+                                                    <rect key="frame" x="643" y="0.0" width="16" height="410"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                 </scroller>
                                             </scrollView>
                                         </subviews>
                                     </visualEffectView>
-                                    <visualEffectView fixedFrame="YES" blendingMode="behindWindow" material="underWindowBackground" state="followsWindowActiveState" id="m0Y-q4-xUU">
-                                        <rect key="frame" x="0.0" y="388" width="659" height="43"/>
-                                        <autoresizingMask key="autoresizingMask"/>
+                                    <visualEffectView verticalCompressionResistancePriority="1" blendingMode="behindWindow" material="underWindowBackground" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="m0Y-q4-xUU">
+                                        <rect key="frame" x="0.0" y="411" width="659" height="20"/>
                                         <subviews>
-                                            <textField wantsLayer="YES" focusRingType="none" verticalHuggingPriority="750" horizontalCompressionResistancePriority="250" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="JBq-P3-dwo">
-                                                <rect key="frame" x="0.0" y="0.0" width="659" height="43"/>
-                                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                            <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="1" verticalHuggingPriority="1" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1000" translatesAutoresizingMaskIntoConstraints="NO" id="JBq-P3-dwo">
+                                                <rect key="frame" x="0.0" y="0.0" width="659" height="21"/>
                                                 <textFieldCell key="cell" selectable="YES" editable="YES" state="on" borderStyle="bezel" drawsBackground="YES" id="cZm-Xm-7eF">
                                                     <font key="font" metaFont="system"/>
                                                     <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
@@ -759,10 +757,16 @@
                                                 </textFieldCell>
                                             </textField>
                                         </subviews>
+                                        <constraints>
+                                            <constraint firstItem="JBq-P3-dwo" firstAttribute="top" secondItem="m0Y-q4-xUU" secondAttribute="top" id="3k7-Oj-v1b"/>
+                                            <constraint firstAttribute="trailing" secondItem="JBq-P3-dwo" secondAttribute="trailing" id="Aoh-VH-wiH"/>
+                                            <constraint firstItem="JBq-P3-dwo" firstAttribute="leading" secondItem="m0Y-q4-xUU" secondAttribute="leading" id="ZAn-Bd-Lst"/>
+                                            <constraint firstAttribute="bottom" secondItem="JBq-P3-dwo" secondAttribute="bottom" id="haj-5A-0sH"/>
+                                        </constraints>
                                     </visualEffectView>
                                 </subviews>
                                 <holdingPriorities>
-                                    <real value="250"/>
+                                    <real value="1"/>
                                     <real value="250"/>
                                 </holdingPriorities>
                             </splitView>

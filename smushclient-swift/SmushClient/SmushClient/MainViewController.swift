@@ -14,7 +14,6 @@ public class MainViewController: NSViewController, NSTextFieldDelegate, NSTextVi
     var willBreak = false
 
     override public func viewDidLoad() {
-        splitView.setPosition(splitView.maxPossiblePositionOfDivider(at: 0) - 10, ofDividerAt: 0)
         textStorage = textView.textStorage
         inputField.delegate = self
         textView.delegate = self
