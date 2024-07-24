@@ -37,7 +37,7 @@ public class MainViewController: NSViewController, NSTextFieldDelegate, NSTextVi
       do {
         try await bridge.connect()
         while true {
-          let fragment = try await bridge.get_output()
+          let fragment = try await bridge.getOutput()
           await receiveOutput(fragment)
         }
       } catch {
@@ -118,7 +118,7 @@ public class MainViewController: NSViewController, NSTextFieldDelegate, NSTextVi
   func sendInput(_ input: String) throws {
     textStorage.append(NSAttributedString(string: "\n" + input, attributes: inputAttrs))
     willBreak = true
-    try bridge.send_input(input + "\r\n")
+    try bridge.sendInput(input + "\r\n")
   }
 
   func handleBell() async {

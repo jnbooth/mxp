@@ -35,30 +35,48 @@ mod ffi {
         fn text(&self) -> &[u8];
         fn foreground(&self) -> MudColor;
         fn background(&self) -> MudColor;
+        #[swift_bridge(swift_name = "isBlink")]
         fn is_blink(&self) -> bool;
+        #[swift_bridge(swift_name = "isBold")]
         fn is_bold(&self) -> bool;
+        #[swift_bridge(swift_name = "isHighlight")]
         fn is_highlight(&self) -> bool;
+        #[swift_bridge(swift_name = "isInverse")]
         fn is_inverse(&self) -> bool;
+        #[swift_bridge(swift_name = "IsItalic")]
         fn is_italic(&self) -> bool;
+        #[swift_bridge(swift_name = "isStrikeout")]
         fn is_strikeout(&self) -> bool;
+        #[swift_bridge(swift_name = "isUnderline")]
         fn is_underline(&self) -> bool;
         fn link(&self) -> Option<MxpLink>;
     }
 
     enum EffectFragment {
+        #[swift_bridge(swift_name = "backspace")]
         Backspace,
+        #[swift_bridge(swift_name = "beep")]
         Beep,
+        #[swift_bridge(swift_name = "carriageReturn")]
         CarriageReturn,
+        #[swift_bridge(swift_name = "eraseCharacter")]
         EraseCharacter,
+        #[swift_bridge(swift_name = "eraseLine")]
         EraseLine,
     }
 
     enum OutputFragment {
+        #[swift_bridge(swift_name = "effect")]
         Effect(EffectFragment),
+        #[swift_bridge(swift_name = "hr")]
         Hr,
+        #[swift_bridge(swift_name = "image")]
         Image(String),
+        #[swift_bridge(swift_name = "lineBreak")]
         LineBreak,
+        #[swift_bridge(swift_name = "pageBreak")]
         PageBreak,
+        #[swift_bridge(swift_name = "text")]
         Text(RustTextFragment),
     }
 
@@ -66,11 +84,15 @@ mod ffi {
         type RustMudBridge;
         #[swift_bridge(init)]
         fn new(address: String, port: u16) -> RustMudBridge;
+        #[swift_bridge(swift_name = "isConnected")]
         fn is_connected(&self) -> bool;
         async fn connect(&mut self) -> Result<(), String>;
         fn disconnect(&self) -> bool;
+        #[swift_bridge(swift_name = "getOutput")]
         async fn get_output(&mut self) -> Result<OutputFragment, String>;
+        #[swift_bridge(swift_name = "sendInput")]
         fn send_input(&self, input: String) -> Result<(), String>;
+        #[swift_bridge(swift_name = "waitUntilDone")]
         async fn wait_until_done(&mut self) -> Result<(), String>;
     }
 }

@@ -38,9 +38,9 @@ func renderText(_ fragment: RustTextFragment, _ ansiColors: AnsiColors) -> NSAtt
   }
 
   let font = NSFont.monospacedSystemFont(
-    ofSize: NSFont.systemFontSize, weight: fragment.is_bold() ? .bold : .medium)
+    ofSize: NSFont.systemFontSize, weight: fragment.isBold() ? .bold : .medium)
 
-  let invert = fragment.is_inverse()
+  let invert = fragment.isInverse()
   let foreground = invert ? fragment.background() : fragment.foreground()
   let background = invert ? fragment.foreground() : fragment.background()
 
@@ -57,11 +57,11 @@ func renderText(_ fragment: RustTextFragment, _ ansiColors: AnsiColors) -> NSAtt
     setupActionAttributes(link: link, text: text, attributes: &attrs)
   }
 
-  if fragment.is_strikeout() {
+  if fragment.isStrikeout() {
     attrs[.strikethroughStyle] = NSUnderlineStyle.single
   }
 
-  if fragment.is_underline() {
+  if fragment.isUnderline() {
     attrs[.underlineStyle] = NSUnderlineStyle.single
   }
 
