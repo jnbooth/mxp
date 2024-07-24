@@ -714,22 +714,22 @@
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <subviews>
                                     <visualEffectView fixedFrame="YES" blendingMode="behindWindow" material="underWindowBackground" state="followsWindowActiveState" id="SpW-rf-dfF">
-                                        <rect key="frame" x="0.0" y="0.0" width="659" height="410"/>
+                                        <rect key="frame" x="0.0" y="0.0" width="659" height="409"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <subviews>
                                             <scrollView appearanceType="aqua" borderType="none" horizontalLineScroll="10" horizontalPageScroll="10" verticalLineScroll="10" verticalPageScroll="10" hasHorizontalScroller="NO" horizontalScrollElasticity="none" id="bVh-cX-79L">
-                                                <rect key="frame" x="0.0" y="0.0" width="659" height="410"/>
+                                                <rect key="frame" x="0.0" y="0.0" width="659" height="409"/>
                                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                 <clipView key="contentView" drawsBackground="NO" id="dGD-GN-xtI">
-                                                    <rect key="frame" x="0.0" y="0.0" width="659" height="410"/>
+                                                    <rect key="frame" x="0.0" y="0.0" width="659" height="409"/>
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <subviews>
                                                         <textView wantsLayer="YES" editable="NO" drawsBackground="NO" verticallyResizable="YES" allowsCharacterPickerTouchBarItem="NO" allowsDocumentBackgroundColorChange="YES" textCompletion="NO" id="8up-we-wXm">
-                                                            <rect key="frame" x="0.0" y="0.0" width="659" height="400"/>
+                                                            <rect key="frame" x="0.0" y="0.0" width="659" height="399"/>
                                                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                             <color key="textColor" white="0.0" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                             <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                            <size key="minSize" width="659" height="400"/>
+                                                            <size key="minSize" width="659" height="399"/>
                                                             <size key="maxSize" width="694" height="10000000"/>
                                                         </textView>
                                                     </subviews>
@@ -740,14 +740,14 @@
                                                     <autoresizingMask key="autoresizingMask"/>
                                                 </scroller>
                                                 <scroller key="verticalScroller" wantsLayer="YES" verticalHuggingPriority="750" horizontal="NO" id="pjI-Vx-u5q">
-                                                    <rect key="frame" x="643" y="0.0" width="16" height="400"/>
+                                                    <rect key="frame" x="643" y="0.0" width="16" height="399"/>
                                                     <autoresizingMask key="autoresizingMask"/>
                                                 </scroller>
                                             </scrollView>
                                         </subviews>
                                     </visualEffectView>
                                     <visualEffectView verticalCompressionResistancePriority="1" blendingMode="behindWindow" material="underWindowBackground" state="followsWindowActiveState" translatesAutoresizingMaskIntoConstraints="NO" id="m0Y-q4-xUU">
-                                        <rect key="frame" x="0.0" y="411" width="659" height="20"/>
+                                        <rect key="frame" x="0.0" y="410" width="659" height="21"/>
                                         <subviews>
                                             <textField wantsLayer="YES" focusRingType="none" horizontalHuggingPriority="1" verticalHuggingPriority="1" horizontalCompressionResistancePriority="1" verticalCompressionResistancePriority="1000" translatesAutoresizingMaskIntoConstraints="NO" id="JBq-P3-dwo">
                                                 <rect key="frame" x="0.0" y="0.0" width="659" height="21"/>
