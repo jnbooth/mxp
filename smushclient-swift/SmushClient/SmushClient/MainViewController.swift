@@ -56,6 +56,9 @@ public class MainViewController: NSViewController, NSTextFieldDelegate, NSTextVi
   public func control(
     _ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector
   ) -> Bool {
+    if commandSelector != #selector(NSResponder.insertNewline(_:)) {
+      return false
+    }
     let input = inputField.stringValue
     inputField.stringValue = ""
     do {
