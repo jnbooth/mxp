@@ -1,4 +1,4 @@
-use crate::config::COMPRESS_BUFFER;
+use crate::config::READ_BUFFER;
 
 use super::decompress::DecompressStream;
 use mud_transformer::{OutputDrain, SideEffect, Transformer, TransformerConfig};
@@ -11,7 +11,6 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 pin_project! {
     pub struct MudStream<T> {
-        buf: [u8; COMPRESS_BUFFER],
         #[pin]
         stream: DecompressStream<T>,
         transformer: Transformer,
@@ -21,7 +20,6 @@ pin_project! {
 impl<T: AsyncRead + AsyncWrite + Unpin> MudStream<T> {
     pub fn new(stream: T, config: TransformerConfig) -> Self {
         Self {
-            buf: [0; COMPRESS_BUFFER],
             stream: DecompressStream::new(stream),
             transformer: Transformer::new(config),
         }
@@ -40,12 +38,13 @@ impl<T: AsyncRead + AsyncWrite + Unpin> MudStream<T> {
     }
 
     pub async fn read(&mut self) -> io::Result<Option<OutputDrain>> {
-        let n = match self.stream.read(&mut self.buf).await {
+        let mut buf = [0; READ_BUFFER];
+        let n = match self.stream.read(&mut buf).await {
             Ok(0) => return Ok(None),
             Ok(n) => n,
             Err(e) => return Err(e),
         };
-        let mut iter = self.buf[..n].into_iter();
+        let mut iter = buf[..n].into_iter();
         while let Some(&c) = iter.next() {
             match self.transformer.read_byte(c) {
                 Some(SideEffect::DisableCompression) => self.stream.reset(),

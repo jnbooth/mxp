@@ -6,7 +6,6 @@ use std::io::{self, IoSlice, Read, Write};
 
 #[derive(Debug)]
 pub struct MudStream<T> {
-    buf: [u8; READ_BUFFER],
     stream: DecompressStream<T>,
     transformer: Transformer,
 }
@@ -14,7 +13,6 @@ pub struct MudStream<T> {
 impl<T: Read + Write> MudStream<T> {
     pub fn new(stream: T, config: TransformerConfig) -> Self {
         Self {
-            buf: [0; READ_BUFFER],
             stream: DecompressStream::new(stream),
             transformer: Transformer::new(config),
         }
@@ -33,12 +31,13 @@ impl<T: Read + Write> MudStream<T> {
     }
 
     pub fn read(&mut self) -> io::Result<Option<OutputDrain>> {
-        let n = match self.stream.read(&mut self.buf) {
+        let mut buf = [0; READ_BUFFER];
+        let n = match self.stream.read(&mut buf) {
             Ok(0) => return Ok(None),
             Ok(n) => n,
             Err(e) => return Err(e),
         };
-        let mut iter = self.buf[..n].into_iter();
+        let mut iter = buf[..n].into_iter();
         while let Some(&c) = iter.next() {
             match self.transformer.read_byte(c) {
                 Some(SideEffect::DisableCompression) => self.stream.reset(),
