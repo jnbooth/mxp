@@ -51,6 +51,13 @@ public func setupActionAttributes(link: MxpLink, text: String, attributes: inout
   attributes[.choices] = choices
 }
 
+func actionMenuItem(_ send: String, _ action: Selector) -> NSMenuItem {
+  let item = NSMenuItem()
+  item.title = send
+  item.action = action
+  return item
+}
+
 public func mxpActionMenu(attributes: [NSAttributedString.Key : Any], action: Selector) -> NSMenu? {
   guard
     let actionUrl = attributes[.link] as? String,
@@ -60,18 +67,12 @@ public func mxpActionMenu(attributes: [NSAttributedString.Key : Any], action: Se
     return nil
   }
   let menu = NSMenu()
-  let mainItem = NSMenuItem()
-  mainItem.title = String(mainAction)
-  mainItem.action = action
-  menu.addItem(mainItem)
+  menu.addItem(actionMenuItem(String(mainAction), action))
   guard let choices = attributes[.choices] as? [String] else {
     return menu
   }
   for choice in choices {
-    let item = NSMenuItem()
-    item.title = choice
-    item.action = action
-    menu.addItem(item)
+    menu.addItem(actionMenuItem(choice, action))
   }
   return menu
 }
