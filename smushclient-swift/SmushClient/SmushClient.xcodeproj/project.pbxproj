@@ -21,7 +21,7 @@
 		094C30FA2C5038D20079B229 /* libsmushclient_swift.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 094C30F82C50389A0079B229 /* libsmushclient_swift.a */; };
 		094C30FE2C5048CC0079B229 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 091C02F42C5035ED0060A147 /* Main.storyboard */; };
 		094C31062C5070120079B229 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 094C31052C5070120079B229 /* MainViewController.swift */; };
-		09BBB7542C509DFC00D2646C /* HiddenPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BBB7532C509DFC00D2646C /* HiddenPreferences.swift */; };
+		09BBB7542C509DFC00D2646C /* AppDefaults.swift in Sources */ = {isa = PBXBuildFile; fileRef = 09BBB7532C509DFC00D2646C /* AppDefaults.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,7 +62,7 @@
 		091C03242C5037100060A147 /* fragments.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = fragments.swift; sourceTree = "<group>"; };
 		094C30F82C50389A0079B229 /* libsmushclient_swift.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libsmushclient_swift.a; path = ../../target/debug/libsmushclient_swift.a; sourceTree = "<group>"; };
 		094C31052C5070120079B229 /* MainViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainViewController.swift; sourceTree = "<group>"; };
-		09BBB7532C509DFC00D2646C /* HiddenPreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HiddenPreferences.swift; sourceTree = "<group>"; };
+		09BBB7532C509DFC00D2646C /* AppDefaults.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDefaults.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -185,7 +185,7 @@
 		09BBB7552C509E0100D2646C /* persist */ = {
 			isa = PBXGroup;
 			children = (
-				09BBB7532C509DFC00D2646C /* HiddenPreferences.swift */,
+				09BBB7532C509DFC00D2646C /* AppDefaults.swift */,
 			);
 			path = persist;
 			sourceTree = "<group>";
@@ -368,7 +368,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				09BBB7542C509DFC00D2646C /* HiddenPreferences.swift in Sources */,
+				09BBB7542C509DFC00D2646C /* AppDefaults.swift in Sources */,
 				091C032A2C5037100060A147 /* fragments.swift in Sources */,
 				091C03282C5037100060A147 /* actions.swift in Sources */,
 				091C03202C5036BE0060A147 /* smushclient-swift.swift in Sources */,
