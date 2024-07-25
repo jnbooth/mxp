@@ -125,9 +125,13 @@ impl BufferedOutput {
         self.flush_last(1);
     }
 
-    pub fn start_line(&mut self) {
+    fn flush_line(&mut self) {
         self.flush();
         self.last_linebreak = Some(self.fragments.len());
+    }
+
+    pub fn start_line(&mut self) {
+        self.flush_line();
         self.fragments.push(OutputFragment::LineBreak);
     }
 
@@ -137,8 +141,7 @@ impl BufferedOutput {
     }
 
     pub fn append_hr(&mut self) {
-        self.flush();
-        self.last_linebreak = Some(self.fragments.len());
+        self.flush_line();
         self.fragments.push(OutputFragment::Hr);
     }
 
@@ -153,8 +156,7 @@ impl BufferedOutput {
     }
 
     pub fn append_page_break(&mut self) {
-        self.flush();
-        self.last_linebreak = Some(self.fragments.len());
+        self.flush_line();
         self.fragments.push(OutputFragment::PageBreak);
     }
 
