@@ -4,6 +4,7 @@ extern crate enumeration;
 mod escape;
 
 mod receive;
+pub use receive::TelnetDelegate;
 
 mod output;
 pub use output::{EffectFragment, OutputDrain, OutputFragment, TextFragment, TextStyle};

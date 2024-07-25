@@ -90,7 +90,6 @@ impl State {
                 }) =>
             {
                 let value = self.entities.decode(body)?;
-                // self.plugins.send_to_all(Callback::MxpSetEntity, format!("{}={}", key, value));
                 self.entities.insert(key.to_owned(), value);
             }
             _ => {

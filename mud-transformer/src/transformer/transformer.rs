@@ -6,7 +6,7 @@ use super::phase::Phase;
 use super::tag::{Tag, TagList};
 use crate::escape::{ansi, telnet, utf8};
 use crate::output::{BufferedOutput, Heading, InList, OutputDrain, TextFormat, TextStyle};
-use crate::receive::{Decompress, ReceiveCursor};
+use crate::receive::{Decompress, NoopTelnetDelegate, ReceiveCursor, TelnetDelegate};
 use crate::EffectFragment;
 use mxp;
 use mxp::{HexColor, WorldColor};
@@ -18,9 +18,11 @@ fn input_mxp_auth(input: &mut BufferedInput, auth: &str, connect: Option<AutoCon
     input.append(auth.as_bytes());
     input.append(b"\r\n");
 }
+
 #[derive(Debug)]
-pub struct Transformer {
+pub struct Transformer<D = NoopTelnetDelegate> {
     config: TransformerConfig,
+    delegate: D,
     decompressing: bool,
     decompress: Decompress,
 
@@ -55,20 +57,27 @@ pub struct Transformer {
     input: BufferedInput,
 }
 
-impl Default for Transformer {
+impl<D: Default + TelnetDelegate> Default for Transformer<D> {
     fn default() -> Self {
-        Self::new(TransformerConfig::default())
+        Self::with_delegate(Default::default(), TransformerConfig::default())
     }
 }
 
-impl Transformer {
+impl Transformer<NoopTelnetDelegate> {
     pub fn new(config: TransformerConfig) -> Self {
+        Self::with_delegate(NoopTelnetDelegate, config)
+    }
+}
+
+impl<D: TelnetDelegate> Transformer<D> {
+    pub fn with_delegate(delegate: D, config: TransformerConfig) -> Self {
         let mut output = BufferedOutput::new();
         if config.ignore_mxp_colors {
             output.disable_mxp_colors();
         }
         Self {
             phase: Phase::Normal,
+            delegate,
             decompressing: false,
             decompress: Decompress::new(),
 
@@ -116,6 +125,11 @@ impl Transformer {
         }
         self.input.set_remember(config.send_mxp_afk_response);
         self.config = config;
+    }
+
+    pub fn set_delegate(&mut self, mut delegate: D) -> D {
+        mem::swap(&mut self.delegate, &mut delegate);
+        delegate
     }
 
     pub fn drain_output(&mut self) -> OutputDrain {
@@ -168,16 +182,12 @@ impl Transformer {
         }
         self.pueblo_active = false;
         self.mxp_active = false;
-
-        // self.plugins.send_to_all(Callback::MxpStop, ());
     }
 
     fn mxp_on(&mut self, pueblo: bool, manual: bool) {
         if self.mxp_active {
             return;
         }
-
-        // self.plugins.send_to_all(Callback::MxpStart, ());
 
         self.mxp_active = true;
         self.pueblo_active = pueblo;
@@ -245,20 +255,8 @@ impl Transformer {
             self.output.set_mxp_variable(variable);
         }
 
-        // let argstring = words.as_str();
         let mut args = mxp::Arguments::parse_words(words)?;
 
-        /*
-        if name != "afk"
-            && self.plugins.send_to_all_until(
-                Callback::MxpOpenTag,
-                (format!("{},{}", name, argstring), &args),
-                enums![true],
-            )
-        {
-            return Ok(());
-        }
-        */
         match component {
             mxp::ElementComponent::Atom(atom) => {
                 self.mxp_state.decode_args(&mut args)?;
@@ -698,7 +696,7 @@ impl Transformer {
                 match c {
                     telnet::EOR | telnet::GA => {
                         self.phase = Phase::Normal;
-                        // self.plugins.send_to_all(Callback::IacGa, ());
+                        self.delegate.on_iac_ga();
                         if self.config.convert_ga_to_newline {
                             self.output.start_line();
                         }
@@ -876,19 +874,12 @@ impl Transformer {
                         }
                     }
                     telnet::MUD_SPECIFIC => {
-                        /*
-                        let data = String::from_utf8_lossy(&self.subnegotiation_data);
-                        // self.plugins.send_to_all(Callback::TelnetOption, data);
-                        */
+                        self.delegate.on_telnet_option(&self.subnegotiation_data)
                     }
-                    _ => {
-                        /*
-                        let sbtype = self.subnegotiation_type;
-                        let data = String::from_utf8_lossy(&self.subnegotiation_data);
-                        self.plugins
-                            .send_to_all(Callback::TelnetSubnegotiation, (sbtype, data));
-                        */
-                    }
+                    _ => self.delegate.on_telnet_subnegotiation(
+                        self.subnegotiation_type,
+                        &self.subnegotiation_data,
+                    ),
                 }
             }
 
