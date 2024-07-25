@@ -1,4 +1,4 @@
-use std::mem;
+use std::{io, mem};
 
 use super::config::{AutoConnect, TransformerConfig, UseMxp};
 use super::input::{self, BufferedInput};
@@ -6,6 +6,7 @@ use super::phase::Phase;
 use super::tag::{Tag, TagList};
 use crate::escape::{ansi, telnet, utf8};
 use crate::output::{BufferedOutput, Heading, InList, OutputDrain, TextFormat, TextStyle};
+use crate::receive::{Decompress, ReceiveCursor};
 use crate::EffectFragment;
 use mxp;
 use mxp::{HexColor, WorldColor};
@@ -17,16 +18,11 @@ fn input_mxp_auth(input: &mut BufferedInput, auth: &str, connect: Option<AutoCon
     input.append(auth.as_bytes());
     input.append(b"\r\n");
 }
-
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum SideEffect {
-    DisableCompression,
-    EnableCompression,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct Transformer {
     config: TransformerConfig,
+    decompressing: bool,
+    decompress: Decompress,
 
     phase: Phase,
 
@@ -73,6 +69,8 @@ impl Transformer {
         }
         Self {
             phase: Phase::Normal,
+            decompressing: false,
+            decompress: Decompress::new(),
 
             mxp_active: config.use_mxp == UseMxp::Always,
             pueblo_active: false,
@@ -121,6 +119,11 @@ impl Transformer {
     }
 
     pub fn drain_output(&mut self) -> OutputDrain {
+        self.output.drain_complete()
+    }
+
+    pub fn flush_output(&mut self) -> OutputDrain {
+        self.output.flush();
         self.output.drain()
     }
 
@@ -594,12 +597,41 @@ impl Transformer {
         }
     }
 
-    pub fn read_byte(&mut self, c: u8) -> Option<SideEffect> {
+    pub fn receive(&mut self, bytes: &[u8], buf: &mut [u8]) -> io::Result<()> {
+        if bytes.is_empty() {
+            return Ok(());
+        }
+        let mut cursor = ReceiveCursor::new(bytes);
+        if !self.decompressing {
+            while let Some(byte) = cursor.next() {
+                self.receive_byte(byte);
+                if self.decompressing {
+                    break;
+                }
+            }
+        }
+        while !cursor.is_empty() {
+            let n = self.decompress.decompress(&mut cursor, buf)?;
+            let mut iter = buf[..n].iter();
+            while let Some(&byte) = iter.next() {
+                self.receive_byte(byte);
+                if !self.decompressing {
+                    self.decompress.reset();
+                    self.receive(&iter.as_slice().to_vec(), buf)?;
+                    return self.receive(bytes, buf);
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn receive_byte(&mut self, c: u8) {
         let last_char = self.output.last().unwrap_or(b'\n');
 
         if last_char == b'\r' && c != b'\n' {
             self.output.append_effect(EffectFragment::CarriageReturn);
-            return None;
+            return;
         }
 
         if self.phase == Phase::Utf8Character && !utf8::is_continuation(c) {
@@ -787,7 +819,7 @@ impl Transformer {
             Phase::Compress if c == telnet::WILL => self.phase = Phase::CompressWill,
             Phase::Compress => self.phase = Phase::Normal,
 
-            Phase::CompressWill if c == telnet::SE => return Some(SideEffect::EnableCompression),
+            Phase::CompressWill if c == telnet::SE => self.decompressing = true,
             Phase::CompressWill => self.phase = Phase::Normal,
 
             Phase::SubnegotiationIac if c == telnet::IAC => {
@@ -799,7 +831,7 @@ impl Transformer {
                 match self.subnegotiation_type {
                     telnet::COMPRESS2 => {
                         if !self.config.disable_compression {
-                            return Some(SideEffect::EnableCompression);
+                            self.decompressing = true;
                         }
                     }
                     telnet::MXP => {
@@ -943,20 +975,11 @@ impl Transformer {
                     }
                 }
                 // BEL
-                0x07 => {
-                    self.output.append_effect(EffectFragment::Beep);
-                    return None;
-                }
+                0x07 => self.output.append_effect(EffectFragment::Beep),
                 // BS
-                0x08 => {
-                    self.output.append_effect(EffectFragment::Backspace);
-                    return None;
-                }
+                0x08 => self.output.append_effect(EffectFragment::Backspace),
                 // FF
-                0x0C => {
-                    self.output.append_page_break();
-                    return None;
-                }
+                0x0C => self.output.append_page_break(),
                 b'\t' if self.output.format().contains(TextFormat::Paragraph) => {
                     if last_char != b' ' {
                         self.output.append(b' ');
@@ -1004,7 +1027,5 @@ impl Transformer {
                 _ => self.output.append(c),
             },
         }
-
-        None
     }
 }

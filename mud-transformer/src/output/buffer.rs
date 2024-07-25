@@ -29,6 +29,7 @@ pub struct BufferedOutput {
     buf: BytesMut,
     fragments: Vec<OutputFragment>,
     ignore_mxp_colors: bool,
+    last_linebreak: Option<usize>,
 }
 
 impl Default for BufferedOutput {
@@ -47,6 +48,7 @@ impl BufferedOutput {
             buf: BytesMut::new(),
             fragments: Vec::new(),
             ignore_mxp_colors: false,
+            last_linebreak: None,
         }
     }
 
@@ -63,7 +65,15 @@ impl BufferedOutput {
     }
 
     pub fn drain(&mut self) -> OutputDrain {
+        self.last_linebreak = None;
         self.fragments.drain(..)
+    }
+
+    pub fn drain_complete(&mut self) -> OutputDrain {
+        match self.last_linebreak.take() {
+            Some(i) => self.fragments.drain(..=i),
+            None => self.fragments.drain(self.fragments.len()..),
+        }
     }
 
     fn flush_last(&mut self, i: usize) {
@@ -117,6 +127,7 @@ impl BufferedOutput {
 
     pub fn start_line(&mut self) {
         self.flush();
+        self.last_linebreak = Some(self.fragments.len());
         self.fragments.push(OutputFragment::LineBreak);
     }
 
@@ -127,6 +138,7 @@ impl BufferedOutput {
 
     pub fn append_hr(&mut self) {
         self.flush();
+        self.last_linebreak = Some(self.fragments.len());
         self.fragments.push(OutputFragment::Hr);
     }
 
@@ -142,6 +154,7 @@ impl BufferedOutput {
 
     pub fn append_page_break(&mut self) {
         self.flush();
+        self.last_linebreak = Some(self.fragments.len());
         self.fragments.push(OutputFragment::PageBreak);
     }
 

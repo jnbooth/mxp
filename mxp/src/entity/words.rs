@@ -1,3 +1,4 @@
+use std::iter::FusedIterator;
 use std::str::{self, CharIndices};
 
 use super::error::{Error as MxpError, ParseError};
@@ -87,6 +88,8 @@ impl<'a> Iterator for Words<'a> {
         Some(&self.s[start..end])
     }
 }
+
+impl<'a> FusedIterator for Words<'a> {}
 
 #[cfg(test)]
 mod tests {

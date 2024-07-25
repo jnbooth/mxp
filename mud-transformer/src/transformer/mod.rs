@@ -8,4 +8,4 @@ mod phase;
 mod tag;
 
 mod transformer;
-pub use transformer::{SideEffect, Transformer};
+pub use transformer::Transformer;
