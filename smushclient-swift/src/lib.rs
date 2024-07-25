@@ -225,8 +225,6 @@ macro_rules! flag_method {
 impl RustTextFragment {
     #[inline]
     fn text(&self) -> &[u8] {
-        // SAFETY: Text fragments are UTF-8 validated during transformation.
-        // swift_bridge doesn't have a type for &[u8] anyway.
         &self.inner.text
     }
 
