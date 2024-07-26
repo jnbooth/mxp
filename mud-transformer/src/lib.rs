@@ -1,13 +1,15 @@
 #[macro_use]
 extern crate enumeration;
 
-mod escape;
+pub use mxp;
+pub use mxp::escape;
 
 mod receive;
-pub use receive::TelnetDelegate;
 
 mod output;
-pub use output::{EffectFragment, OutputDrain, OutputFragment, TextFragment, TextStyle};
+pub use output::{
+    EffectFragment, OutputDrain, OutputFragment, TelnetFragment, TextFragment, TextStyle,
+};
 
 mod transformer;
 pub use transformer::{Transformer, TransformerConfig};

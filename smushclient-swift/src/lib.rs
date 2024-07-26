@@ -1,8 +1,8 @@
 #![allow(clippy::unnecessary_cast)]
 use mud_stream::nonblocking::MudStream;
-use mud_transformer::EffectFragment;
+use mud_transformer::mxp::{self, Link, SendTo, WorldColor};
+use mud_transformer::{EffectFragment, TelnetFragment};
 use mud_transformer::{OutputFragment, TextFragment, TextStyle};
-use mxp::{Link, SendTo, WorldColor};
 use std::io;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
@@ -54,31 +54,33 @@ mod ffi {
     }
 
     enum EffectFragment {
-        #[swift_bridge(swift_name = "backspace")]
         Backspace,
-        #[swift_bridge(swift_name = "beep")]
         Beep,
-        #[swift_bridge(swift_name = "carriageReturn")]
         CarriageReturn,
-        #[swift_bridge(swift_name = "eraseCharacter")]
         EraseCharacter,
-        #[swift_bridge(swift_name = "eraseLine")]
         EraseLine,
     }
 
+    enum TelnetFragment {
+        Do { code: u8 },
+        IacGa,
+        Naws,
+        Subnegotiation { code: u8, data: Vec<u8> },
+        Will { code: u8 },
+    }
+
     enum OutputFragment {
-        #[swift_bridge(swift_name = "effect")]
         Effect(EffectFragment),
-        #[swift_bridge(swift_name = "hr")]
         Hr,
-        #[swift_bridge(swift_name = "image")]
         Image(String),
-        #[swift_bridge(swift_name = "lineBreak")]
         LineBreak,
-        #[swift_bridge(swift_name = "pageBreak")]
         PageBreak,
-        #[swift_bridge(swift_name = "text")]
+        Telnet(TelnetFragment),
         Text(RustTextFragment),
+    }
+
+    enum PluginEvent {
+        InputModified(String),
     }
 
     extern "Rust" {
@@ -242,7 +244,7 @@ impl RustTextFragment {
     #[inline]
     fn link(&self) -> Option<ffi::MxpLink> {
         match &self.inner.action {
-            Some(action) => Some(action.clone().into()),
+            Some(action) => Some((**action).clone().into()),
             None => None,
         }
     }
@@ -291,6 +293,21 @@ impl_enum_from!(
     EraseLine
 );
 
+impl From<TelnetFragment> for ffi::TelnetFragment {
+    fn from(value: TelnetFragment) -> Self {
+        match value {
+            TelnetFragment::Do { code } => ffi::TelnetFragment::Do { code },
+            TelnetFragment::IacGa => ffi::TelnetFragment::IacGa,
+            TelnetFragment::Naws => ffi::TelnetFragment::Naws,
+            TelnetFragment::Subnegotiation { code, data } => ffi::TelnetFragment::Subnegotiation {
+                code,
+                data: data.to_vec(),
+            },
+            TelnetFragment::Will { code } => ffi::TelnetFragment::Will { code },
+        }
+    }
+}
+
 impl From<OutputFragment> for ffi::OutputFragment {
     fn from(value: OutputFragment) -> Self {
         match value {
@@ -299,6 +316,7 @@ impl From<OutputFragment> for ffi::OutputFragment {
             OutputFragment::Image(src) => Self::Image(src),
             OutputFragment::LineBreak => Self::LineBreak,
             OutputFragment::PageBreak => Self::PageBreak,
+            OutputFragment::Telnet(telnet) => Self::Telnet(telnet.into()),
             OutputFragment::Text(text) => Self::Text(text.into()),
         }
     }

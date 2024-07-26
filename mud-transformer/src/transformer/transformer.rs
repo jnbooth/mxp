@@ -4,10 +4,10 @@ use super::config::{AutoConnect, TransformerConfig, UseMxp};
 use super::input::{self, BufferedInput};
 use super::phase::Phase;
 use super::tag::{Tag, TagList};
-use crate::escape::{ansi, telnet, utf8};
 use crate::output::{BufferedOutput, Heading, InList, OutputDrain, TextFormat, TextStyle};
-use crate::receive::{Decompress, NoopTelnetDelegate, ReceiveCursor, TelnetDelegate};
+use crate::receive::{Decompress, ReceiveCursor};
 use crate::EffectFragment;
+use mxp::escape::{ansi, telnet};
 use mxp::{HexColor, WorldColor};
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str, connect: Option<AutoConnect>) {
@@ -19,9 +19,8 @@ fn input_mxp_auth(input: &mut BufferedInput, auth: &str, connect: Option<AutoCon
 }
 
 #[derive(Debug)]
-pub struct Transformer<D = NoopTelnetDelegate> {
+pub struct Transformer {
     config: TransformerConfig,
-    delegate: D,
     decompressing: bool,
     decompress: Decompress,
 
@@ -56,27 +55,20 @@ pub struct Transformer<D = NoopTelnetDelegate> {
     input: BufferedInput,
 }
 
-impl<D: Default + TelnetDelegate> Default for Transformer<D> {
+impl Default for Transformer {
     fn default() -> Self {
-        Self::with_delegate(Default::default(), TransformerConfig::default())
+        Self::new(TransformerConfig::default())
     }
 }
 
-impl Transformer<NoopTelnetDelegate> {
+impl Transformer {
     pub fn new(config: TransformerConfig) -> Self {
-        Self::with_delegate(NoopTelnetDelegate, config)
-    }
-}
-
-impl<D: TelnetDelegate> Transformer<D> {
-    pub fn with_delegate(delegate: D, config: TransformerConfig) -> Self {
         let mut output = BufferedOutput::new();
         if config.ignore_mxp_colors {
             output.disable_mxp_colors();
         }
         Self {
             phase: Phase::Normal,
-            delegate,
             decompressing: false,
             decompress: Decompress::new(),
 
@@ -107,6 +99,7 @@ impl<D: TelnetDelegate> Transformer<D> {
             utf8_sequence: Vec::with_capacity(4),
             output,
             input: BufferedInput::new(config.send_mxp_afk_response),
+
             config,
         }
     }
@@ -124,11 +117,6 @@ impl<D: TelnetDelegate> Transformer<D> {
         }
         self.input.set_remember(config.send_mxp_afk_response);
         self.config = config;
-    }
-
-    pub fn set_delegate(&mut self, mut delegate: D) -> D {
-        mem::swap(&mut self.delegate, &mut delegate);
-        delegate
     }
 
     pub fn drain_output(&mut self) -> OutputDrain {
@@ -207,16 +195,6 @@ impl<D: TelnetDelegate> Transformer<D> {
         self.mxp_restore_mode();
         let name = Tag::parse_closing_tag(tag_body)?;
         let (closed, _tag) = self.mxp_active_tags.find_last(was_secure, name)?;
-        /*
-        if let Some(template) = &tag.anchor_template {
-            let select = self.cursor.document().select(tag.text_index..);
-            let fmt = QTextCharFormat::new();
-            let text = select.text();
-            let anchor = template.replace("&text;", &text);
-            fmt.set_anchor_href(&anchor);
-            select.merge_char_format(&fmt);
-        }
-            */
         self.mxp_close_tags_from(closed);
         Ok(())
     }
@@ -422,7 +400,6 @@ impl<D: TelnetDelegate> Transformer<D> {
                 }
                 if let Some(url) = args.get("url").or_else(|| args.get("src")) {
                     let fname = args.get("fname").unwrap_or("");
-                    // TODO setting on MXP page to enable or disable images
                     self.output.append_image(format!("{url}{fname}"));
                 }
             }
@@ -594,6 +571,7 @@ impl<D: TelnetDelegate> Transformer<D> {
         }
     }
 
+    #[inline]
     pub fn receive(&mut self, bytes: &[u8], buf: &mut [u8]) -> io::Result<()> {
         if bytes.is_empty() {
             return Ok(());
@@ -632,7 +610,7 @@ impl<D: TelnetDelegate> Transformer<D> {
             return;
         }
 
-        if self.phase == Phase::Utf8Character && !utf8::is_continuation(c) {
+        if self.phase == Phase::Utf8Character && !is_utf8_continuation(c) {
             self.output.append(&mut self.utf8_sequence);
             self.phase = Phase::Normal;
         }
@@ -696,7 +674,7 @@ impl<D: TelnetDelegate> Transformer<D> {
                 match c {
                     telnet::EOR | telnet::GA => {
                         self.phase = Phase::Normal;
-                        self.delegate.on_iac_ga();
+                        self.output.append_iac_ga();
                         if self.config.convert_ga_to_newline {
                             self.output.start_line();
                         }
@@ -749,11 +727,12 @@ impl<D: TelnetDelegate> Transformer<D> {
                     },
                     telnet::WILL_EOR => self.config.convert_ga_to_newline,
                     telnet::CHARSET => true,
-                    // _ => self.tellnet_callbacks(c, "WILL", "SENT_DO"),
-                    _ => false,
+                    _ => {
+                        self.output.append_telnet_will(c);
+                        return;
+                    }
                 };
-                let verb = if will { telnet::DO } else { telnet::DONT };
-                self.input.append(&[telnet::IAC, verb, c]);
+                self.input.append(&telnet::supports_do(c, will));
             }
 
             Phase::Wont => {
@@ -761,7 +740,7 @@ impl<D: TelnetDelegate> Transformer<D> {
                 if !self.config.no_echo_off {
                     self.no_echo = false;
                 }
-                self.input.append(&[telnet::IAC, telnet::DONT, c]);
+                self.input.append(&telnet::supports_do(c, false));
             }
 
             Phase::Do => {
@@ -776,7 +755,7 @@ impl<D: TelnetDelegate> Transformer<D> {
                     telnet::NAWS if !self.config.naws => false,
                     telnet::NAWS => {
                         self.naws_wanted = true;
-                        // self.send_window_sizes(self.world.wrap_column)?;
+                        self.output.append_telnet_naws();
                         true
                     }
                     telnet::MXP => match self.config.use_mxp {
@@ -787,11 +766,12 @@ impl<D: TelnetDelegate> Transformer<D> {
                             true
                         }
                     },
-                    // _ => self.telnet_callbacks(c, "DO", "SENT_WILL"),
-                    _ => false,
+                    _ => {
+                        self.output.append_telnet_do(c);
+                        return;
+                    }
                 };
-                let verb = if will { telnet::WILL } else { telnet::WONT };
-                self.input.append(&[telnet::IAC, verb, c]);
+                self.input.append(&telnet::supports_will(c, will));
             }
 
             Phase::Dont => {
@@ -801,7 +781,7 @@ impl<D: TelnetDelegate> Transformer<D> {
                     telnet::TERMINAL_TYPE => self.ttype_sequence = 0,
                     _ => (),
                 }
-                self.input.append(&[telnet::IAC, telnet::WONT, c]);
+                self.input.append(&telnet::supports_will(c, false));
             }
 
             Phase::Sb if c == telnet::COMPRESS => self.phase = Phase::Compress,
@@ -839,12 +819,7 @@ impl<D: TelnetDelegate> Transformer<D> {
                     }
                     telnet::TERMINAL_TYPE => {
                         if self.subnegotiation_data.first() == Some(&telnet::TTYPE_SEND) {
-                            self.input.append(&[
-                                telnet::IAC,
-                                telnet::SB,
-                                telnet::TERMINAL_TYPE,
-                                telnet::TTYPE_IS,
-                            ]);
+                            self.input.append(telnet::TTYPE_PREFIX);
                             let ttype = match self.ttype_sequence {
                                 0 => {
                                     self.ttype_sequence += 1;
@@ -863,7 +838,7 @@ impl<D: TelnetDelegate> Transformer<D> {
                                 _ => b"MTTS 9",
                             };
                             self.input.append(ttype);
-                            self.input.append(&[telnet::IAC, telnet::SE]);
+                            self.input.append(telnet::TTYPE_SUFFIX);
                         }
                     }
                     telnet::CHARSET => {
@@ -873,13 +848,11 @@ impl<D: TelnetDelegate> Transformer<D> {
                             self.input.append(charset);
                         }
                     }
-                    telnet::MUD_SPECIFIC => {
-                        self.delegate.on_telnet_option(&self.subnegotiation_data)
+                    code => {
+                        self.output
+                            .append_subnegotiation(code, &self.subnegotiation_data);
+                        self.subnegotiation_data.clear();
                     }
-                    _ => self.delegate.on_telnet_subnegotiation(
-                        self.subnegotiation_type,
-                        &self.subnegotiation_data,
-                    ),
                 }
             }
 
@@ -998,7 +971,7 @@ impl<D: TelnetDelegate> Transformer<D> {
                         self.output.start_line();
                     }
                 }
-                _ if utf8::is_higher_order(c) => {
+                _ if is_utf8_higher_order(c) => {
                     self.utf8_sequence.push(c);
                     self.phase = Phase::Utf8Character;
                 }
@@ -1019,4 +992,12 @@ impl<D: TelnetDelegate> Transformer<D> {
             },
         }
     }
+}
+
+pub const fn is_utf8_higher_order(c: u8) -> bool {
+    (c & 0x80) != 0
+}
+
+pub const fn is_utf8_continuation(c: u8) -> bool {
+    (c & 0xC0) != 0x80
 }

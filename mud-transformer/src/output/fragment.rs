@@ -4,9 +4,8 @@ use std::vec;
 use bytes::Bytes;
 use enumeration::{Enum, EnumSet};
 
-use crate::escape::ansi;
-
 use super::span::{Heading, TextStyle};
+use mxp::escape::ansi;
 use mxp::{HexColor, WorldColor};
 
 pub type OutputDrain<'a> = vec::Drain<'a, OutputFragment>;
@@ -18,6 +17,7 @@ pub enum OutputFragment {
     Image(String),
     LineBreak,
     PageBreak,
+    Telnet(TelnetFragment),
     Text(TextFragment),
 }
 
@@ -30,16 +30,43 @@ pub enum EffectFragment {
     EraseLine,
 }
 
+impl From<EffectFragment> for OutputFragment {
+    fn from(value: EffectFragment) -> Self {
+        Self::Effect(value)
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum TelnetFragment {
+    Do { code: u8 },
+    IacGa,
+    Naws,
+    Subnegotiation { code: u8, data: Bytes },
+    Will { code: u8 },
+}
+
+impl From<TelnetFragment> for OutputFragment {
+    fn from(value: TelnetFragment) -> Self {
+        Self::Telnet(value)
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TextFragment {
     pub text: Bytes,
     pub flags: EnumSet<TextStyle>,
     pub foreground: WorldColor,
     pub background: WorldColor,
-    pub action: Option<mxp::Link>,
+    pub action: Option<Box<mxp::Link>>,
     pub heading: Option<Heading>,
     /// Which variable to set (FLAG in MXP).
     pub variable: Option<String>,
+}
+
+impl From<TextFragment> for OutputFragment {
+    fn from(value: TextFragment) -> Self {
+        Self::Text(value)
+    }
 }
 
 impl AsRef<[u8]> for TextFragment {

@@ -3,7 +3,7 @@ use enumeration::EnumSet;
 
 use crate::output::fragment::EffectFragment;
 
-use super::fragment::{OutputDrain, OutputFragment, TextFragment};
+use super::fragment::{OutputDrain, OutputFragment, TelnetFragment, TextFragment};
 use super::output::Output;
 use super::span::{Heading, InList, SpanList, TextFormat, TextStyle};
 use mxp::WorldColor;
@@ -76,6 +76,10 @@ impl BufferedOutput {
         }
     }
 
+    fn push<T: Into<OutputFragment>>(&mut self, fragment: T) {
+        self.fragments.push(fragment.into())
+    }
+
     fn flush_last(&mut self, i: usize) {
         if self.buf.is_empty() {
             return;
@@ -109,12 +113,12 @@ impl BufferedOutput {
                     ignore_colors,
                     WorldColor::BLACK,
                 ),
-                action: span.action.clone(),
+                action: span.action.clone().map(Box::new),
                 heading: span.heading,
                 variable: span.variable.clone(),
             }
         };
-        self.fragments.push(OutputFragment::Text(fragment));
+        self.push(fragment);
     }
 
     fn flush_mxp(&mut self) {
@@ -132,7 +136,7 @@ impl BufferedOutput {
 
     pub fn start_line(&mut self) {
         self.flush_line();
-        self.fragments.push(OutputFragment::LineBreak);
+        self.push(OutputFragment::LineBreak);
     }
 
     pub fn append<O: Output>(&mut self, output: O) {
@@ -140,24 +144,51 @@ impl BufferedOutput {
         self.spans.set_populated();
     }
 
+    pub fn append_effect(&mut self, effect: EffectFragment) {
+        self.flush();
+        self.push(effect);
+    }
+
     pub fn append_hr(&mut self) {
         self.flush_line();
-        self.fragments.push(OutputFragment::Hr);
+        self.push(OutputFragment::Hr);
+    }
+
+    pub fn append_iac_ga(&mut self) {
+        self.flush();
+        self.push(TelnetFragment::IacGa);
     }
 
     pub fn append_image(&mut self, src: String) {
         self.flush();
-        self.fragments.push(OutputFragment::Image(src));
-    }
-
-    pub fn append_effect(&mut self, effect: EffectFragment) {
-        self.flush();
-        self.fragments.push(OutputFragment::Effect(effect));
+        self.push(OutputFragment::Image(src));
     }
 
     pub fn append_page_break(&mut self) {
         self.flush_line();
-        self.fragments.push(OutputFragment::PageBreak);
+        self.push(OutputFragment::PageBreak);
+    }
+
+    pub fn append_subnegotiation(&mut self, code: u8, data: &[u8]) {
+        self.flush();
+        self.buf.extend_from_slice(data);
+        let data = self.buf.split().freeze();
+        self.push(TelnetFragment::Subnegotiation { code, data })
+    }
+
+    pub fn append_telnet_naws(&mut self) {
+        self.flush();
+        self.push(TelnetFragment::Naws);
+    }
+
+    pub fn append_telnet_do(&mut self, code: u8) {
+        self.flush();
+        self.push(TelnetFragment::Do { code });
+    }
+
+    pub fn append_telnet_will(&mut self, code: u8) {
+        self.flush();
+        self.push(TelnetFragment::Will { code });
     }
 
     pub fn set_ansi_flag(&mut self, flag: TextStyle) {

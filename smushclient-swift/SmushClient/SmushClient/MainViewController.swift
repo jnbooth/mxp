@@ -19,7 +19,7 @@ public class MainViewController: NSViewController, NSTextFieldDelegate, NSTextVi
   weak var textStorage: NSTextStorage!
   var willBreak = false
   let defaults = AppDefaults()
-  
+
   func handleError(_ error: Error) {
     print(error.localizedDescription)
   }
@@ -85,7 +85,7 @@ public class MainViewController: NSViewController, NSTextFieldDelegate, NSTextVi
       return false
     }
   }
-  
+
   public func textView(_ view: NSTextView, menu: NSMenu, for event: NSEvent, at charIndex: Int) -> NSMenu? {
     let attributes = textStorage.attributes(at: charIndex, effectiveRange: nil)
     return mxpActionMenu(attributes: attributes, action: #selector(handleChoice(_:)))
@@ -133,7 +133,7 @@ public class MainViewController: NSViewController, NSTextFieldDelegate, NSTextVi
       willBreak = false
     }
   }
-  
+
   @objc func handleChoice(_ item: NSMenuItem) {
     do {
       try sendInput(item.title)

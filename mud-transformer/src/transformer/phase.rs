@@ -1,6 +1,6 @@
 use enumeration::Enum;
 
-use crate::escape::telnet;
+use mxp::escape::telnet;
 
 const fn is_phase_reset_character(c: u8) -> bool {
     matches!(c, b'\r' | b'\n' | telnet::ESC | telnet::IAC)

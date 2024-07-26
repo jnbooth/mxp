@@ -15,7 +15,6 @@ swift-bridge-build = { git = "https://github.com/jnbooth/swift-bridge", version 
 enumeration = { git = "https://github.com/jnbooth/enumeration", version = "0.7.0" }
 mud-transformer = { path = "../mud-transformer" }
 mud-stream = { path = "../mud-stream", features = ["async"] }
-mxp = { path = "../mxp" }
 swift-bridge = { git = "https://github.com/jnbooth/swift-bridge", features = [
   "async",
 ], version = "0.1" }

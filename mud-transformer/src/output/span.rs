@@ -1,9 +1,8 @@
 use std::ops::Index;
 
 use enumeration::{Enum, EnumSet};
+use mxp::escape::ansi;
 use mxp::WorldColor;
-
-use crate::escape::ansi;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum TextStyle {
@@ -52,8 +51,8 @@ pub enum Heading {
     H6,
 }
 
-// eg. <send "command1|command2|command3" hint="click to see menu|Item 1|Item
-// 2|Item 2">this is a menu link</SEND>
+/// eg. <send "command1|command2|command3" hint="click to see menu|Item 1|Item
+/// 2|Item 2">this is a menu link</SEND>
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Span {
     populated: bool,

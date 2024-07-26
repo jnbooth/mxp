@@ -7,6 +7,8 @@ pub use color::{HexColor, WorldColor};
 mod entity;
 pub use entity::*;
 
+pub mod escape;
+
 mod protocol;
 pub use protocol::responses;
 
