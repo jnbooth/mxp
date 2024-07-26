@@ -4,7 +4,7 @@ use enumeration::EnumSet;
 use crate::output::fragment::EffectFragment;
 
 use super::fragment::{OutputDrain, OutputFragment, TelnetFragment, TextFragment};
-use super::output::Output;
+use super::output_trait::Output;
 use super::span::{Heading, InList, SpanList, TextFormat, TextStyle};
 use mxp::WorldColor;
 
