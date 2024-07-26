@@ -1,3 +1,4 @@
+#![allow(clippy::unnecessary_cast)]
 use mud_stream::nonblocking::MudStream;
 use mud_transformer::EffectFragment;
 use mud_transformer::{OutputFragment, TextFragment, TextStyle};
@@ -273,7 +274,7 @@ impl From<Link> for ffi::MxpLink {
     fn from(value: Link) -> Self {
         Self {
             action: value.action,
-            hint: value.hint.unwrap_or(String::new()),
+            hint: value.hint.unwrap_or_default(),
             prompts: value.prompts,
             sendto: value.sendto.into(),
         }

@@ -60,7 +60,7 @@ impl<'a> Iterator for ReceiveCursor<'a> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        let byte = *self.inner.get(0)?;
+        let byte = *self.inner.first()?;
         self.inner = &self.inner[1..];
         Some(byte)
     }

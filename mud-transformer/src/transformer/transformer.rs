@@ -8,7 +8,6 @@ use crate::escape::{ansi, telnet, utf8};
 use crate::output::{BufferedOutput, Heading, InList, OutputDrain, TextFormat, TextStyle};
 use crate::receive::{Decompress, NoopTelnetDelegate, ReceiveCursor, TelnetDelegate};
 use crate::EffectFragment;
-use mxp;
 use mxp::{HexColor, WorldColor};
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str, connect: Option<AutoConnect>) {
@@ -504,10 +503,10 @@ impl<D: TelnetDelegate> Transformer<D> {
             ansi::BG_256_COLOR => self.phase = Phase::Background256Start,
             ansi::FG_DEFAULT => self.output.set_ansi_foreground(WorldColor::WHITE),
             ansi::BG_DEFAULT => self.output.set_ansi_background(WorldColor::BLACK),
-            _ if code >= ansi::FG_BLACK && code <= ansi::FG_WHITE => self
+            ansi::FG_BLACK..=ansi::FG_WHITE => self
                 .output
                 .set_ansi_foreground(WorldColor::Ansi(code - ansi::FG_BLACK)),
-            _ if code >= ansi::BG_BLACK && code <= ansi::BG_WHITE => self
+            ansi::BG_BLACK..=ansi::BG_WHITE => self
                 .output
                 .set_ansi_background(WorldColor::Ansi(code - ansi::BG_BLACK)),
             _ => (),
@@ -601,7 +600,7 @@ impl<D: TelnetDelegate> Transformer<D> {
         }
         let mut cursor = ReceiveCursor::new(bytes);
         if !self.decompressing {
-            while let Some(byte) = cursor.next() {
+            for byte in &mut cursor {
                 self.receive_byte(byte);
                 if self.decompressing {
                     break;
@@ -611,11 +610,12 @@ impl<D: TelnetDelegate> Transformer<D> {
         while !cursor.is_empty() {
             let n = self.decompress.decompress(&mut cursor, buf)?;
             let mut iter = buf[..n].iter();
-            while let Some(&byte) = iter.next() {
+            for &byte in &mut iter {
                 self.receive_byte(byte);
                 if !self.decompressing {
                     self.decompress.reset();
-                    self.receive(&iter.as_slice().to_vec(), buf)?;
+                    let remainder = iter.as_slice().to_vec();
+                    self.receive(&remainder, buf)?;
                     return self.receive(bytes, buf);
                 }
             }

@@ -109,6 +109,7 @@ macro_rules! set_flag {
             },
         };
         $self.spans.push(span);
+        #[allow(clippy::needless_return)]
         return true;
     };
 }
@@ -177,7 +178,7 @@ impl SpanList {
 
     pub fn format(&self) -> EnumSet<TextFormat> {
         match self.get() {
-            Some(span) => span.format.clone(),
+            Some(span) => span.format,
             None => EnumSet::new(),
         }
     }
@@ -226,7 +227,7 @@ impl SpanList {
                 return false;
             }
             Some(span) => {
-                let mut format_flags = span.format.clone();
+                let mut format_flags = span.format;
                 format_flags.remove(format);
                 Span {
                     populated: false,
@@ -237,7 +238,7 @@ impl SpanList {
             None => return false,
         };
         self.spans.push(span);
-        return true;
+        true
     }
 
     pub fn set_foreground(&mut self, foreground: WorldColor) -> bool {

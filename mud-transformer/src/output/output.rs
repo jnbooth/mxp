@@ -21,7 +21,7 @@ impl<const N: usize> Output for &[u8; N] {
 impl Output for &mut Vec<u8> {
     #[inline]
     fn output(self, buf: &mut BytesMut) {
-        buf.extend_from_slice(&self)
+        buf.extend_from_slice(self)
     }
 }
 

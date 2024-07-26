@@ -45,7 +45,7 @@ impl State {
         element.items.iter().map(move |item| {
             let mut newargs = Arguments::new();
             for (i, arg) in &item.arguments {
-                let val = self.entities.decode_el(element, arg, &args)?;
+                let val = self.entities.decode_el(element, arg, args)?;
                 match i {
                     ArgumentIndex::Positional(..) => newargs.push(val),
                     ArgumentIndex::Named(key) => newargs.set(key, val),

@@ -48,6 +48,7 @@ pub enum CollectedElement<'a> {
 }
 
 impl<'a> CollectedElement<'a> {
+    #[allow(clippy::should_implement_trait)]
     pub fn from_str(text: &'a str) -> Result<Self, ParseError> {
         let tag = *text
             .as_bytes()
@@ -57,7 +58,7 @@ impl<'a> CollectedElement<'a> {
         match tag {
             b'!' => Ok(Self::Definition(&text[1..])),
             b'/' => Ok(Self::TagClose(&text[1..])),
-            _ => Ok(Self::TagOpen(&text)),
+            _ => Ok(Self::TagOpen(text)),
         }
     }
 }

@@ -1,9 +1,10 @@
 use std::fmt::{self, Display, Formatter};
+use std::hash::{Hash, Hasher};
 
 use super::hex_color::HexColor;
 use super::xterm::xterm;
 
-#[derive(Copy, Clone, Debug, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialOrd, Ord)]
 pub enum WorldColor {
     Ansi(u8),
     Hex(HexColor),
@@ -24,6 +25,18 @@ impl PartialEq for WorldColor {
 }
 
 impl Eq for WorldColor {}
+
+impl Hash for WorldColor {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            Self::Ansi(code) => state.write_u8(*code),
+            Self::Hex(HexColor::BLACK) => state.write_u8(0),
+            Self::Hex(HexColor::WHITE) => state.write_u8(7),
+            Self::Hex(hex) => state.write_u32(hex.code()),
+        }
+        core::mem::discriminant(self).hash(state);
+    }
+}
 
 impl Display for WorldColor {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {

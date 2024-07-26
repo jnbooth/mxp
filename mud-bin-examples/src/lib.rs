@@ -13,7 +13,7 @@ where
                 write!(writer, "{}", fragment)?;
             }
             OutputFragment::LineBreak => {
-                writer.write(b"\n")?;
+                writer.write_all(b"\n")?;
             }
             _ => (),
         }

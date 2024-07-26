@@ -26,10 +26,7 @@ impl BufferedInput {
     }
 
     pub fn afk(&self) -> Option<Duration> {
-        match self.latest {
-            Some(latest) => Some(latest.elapsed()),
-            None => None,
-        }
+        self.latest.map(|latest| latest.elapsed())
     }
 
     pub fn set_remember(&mut self, remember_latest: bool) {
