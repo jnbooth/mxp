@@ -1,6 +1,6 @@
 [package]
 name = "mud-bin-examples"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 
 [lints]
@@ -9,5 +9,5 @@ workspace = true
 [dependencies]
 bytes = "1.6.0"
 mud-transformer = { path = "../mud-transformer" }
-mud-stream = { path = "../mud-stream" }
+mud-stream = { path = "../mud-stream", features = ["async", "sync"] }
 tokio = { version = "1.38.0", features = ["full"] }

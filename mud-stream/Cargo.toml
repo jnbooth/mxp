@@ -1,6 +1,6 @@
 [package]
 name = "mud-stream"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 
 [lints]
@@ -16,7 +16,5 @@ features = ["io-util", "net"]
 optional = true
 
 [features]
-default = ["async", "sync"]
-
 async = ["pin-project-lite", "tokio"]
 sync = []
