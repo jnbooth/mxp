@@ -1,3 +1,6 @@
 [workspace]
 resolver = "2"
 members = ["mxp", "mud-bin-examples", "mud-stream", "mud-transformer"]
+
+[workspace.lints.clippy]
+manual_map = "allow"

@@ -3,6 +3,9 @@ name = "mud-bin-examples"
 version = "0.2.0"
 edition = "2021"
 
+[lints]
+workspace = true
+
 [dependencies]
 bytes = "1.6.0"
 mud-transformer = { path = "../mud-transformer" }

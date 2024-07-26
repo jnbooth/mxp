@@ -3,6 +3,9 @@ name = "mud-stream"
 version = "0.2.0"
 edition = "2021"
 
+[lints]
+workspace = true
+
 [dependencies]
 pin-project-lite = { version = "0.2", optional = true }
 mud-transformer = { path = "../mud-transformer" }
