@@ -144,6 +144,13 @@ impl BufferedOutput {
         self.spans.set_populated();
     }
 
+    pub fn append_afk(&mut self, challenge: &[u8]) {
+        self.flush();
+        self.buf.extend_from_slice(challenge);
+        let challenge = self.buf.split().freeze();
+        self.push(TelnetFragment::Afk { challenge })
+    }
+
     pub fn append_effect(&mut self, effect: EffectFragment) {
         self.flush();
         self.push(effect);

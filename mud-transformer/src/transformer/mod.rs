@@ -2,6 +2,7 @@ mod config;
 pub use config::TransformerConfig;
 
 mod input;
+pub use input::Drain as InputDrain;
 
 mod phase;
 

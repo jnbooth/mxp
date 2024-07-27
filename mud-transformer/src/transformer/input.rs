@@ -1,38 +1,22 @@
 use std::io::{self, BufRead, IoSliceMut, Read, Write};
-use std::time::{Duration, Instant};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BufferedInput {
     buf: Vec<u8>,
-    remember_latest: bool,
-    latest: Option<Instant>,
     cursor: usize,
 }
 
 impl Default for BufferedInput {
     fn default() -> Self {
-        Self::new(false)
+        Self::new()
     }
 }
 
 impl BufferedInput {
-    pub const fn new(remember_latest: bool) -> Self {
+    pub const fn new() -> Self {
         Self {
             buf: Vec::new(),
-            remember_latest,
-            latest: None,
             cursor: 0,
-        }
-    }
-
-    pub fn afk(&self) -> Option<Duration> {
-        self.latest.map(|latest| latest.elapsed())
-    }
-
-    pub fn set_remember(&mut self, remember_latest: bool) {
-        self.remember_latest = remember_latest;
-        if !remember_latest {
-            self.latest = None;
         }
     }
 
@@ -50,20 +34,19 @@ impl BufferedInput {
         &mut self.buf
     }
 
-    pub fn drain(&mut self) -> Drain {
-        Drain {
+    pub fn drain(&mut self) -> Option<Drain> {
+        if self.cursor == 0 {
+            return None;
+        }
+        Some(Drain {
             cursor: self.cursor,
-            remember_latest: self.remember_latest,
-            latest: &mut self.latest,
             external_cursor: &mut self.cursor,
             buf: &mut self.buf,
-        }
+        })
     }
 }
 
 pub struct Drain<'a> {
-    remember_latest: bool,
-    latest: &'a mut Option<Instant>,
     external_cursor: &'a mut usize,
     cursor: usize,
     buf: &'a mut Vec<u8>,
@@ -115,14 +98,12 @@ impl<'a> bytes::Buf for Drain<'a> {
 
 impl<'a> Drop for Drain<'a> {
     fn drop(&mut self) {
-        if self.remember_latest {
-            *self.latest = Some(Instant::now());
-        }
+        *self.external_cursor = 0;
         if self.is_empty() {
             self.buf.clear();
-            *self.external_cursor = 0;
         } else {
-            *self.external_cursor = self.cursor;
+            self.buf.copy_within(self.cursor.., 0);
+            self.buf.truncate(self.buf.len() - self.cursor);
         }
     }
 }

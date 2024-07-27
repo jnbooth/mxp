@@ -1,7 +1,7 @@
 use std::{io, mem};
 
-use super::config::{AutoConnect, TransformerConfig, UseMxp};
-use super::input::{self, BufferedInput};
+use super::config::{TransformerConfig, UseMxp};
+use super::input::{BufferedInput, Drain as InputDrain};
 use super::phase::Phase;
 use super::tag::{Tag, TagList};
 use crate::output::{BufferedOutput, Heading, InList, OutputDrain, TextFormat, TextStyle};
@@ -10,8 +10,8 @@ use crate::EffectFragment;
 use mxp::escape::{ansi, telnet};
 use mxp::{HexColor, WorldColor};
 
-fn input_mxp_auth(input: &mut BufferedInput, auth: &str, connect: Option<AutoConnect>) {
-    if connect != Some(AutoConnect::Mxp) || auth.is_empty() {
+fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
+    if auth.is_empty() {
         return;
     }
     input.append(auth.as_bytes());
@@ -44,7 +44,6 @@ pub struct Transformer {
     subnegotiation_type: u8,
     subnegotiation_data: Vec<u8>,
     ttype_sequence: u8,
-    naws_wanted: bool,
     ansi_code: u8,
     ansi_red: u8,
     ansi_green: u8,
@@ -90,7 +89,6 @@ impl Transformer {
             subnegotiation_type: 0,
             subnegotiation_data: Vec::new(),
             ttype_sequence: 0,
-            naws_wanted: false,
             ansi_code: 0,
             ansi_red: 0,
             ansi_green: 0,
@@ -98,7 +96,7 @@ impl Transformer {
 
             utf8_sequence: Vec::with_capacity(4),
             output,
-            input: BufferedInput::new(config.send_mxp_afk_response),
+            input: BufferedInput::new(),
 
             config,
         }
@@ -115,7 +113,6 @@ impl Transformer {
             UseMxp::Never => self.mxp_off(true),
             UseMxp::Command | UseMxp::Query => (),
         }
-        self.input.set_remember(config.send_mxp_afk_response);
         self.config = config;
     }
 
@@ -128,7 +125,7 @@ impl Transformer {
         self.output.drain()
     }
 
-    pub fn drain_input(&mut self) -> input::Drain {
+    pub fn drain_input(&mut self) -> Option<InputDrain> {
         self.input.drain()
     }
 
@@ -327,25 +324,12 @@ impl Transformer {
                 &self.config.version,
             )),
             Action::Afk => {
-                if let Some(afk) = self.input.afk() {
-                    let mxp::AfkArgs { challenge } = (&args).into();
-                    self.input.append_vectored(&mxp::responses::afk(
-                        &afk.as_secs().to_string(),
-                        challenge.unwrap_or(""),
-                    ))
-                }
+                let mxp::AfkArgs { challenge } = (&args).into();
+                self.output.append_afk(challenge.unwrap_or("").as_bytes());
             }
             Action::Support => Atom::fmt_supported(self.input.get_mut(), args),
-            Action::User => input_mxp_auth(
-                &mut self.input,
-                &self.config.player,
-                self.config.connect_method,
-            ),
-            Action::Password => input_mxp_auth(
-                &mut self.input,
-                &self.config.password,
-                self.config.connect_method,
-            ),
+            Action::User => input_mxp_auth(&mut self.input, &self.config.player),
+            Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
             Action::Br => {
                 self.output.start_line();
             }
@@ -727,10 +711,11 @@ impl Transformer {
                     },
                     telnet::WILL_EOR => self.config.convert_ga_to_newline,
                     telnet::CHARSET => true,
-                    _ => {
+                    _ if self.config.will.contains(&c) => {
                         self.output.append_telnet_will(c);
-                        return;
+                        true
                     }
+                    _ => false,
                 };
                 self.input.append(&telnet::supports_do(c, will));
             }
@@ -754,7 +739,6 @@ impl Transformer {
                     }
                     telnet::NAWS if !self.config.naws => false,
                     telnet::NAWS => {
-                        self.naws_wanted = true;
                         self.output.append_telnet_naws();
                         true
                     }
@@ -766,10 +750,11 @@ impl Transformer {
                             true
                         }
                     },
-                    _ => {
+                    _ if self.config.will.contains(&c) => {
                         self.output.append_telnet_do(c);
-                        return;
+                        true
                     }
+                    _ => false,
                 };
                 self.input.append(&telnet::supports_will(c, will));
             }
@@ -817,7 +802,7 @@ impl Transformer {
                             self.mxp_on(false, false);
                         }
                     }
-                    telnet::TERMINAL_TYPE => {
+                    telnet::TERMINAL_TYPE if !self.config.terminal_identification.is_empty() => {
                         if self.subnegotiation_data.first() == Some(&telnet::TTYPE_SEND) {
                             self.input.append(telnet::TTYPE_PREFIX);
                             let ttype = match self.ttype_sequence {
@@ -834,8 +819,8 @@ impl Transformer {
                                     self.ttype_sequence += 1;
                                     b"ANSI"
                                 }
-                                _ if self.config.utf_8 => b"MTTS 13",
-                                _ => b"MTTS 9",
+                                _ if self.config.disable_utf8 => b"MTTS 9",
+                                _ => b"MTTS 13",
                             };
                             self.input.append(ttype);
                             self.input.append(telnet::TTYPE_SUFFIX);
@@ -844,7 +829,7 @@ impl Transformer {
                     telnet::CHARSET => {
                         let data = &self.subnegotiation_data;
                         if data.len() >= 3 && data[0] == 1 {
-                            let charset = telnet::find_charset(data, self.config.utf_8);
+                            let charset = telnet::find_charset(data, !self.config.disable_utf8);
                             self.input.append(charset);
                         }
                     }

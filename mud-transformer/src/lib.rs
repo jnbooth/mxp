@@ -12,4 +12,4 @@ pub use output::{
 };
 
 mod transformer;
-pub use transformer::{Transformer, TransformerConfig};
+pub use transformer::{InputDrain, Transformer, TransformerConfig};

@@ -60,9 +60,9 @@ impl<T: AsyncRead + AsyncWrite + Unpin> MudStream<T> {
 
         self.transformer
             .receive(&buf[..n], &mut [0; COMPRESS_BUFFER])?;
-        self.stream
-            .write_all_buf(&mut self.transformer.drain_input())
-            .await?;
+        if let Some(mut drain) = self.transformer.drain_input() {
+            self.stream.write_all_buf(&mut drain).await?;
+        }
         Ok(Some(self.transformer.drain_output()))
     }
 }

@@ -38,6 +38,7 @@ impl From<EffectFragment> for OutputFragment {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TelnetFragment {
+    Afk { challenge: Bytes },
     Do { code: u8 },
     IacGa,
     Naws,
