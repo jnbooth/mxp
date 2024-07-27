@@ -1,6 +1,13 @@
 use std::io::{self, Write};
 
-use mud_transformer::OutputFragment;
+use mud_transformer::{OutputFragment, TransformerConfig};
+
+pub fn get_config() -> TransformerConfig {
+    TransformerConfig {
+        terminal_identification: "mushclient".to_owned(),
+        ..Default::default()
+    }
+}
 
 pub fn write_output<I, W>(output: I, mut writer: W) -> io::Result<()>
 where

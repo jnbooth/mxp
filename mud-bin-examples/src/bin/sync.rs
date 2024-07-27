@@ -1,6 +1,5 @@
-use mud_bin_examples::write_output;
+use mud_bin_examples::{get_config, write_output};
 use mud_stream::blocking::MudStream;
-use mud_transformer::TransformerConfig;
 use std::io;
 use std::io::{Read, Write};
 use std::net::TcpStream;
@@ -9,7 +8,7 @@ use std::time::Duration;
 fn main() -> io::Result<()> {
     let stream = TcpStream::connect(("discworld.atuin.net", 4242))?;
     stream.set_read_timeout(Some(Duration::from_secs(3)))?;
-    let mut stream = MudStream::new(stream, TransformerConfig::new());
+    let mut stream = MudStream::new(stream, get_config());
     let mut stdin = io::stdin().lock();
     let mut stdout = io::stdout();
     let mut buf = [0; 1024];

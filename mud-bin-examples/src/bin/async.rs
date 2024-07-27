@@ -2,9 +2,8 @@ use std::io::{self, Read};
 use std::thread::{self, JoinHandle};
 
 use bytes::{Bytes, BytesMut};
-use mud_bin_examples::write_output;
+use mud_bin_examples::{get_config, write_output};
 use mud_stream::nonblocking::MudStream;
-use mud_transformer::TransformerConfig;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;
 use tokio::sync::mpsc;
@@ -12,7 +11,7 @@ use tokio::sync::mpsc;
 #[tokio::main]
 async fn main() -> io::Result<()> {
     let stream = TcpStream::connect(("discworld.atuin.net", 4242)).await?;
-    let mut stream = MudStream::new(stream, TransformerConfig::new());
+    let mut stream = MudStream::new(stream, get_config());
     let mut stdout = io::stdout();
     let (tx_input, mut rx_input) = mpsc::channel(10);
     let input_handle = spawn_input(tx_input);
