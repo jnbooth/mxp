@@ -29,7 +29,7 @@ impl BufferedInput {
     }
 
     pub fn drain(&mut self) -> Option<Drain> {
-        if self.cursor == 0 {
+        if self.buf.is_empty() {
             return None;
         }
         Some(Drain {
