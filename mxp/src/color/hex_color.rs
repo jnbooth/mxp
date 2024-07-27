@@ -6,7 +6,9 @@ use std::sync::OnceLock;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct HexColor {
-    code: u32,
+    r: u8,
+    g: u8,
+    b: u8,
 }
 
 impl Display for HexColor {
@@ -17,25 +19,25 @@ impl Display for HexColor {
 
 impl fmt::UpperHex for HexColor {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:0>6X}", self.code)
+        write!(f, "{:0>6X}", self.code())
     }
 }
 
 impl fmt::LowerHex for HexColor {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:0>6x}", self.code)
+        write!(f, "{:0>6x}", self.code())
     }
 }
 
 impl From<u32> for HexColor {
     fn from(code: u32) -> Self {
-        Self { code }
+        Self::new(code)
     }
 }
 
 impl From<HexColor> for u32 {
     fn from(value: HexColor) -> Self {
-        value.code
+        value.code()
     }
 }
 
@@ -63,22 +65,24 @@ impl FromStr for HexColor {
         if code > 0xFFFFFF {
             return Err(ParseHexColorError::OutOfRange(code));
         }
-        Ok(HexColor { code })
+        Ok(HexColor::new(code))
     }
 }
 
 impl HexColor {
-    pub const BLACK: Self = Self { code: 0x000000 };
-    pub const WHITE: Self = Self { code: 0xFFFFFF };
+    pub const BLACK: Self = Self::new(0x000000);
+    pub const WHITE: Self = Self::new(0xFFFFFF);
 
     pub const fn new(code: u32) -> Self {
-        Self { code }
+        Self {
+            r: (code >> 16) as u8,
+            g: ((code >> 8) & 0xFF) as u8,
+            b: (code & 0xFF) as u8,
+        }
     }
 
     pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
-        Self {
-            code: (r as u32) << 16 | (g as u32) << 8 | (b as u32),
-        }
+        Self { r, g, b }
     }
 
     pub fn named(name: &str) -> Option<HexColor> {
@@ -93,19 +97,19 @@ impl HexColor {
     }
 
     pub const fn code(self) -> u32 {
-        self.code
+        (self.r as u32) << 16 | (self.g as u32) << 8 | (self.b as u32)
     }
 
-    pub const fn r(self) -> u32 {
-        self.code >> 16
+    pub const fn r(self) -> u8 {
+        self.r
     }
 
-    pub const fn g(self) -> u32 {
-        (self.code >> 8) & 0xFF
+    pub const fn g(self) -> u8 {
+        self.g
     }
 
-    pub const fn b(self) -> u32 {
-        self.code & 0xFF
+    pub const fn b(self) -> u8 {
+        self.b
     }
 }
 
