@@ -319,10 +319,9 @@ impl Transformer {
                     self.output.set_mxp_background(bg);
                 }
             }
-            Action::Version => self.input.append_vectored(&mxp::responses::identify(
-                &self.config.app_name,
-                &self.config.version,
-            )),
+            Action::Version => self.input.append(
+                mxp::responses::identify(&self.config.app_name, &self.config.version).as_bytes(),
+            ),
             Action::Afk => {
                 let mxp::AfkArgs { challenge } = (&args).into();
                 self.output.append_afk(challenge.unwrap_or("").as_bytes());
