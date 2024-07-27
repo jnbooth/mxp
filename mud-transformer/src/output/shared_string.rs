@@ -68,3 +68,9 @@ impl From<SharedString> for Bytes {
         value.inner
     }
 }
+
+impl From<&SharedString> for String {
+    fn from(value: &SharedString) -> Self {
+        value.as_str().to_owned()
+    }
+}
