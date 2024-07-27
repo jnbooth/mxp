@@ -4,6 +4,7 @@ use std::vec;
 use bytes::Bytes;
 use enumeration::{Enum, EnumSet};
 
+use super::shared_string::SharedString;
 use super::span::{Heading, TextStyle};
 use mxp::escape::ansi;
 use mxp::{HexColor, WorldColor};
@@ -38,7 +39,7 @@ impl From<EffectFragment> for OutputFragment {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TelnetFragment {
-    Afk { challenge: Bytes },
+    Afk { challenge: SharedString },
     Do { code: u8 },
     IacGa,
     Naws,
@@ -54,7 +55,7 @@ impl From<TelnetFragment> for OutputFragment {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TextFragment {
-    pub text: Bytes,
+    pub text: SharedString,
     pub flags: EnumSet<TextStyle>,
     pub foreground: WorldColor,
     pub background: WorldColor,
@@ -67,13 +68,6 @@ pub struct TextFragment {
 impl From<TextFragment> for OutputFragment {
     fn from(value: TextFragment) -> Self {
         Self::Text(value)
-    }
-}
-
-impl AsRef<[u8]> for TextFragment {
-    #[inline]
-    fn as_ref(&self) -> &[u8] {
-        &self.text
     }
 }
 
@@ -98,7 +92,7 @@ impl Display for TextFragment {
             }
         }
         f.write_str("m")?;
-        String::from_utf8_lossy(&self.text).fmt(f)?;
+        self.text.fmt(f)?;
         f.write_str("\x1B[0m")
     }
 }

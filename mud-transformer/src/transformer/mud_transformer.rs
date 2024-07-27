@@ -324,7 +324,7 @@ impl Transformer {
             ),
             Action::Afk => {
                 let mxp::AfkArgs { challenge } = (&args).into();
-                self.output.append_afk(challenge.unwrap_or("").as_bytes());
+                self.output.append_afk(challenge.unwrap_or(""));
             }
             Action::Support => Atom::fmt_supported(self.input.get_mut(), args),
             Action::User => input_mxp_auth(&mut self.input, &self.config.player),
@@ -367,8 +367,8 @@ impl Transformer {
                 }
                 Some(i) => {
                     self.output.start_line();
-                    self.output.append(&i.to_string());
-                    self.output.append(b". ");
+                    self.output.append(i.to_string().as_str());
+                    self.output.append(". ");
                 }
                 None => (),
             },
@@ -594,7 +594,7 @@ impl Transformer {
         }
 
         if self.phase == Phase::Utf8Character && !is_utf8_continuation(c) {
-            self.output.append(&mut self.utf8_sequence);
+            self.output.append_utf8_char(&self.utf8_sequence);
             self.phase = Phase::Normal;
         }
 
@@ -914,14 +914,7 @@ impl Transformer {
 
             Phase::Normal => match c {
                 telnet::ESC => self.phase = Phase::Esc,
-                telnet::IAC => {
-                    if self.phase == Phase::Iac {
-                        self.output.append(c);
-                        self.phase = Phase::Normal;
-                    } else {
-                        self.phase = Phase::Iac;
-                    }
-                }
+                telnet::IAC => self.phase = Phase::Iac,
                 // BEL
                 0x07 => self.output.append_effect(EffectFragment::Beep),
                 // BS
@@ -930,7 +923,7 @@ impl Transformer {
                 0x0C => self.output.append_page_break(),
                 b'\t' if self.output.format().contains(TextFormat::Paragraph) => {
                     if last_char != b' ' {
-                        self.output.append(b' ');
+                        self.output.append(" ");
                     }
                 }
                 b'\r' => (),
@@ -947,9 +940,9 @@ impl Transformer {
                                 self.output.start_line();
                                 self.output.start_line();
                             }
-                            b'.' => self.output.append(b"  "),
+                            b'.' => self.output.append("  "),
                             b' ' | b'\t' | 0x0C => (),
-                            _ => self.output.append(b' '),
+                            _ => self.output.append(" "),
                         }
                     } else if !self.suppress_newline && !format.contains(TextFormat::Pre) {
                         self.output.start_line();
@@ -959,7 +952,7 @@ impl Transformer {
                     self.utf8_sequence.push(c);
                     self.phase = Phase::Utf8Character;
                 }
-                _ if !self.mxp_active || !self.mxp_mode.is_mxp() => self.output.append(c),
+                _ if !self.mxp_active || !self.mxp_mode.is_mxp() => self.output.push(c),
                 b'<' => {
                     self.mxp_string.clear();
                     self.phase = Phase::MxpElement;
@@ -972,7 +965,7 @@ impl Transformer {
                     self.mxp_string.clear();
                     self.phase = Phase::MxpEntity;
                 }
-                _ => self.output.append(c),
+                _ => self.output.push(c),
             },
         }
     }

@@ -1,10 +1,12 @@
+use std::str;
+
 use bytes::BytesMut;
 use enumeration::EnumSet;
 
 use crate::output::fragment::EffectFragment;
 
 use super::fragment::{OutputDrain, OutputFragment, TelnetFragment, TextFragment};
-use super::output_trait::Output;
+use super::shared_string::SharedString;
 use super::span::{Heading, InList, SpanList, TextFormat, TextStyle};
 use mxp::WorldColor;
 
@@ -76,15 +78,21 @@ impl BufferedOutput {
         }
     }
 
-    fn push<T: Into<OutputFragment>>(&mut self, fragment: T) {
+    fn output<T: Into<OutputFragment>>(&mut self, fragment: T) {
         self.fragments.push(fragment.into())
+    }
+
+    fn take_buf(&mut self) -> SharedString {
+        let bytes = self.buf.split().freeze();
+        debug_assert!(str::from_utf8(&bytes).is_ok(), "`MudTransformer::receive_byte` failed to validate UTF8. This should NEVER happen.\nBytes: {:?}\nString: {}", &*bytes, String::from_utf8_lossy(&bytes));
+        unsafe { SharedString::from_utf8_unchecked(bytes) }
     }
 
     fn flush_last(&mut self, i: usize) {
         if self.buf.is_empty() {
             return;
         }
-        let text = self.buf.split().freeze();
+        let text = self.take_buf();
         let fragment = if self.spans.len() < i {
             TextFragment {
                 text,
@@ -118,7 +126,7 @@ impl BufferedOutput {
                 variable: span.variable.clone(),
             }
         };
-        self.push(fragment);
+        self.output(fragment);
     }
 
     fn flush_mxp(&mut self) {
@@ -136,66 +144,80 @@ impl BufferedOutput {
 
     pub fn start_line(&mut self) {
         self.flush_line();
-        self.push(OutputFragment::LineBreak);
+        self.output(OutputFragment::LineBreak);
     }
 
-    pub fn append<O: Output>(&mut self, output: O) {
-        output.output(&mut self.buf);
+    pub fn push(&mut self, byte: u8) {
+        self.buf.extend_from_slice(&[byte]);
         self.spans.set_populated();
     }
 
-    pub fn append_afk(&mut self, challenge: &[u8]) {
+    pub fn append(&mut self, output: &str) {
+        self.buf.extend_from_slice(output.as_bytes());
+        self.spans.set_populated();
+    }
+
+    pub fn append_utf8_char(&mut self, utf8: &[u8]) {
+        if str::from_utf8(utf8).is_ok() {
+            self.buf.extend_from_slice(utf8);
+        } else {
+            self.buf.extend_from_slice("�".as_bytes());
+        }
+        self.spans.set_populated();
+    }
+
+    pub fn append_afk(&mut self, challenge: &str) {
         self.flush();
-        self.buf.extend_from_slice(challenge);
-        let challenge = self.buf.split().freeze();
-        self.push(TelnetFragment::Afk { challenge })
+        self.buf.extend_from_slice(challenge.as_bytes());
+        let challenge = self.take_buf();
+        self.output(TelnetFragment::Afk { challenge })
     }
 
     pub fn append_effect(&mut self, effect: EffectFragment) {
         self.flush();
-        self.push(effect);
+        self.output(effect);
     }
 
     pub fn append_hr(&mut self) {
         self.flush_line();
-        self.push(OutputFragment::Hr);
+        self.output(OutputFragment::Hr);
     }
 
     pub fn append_iac_ga(&mut self) {
         self.flush();
-        self.push(TelnetFragment::IacGa);
+        self.output(TelnetFragment::IacGa);
     }
 
     pub fn append_image(&mut self, src: String) {
         self.flush();
-        self.push(OutputFragment::Image(src));
+        self.output(OutputFragment::Image(src));
     }
 
     pub fn append_page_break(&mut self) {
         self.flush_line();
-        self.push(OutputFragment::PageBreak);
+        self.output(OutputFragment::PageBreak);
     }
 
     pub fn append_subnegotiation(&mut self, code: u8, data: &[u8]) {
         self.flush();
         self.buf.extend_from_slice(data);
         let data = self.buf.split().freeze();
-        self.push(TelnetFragment::Subnegotiation { code, data })
+        self.output(TelnetFragment::Subnegotiation { code, data })
     }
 
     pub fn append_telnet_naws(&mut self) {
         self.flush();
-        self.push(TelnetFragment::Naws);
+        self.output(TelnetFragment::Naws);
     }
 
     pub fn append_telnet_do(&mut self, code: u8) {
         self.flush();
-        self.push(TelnetFragment::Do { code });
+        self.output(TelnetFragment::Do { code });
     }
 
     pub fn append_telnet_will(&mut self, code: u8) {
         self.flush();
-        self.push(TelnetFragment::Will { code });
+        self.output(TelnetFragment::Will { code });
     }
 
     pub fn set_ansi_flag(&mut self, flag: TextStyle) {
