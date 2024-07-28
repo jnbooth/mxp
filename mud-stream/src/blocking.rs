@@ -1,21 +1,27 @@
-use crate::config::{COMPRESS_BUFFER, READ_BUFFER};
-
 use mud_transformer::{OutputDrain, Transformer, TransformerConfig};
 use std::io::{self, IoSlice, Read, Write};
+
+use crate::config::DEFAULT_BUFFER_SIZE;
 
 #[derive(Debug)]
 pub struct MudStream<T> {
     done: bool,
     stream: T,
     transformer: Transformer,
+    buf: Vec<u8>,
 }
 
 impl<T: Read + Write> MudStream<T> {
     pub fn new(stream: T, config: TransformerConfig) -> Self {
+        Self::with_capacity(stream, config, DEFAULT_BUFFER_SIZE)
+    }
+
+    pub fn with_capacity(stream: T, config: TransformerConfig, capacity: usize) -> Self {
         Self {
             done: false,
             stream,
             transformer: Transformer::new(config),
+            buf: vec![0; capacity],
         }
     }
 
@@ -44,15 +50,17 @@ impl<T: Read + Write> MudStream<T> {
             return Ok(None);
         }
 
-        let mut buf = [0; READ_BUFFER];
-        let n = self.stream.read(&mut buf)?;
+        let midpoint = self.buf.len() / 2;
+
+        let n = self.stream.read(&mut self.buf[..midpoint])?;
         if n == 0 {
             self.done = true;
             return Ok(Some(self.transformer.flush_output()));
         }
 
-        self.transformer
-            .receive(&buf[..n], &mut [0; COMPRESS_BUFFER])?;
+        let (received, decompress_buf) = self.buf.split_at_mut(n);
+
+        self.transformer.receive(received, decompress_buf)?;
         if let Some(mut drain) = self.transformer.drain_input() {
             drain.write_all_to(&mut self.stream)?
         }

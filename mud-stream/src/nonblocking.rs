@@ -1,5 +1,3 @@
-use crate::config::{COMPRESS_BUFFER, READ_BUFFER};
-
 use mud_transformer::{OutputDrain, Transformer, TransformerConfig};
 use pin_project_lite::pin_project;
 use std::io;
@@ -8,21 +6,29 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
+use crate::config::DEFAULT_BUFFER_SIZE;
+
 pin_project! {
     pub struct MudStream<T> {
         done: bool,
         #[pin]
         stream: T,
         transformer: Transformer,
+        buf: Vec<u8>,
     }
 }
 
 impl<T: AsyncRead + AsyncWrite + Unpin> MudStream<T> {
     pub fn new(stream: T, config: TransformerConfig) -> Self {
+        Self::with_capacity(stream, config, DEFAULT_BUFFER_SIZE)
+    }
+
+    pub fn with_capacity(stream: T, config: TransformerConfig, capacity: usize) -> Self {
         Self {
             done: false,
             stream,
             transformer: Transformer::new(config),
+            buf: vec![0; capacity],
         }
     }
 
@@ -51,15 +57,16 @@ impl<T: AsyncRead + AsyncWrite + Unpin> MudStream<T> {
             return Ok(None);
         }
 
-        let mut buf = [0; READ_BUFFER];
-        let n = self.stream.read(&mut buf).await?;
+        let midpoint = self.buf.len() / 2;
+        let n = self.stream.read(&mut self.buf[..midpoint]).await?;
         if n == 0 {
             self.done = true;
             return Ok(Some(self.transformer.flush_output()));
         }
 
-        self.transformer
-            .receive(&buf[..n], &mut [0; COMPRESS_BUFFER])?;
+        let (received, decompress_buf) = self.buf.split_at_mut(n);
+        self.transformer.receive(received, decompress_buf)?;
+
         if let Some(mut drain) = self.transformer.drain_input() {
             self.stream.write_all_buf(&mut drain).await?;
         }
