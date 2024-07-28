@@ -9,6 +9,7 @@ pub struct MudStream<T> {
     stream: T,
     transformer: Transformer,
     buf: Vec<u8>,
+    midpoint: usize,
 }
 
 impl<T: Read + Write> MudStream<T> {
@@ -22,6 +23,7 @@ impl<T: Read + Write> MudStream<T> {
             stream,
             transformer: Transformer::new(config),
             buf: vec![0; capacity],
+            midpoint: capacity / 2,
         }
     }
 
@@ -50,9 +52,7 @@ impl<T: Read + Write> MudStream<T> {
             return Ok(None);
         }
 
-        let midpoint = self.buf.len() / 2;
-
-        let n = self.stream.read(&mut self.buf[..midpoint])?;
+        let n = self.stream.read(&mut self.buf[..self.midpoint])?;
         if n == 0 {
             self.done = true;
             return Ok(Some(self.transformer.flush_output()));

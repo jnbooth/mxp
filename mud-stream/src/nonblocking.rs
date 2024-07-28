@@ -15,6 +15,7 @@ pin_project! {
         stream: T,
         transformer: Transformer,
         buf: Vec<u8>,
+        midpoint: usize,
     }
 }
 
@@ -29,6 +30,7 @@ impl<T: AsyncRead + AsyncWrite + Unpin> MudStream<T> {
             stream,
             transformer: Transformer::new(config),
             buf: vec![0; capacity],
+            midpoint: capacity / 2,
         }
     }
 
@@ -57,8 +59,7 @@ impl<T: AsyncRead + AsyncWrite + Unpin> MudStream<T> {
             return Ok(None);
         }
 
-        let midpoint = self.buf.len() / 2;
-        let n = self.stream.read(&mut self.buf[..midpoint]).await?;
+        let n = self.stream.read(&mut self.buf[..self.midpoint]).await?;
         if n == 0 {
             self.done = true;
             return Ok(Some(self.transformer.flush_output()));
