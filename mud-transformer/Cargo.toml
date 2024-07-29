@@ -9,5 +9,8 @@ workspace = true
 [dependencies]
 bytes = "1.6.0"
 flate2 = "1.0.28"
-enumeration = { git = "https://github.com/jnbooth/enumeration", version = "0.7.0" }
+enumeration = { git = "https://github.com/jnbooth/enumeration", version = "0.7.1" }
 mxp = { path = "../mxp" }
+
+[features]
+serde = ["mxp/serde"]

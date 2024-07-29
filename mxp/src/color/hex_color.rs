@@ -1,4 +1,8 @@
 use casefold::ascii::{CaseFold, CaseFoldMap};
+#[cfg(feature = "serde")]
+use serde::de::{Error as _, Unexpected};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Display, Formatter};
 use std::num::ParseIntError;
 use std::str::FromStr;
@@ -9,6 +13,50 @@ pub struct HexColor {
     r: u8,
     g: u8,
     b: u8,
+}
+
+impl HexColor {
+    pub const BLACK: Self = Self::new(0x000000);
+    pub const WHITE: Self = Self::new(0xFFFFFF);
+
+    pub const fn new(code: u32) -> Self {
+        Self {
+            r: (code >> 16) as u8,
+            g: ((code >> 8) & 0xFF) as u8,
+            b: (code & 0xFF) as u8,
+        }
+    }
+
+    pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
+        Self { r, g, b }
+    }
+
+    pub fn named(name: &str) -> Option<HexColor> {
+        if let Ok(color) = HexColor::from_str(name) {
+            return Some(color);
+        }
+        static NAMED_COLORS: OnceLock<CaseFoldMap<String, HexColor>> = OnceLock::new();
+        NAMED_COLORS
+            .get_or_init(create_named_colors)
+            .get(name)
+            .copied()
+    }
+
+    pub const fn code(self) -> u32 {
+        (self.r as u32) << 16 | (self.g as u32) << 8 | (self.b as u32)
+    }
+
+    pub const fn r(self) -> u8 {
+        self.r
+    }
+
+    pub const fn g(self) -> u8 {
+        self.g
+    }
+
+    pub const fn b(self) -> u8 {
+        self.b
+    }
 }
 
 impl Display for HexColor {
@@ -69,47 +117,35 @@ impl FromStr for HexColor {
     }
 }
 
-impl HexColor {
-    pub const BLACK: Self = Self::new(0x000000);
-    pub const WHITE: Self = Self::new(0xFFFFFF);
-
-    pub const fn new(code: u32) -> Self {
-        Self {
-            r: (code >> 16) as u8,
-            g: ((code >> 8) & 0xFF) as u8,
-            b: (code & 0xFF) as u8,
+#[cfg(feature = "serde")]
+impl Serialize for HexColor {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        if serializer.is_human_readable() {
+            serializer.serialize_str(&format!("#{:0>6X}", self.code()))
+        } else {
+            serializer.serialize_u32(self.code())
         }
     }
+}
 
-    pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
-        Self { r, g, b }
-    }
-
-    pub fn named(name: &str) -> Option<HexColor> {
-        if let Ok(color) = HexColor::from_str(name) {
-            return Some(color);
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for HexColor {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        if deserializer.is_human_readable() {
+            let code = <&str>::deserialize(deserializer)?;
+            code.parse()
+                .map_err(|_| D::Error::invalid_value(Unexpected::Str(code), &"hex color code"))
+        } else {
+            let code = u32::deserialize(deserializer)?;
+            if code <= 0xFFFFFF {
+                Ok(Self::new(code))
+            } else {
+                Err(D::Error::invalid_value(
+                    Unexpected::Unsigned(code as u64),
+                    &"integer between 0x000000 and 0xFFFFFF",
+                ))
+            }
         }
-        static NAMED_COLORS: OnceLock<CaseFoldMap<String, HexColor>> = OnceLock::new();
-        NAMED_COLORS
-            .get_or_init(create_named_colors)
-            .get(name)
-            .copied()
-    }
-
-    pub const fn code(self) -> u32 {
-        (self.r as u32) << 16 | (self.g as u32) << 8 | (self.b as u32)
-    }
-
-    pub const fn r(self) -> u8 {
-        self.r
-    }
-
-    pub const fn g(self) -> u8 {
-        self.g
-    }
-
-    pub const fn b(self) -> u8 {
-        self.b
     }
 }
 

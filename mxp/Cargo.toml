@@ -8,4 +8,5 @@ workspace = true
 
 [dependencies]
 casefold = { git = "https://github.com/jnbooth/casefold", version = "0.1.0" }
-enumeration = { git = "https://github.com/jnbooth/enumeration", version = "0.7.0" }
+enumeration = { git = "https://github.com/jnbooth/enumeration", version = "0.7.1" }
+serde = { version = "1.0.204", optional = true }
