@@ -13,6 +13,7 @@ pub enum UseMxp {
     Never,
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TransformerConfig {
     pub use_mxp: UseMxp,
