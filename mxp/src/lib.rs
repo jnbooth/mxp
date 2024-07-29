@@ -2,7 +2,7 @@
 extern crate enumeration;
 
 mod color;
-pub use color::{HexColor, WorldColor};
+pub use color::{ansi16, HexColor, WorldColor};
 
 mod entity;
 pub use entity::*;

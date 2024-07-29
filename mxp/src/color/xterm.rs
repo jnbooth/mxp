@@ -11,6 +11,11 @@ pub fn xterm_colors() -> &'static [HexColor; 256] {
     XTERM_COLORS.get_or_init(create_xterm_colors)
 }
 
+pub fn ansi16() -> [HexColor; 16] {
+    let colors: &[HexColor; 16] = xterm_colors()[..16].try_into().unwrap();
+    colors.to_owned()
+}
+
 const fn create_xterm_colors() -> [HexColor; 256] {
     let mut colors = [HexColor::new(0); 256];
     colors[1] = HexColor::rgb(128, 0, 0); // maroon
