@@ -1,7 +1,10 @@
 use std::collections::HashSet;
 
 use enumeration::Enum;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum UseMxp {
     Command,
@@ -24,7 +27,6 @@ pub struct TransformerConfig {
     pub naws: bool,
     pub disable_utf8: bool,
     pub ignore_mxp_colors: bool,
-    pub track_afk: bool,
     pub will: HashSet<u8>,
 }
 
@@ -49,7 +51,6 @@ impl TransformerConfig {
             use_mxp: UseMxp::Command,
             terminal_identification: String::new(),
             ignore_mxp_colors: false,
-            track_afk: false,
             will: HashSet::new(),
         }
     }

@@ -13,4 +13,4 @@ pub use output::{
 };
 
 mod transformer;
-pub use transformer::{InputDrain, Transformer, TransformerConfig};
+pub use transformer::{InputDrain, Transformer, TransformerConfig, UseMxp};
