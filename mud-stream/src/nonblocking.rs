@@ -34,6 +34,10 @@ impl<T: AsyncRead + AsyncWrite + Unpin> MudStream<T> {
         }
     }
 
+    pub fn set_config(&mut self, config: TransformerConfig) {
+        self.transformer.set_config(config);
+    }
+
     pub fn into_inner(self) -> T {
         self.stream
     }
