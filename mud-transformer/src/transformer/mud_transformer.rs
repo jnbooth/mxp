@@ -8,7 +8,7 @@ use crate::output::{BufferedOutput, Heading, InList, OutputDrain, TextFormat, Te
 use crate::receive::{Decompress, ReceiveCursor};
 use crate::EffectFragment;
 use mxp::escape::{ansi, telnet};
-use mxp::{HexColor, WorldColor};
+use mxp::{RgbColor, WorldColor};
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
     if auth.is_empty() {
@@ -269,10 +269,10 @@ impl Transformer {
             Action::Italic => self.output.set_mxp_flag(TextStyle::Italic),
             Action::Color => {
                 let mxp::ColorArgs { fore, back } = (&args).into();
-                if let Some(fg) = fore.and_then(HexColor::named) {
+                if let Some(fg) = fore.and_then(RgbColor::named) {
                     self.output.set_mxp_foreground(fg);
                 }
-                if let Some(bg) = back.and_then(HexColor::named) {
+                if let Some(bg) = back.and_then(RgbColor::named) {
                     self.output.set_mxp_background(bg);
                 }
             }
@@ -309,13 +309,13 @@ impl Transformer {
                         "bold" => self.output.set_mxp_flag(TextStyle::Bold),
                         "inverse" => self.output.set_mxp_flag(TextStyle::Inverse),
                         color => {
-                            if let Some(fg) = HexColor::named(color) {
+                            if let Some(fg) = RgbColor::named(color) {
                                 self.output.set_mxp_foreground(fg);
                             }
                         }
                     };
                 }
-                if let Some(bg) = bgcolor.and_then(HexColor::named) {
+                if let Some(bg) = bgcolor.and_then(RgbColor::named) {
                     self.output.set_mxp_background(bg);
                 }
             }
@@ -473,8 +473,12 @@ impl Transformer {
         }
     }
 
-    fn build_ansi_color(&self) -> HexColor {
-        HexColor::rgb(self.ansi_red, self.ansi_green, self.ansi_blue)
+    fn build_ansi_color(&self) -> RgbColor {
+        RgbColor {
+            r: self.ansi_red,
+            g: self.ansi_green,
+            b: self.ansi_blue,
+        }
     }
 
     // See: https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
@@ -503,11 +507,13 @@ impl Transformer {
                 _ => self.phase = Phase::Normal,
             },
             Phase::Foreground256Finish => {
-                self.output.set_ansi_foreground(self.ansi_code);
+                self.output
+                    .set_ansi_foreground(RgbColor::xterm(self.ansi_code));
                 self.phase = Phase::Normal;
             }
             Phase::Background256Finish => {
-                self.output.set_ansi_background(self.ansi_code);
+                self.output
+                    .set_ansi_background(RgbColor::xterm(self.ansi_code));
                 self.phase = Phase::Normal;
             }
             Phase::Foreground24bFinish => {

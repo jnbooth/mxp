@@ -7,7 +7,7 @@ use enumeration::{Enum, EnumSet};
 use super::shared_string::SharedString;
 use super::span::{Heading, TextStyle};
 use mxp::escape::ansi;
-use mxp::{HexColor, WorldColor};
+use mxp::{RgbColor, WorldColor};
 
 pub type OutputDrain<'a> = vec::Drain<'a, OutputFragment>;
 
@@ -73,18 +73,18 @@ impl From<TextFragment> for OutputFragment {
 
 impl Display for TextFragment {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "\x1B[")?;
+        f.write_str("\x1B[")?;
         match self.foreground {
             WorldColor::Ansi(code) => write!(f, "\x1B[{}", code + ansi::FG_BLACK),
-            WorldColor::Hex(color) => {
-                write!(f, "\x1B[38;2;{};{};{}", color.r(), color.g(), color.b())
+            WorldColor::Rgb(color) => {
+                write!(f, "\x1B[38;2;{};{};{}", color.r, color.g, color.b)
             }
         }?;
         match self.background {
             WorldColor::Ansi(0) => Ok(()),
-            WorldColor::Hex(HexColor::BLACK) => Ok(()),
+            WorldColor::Rgb(RgbColor::BLACK) => Ok(()),
             WorldColor::Ansi(code) => write!(f, ";{}", code + ansi::BG_BLACK),
-            WorldColor::Hex(color) => write!(f, ";48;2;{};{};{}", color.r(), color.g(), color.b()),
+            WorldColor::Rgb(color) => write!(f, ";48;2;{};{};{}", color.r, color.g, color.b),
         }?;
         for flag in self.flags {
             if let Some(ansi) = flag.ansi() {

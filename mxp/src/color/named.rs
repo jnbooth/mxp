@@ -1,155 +1,25 @@
+use super::rgb::RgbColor;
 use casefold::ascii::{CaseFold, CaseFoldMap};
-#[cfg(feature = "serde")]
-use serde::de::{Error as _, Unexpected};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::fmt::{self, Display, Formatter};
-use std::num::ParseIntError;
 use std::str::FromStr;
 use std::sync::OnceLock;
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct HexColor {
-    r: u8,
-    g: u8,
-    b: u8,
-}
-
-impl HexColor {
-    pub const BLACK: Self = Self::new(0x000000);
-    pub const WHITE: Self = Self::new(0xFFFFFF);
-
-    pub const fn new(code: u32) -> Self {
-        Self {
-            r: (code >> 16) as u8,
-            g: ((code >> 8) & 0xFF) as u8,
-            b: (code & 0xFF) as u8,
-        }
-    }
-
-    pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
-        Self { r, g, b }
-    }
-
-    pub fn named(name: &str) -> Option<HexColor> {
-        if let Ok(color) = HexColor::from_str(name) {
+impl RgbColor {
+    /// Finds a color by its name in the standard list of [148 CSS colors]. Case-insensitive.
+    ///
+    /// [148 CSS colors]: https://www.w3.org/wiki/CSS/Properties/color/keywords
+    pub fn named(name: &str) -> Option<RgbColor> {
+        if let Ok(color) = RgbColor::from_str(name) {
             return Some(color);
         }
-        static NAMED_COLORS: OnceLock<CaseFoldMap<String, HexColor>> = OnceLock::new();
+        static NAMED_COLORS: OnceLock<CaseFoldMap<String, RgbColor>> = OnceLock::new();
         NAMED_COLORS
             .get_or_init(create_named_colors)
             .get(name)
             .copied()
     }
-
-    pub const fn code(self) -> u32 {
-        (self.r as u32) << 16 | (self.g as u32) << 8 | (self.b as u32)
-    }
-
-    pub const fn r(self) -> u8 {
-        self.r
-    }
-
-    pub const fn g(self) -> u8 {
-        self.g
-    }
-
-    pub const fn b(self) -> u8 {
-        self.b
-    }
 }
 
-impl Display for HexColor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "({}, {}, {})", self.r(), self.g(), self.b())
-    }
-}
-
-impl fmt::UpperHex for HexColor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:0>6X}", self.code())
-    }
-}
-
-impl fmt::LowerHex for HexColor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:0>6x}", self.code())
-    }
-}
-
-impl From<u32> for HexColor {
-    fn from(code: u32) -> Self {
-        Self::new(code)
-    }
-}
-
-impl From<HexColor> for u32 {
-    fn from(value: HexColor) -> Self {
-        value.code()
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum ParseHexColorError {
-    NotHex(String),
-    NotU32(ParseIntError),
-    OutOfRange(u32),
-}
-
-impl From<ParseIntError> for ParseHexColorError {
-    fn from(value: ParseIntError) -> Self {
-        Self::NotU32(value)
-    }
-}
-
-impl FromStr for HexColor {
-    type Err = ParseHexColorError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if !s.starts_with('#') {
-            return Err(ParseHexColorError::NotHex(s.to_owned()));
-        }
-        let code = u32::from_str_radix(&s[1..], 16)?;
-        if code > 0xFFFFFF {
-            return Err(ParseHexColorError::OutOfRange(code));
-        }
-        Ok(HexColor::new(code))
-    }
-}
-
-#[cfg(feature = "serde")]
-impl Serialize for HexColor {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        if serializer.is_human_readable() {
-            serializer.serialize_str(&format!("#{:0>6X}", self.code()))
-        } else {
-            serializer.serialize_u32(self.code())
-        }
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de> Deserialize<'de> for HexColor {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        if deserializer.is_human_readable() {
-            let code = <&str>::deserialize(deserializer)?;
-            code.parse()
-                .map_err(|_| D::Error::invalid_value(Unexpected::Str(code), &"hex color code"))
-        } else {
-            let code = u32::deserialize(deserializer)?;
-            if code <= 0xFFFFFF {
-                Ok(Self::new(code))
-            } else {
-                Err(D::Error::invalid_value(
-                    Unexpected::Unsigned(code as u64),
-                    &"integer between 0x000000 and 0xFFFFFF",
-                ))
-            }
-        }
-    }
-}
-
-fn create_named_colors() -> CaseFoldMap<String, HexColor> {
+fn create_named_colors() -> CaseFoldMap<String, RgbColor> {
     [
         ("aliceblue", 0xF0F8FF),
         ("antiquewhite", 0xFAEBD7),
@@ -300,7 +170,7 @@ fn create_named_colors() -> CaseFoldMap<String, HexColor> {
         ("yellow", 0xFFFF00),
         ("yellowgreen", 0x9ACD32),
     ]
-    .iter()
-    .map(|&(s, code)| (CaseFold::new(s.to_owned()), HexColor::new(code)))
+    .into_iter()
+    .map(|(s, code)| (CaseFold::new(s.to_owned()), RgbColor::hex(code)))
     .collect()
 }

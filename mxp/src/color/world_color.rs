@@ -1,17 +1,12 @@
-#[cfg(feature = "serde")]
-use serde::de::{Error as _, Unexpected};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::{self, Display, Formatter};
 use std::hash::Hash;
 
-use super::hex_color::HexColor;
-use super::xterm::xterm;
+use super::rgb::RgbColor;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum WorldColor {
     Ansi(u8),
-    Hex(HexColor),
+    Rgb(RgbColor),
 }
 
 #[allow(unused)]
@@ -44,85 +39,22 @@ impl Display for WorldColor {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Ansi(code) => write!(f, "Ansi({code})"),
-            Self::Hex(color) => write!(f, "Hex(#{color:X})"),
+            Self::Rgb(color) => color.fmt(f),
         }
     }
 }
 
-impl From<HexColor> for WorldColor {
-    fn from(value: HexColor) -> Self {
-        Self::Hex(value)
+impl From<RgbColor> for WorldColor {
+    fn from(value: RgbColor) -> Self {
+        Self::Rgb(value)
     }
 }
 
-impl From<u8> for WorldColor {
-    fn from(value: u8) -> Self {
-        Self::Hex(xterm(value))
-    }
-}
-
-impl From<u32> for WorldColor {
-    fn from(value: u32) -> Self {
-        Self::Hex(HexColor::new(value))
-    }
-}
-
-impl From<WorldColor> for HexColor {
+impl From<WorldColor> for RgbColor {
     fn from(value: WorldColor) -> Self {
         match value {
-            WorldColor::Ansi(code) => xterm(code),
-            WorldColor::Hex(color) => color,
-        }
-    }
-}
-
-#[cfg(feature = "serde")]
-impl Serialize for WorldColor {
-    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-        match *self {
-            Self::Ansi(code) if serializer.is_human_readable() => {
-                serializer.serialize_str(&code.to_string())
-            }
-            Self::Ansi(code) => serializer.serialize_u32(0xFFFFFF + 1 + code as u32),
-            Self::Hex(color) => color.serialize(serializer),
-        }
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de> Deserialize<'de> for WorldColor {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        if deserializer.is_human_readable() {
-            let code = <&str>::deserialize(deserializer)?;
-            if code.starts_with('#') {
-                match code.parse() {
-                    Ok(hex) => Ok(Self::Hex(hex)),
-                    Err(_) => Err(D::Error::invalid_value(
-                        Unexpected::Str(code),
-                        &"hex color code or stringified integer between 0 and 255",
-                    )),
-                }
-            } else {
-                match code.parse() {
-                    Ok(ansi) => Ok(Self::Ansi(ansi)),
-                    Err(_) => Err(D::Error::invalid_value(
-                        Unexpected::Str(code),
-                        &"hex color code or stringified integer between 0 and 255",
-                    )),
-                }
-            }
-        } else {
-            let code = u32::deserialize(deserializer)?;
-            if code <= 0xFFFFFF {
-                Ok(Self::Hex(HexColor::new(code)))
-            } else if code <= 0xFFFFFF + 16 {
-                Ok(Self::Ansi((code - 0xFFFFFF - 1) as u8))
-            } else {
-                Err(D::Error::invalid_value(
-                    Unexpected::Unsigned(code as u64),
-                    &"integer between 0x000000 and 0x100000F",
-                ))
-            }
+            WorldColor::Ansi(code) => RgbColor::xterm(code),
+            WorldColor::Rgb(color) => color,
         }
     }
 }
