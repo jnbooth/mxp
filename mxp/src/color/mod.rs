@@ -9,7 +9,7 @@ pub use rgb::RgbColor;
 #[cfg(feature = "serde")]
 mod serde;
 
-mod world_color;
-pub use world_color::WorldColor;
+mod term_color;
+pub use term_color::TermColor;
 
 mod xterm;

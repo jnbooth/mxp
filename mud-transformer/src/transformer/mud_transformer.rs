@@ -8,7 +8,7 @@ use crate::output::{BufferedOutput, Heading, InList, OutputDrain, TextFormat, Te
 use crate::receive::{Decompress, ReceiveCursor};
 use crate::EffectFragment;
 use mxp::escape::{ansi, telnet};
-use mxp::{RgbColor, WorldColor};
+use mxp::{RgbColor, TermColor};
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
     if auth.is_empty() {
@@ -460,14 +460,14 @@ impl Transformer {
 
             ansi::FG_256_COLOR => self.phase = Phase::Foreground256Start,
             ansi::BG_256_COLOR => self.phase = Phase::Background256Start,
-            ansi::FG_DEFAULT => self.output.set_ansi_foreground(WorldColor::WHITE),
-            ansi::BG_DEFAULT => self.output.set_ansi_background(WorldColor::BLACK),
+            ansi::FG_DEFAULT => self.output.set_ansi_foreground(TermColor::WHITE),
+            ansi::BG_DEFAULT => self.output.set_ansi_background(TermColor::BLACK),
             ansi::FG_BLACK..=ansi::FG_WHITE => self
                 .output
-                .set_ansi_foreground(WorldColor::Ansi(code - ansi::FG_BLACK)),
+                .set_ansi_foreground(TermColor::Ansi(code - ansi::FG_BLACK)),
             ansi::BG_BLACK..=ansi::BG_WHITE => self
                 .output
-                .set_ansi_background(WorldColor::Ansi(code - ansi::BG_BLACK)),
+                .set_ansi_background(TermColor::Ansi(code - ansi::BG_BLACK)),
             _ => (),
         }
     }

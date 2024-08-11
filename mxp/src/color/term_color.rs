@@ -3,14 +3,17 @@ use std::hash::Hash;
 
 use super::rgb::RgbColor;
 
+/// A color set by the terminal.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum WorldColor {
+pub enum TermColor {
+    /// 8-bit ANSI color code. Some clients allow users to customize the RGB output of the first
+    /// 16 ANSI colors.
     Ansi(u8),
+    /// 24-bit color.
     Rgb(RgbColor),
 }
 
-#[allow(unused)]
-impl WorldColor {
+impl TermColor {
     pub const BLACK: Self = Self::Ansi(0);
     pub const RED: Self = Self::Ansi(1);
     pub const GREEN: Self = Self::Ansi(2);
@@ -29,13 +32,13 @@ impl WorldColor {
     pub const BRIGHT_WHITE: Self = Self::Ansi(15);
 }
 
-impl Default for WorldColor {
+impl Default for TermColor {
     fn default() -> Self {
         Self::BLACK
     }
 }
 
-impl Display for WorldColor {
+impl Display for TermColor {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Self::Ansi(code) => write!(f, "Ansi({code})"),
@@ -44,17 +47,17 @@ impl Display for WorldColor {
     }
 }
 
-impl From<RgbColor> for WorldColor {
+impl From<RgbColor> for TermColor {
     fn from(value: RgbColor) -> Self {
         Self::Rgb(value)
     }
 }
 
-impl From<WorldColor> for RgbColor {
-    fn from(value: WorldColor) -> Self {
+impl From<TermColor> for RgbColor {
+    fn from(value: TermColor) -> Self {
         match value {
-            WorldColor::Ansi(code) => RgbColor::xterm(code),
-            WorldColor::Rgb(color) => color,
+            TermColor::Ansi(code) => RgbColor::xterm(code),
+            TermColor::Rgb(color) => color,
         }
     }
 }

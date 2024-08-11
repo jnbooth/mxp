@@ -1,5 +1,5 @@
 use super::rgb::RgbColor;
-use super::world_color::WorldColor;
+use super::term_color::TermColor;
 use serde::de::{Error as _, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -35,7 +35,7 @@ impl<'de> Deserialize<'de> for RgbColor {
     }
 }
 
-impl Serialize for WorldColor {
+impl Serialize for TermColor {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match *self {
             Self::Ansi(code) if serializer.is_human_readable() => {
@@ -47,7 +47,7 @@ impl Serialize for WorldColor {
     }
 }
 
-impl<'de> Deserialize<'de> for WorldColor {
+impl<'de> Deserialize<'de> for TermColor {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         if deserializer.is_human_readable() {
             let code = <&str>::deserialize(deserializer)?;

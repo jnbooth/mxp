@@ -115,7 +115,6 @@ impl Display for ParseError {
 impl std::error::Error for ParseError {}
 
 impl ParseError {
-    #[allow(private_bounds)]
     pub fn new<T: ParseErrorTarget>(target: T, error: Error) -> Self {
         Self {
             target: target.into_target(),
@@ -124,7 +123,7 @@ impl ParseError {
     }
 }
 
-trait ParseErrorTarget {
+pub trait ParseErrorTarget {
     fn into_target(self) -> String;
 }
 

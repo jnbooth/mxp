@@ -2,7 +2,7 @@ use std::ops::Index;
 
 use enumeration::{Enum, EnumSet};
 use mxp::escape::ansi;
-use mxp::WorldColor;
+use mxp::TermColor;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum TextStyle {
@@ -70,8 +70,8 @@ pub struct Span {
     populated: bool,
     pub(super) flags: EnumSet<TextStyle>,
     pub(super) format: EnumSet<TextFormat>,
-    pub(super) foreground: Option<WorldColor>,
-    pub(super) background: Option<WorldColor>,
+    pub(super) foreground: Option<TermColor>,
+    pub(super) background: Option<TermColor>,
     pub(super) action: Option<mxp::Link>,
     pub(super) list: Option<InList>,
     pub(super) heading: Option<Heading>,
@@ -252,11 +252,11 @@ impl SpanList {
         true
     }
 
-    pub fn set_foreground(&mut self, foreground: WorldColor) -> bool {
+    pub fn set_foreground(&mut self, foreground: TermColor) -> bool {
         set_prop!(self, foreground);
     }
 
-    pub fn set_background(&mut self, background: WorldColor) -> bool {
+    pub fn set_background(&mut self, background: TermColor) -> bool {
         set_prop!(self, background);
     }
 

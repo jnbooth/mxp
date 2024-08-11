@@ -8,14 +8,14 @@ use crate::output::fragment::EffectFragment;
 use super::fragment::{OutputDrain, OutputFragment, TelnetFragment, TextFragment};
 use super::shared_string::SharedString;
 use super::span::{Heading, InList, SpanList, TextFormat, TextStyle};
-use mxp::WorldColor;
+use mxp::TermColor;
 
 fn get_color(
-    span_color: &Option<WorldColor>,
-    ansi_color: WorldColor,
+    span_color: &Option<TermColor>,
+    ansi_color: TermColor,
     ignore_mxp: bool,
-    default: WorldColor,
-) -> WorldColor {
+    default: TermColor,
+) -> TermColor {
     match span_color {
         Some(span_color) if !ignore_mxp && *span_color != default => *span_color,
         _ => ansi_color,
@@ -26,8 +26,8 @@ fn get_color(
 pub struct BufferedOutput {
     spans: SpanList,
     ansi_flags: EnumSet<TextStyle>,
-    ansi_foreground: WorldColor,
-    ansi_background: WorldColor,
+    ansi_foreground: TermColor,
+    ansi_background: TermColor,
     buf: BytesMut,
     fragments: Vec<OutputFragment>,
     ignore_mxp_colors: bool,
@@ -45,8 +45,8 @@ impl BufferedOutput {
         Self {
             spans: SpanList::new(),
             ansi_flags: EnumSet::new(),
-            ansi_foreground: WorldColor::WHITE,
-            ansi_background: WorldColor::BLACK,
+            ansi_foreground: TermColor::WHITE,
+            ansi_background: TermColor::BLACK,
             buf: BytesMut::new(),
             fragments: Vec::new(),
             ignore_mxp_colors: false,
@@ -113,13 +113,13 @@ impl BufferedOutput {
                     &span.foreground,
                     self.ansi_foreground,
                     ignore_colors,
-                    WorldColor::WHITE,
+                    TermColor::WHITE,
                 ),
                 background: get_color(
                     &span.background,
                     self.ansi_background,
                     ignore_colors,
-                    WorldColor::BLACK,
+                    TermColor::BLACK,
                 ),
                 action: span.action.clone().map(Box::new),
                 heading: span.heading,
@@ -228,7 +228,7 @@ impl BufferedOutput {
         self.ansi_flags.remove(flag);
     }
 
-    pub fn set_ansi_foreground<C: Into<WorldColor>>(&mut self, foreground: C) {
+    pub fn set_ansi_foreground<C: Into<TermColor>>(&mut self, foreground: C) {
         let foreground = foreground.into();
         if self.ansi_foreground == foreground {
             return;
@@ -244,7 +244,7 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_ansi_background<C: Into<WorldColor>>(&mut self, background: C) {
+    pub fn set_ansi_background<C: Into<TermColor>>(&mut self, background: C) {
         let background = background.into();
         if self.ansi_background == background {
             return;
@@ -264,8 +264,8 @@ impl BufferedOutput {
     pub fn reset_ansi(&mut self) {
         self.flush();
         self.ansi_flags.clear();
-        self.ansi_foreground = WorldColor::WHITE;
-        self.ansi_background = WorldColor::BLACK;
+        self.ansi_foreground = TermColor::WHITE;
+        self.ansi_background = TermColor::BLACK;
     }
 
     pub fn reset_mxp(&mut self) {
@@ -305,13 +305,13 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_mxp_foreground<C: Into<WorldColor>>(&mut self, foreground: C) {
+    pub fn set_mxp_foreground<C: Into<TermColor>>(&mut self, foreground: C) {
         if self.spans.set_foreground(foreground.into()) {
             self.flush_mxp();
         }
     }
 
-    pub fn set_mxp_background<C: Into<WorldColor>>(&mut self, background: C) {
+    pub fn set_mxp_background<C: Into<TermColor>>(&mut self, background: C) {
         if self.spans.set_background(background.into()) {
             self.flush_mxp();
         }

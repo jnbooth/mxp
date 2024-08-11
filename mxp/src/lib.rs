@@ -18,7 +18,7 @@ macro_rules! match_ci {
 }
 
 mod color;
-pub use color::{HexOutOfRangeError, ParseHexColorError, RgbColor, WorldColor};
+pub use color::{HexOutOfRangeError, ParseHexColorError, RgbColor, TermColor};
 
 mod entity;
 pub use entity::*;
