@@ -47,7 +47,7 @@ impl State {
             for (i, arg) in &item.arguments {
                 let val = self.entities.decode_el(element, arg, args)?;
                 match i {
-                    ArgumentIndex::Positional(..) => newargs.push(val),
+                    ArgumentIndex::Positional(_) => newargs.push(val),
                     ArgumentIndex::Named(key) => newargs.set(key, val),
                 }
             }
@@ -60,11 +60,11 @@ impl State {
 
         let definition = words.validate_next_or(MxpError::InvalidDefinition)?;
         let name = words.validate_next_or(MxpError::InvalidElementName)?;
-        match definition.to_lowercase().as_str() {
+        match_ci! {definition,
             "element" | "el" => self.define_element(name, words),
             "entity" | "en" => self.define_entity(name, words),
-            "attlist" | "at" => self.define_attributes(name, words),
-            _ => Err(ParseError::new(definition, MxpError::InvalidDefinition)),
+            "attlist" | "att" => self.define_attributes(name, words),
+            _ => Err(ParseError::new(definition, MxpError::InvalidDefinition))
         }
     }
 

@@ -13,6 +13,7 @@ use super::words::Words;
 pub type Argument = String;
 pub type Arg = str;
 
+/// MXP elements can have both positional and named arguments.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ArgumentIndex<'a> {
     Positional(usize),
@@ -31,15 +32,15 @@ impl<'a> From<&'a str> for ArgumentIndex<'a> {
 impl<'a> ArgumentIndex<'a> {
     pub fn is_positional(self) -> bool {
         match self {
-            Self::Positional(..) => true,
-            Self::Named(..) => false,
+            Self::Positional(_) => true,
+            Self::Named(_) => false,
         }
     }
 
     pub fn is_named(self) -> bool {
         match self {
-            Self::Positional(..) => false,
-            Self::Named(..) => true,
+            Self::Positional(_) => false,
+            Self::Named(_) => true,
         }
     }
 }
@@ -61,7 +62,7 @@ pub enum Keyword {
 
 impl Keyword {
     fn parse(s: &str) -> Option<Self> {
-        match s.to_ascii_lowercase().as_str() {
+        match_ci! {s,
             "delete" => Some(Self::Delete),
             "open" => Some(Self::Open),
             "empty" => Some(Self::Empty),

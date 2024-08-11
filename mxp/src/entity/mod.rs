@@ -20,7 +20,10 @@ mod mode;
 pub use mode::Mode;
 
 mod scanning;
-pub use scanning::{AfkArgs, ColorArgs, FontArgs, HyperlinkArgs, SendArgs};
+pub use scanning::{
+    AfkArgs, ColorArgs, FontArgs, FontEffect, FontStyle, HyperlinkArgs, ImageArgs, SendArgs,
+    VarArgs, XchMode,
+};
 
 mod state;
 pub use state::State;

@@ -269,10 +269,10 @@ impl Transformer {
             Action::Italic => self.output.set_mxp_flag(TextStyle::Italic),
             Action::Color => {
                 let mxp::ColorArgs { fore, back } = (&args).into();
-                if let Some(fg) = fore.and_then(RgbColor::named) {
+                if let Some(fg) = fore {
                     self.output.set_mxp_foreground(fg);
                 }
-                if let Some(bg) = back.and_then(RgbColor::named) {
+                if let Some(bg) = back {
                     self.output.set_mxp_background(bg);
                 }
             }
@@ -302,20 +302,12 @@ impl Transformer {
             Action::Font => {
                 let mxp::FontArgs { fgcolor, bgcolor } = (&args).into();
                 for fg in fgcolor {
-                    match fg.to_lowercase().as_str() {
-                        "blink" => self.output.set_mxp_flag(TextStyle::Blink),
-                        "italic" => self.output.set_mxp_flag(TextStyle::Italic),
-                        "underline" => self.output.set_mxp_flag(TextStyle::Underline),
-                        "bold" => self.output.set_mxp_flag(TextStyle::Bold),
-                        "inverse" => self.output.set_mxp_flag(TextStyle::Inverse),
-                        color => {
-                            if let Some(fg) = RgbColor::named(color) {
-                                self.output.set_mxp_foreground(fg);
-                            }
-                        }
-                    };
+                    match fg {
+                        mxp::FontEffect::Color(fg) => self.output.set_mxp_foreground(fg),
+                        mxp::FontEffect::Style(style) => self.output.set_mxp_flag(style.into()),
+                    }
                 }
-                if let Some(bg) = bgcolor.and_then(RgbColor::named) {
+                if let Some(bg) = bgcolor {
                     self.output.set_mxp_background(bg);
                 }
             }
@@ -373,16 +365,21 @@ impl Transformer {
                 None => (),
             },
             Action::Img | Action::Image => {
-                if let Some(xch_mode) = args.get("xch_mode") {
+                let mxp::ImageArgs {
+                    fname,
+                    url,
+                    xch_mode,
+                } = (&args).into();
+                if let Some(xch_mode) = xch_mode {
                     self.pueblo_active = true;
-                    if xch_mode.eq_ignore_ascii_case("purehtml") {
-                        self.suppress_newline = true;
-                    } else if xch_mode.eq_ignore_ascii_case("html") {
-                        self.suppress_newline = false;
+                    match xch_mode {
+                        mxp::XchMode::Text => (),
+                        mxp::XchMode::Html => self.suppress_newline = false,
+                        mxp::XchMode::PureHtml => self.suppress_newline = true,
                     }
                 }
-                if let Some(url) = args.get("url").or_else(|| args.get("src")) {
-                    let fname = args.get("fname").unwrap_or("");
+                if let Some(url) = url {
+                    let fname = fname.unwrap_or("");
                     self.output.append_image(format!("{url}{fname}"));
                 }
             }
@@ -391,9 +388,11 @@ impl Transformer {
                 self.mxp_off(false);
             }
             Action::Var => {
-                let variable = args.get(0).unwrap_or("");
-                if mxp::is_valid(variable) && mxp::EntityMap::global(variable).is_none() {
-                    self.output.set_mxp_variable(variable.to_owned());
+                let mxp::VarArgs { variable } = (&args).into();
+                if let Some(variable) = variable {
+                    if mxp::EntityMap::global(variable).is_none() && mxp::is_valid(variable) {
+                        self.output.set_mxp_variable(variable.to_owned());
+                    }
                 }
             }
             _ => (),

@@ -29,6 +29,18 @@ impl TextStyle {
     }
 }
 
+impl From<mxp::FontStyle> for TextStyle {
+    fn from(value: mxp::FontStyle) -> Self {
+        match value {
+            mxp::FontStyle::Blink => Self::Blink,
+            mxp::FontStyle::Bold => Self::Bold,
+            mxp::FontStyle::Inverse => Self::Inverse,
+            mxp::FontStyle::Italic => Self::Italic,
+            mxp::FontStyle::Underline => Self::Underline,
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum TextFormat {
     Paragraph,

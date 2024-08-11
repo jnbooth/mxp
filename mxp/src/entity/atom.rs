@@ -1,8 +1,9 @@
 use std::str;
-use std::sync::OnceLock;
 
-use casefold::ascii::{CaseFold, CaseFoldMap};
+use casefold::ascii::CaseFold;
 use enumeration::{self, enums, Enum, EnumSet};
+
+use crate::lookup::Lookup;
 
 use super::argument::Arguments;
 
@@ -145,19 +146,14 @@ pub struct Atom {
 }
 
 impl Atom {
-    fn all_atoms() -> &'static CaseFoldMap<String, Atom> {
-        static ALL_ATOMS: OnceLock<CaseFoldMap<String, Atom>> = OnceLock::new();
-        ALL_ATOMS.get_or_init(create_atoms)
-    }
-
     pub fn get(name: &str) -> Option<&'static Self> {
-        Self::all_atoms().get(name)
+        ALL_ATOMS.get(name)
     }
 
     pub fn fmt_supported(buf: &mut Vec<u8>, args: Arguments) {
         buf.extend_from_slice(b"\x1B[1z<SUPPORTS ");
         if args.is_empty() {
-            for atom in Self::all_atoms().values() {
+            for atom in ALL_ATOMS.values() {
                 write_can(buf, &atom.name);
                 write_can_args(buf, atom);
             }
@@ -206,98 +202,95 @@ fn write_can_args(buf: &mut Vec<u8>, atom: &Atom) {
     }
 }
 
-fn create_atoms() -> CaseFoldMap<String, Atom> {
-    let mut all: CaseFoldMap<String, Atom> = CaseFoldMap::new();
-    let mut add = |name: &'static str, flags, action, args: &[&'static str]| {
-        all.insert(
-            name.to_owned(),
-            Atom {
-                name: name.to_owned(),
-                flags,
-                action,
-                args: args.iter().map(|&s| CaseFold::borrow(s)).collect(),
-            },
-        )
+static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
+    let atom = |name: &'static str, flags, action, args: &[&'static str]| {
+        let atom = Atom {
+            name: name.to_owned(),
+            flags,
+            action,
+            args: args.iter().map(|&s| CaseFold::borrow(s)).collect(),
+        };
+        (name, atom)
     };
 
     use Action::*;
     use TagFlag::*;
-    add("a", enums![], Hyperlink, &["href", "xch_cmd", "xch_hint"]);
-    add("afk", enums![Command], Afk, &[]);
-    add("b", enums![Open], Bold, &[]);
-    add("body", enums![Pueblo, NoReset], Body, &[]);
-    add("bold", enums![Open], Bold, &[]);
-    add("br", enums![Command], Br, &[]);
-    add("c", enums![Open], Color, &["fore", "back"]);
-    add("center", enums![NotImp], Center, &[]);
-    add("color", enums![Open], Color, &["fore", "back"]);
-    add("dest", enums![NotImp], Dest, &[]);
-    add("em", enums![Open], Italic, &[]);
-    add("expire", enums![NotImp], Expire, &[]);
-    add("filter", enums![NotImp], Filter, &[]);
-    add("frame", enums![NotImp], Frame, &[]);
-    add("gauge", enums![NotImp], Gauge, &[]);
-    add("h", enums![Open], High, &[]);
-    add("h1", enums![NotImp], H1, &[]);
-    add("h2", enums![NotImp], H2, &[]);
-    add("h3", enums![NotImp], H3, &[]);
-    add("h4", enums![NotImp], H4, &[]);
-    add("h5", enums![NotImp], H5, &[]);
-    add("h6", enums![NotImp], H6, &[]);
-    add("head", enums![Pueblo, NoReset], Head, &[]);
-    add("high", enums![Open], High, &[]);
-    add("hr", enums![Command], Hr, &[]);
-    add("html", enums![Pueblo, NoReset], Html, &[]);
-    add("i", enums![Open], Italic, &[]);
-    add("image", enums![Command, NotImp], Image, &["url", "fname"]);
-    add("img", enums![Pueblo, Command], Img, &["src", "xch_mode"]);
-    add("italic", enums![Open], Italic, &[]);
-    add("li", enums![Command], Li, &[]);
-    add("music", enums![Command, NotImp], Sound, &[]);
-    add("mxp", enums![Command], Mxp, &["off"]);
-    add("nobr", enums![NotImp], NoBr, &[]);
-    add("ol", enums![], Ol, &[]);
-    add("option", enums![Command], SetOption, &[]);
-    add("p", enums![], P, &[]);
-    add("pass", enums![Command], Password, &[]);
-    add("password", enums![Command], Password, &[]);
-    add("pre", enums![Pueblo], Pre, &[]);
-    add("recommend_option", enums![Command], RecommendOption, &[]);
-    add("relocate", enums![Command, NotImp], Relocate, &[]);
-    add("reset", enums![Command], Reset, &[]);
-    add("s", enums![Open, NotImp], Strike, &[]);
-    add("samp", enums![], Samp, &[]);
-    add("script", enums![NotImp], Script, &[]);
-    add("small", enums![Open, NotImp], Small, &[]);
-    add("sound", enums![Command, NotImp], Sound, &[]);
-    add("stat", enums![NotImp], Stat, &[]);
-    add("strike", enums![Open, NotImp], Strike, &[]);
-    add("strong", enums![Open], Bold, &[]);
-    add("support", enums![Command], Support, &[]);
-    add("title", enums![Pueblo], Title, &[]);
-    add("tt", enums![Open, NotImp], Tt, &[]);
-    add("u", enums![Open], Underline, &[]);
-    add("ul", enums![], Ul, &[]);
-    add("underline", enums![Open], Underline, &[]);
-    add("user", enums![Command], User, &[]);
-    add("username", enums![Command], User, &[]);
-    add("v", enums![], Var, &[]);
-    add("var", enums![], Var, &[]);
-    add("version", enums![Command], Version, &[]);
-    add("xch_page", enums![Pueblo, Command], XchPage, &[]);
-    add("xch_pane", enums![Pueblo, Command, NotImp], XchPane, &[]);
-    add(
-        "font",
-        enums![Open],
-        Font,
-        &["color", "back", "fgcolor", "bgcolor"],
-    );
-    add(
-        "send",
-        enums![],
-        Send,
-        &["href", "hint", "xch_cmd", "xch_hint", "prompt"],
-    );
-
-    all
-}
+    vec![
+        atom("a", enums![], Hyperlink, &["href", "xch_cmd", "xch_hint"]),
+        atom("afk", enums![Command], Afk, &[]),
+        atom("b", enums![Open], Bold, &[]),
+        atom("body", enums![Pueblo, NoReset], Body, &[]),
+        atom("bold", enums![Open], Bold, &[]),
+        atom("br", enums![Command], Br, &[]),
+        atom("c", enums![Open], Color, &["fore", "back"]),
+        atom("center", enums![NotImp], Center, &[]),
+        atom("color", enums![Open], Color, &["fore", "back"]),
+        atom("dest", enums![NotImp], Dest, &[]),
+        atom("em", enums![Open], Italic, &[]),
+        atom("expire", enums![NotImp], Expire, &[]),
+        atom("filter", enums![NotImp], Filter, &[]),
+        atom("frame", enums![NotImp], Frame, &[]),
+        atom("gauge", enums![NotImp], Gauge, &[]),
+        atom("h", enums![Open], High, &[]),
+        atom("h1", enums![NotImp], H1, &[]),
+        atom("h2", enums![NotImp], H2, &[]),
+        atom("h3", enums![NotImp], H3, &[]),
+        atom("h4", enums![NotImp], H4, &[]),
+        atom("h5", enums![NotImp], H5, &[]),
+        atom("h6", enums![NotImp], H6, &[]),
+        atom("head", enums![Pueblo, NoReset], Head, &[]),
+        atom("high", enums![Open], High, &[]),
+        atom("hr", enums![Command], Hr, &[]),
+        atom("html", enums![Pueblo, NoReset], Html, &[]),
+        atom("i", enums![Open], Italic, &[]),
+        atom("image", enums![Command, NotImp], Image, &["url", "fname"]),
+        atom("img", enums![Pueblo, Command], Img, &["src", "xch_mode"]),
+        atom("italic", enums![Open], Italic, &[]),
+        atom("li", enums![Command], Li, &[]),
+        atom("music", enums![Command, NotImp], Sound, &[]),
+        atom("mxp", enums![Command], Mxp, &["off"]),
+        atom("nobr", enums![NotImp], NoBr, &[]),
+        atom("ol", enums![], Ol, &[]),
+        atom("option", enums![Command], SetOption, &[]),
+        atom("p", enums![], P, &[]),
+        atom("pass", enums![Command], Password, &[]),
+        atom("password", enums![Command], Password, &[]),
+        atom("pre", enums![Pueblo], Pre, &[]),
+        atom("recommend_option", enums![Command], RecommendOption, &[]),
+        atom("relocate", enums![Command, NotImp], Relocate, &[]),
+        atom("reset", enums![Command], Reset, &[]),
+        atom("s", enums![Open, NotImp], Strike, &[]),
+        atom("samp", enums![], Samp, &[]),
+        atom("script", enums![NotImp], Script, &[]),
+        atom("small", enums![Open, NotImp], Small, &[]),
+        atom("sound", enums![Command, NotImp], Sound, &[]),
+        atom("stat", enums![NotImp], Stat, &[]),
+        atom("strike", enums![Open, NotImp], Strike, &[]),
+        atom("strong", enums![Open], Bold, &[]),
+        atom("support", enums![Command], Support, &[]),
+        atom("title", enums![Pueblo], Title, &[]),
+        atom("tt", enums![Open, NotImp], Tt, &[]),
+        atom("u", enums![Open], Underline, &[]),
+        atom("ul", enums![], Ul, &[]),
+        atom("underline", enums![Open], Underline, &[]),
+        atom("user", enums![Command], User, &[]),
+        atom("username", enums![Command], User, &[]),
+        atom("v", enums![], Var, &[]),
+        atom("var", enums![], Var, &[]),
+        atom("version", enums![Command], Version, &[]),
+        atom("xch_page", enums![Pueblo, Command], XchPage, &[]),
+        atom("xch_pane", enums![Pueblo, Command, NotImp], XchPane, &[]),
+        atom(
+            "font",
+            enums![Open],
+            Font,
+            &["color", "back", "fgcolor", "bgcolor"],
+        ),
+        atom(
+            "send",
+            enums![],
+            Send,
+            &["href", "hint", "xch_cmd", "xch_hint", "prompt"],
+        ),
+    ]
+});
