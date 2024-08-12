@@ -31,7 +31,7 @@ impl State {
 
     pub fn decode_args(&self, args: &mut Arguments) -> Result<(), ParseError> {
         for value in args.values_mut() {
-            *value = self.entities.decode(value)?;
+            *value = self.entities.decode(value)?.into_owned();
         }
         Ok(())
     }
@@ -44,7 +44,7 @@ impl State {
         element.items.iter().map(move |item| {
             let mut newargs = Arguments::new();
             for (i, arg) in &item.arguments {
-                let val = self.entities.decode_el(element, arg, args)?;
+                let val = self.entities.decode_el(element, arg, args)?.into_owned();
                 match i {
                     ArgumentIndex::Positional(_) => newargs.push(val),
                     ArgumentIndex::Named(key) => newargs.set(key, val),
@@ -89,7 +89,7 @@ impl State {
                     word.eq_ignore_ascii_case("delete") || word.eq_ignore_ascii_case("remove")
                 }) =>
             {
-                let value = self.entities.decode(body)?;
+                let value = self.entities.decode(body)?.into_owned();
                 self.entities.insert(key.to_owned(), value);
             }
             _ => {

@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::ops::{Deref, DerefMut};
 
 use casefold::ascii::CaseFoldMap;
@@ -7,11 +8,11 @@ use super::element::Element;
 
 use super::error::{Error as MxpError, ParseError};
 
-fn decode_amps<'a, F>(mut s: &str, mut f: F) -> Result<String, ParseError>
+fn decode_amps<'a, F>(mut s: &str, mut f: F) -> Result<Cow<str>, ParseError>
 where
     F: FnMut(&str) -> Result<Option<&'a str>, ParseError>,
 {
-    let mut res = String::with_capacity(s.len());
+    let mut res = String::new();
     while let Some(start) = s.find('&') {
         if start > 0 {
             res.push_str(&s[..start]);
@@ -23,10 +24,13 @@ where
         res.push_str(f(&s[1..end])?.unwrap_or(&s[..=end]));
         s = &s[end + 1..];
     }
+    if res.is_empty() {
+        return Ok(Cow::Borrowed(s));
+    }
     if !s.is_empty() {
         res.push_str(s);
     }
-    Ok(res)
+    Ok(Cow::Owned(res))
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -69,11 +73,16 @@ impl EntityMap {
         }
     }
 
-    pub fn decode(&self, s: &str) -> Result<String, ParseError> {
+    pub fn decode<'a>(&self, s: &'a str) -> Result<Cow<'a, str>, ParseError> {
         decode_amps(s, |entity| self.get(entity))
     }
 
-    pub fn decode_el(&self, el: &Element, s: &str, args: &Arguments) -> Result<String, ParseError> {
+    pub fn decode_el<'a>(
+        &self,
+        el: &Element,
+        s: &'a str,
+        args: &Arguments,
+    ) -> Result<Cow<'a, str>, ParseError> {
         decode_amps(s, |entity| {
             if entity == "text" {
                 return Ok(None);
