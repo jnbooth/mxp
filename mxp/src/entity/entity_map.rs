@@ -5,6 +5,7 @@ use casefold::ascii::CaseFoldMap;
 
 use super::argument::{ArgumentIndex, Arguments};
 use super::element::Element;
+use super::scan::Decoder;
 
 use super::error::{Error as MxpError, ParseError};
 
@@ -73,8 +74,16 @@ impl EntityMap {
         }
     }
 
-    pub fn decode<'a>(&self, s: &'a str) -> Result<Cow<'a, str>, ParseError> {
-        decode_amps(s, |entity| self.get(entity))
+    pub fn element_decoder<'a>(
+        &'a self,
+        element: &'a Element,
+        args: &'a Arguments,
+    ) -> ElementDecoder {
+        ElementDecoder {
+            element,
+            entities: self,
+            args,
+        }
     }
 
     pub fn decode_el<'a>(
@@ -207,5 +216,45 @@ impl EntityMap {
             b"yuml" => Some("ÿ"),
             _ => None,
         }
+    }
+}
+
+impl Decoder for EntityMap {
+    fn decode<'a>(&self, s: &'a str) -> Result<Cow<'a, str>, ParseError> {
+        decode_amps(s, |entity| self.get(entity))
+    }
+}
+
+impl Decoder for &EntityMap {
+    fn decode<'a>(&self, s: &'a str) -> Result<Cow<'a, str>, ParseError> {
+        EntityMap::decode(self, s)
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct ElementDecoder<'a> {
+    element: &'a Element,
+    entities: &'a EntityMap,
+    args: &'a Arguments,
+}
+
+impl<'a> Decoder for ElementDecoder<'a> {
+    fn decode<'b>(&self, s: &'b str) -> Result<Cow<'b, str>, ParseError> {
+        decode_amps(s, |entity| {
+            if entity == "text" {
+                return Ok(None);
+            }
+            match self.element.attributes.iter().find(|&(i, attr)| match i {
+                ArgumentIndex::Positional(_) => attr.eq_ignore_ascii_case(entity),
+                ArgumentIndex::Named(name) => name.eq_ignore_ascii_case(entity),
+            }) {
+                None => self.entities.get(entity),
+                Some((i, attr)) => Ok(match self.args.get(i) {
+                    Some(arg) => Some(arg),
+                    None if i.is_named() => Some(attr), // default replacement
+                    None => Some(""),                   // TODO is this right?
+                }),
+            }
+        })
     }
 }

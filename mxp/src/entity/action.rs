@@ -1,10 +1,13 @@
+use std::borrow::Cow;
 use std::str;
 
-use super::argument::{Arguments, Keyword};
+use super::argument::Keyword;
 use super::atom::Atom;
+use super::error::ParseError;
 use super::link::SendTo;
-use super::scanning::{
-    AfkArgs, ColorArgs, FgColor, FontArgs, HyperlinkArgs, ImageArgs, SendArgs, VarArgs, XchMode,
+use super::scan::{
+    AfkArgs, ColorArgs, Decoder, FgColor, FontArgs, HyperlinkArgs, ImageArgs, Scan, SendArgs,
+    VarArgs, XchMode,
 };
 use crate::color::RgbColor;
 use enumeration::{Enum, EnumSet};
@@ -259,23 +262,26 @@ pub enum Action<S> {
     XchPane,
 }
 
-impl<'a> Action<&'a str> {
-    pub fn new(action: ActionType, args: &'a Arguments) -> Self {
-        match action {
+impl<'a> Action<Cow<'a, str>> {
+    pub fn new<D: Decoder>(
+        action: ActionType,
+        mut scanner: Scan<'a, D>,
+    ) -> Result<Self, ParseError> {
+        Ok(match action {
             ActionType::Send => {
-                let SendArgs { href, hint, sendto } = args.into();
+                let SendArgs { href, hint, sendto } = scanner.try_into()?;
                 Self::Send { href, hint, sendto }
             }
             ActionType::Bold => Self::Bold,
             ActionType::Underline => Self::Underline,
             ActionType::Italic => Self::Italic,
             ActionType::Color => {
-                let ColorArgs { fore, back } = args.into();
+                let ColorArgs { fore, back } = scanner.try_into()?;
                 Self::Color { fore, back }
             }
             ActionType::Version => Self::Version,
             ActionType::Font => {
-                let FontArgs { fgcolor, bgcolor } = args.into();
+                let FontArgs { fgcolor, bgcolor } = scanner.try_into()?;
                 Self::Font { fgcolor, bgcolor }
             }
             ActionType::Sound => Self::Sound,
@@ -289,7 +295,7 @@ impl<'a> Action<&'a str> {
                     fname,
                     url,
                     xch_mode,
-                } = args.into();
+                } = scanner.try_into()?;
                 Self::Image {
                     fname,
                     url,
@@ -298,7 +304,7 @@ impl<'a> Action<&'a str> {
             }
             ActionType::Filter => Self::Filter,
             ActionType::Hyperlink => {
-                let HyperlinkArgs { href } = args.into();
+                let HyperlinkArgs { href } = scanner.try_into()?;
                 Self::Hyperlink { href }
             }
             ActionType::Br => Self::Br,
@@ -322,11 +328,11 @@ impl<'a> Action<&'a str> {
             ActionType::Center => Self::Center,
             ActionType::High => Self::High,
             ActionType::Var => {
-                let VarArgs { variable } = args.into();
+                let VarArgs { variable } = scanner.try_into()?;
                 Self::Var { variable }
             }
             ActionType::Afk => {
-                let AfkArgs { challenge } = args.into();
+                let AfkArgs { challenge } = scanner.try_into()?;
                 Self::Afk { challenge }
             }
             ActionType::Gauge => Self::Gauge,
@@ -334,11 +340,15 @@ impl<'a> Action<&'a str> {
             ActionType::Expire => Self::Expire,
             ActionType::Reset => Self::Reset,
             ActionType::Mxp => Self::Mxp {
-                keywords: args.keywords(),
+                keywords: scanner.keywords(),
             },
             ActionType::Support => {
+                let mut questions = Vec::with_capacity(scanner.len());
+                while let Some(question) = scanner.next()? {
+                    questions.push(question)
+                }
                 let mut supported = Vec::new();
-                Atom::fmt_supported(&mut supported, args);
+                Atom::fmt_supported(&mut supported, &questions);
                 Self::Support { supported }
             }
             ActionType::SetOption => Self::SetOption,
@@ -353,7 +363,7 @@ impl<'a> Action<&'a str> {
                     fname,
                     url,
                     xch_mode,
-                } = args.into();
+                } = scanner.try_into()?;
                 Self::Img {
                     fname,
                     url,
@@ -362,29 +372,26 @@ impl<'a> Action<&'a str> {
             }
             ActionType::XchPage => Self::XchPage,
             ActionType::XchPane => Self::XchPane,
-        }
+        })
     }
 
-    pub fn owned(&self) -> Action<String> {
+    pub fn into_owned(self) -> Action<String> {
         match self {
             Action::Send { href, hint, sendto } => Action::Send {
-                href: href.map(ToOwned::to_owned),
-                hint: hint.map(ToOwned::to_owned),
-                sendto: *sendto,
+                href: href.map(Cow::into_owned),
+                hint: hint.map(Cow::into_owned),
+                sendto,
             },
             Action::Bold => Action::Bold,
             Action::Underline => Action::Underline,
             Action::Italic => Action::Italic,
-            Action::Color { fore, back } => Action::Color {
-                fore: *fore,
-                back: *back,
-            },
+            Action::Color { fore, back } => Action::Color { fore, back },
             Action::Version => Action::Version,
             Action::Font { fgcolor, bgcolor } => Action::Font {
                 fgcolor: FgColor {
-                    inner: fgcolor.inner.to_owned(),
+                    inner: fgcolor.inner.into_owned(),
                 },
-                bgcolor: *bgcolor,
+                bgcolor,
             },
             Action::Sound => Action::Sound,
             Action::User => Action::User,
@@ -397,16 +404,16 @@ impl<'a> Action<&'a str> {
                 url,
                 xch_mode,
             } => Action::Image {
-                fname: fname.map(ToOwned::to_owned),
-                url: url.map(ToOwned::to_owned),
-                xch_mode: *xch_mode,
+                fname: fname.map(Cow::into_owned),
+                url: url.map(Cow::into_owned),
+                xch_mode,
             },
             Action::Filter => Action::Filter,
             Action::Hyperlink { href } => Action::Hyperlink {
-                href: href.map(ToOwned::to_owned),
+                href: href.map(Cow::into_owned),
             },
             Action::Br => Action::Br,
-            Action::Heading(heading) => Action::Heading(*heading),
+            Action::Heading(heading) => Action::Heading(heading),
             Action::Hr => Action::Hr,
             Action::NoBr => Action::NoBr,
             Action::P => Action::P,
@@ -421,21 +428,17 @@ impl<'a> Action<&'a str> {
             Action::Center => Action::Center,
             Action::High => Action::High,
             Action::Var { variable } => Action::Var {
-                variable: variable.map(ToOwned::to_owned),
+                variable: variable.map(Cow::into_owned),
             },
             Action::Afk { challenge } => Action::Afk {
-                challenge: challenge.map(ToOwned::to_owned),
+                challenge: challenge.map(Cow::into_owned),
             },
             Action::Gauge => Action::Gauge,
             Action::Stat => Action::Stat,
             Action::Expire => Action::Expire,
             Action::Reset => Action::Reset,
-            Action::Mxp { keywords } => Action::Mxp {
-                keywords: *keywords,
-            },
-            Action::Support { supported } => Action::Support {
-                supported: supported.clone(),
-            },
+            Action::Mxp { keywords } => Action::Mxp { keywords },
+            Action::Support { supported } => Action::Support { supported },
             Action::SetOption => Action::SetOption,
             Action::RecommendOption => Action::RecommendOption,
             Action::Pre => Action::Pre,
@@ -448,9 +451,9 @@ impl<'a> Action<&'a str> {
                 url,
                 xch_mode,
             } => Action::Img {
-                fname: fname.map(ToOwned::to_owned),
-                url: url.map(ToOwned::to_owned),
-                xch_mode: *xch_mode,
+                fname: fname.map(Cow::into_owned),
+                url: url.map(Cow::into_owned),
+                xch_mode,
             },
             Action::XchPage => Action::XchPage,
             Action::XchPane => Action::XchPane,

@@ -1,12 +1,12 @@
 use std::collections::hash_map;
-use std::iter::{self, Chain, Enumerate, Map};
-use std::ops::{Deref, DerefMut};
+use std::iter::{Chain, Enumerate, Map};
 use std::{slice, str};
 
 use casefold::ascii::{CaseFold, CaseFoldMap};
 use enumeration::{Enum, EnumSet};
 
 use super::error::{Error as MxpError, ParseError};
+use super::scan::{Decoder, Scan};
 use super::validation::validate;
 use super::words::Words;
 
@@ -79,37 +79,6 @@ impl Keyword {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Scan<'a> {
-    inner: iter::Map<slice::Iter<'a, Argument>, fn(&Argument) -> &Arg>,
-    named: &'a CaseFoldMap<String, Argument>,
-}
-
-impl<'a> Scan<'a> {
-    pub fn next_or(&mut self, names: &[&str]) -> Option<&'a Arg> {
-        self.inner.next().or_else(|| {
-            names
-                .iter()
-                .find_map(|&name| self.named.get(name))
-                .map(String::as_str)
-        })
-    }
-}
-
-impl<'a> Deref for Scan<'a> {
-    type Target = iter::Map<slice::Iter<'a, Argument>, fn(&Argument) -> &Arg>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-impl<'a> DerefMut for Scan<'a> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
-    }
-}
-
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Arguments {
     positional: Vec<Argument>,
@@ -130,6 +99,12 @@ impl Arguments {
         self.positional.is_empty() && self.named.is_empty()
     }
 
+    pub fn clear(&mut self) {
+        self.positional.clear();
+        self.named.clear();
+        self.keywords.clear();
+    }
+
     pub fn get<'a, Idx: Into<ArgumentIndex<'a>>>(&self, idx: Idx) -> Option<&Arg> {
         match idx.into() {
             ArgumentIndex::Positional(i) => self.positional.get(i),
@@ -147,10 +122,6 @@ impl Arguments {
 
     pub fn has_keyword(&self, k: Keyword) -> bool {
         self.keywords.contains(k)
-    }
-
-    pub(crate) fn keywords(&self) -> EnumSet<Keyword> {
-        self.keywords
     }
 
     pub fn push(&mut self, arg: Argument) {
@@ -180,9 +151,11 @@ impl Arguments {
         self.positional.iter_mut().chain(self.named.values_mut())
     }
 
-    pub fn scan(&self) -> Scan {
+    pub fn scan<D: Decoder>(&self, decoder: D) -> Scan<D> {
         Scan {
+            decoder,
             inner: self.positional.iter().map(String::as_str),
+            keywords: self.keywords,
             named: &self.named,
         }
     }

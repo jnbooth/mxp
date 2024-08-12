@@ -6,7 +6,6 @@ use enumeration::{self, enums, Enum, EnumSet};
 use crate::lookup::Lookup;
 
 use super::action::ActionType;
-use super::argument::Arguments;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum TagFlag {
@@ -40,29 +39,34 @@ impl Atom {
         ALL_ATOMS.get(name)
     }
 
-    pub fn fmt_supported(buf: &mut Vec<u8>, args: &Arguments) {
+    pub fn fmt_supported<I>(buf: &mut Vec<u8>, iter: I)
+    where
+        I: IntoIterator,
+        I::Item: AsRef<str>,
+    {
         buf.extend_from_slice(b"\x1B[1z<SUPPORTS ");
-        if args.is_empty() {
+        let mut has_args = false;
+        for arg in iter.into_iter() {
+            has_args = true;
+            let mut questions = arg.as_ref().split('.');
+            let tag = questions.next().unwrap();
+            match Atom::get(tag) {
+                None => write_cant(buf, tag),
+                Some(atom) if atom.flags.contains(TagFlag::NotImp) => write_cant(buf, tag),
+                Some(atom) => match questions.next() {
+                    None => write_can(buf, tag),
+                    Some("*") => write_can_args(buf, atom),
+                    Some(subtag) if atom.args.contains(&CaseFold::borrow(subtag)) => {
+                        write_can(buf, subtag)
+                    }
+                    Some(subtag) => write_cant(buf, subtag),
+                },
+            }
+        }
+        if !has_args {
             for atom in ALL_ATOMS.values() {
                 write_can(buf, &atom.name);
                 write_can_args(buf, atom);
-            }
-        } else {
-            for arg in args.values() {
-                let mut questions = arg.split('.');
-                let tag = questions.next().unwrap();
-                match Atom::get(tag) {
-                    None => write_cant(buf, tag),
-                    Some(atom) if atom.flags.contains(TagFlag::NotImp) => write_cant(buf, tag),
-                    Some(atom) => match questions.next() {
-                        None => write_can(buf, tag),
-                        Some("*") => write_can_args(buf, atom),
-                        Some(subtag) if atom.args.contains(&CaseFold::borrow(subtag)) => {
-                            write_can(buf, subtag)
-                        }
-                        Some(subtag) => write_cant(buf, subtag),
-                    },
-                }
             }
         }
         buf.extend_from_slice(b">\n");

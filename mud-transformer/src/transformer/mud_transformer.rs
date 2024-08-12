@@ -233,12 +233,15 @@ impl Transformer {
 
         match component {
             mxp::ElementComponent::Atom(atom) => {
-                self.mxp_state.decode_args(&mut args)?;
-                self.mxp_open_atom(&mxp::Action::new(atom.action, &args).owned());
+                let scanner = self.mxp_state.decode_args(&mut args);
+                self.mxp_open_atom(&mxp::Action::new(atom.action, scanner)?);
             }
             mxp::ElementComponent::Custom(el) => {
-                let actions: Result<Vec<_>, mxp::ParseError> =
-                    self.mxp_state.decode_element(el, &args).collect();
+                let actions: Result<Vec<_>, mxp::ParseError> = self
+                    .mxp_state
+                    .decode_element(el, &args)
+                    .map(|el| el.map(mxp::Action::into_owned))
+                    .collect();
                 for action in actions? {
                     self.mxp_open_atom(&action);
                 }
@@ -248,7 +251,7 @@ impl Transformer {
         Ok(())
     }
 
-    fn mxp_open_atom(&mut self, action: &mxp::Action<String>) {
+    fn mxp_open_atom<S: AsRef<str>>(&mut self, action: &mxp::Action<S>) {
         use mxp::{Action, Keyword, Link, SendTo};
         const SPECIAL_LINK: &str = "&text;";
         /*
@@ -272,12 +275,12 @@ impl Transformer {
             Action::High => self.output.set_mxp_flag(TextStyle::Highlight),
             Action::Send { href, hint, sendto } => {
                 let action = match href {
-                    Some(href) => href.as_str(),
+                    Some(href) => href.as_ref(),
                     None => SPECIAL_LINK,
                 };
                 self.output.set_mxp_action(Link::new(
                     action,
-                    hint.as_ref().map(String::as_str),
+                    hint.as_ref().map(AsRef::as_ref),
                     *sendto,
                 ));
                 if action.contains(SPECIAL_LINK) {
@@ -291,7 +294,7 @@ impl Transformer {
             }
             Action::Hyperlink { href } => {
                 let action = match href {
-                    Some(href) => href.as_str(),
+                    Some(href) => href.as_ref(),
                     None => SPECIAL_LINK,
                 };
                 self.output
@@ -316,7 +319,7 @@ impl Transformer {
             ),
             Action::Afk { challenge } => {
                 let challenge = match challenge {
-                    Some(challenge) => challenge.as_str(),
+                    Some(challenge) => challenge.as_ref(),
                     None => "",
                 };
                 self.output.append_afk(challenge);
@@ -387,9 +390,10 @@ impl Transformer {
                 }
                 if let Some(url) = url {
                     let fname = match fname {
-                        Some(fname) => fname.as_str(),
+                        Some(fname) => fname.as_ref(),
                         None => "",
                     };
+                    let url = url.as_ref();
                     self.output.append_image(format!("{url}{fname}"));
                 }
             }
@@ -399,8 +403,9 @@ impl Transformer {
             }
             Action::Var { variable } => {
                 if let Some(variable) = variable {
+                    let variable = variable.as_ref();
                     if mxp::EntityMap::global(variable).is_none() && mxp::is_valid(variable) {
-                        self.output.set_mxp_variable(variable.clone());
+                        self.output.set_mxp_variable(variable.to_owned());
                     }
                 }
             }

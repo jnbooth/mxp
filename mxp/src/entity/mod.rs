@@ -22,8 +22,8 @@ pub use link::{Link, SendTo};
 mod mode;
 pub use mode::Mode;
 
-mod scanning;
-pub use scanning::{
+mod scan;
+pub use scan::{
     AfkArgs, ColorArgs, FgColor, FontArgs, FontEffect, FontStyle, HyperlinkArgs, ImageArgs,
     SendArgs, VarArgs, XchMode,
 };

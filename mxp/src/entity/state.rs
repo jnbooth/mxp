@@ -1,8 +1,12 @@
+use std::borrow::Cow;
+use std::slice;
+
 use super::action::Action;
-use super::argument::{ArgumentIndex, Arguments, Keyword};
-use super::element::{Element, ElementComponent, ElementMap};
-use super::entity_map::EntityMap;
+use super::argument::{Arguments, Keyword};
+use super::element::{Element, ElementComponent, ElementItem, ElementMap};
+use super::entity_map::{ElementDecoder, EntityMap};
 use super::error::{Error as MxpError, ParseError};
+use super::scan::{Decoder, Scan};
 use super::words::Words;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -29,30 +33,20 @@ impl State {
         self.entities.get(name)
     }
 
-    pub fn decode_args(&self, args: &mut Arguments) -> Result<(), ParseError> {
-        for value in args.values_mut() {
-            *value = self.entities.decode(value)?.into_owned();
-        }
-        Ok(())
+    pub fn decode_args<'a, 'b>(&'a self, args: &'b mut Arguments) -> Scan<'b, &'a EntityMap> {
+        args.scan(&self.entities)
     }
 
     pub fn decode_element<'a>(
         &'a self,
         element: &'a Element,
         args: &'a Arguments,
-    ) -> impl Iterator<Item = Result<Action<String>, ParseError>> + 'a {
-        element.items.iter().map(move |item| {
-            let mut newargs = Arguments::new();
-            for (i, arg) in &item.arguments {
-                let val = self.entities.decode_el(element, arg, args)?.into_owned();
-                match i {
-                    ArgumentIndex::Positional(_) => newargs.push(val),
-                    ArgumentIndex::Named(key) => newargs.set(key, val),
-                }
-            }
-            let action = Action::new(item.atom.action, &newargs).owned();
-            Ok(action)
-        })
+    ) -> DecodeElement<'a, ElementDecoder<'a>> {
+        let decoder = self.entities.element_decoder(element, args);
+        DecodeElement {
+            decoder,
+            items: element.items.iter(),
+        }
     }
 
     pub fn define(&mut self, tag: &str) -> Result<(), ParseError> {
@@ -74,7 +68,7 @@ impl State {
             self.elements.remove(&name);
             return Ok(());
         }
-        let el = Element::parse(name.to_owned(), args)?;
+        let el = Element::parse(name.to_owned(), args.scan(()))?;
         self.elements.insert(name.to_owned(), el);
         Ok(())
     }
@@ -105,5 +99,20 @@ impl State {
             .ok_or_else(|| ParseError::new(key, MxpError::UnknownElementInAttlist))?
             .attributes
             .append(words)
+    }
+}
+
+pub struct DecodeElement<'a, D> {
+    decoder: D,
+    items: slice::Iter<'a, ElementItem>,
+}
+
+impl<'a, D: Decoder + Copy> Iterator for DecodeElement<'a, D> {
+    type Item = Result<Action<Cow<'a, str>>, ParseError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let item: &'a ElementItem = self.items.next()?;
+        let scanner = item.arguments.scan(self.decoder);
+        Some(Action::new(item.atom.action, scanner))
     }
 }

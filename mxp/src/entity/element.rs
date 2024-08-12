@@ -5,9 +5,10 @@ use enumeration::EnumSet;
 
 use crate::lookup::Lookup;
 
-use super::argument::{Arg, Arguments, Keyword};
+use super::argument::{Arguments, Keyword};
 use super::atom::{Atom, TagFlag};
 use super::error::{Error as MxpError, ParseError};
+use super::scan::{Decoder, Scan};
 use super::validation::validate;
 use super::words::Words;
 
@@ -101,12 +102,12 @@ impl Element {
         CollectedElement::from_str(text)
     }
 
-    fn parse_items(argument: Option<&Arg>) -> Result<Vec<ElementItem>, ParseError> {
-        let definitions = match argument {
-            Some(definitions) => definitions,
+    fn parse_items<S: AsRef<str>>(argument: Option<S>) -> Result<Vec<ElementItem>, ParseError> {
+        let argument = match argument {
+            Some(argument) => argument,
             None => return Ok(Vec::new()),
         };
-
+        let definitions = argument.as_ref();
         let size_guess = definitions.bytes().filter(|&c| c == b'<').count();
         let mut items = Vec::with_capacity(size_guess);
 
@@ -136,31 +137,30 @@ impl Element {
         Ok(items)
     }
 
-    pub fn parse(name: String, arguments: Arguments) -> Result<Self, ParseError> {
-        let mut scanner = arguments.scan();
-        let items = Self::parse_items(scanner.next())?;
+    pub fn parse<D: Decoder>(name: String, mut scanner: Scan<D>) -> Result<Self, ParseError> {
+        let items = Self::parse_items(scanner.next()?)?;
 
-        let attributes = match scanner.next_or(&["att"]) {
-            Some(atts) => Arguments::parse(atts)?,
+        let attributes = match scanner.next_or(&["att"])? {
+            Some(atts) => Arguments::parse(&atts)?,
             None => Arguments::default(),
         };
 
-        let tag = match scanner.next_or(&["tag"]).and_then(|s| s.parse().ok()) {
+        let tag = match scanner.next_or(&["tag"])?.and_then(|s| s.parse().ok()) {
             Some(i) if !(20..=99).contains(&i) => None,
             tag => tag,
         };
 
-        let flag = scanner.next_or(&["flag"]).map(|flag| {
+        let flag = scanner.next_or(&["flag"])?.map(|flag| {
             flag.strip_prefix("set ")
-                .unwrap_or(flag)
+                .unwrap_or(&flag)
                 .trim()
                 .replace(' ', "_")
         });
 
         Ok(Self {
             name,
-            open: arguments.has_keyword(Keyword::Open),
-            command: arguments.has_keyword(Keyword::Empty),
+            open: scanner.has_keyword(Keyword::Open),
+            command: scanner.has_keyword(Keyword::Empty),
             items,
             attributes,
             tag,
