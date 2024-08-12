@@ -7,7 +7,7 @@ use crate::output::fragment::EffectFragment;
 
 use super::fragment::{OutputDrain, OutputFragment, TelnetFragment, TextFragment};
 use super::shared_string::SharedString;
-use super::span::{Heading, InList, SpanList, TextFormat, TextStyle};
+use super::span::{InList, SpanList, TextFormat, TextStyle};
 use mxp::TermColor;
 
 fn get_color(
@@ -333,7 +333,7 @@ impl BufferedOutput {
         self.spans.next_list_item()
     }
 
-    pub fn set_mxp_heading(&mut self, heading: Heading) {
+    pub fn set_mxp_heading(&mut self, heading: mxp::Heading) {
         if self.spans.set_heading(heading) {
             self.flush_mxp();
         }

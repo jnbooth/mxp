@@ -1,8 +1,11 @@
 mod argument;
 pub use argument::{ArgumentIndex, Arguments, Keyword};
 
+mod action;
+pub use action::{Action, ActionType, Heading};
+
 mod atom;
-pub use atom::{ActionType, Atom, TagFlag};
+pub use atom::{Atom, TagFlag};
 
 mod element;
 pub use element::{CollectedElement, Element, ElementComponent, ElementMap};
@@ -21,8 +24,8 @@ pub use mode::Mode;
 
 mod scanning;
 pub use scanning::{
-    AfkArgs, ColorArgs, FontArgs, FontEffect, FontStyle, HyperlinkArgs, ImageArgs, SendArgs,
-    VarArgs, XchMode,
+    AfkArgs, ColorArgs, FgColor, FontArgs, FontEffect, FontStyle, HyperlinkArgs, ImageArgs,
+    SendArgs, VarArgs, XchMode,
 };
 
 mod state;

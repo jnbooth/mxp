@@ -2,7 +2,7 @@ use std::ops::Index;
 
 use enumeration::{Enum, EnumSet};
 use mxp::escape::ansi;
-use mxp::TermColor;
+use mxp::{Heading, TermColor};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum TextStyle {
@@ -51,16 +51,6 @@ pub enum TextFormat {
 pub enum InList {
     Ordered(u32),
     Unordered,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum Heading {
-    H1,
-    H2,
-    H3,
-    H4,
-    H5,
-    H6,
 }
 
 /// eg. <send "command1|command2|command3" hint="click to see menu|Item 1|Item

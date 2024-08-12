@@ -5,6 +5,7 @@ use enumeration::{self, enums, Enum, EnumSet};
 
 use crate::lookup::Lookup;
 
+use super::action::ActionType;
 use super::argument::Arguments;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
@@ -19,117 +20,6 @@ pub enum TagFlag {
     NoReset,
     /// Not really implemented (for <supports> tag)
     NotImp,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum ActionType {
-    /// eg. <send href="go west"> west
-    Send,
-    /// bold
-    Bold,
-    /// underline
-    Underline,
-    /// italic
-    Italic,
-    /// eg. <color fore=red back=blue>
-    Color,
-    /// version request
-    Version,
-    /// Font appearance
-    Font,
-    /// play sound
-    Sound,
-    /// send username
-    User,
-    /// send password
-    Password,
-    /// causes a new connect to open
-    Relocate,
-    /// frame
-    Frame,
-    /// destination frame
-    Dest,
-    /// show image
-    Image,
-    /// sound/image filter
-    Filter,
-    /// Hyperlink (secure)
-    Hyperlink,
-    /// Hard Line break (secure)
-    Br,
-    /// Level 1 heading (secure)
-    H1,
-    /// Level 2 heading (secure)
-    H2,
-    /// Level 3 heading (secure)
-    H3,
-    /// Level 4 heading (secure)
-    H4,
-    /// Level 5 heading (secure)
-    H5,
-    /// Level 6 heading (secure)
-    H6,
-    /// Horizontal rule (secure)
-    Hr,
-    /// non-breaking newline
-    NoBr,
-    /// Paragraph break (secure)
-    P,
-    /// Strikethrough
-    Strike,
-    /// Client script (secure)
-    Script,
-    /// Small text
-    Small,
-    /// Non-proportional font
-    Tt,
-    /// Unordered list
-    Ul,
-    /// Ordered list
-    Ol,
-    /// List item
-    Li,
-    /// Sample text
-    Samp,
-    /// Centre text
-    Center,
-    /// Highlight text
-    High,
-    /// Set variable
-    Var,
-    /// AFK - away from keyboard time
-    Afk,
-
-    // recent
-    /// gauge
-    Gauge,
-    /// status
-    Stat,
-    /// expire
-    Expire,
-
-    /// close all open tags
-    Reset,
-    /// MXP command (eg. MXP OFF)
-    Mxp,
-    /// what commands we support
-    Support,
-
-    /// client options set
-    SetOption,
-    /// server sets option
-    RecommendOption,
-
-    // Pueblo
-    /// Preformatted text
-    Pre,
-    Body,
-    Head,
-    Html,
-    Title,
-    Img,
-    XchPage,
-    XchPane,
 }
 
 /// Atomic MXP tags that we recognise, e.g. <b>.
@@ -150,7 +40,7 @@ impl Atom {
         ALL_ATOMS.get(name)
     }
 
-    pub fn fmt_supported(buf: &mut Vec<u8>, args: Arguments) {
+    pub fn fmt_supported(buf: &mut Vec<u8>, args: &Arguments) {
         buf.extend_from_slice(b"\x1B[1z<SUPPORTS ");
         if args.is_empty() {
             for atom in ALL_ATOMS.values() {

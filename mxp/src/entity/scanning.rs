@@ -2,7 +2,6 @@ use super::argument::{Arguments, Keyword};
 use super::link::SendTo;
 use crate::color::RgbColor;
 use enumeration::Enum;
-use std::iter::FlatMap;
 use std::str;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -64,7 +63,7 @@ pub enum FontEffect {
 }
 
 impl FontEffect {
-    fn parse(s: &str) -> Option<Self> {
+    pub fn parse(s: &str) -> Option<Self> {
         match FontStyle::parse(s) {
             Some(style) => Some(Self::Style(style)),
             None => RgbColor::named(s).map(Self::Color),
@@ -72,10 +71,20 @@ impl FontEffect {
     }
 }
 
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct FgColor<S> {
+    pub(crate) inner: S,
+}
+
+impl<S: AsRef<str>> FgColor<S> {
+    pub fn iter(&self) -> impl Iterator<Item = FontEffect> + '_ {
+        self.inner.as_ref().split(',').flat_map(FontEffect::parse)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct FontArgs<'a> {
-    #[allow(clippy::type_complexity)]
-    pub fgcolor: FlatMap<str::Split<'a, char>, Option<FontEffect>, fn(&str) -> Option<FontEffect>>,
+    pub fgcolor: FgColor<&'a str>,
     pub bgcolor: Option<RgbColor>,
 }
 
@@ -84,11 +93,9 @@ impl<'a> From<&'a Arguments> for FontArgs<'a> {
         let mut scanner = args.scan();
 
         Self {
-            fgcolor: scanner
-                .next_or(&["color", "fgcolor"])
-                .unwrap_or("")
-                .split(',')
-                .flat_map(FontEffect::parse),
+            fgcolor: FgColor {
+                inner: scanner.next_or(&["color", "fgcolor"]).unwrap_or(""),
+            },
             bgcolor: scanner
                 .next_or(&["back", "bgcolor"])
                 .and_then(RgbColor::named),

@@ -4,7 +4,7 @@ use super::config::{TransformerConfig, UseMxp};
 use super::input::{BufferedInput, Drain as InputDrain};
 use super::phase::Phase;
 use super::tag::{Tag, TagList};
-use crate::output::{BufferedOutput, Heading, InList, OutputDrain, TextFormat, TextStyle};
+use crate::output::{BufferedOutput, InList, OutputDrain, TextFormat, TextStyle};
 use crate::receive::{Decompress, ReceiveCursor};
 use crate::EffectFragment;
 use mxp::escape::{ansi, telnet};
@@ -234,13 +234,13 @@ impl Transformer {
         match component {
             mxp::ElementComponent::Atom(atom) => {
                 self.mxp_state.decode_args(&mut args)?;
-                self.mxp_open_atom(atom.action, args);
+                self.mxp_open_atom(&mxp::Action::new(atom.action, &args).owned());
             }
             mxp::ElementComponent::Custom(el) => {
                 let actions: Result<Vec<_>, mxp::ParseError> =
                     self.mxp_state.decode_element(el, &args).collect();
-                for (action, newargs) in actions? {
-                    self.mxp_open_atom(action, newargs);
+                for action in actions? {
+                    self.mxp_open_atom(&action);
                 }
             }
         }
@@ -248,39 +248,40 @@ impl Transformer {
         Ok(())
     }
 
-    fn mxp_open_atom(&mut self, mut action: mxp::ActionType, args: mxp::Arguments) {
-        use mxp::{ActionType, Atom, Keyword, Link, SendTo};
+    fn mxp_open_atom(&mut self, action: &mxp::Action<String>) {
+        use mxp::{Action, Keyword, Link, SendTo};
         const SPECIAL_LINK: &str = "&text;";
-        if action == ActionType::Hyperlink && args.get("xch_cmd").is_some() {
+        /*
+        if action == Action::Hyperlink && args.get("xch_cmd").is_some() {
             self.pueblo_active = true;
-            action = ActionType::Send;
-        }
+            action = Action::Send;
+        }*/
         match action {
-            ActionType::H1 => self.output.set_mxp_heading(Heading::H1),
-            ActionType::H2 => self.output.set_mxp_heading(Heading::H2),
-            ActionType::H3 => self.output.set_mxp_heading(Heading::H3),
-            ActionType::H4 => self.output.set_mxp_heading(Heading::H4),
-            ActionType::H5 => self.output.set_mxp_heading(Heading::H5),
-            ActionType::H6 => self.output.set_mxp_heading(Heading::H5),
-            ActionType::Bold => self.output.set_mxp_flag(TextStyle::Bold),
-            ActionType::Underline => self.output.set_mxp_flag(TextStyle::Underline),
-            ActionType::Italic => self.output.set_mxp_flag(TextStyle::Italic),
-            ActionType::Color => {
-                let mxp::ColorArgs { fore, back } = (&args).into();
+            Action::Heading(heading) => self.output.set_mxp_heading(*heading),
+            Action::Bold => self.output.set_mxp_flag(TextStyle::Bold),
+            Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
+            Action::Italic => self.output.set_mxp_flag(TextStyle::Italic),
+            Action::Color { fore, back } => {
                 if let Some(fg) = fore {
-                    self.output.set_mxp_foreground(fg);
+                    self.output.set_mxp_foreground(*fg);
                 }
                 if let Some(bg) = back {
-                    self.output.set_mxp_background(bg);
+                    self.output.set_mxp_background(*bg);
                 }
             }
-            ActionType::High => self.output.set_mxp_flag(TextStyle::Highlight),
-            ActionType::Send => {
-                let mxp::SendArgs { href, hint, sendto } = (&args).into();
-                let action = href.unwrap_or(SPECIAL_LINK);
-                self.output.set_mxp_action(Link::new(action, hint, sendto));
+            Action::High => self.output.set_mxp_flag(TextStyle::Highlight),
+            Action::Send { href, hint, sendto } => {
+                let action = match href {
+                    Some(href) => href.as_str(),
+                    None => SPECIAL_LINK,
+                };
+                self.output.set_mxp_action(Link::new(
+                    action,
+                    hint.as_ref().map(String::as_str),
+                    *sendto,
+                ));
                 if action.contains(SPECIAL_LINK) {
-                    let template = if sendto == SendTo::Input {
+                    let template = if *sendto == SendTo::Input {
                         format!("echo:{}", action)
                     } else {
                         format!("send:{}", action)
@@ -288,69 +289,73 @@ impl Transformer {
                     self.mxp_active_tags.set_anchor_template(template);
                 }
             }
-            ActionType::Hyperlink => {
-                let mxp::HyperlinkArgs { href } = (&args).into();
-                let action = href.unwrap_or(SPECIAL_LINK);
+            Action::Hyperlink { href } => {
+                let action = match href {
+                    Some(href) => href.as_str(),
+                    None => SPECIAL_LINK,
+                };
                 self.output
                     .set_mxp_action(Link::new(action, None, SendTo::Internet));
                 if action.contains(SPECIAL_LINK) {
                     self.mxp_active_tags.set_anchor_template(action.to_owned());
                 }
             }
-            ActionType::Font => {
-                let mxp::FontArgs { fgcolor, bgcolor } = (&args).into();
-                for fg in fgcolor {
+            Action::Font { fgcolor, bgcolor } => {
+                for fg in fgcolor.iter() {
                     match fg {
                         mxp::FontEffect::Color(fg) => self.output.set_mxp_foreground(fg),
                         mxp::FontEffect::Style(style) => self.output.set_mxp_flag(style.into()),
                     }
                 }
                 if let Some(bg) = bgcolor {
-                    self.output.set_mxp_background(bg);
+                    self.output.set_mxp_background(*bg);
                 }
             }
-            ActionType::Version => self.input.append(
+            Action::Version => self.input.append(
                 mxp::responses::identify(&self.config.app_name, &self.config.version).as_bytes(),
             ),
-            ActionType::Afk => {
-                let mxp::AfkArgs { challenge } = (&args).into();
-                self.output.append_afk(challenge.unwrap_or(""));
+            Action::Afk { challenge } => {
+                let challenge = match challenge {
+                    Some(challenge) => challenge.as_str(),
+                    None => "",
+                };
+                self.output.append_afk(challenge);
             }
-            ActionType::Support => Atom::fmt_supported(self.input.get_mut(), args),
-            ActionType::User => input_mxp_auth(&mut self.input, &self.config.player),
-            ActionType::Password => input_mxp_auth(&mut self.input, &self.config.password),
-            ActionType::Br => {
+            Action::Support { supported } => self.input.append(supported),
+            Action::User => input_mxp_auth(&mut self.input, &self.config.player),
+            Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
+            Action::Br => {
                 self.output.start_line();
             }
-            ActionType::Reset => {
+            Action::Reset => {
                 self.mxp_off(false);
             }
-            ActionType::Mxp => {
-                if args.has_keyword(Keyword::Off) {
+            Action::Mxp { keywords } => {
+                if keywords.contains(Keyword::Off) {
                     self.mxp_off(true);
                 }
 
-                if args.has_keyword(Keyword::DefaultLocked) {
+                if keywords.contains(Keyword::DefaultLocked) {
                     self.mxp_mode_default = mxp::Mode::LOCKED;
-                } else if args.has_keyword(Keyword::DefaultSecure) {
+                } else if keywords.contains(Keyword::DefaultSecure) {
                     self.mxp_mode_default = mxp::Mode::SECURE;
-                } else if args.has_keyword(Keyword::DefaultOpen) {
+                } else if keywords.contains(Keyword::DefaultOpen) {
                     self.mxp_mode_default = mxp::Mode::OPEN;
                 }
 
-                if args.has_keyword(Keyword::IgnoreNewlines) {
+                if keywords.contains(Keyword::IgnoreNewlines) {
                     self.output.set_format(TextFormat::Paragraph);
-                } else if args.has_keyword(Keyword::UseNewlines) {
+                } else if keywords.contains(Keyword::UseNewlines) {
                     self.output.unset_format(TextFormat::Paragraph);
                 }
             }
-            ActionType::P => self.output.set_format(TextFormat::Paragraph),
-            ActionType::Script => self.mxp_script = true,
-            ActionType::Hr => self.output.append_hr(),
-            ActionType::Pre => self.output.set_format(TextFormat::Pre),
-            ActionType::Ul => self.output.set_mxp_list(InList::Unordered),
-            ActionType::Ol => self.output.set_mxp_list(InList::Ordered(0)),
-            ActionType::Li => match self.output.next_list_item() {
+            Action::P => self.output.set_format(TextFormat::Paragraph),
+            Action::Script => self.mxp_script = true,
+            Action::Hr => self.output.append_hr(),
+            Action::Pre => self.output.set_format(TextFormat::Pre),
+            Action::Ul => self.output.set_mxp_list(InList::Unordered),
+            Action::Ol => self.output.set_mxp_list(InList::Ordered(0)),
+            Action::Li => match self.output.next_list_item() {
                 Some(0) => {
                     self.output.start_line();
                     self.output.append("• ");
@@ -362,12 +367,16 @@ impl Transformer {
                 }
                 None => (),
             },
-            ActionType::Img | ActionType::Image => {
-                let mxp::ImageArgs {
-                    fname,
-                    url,
-                    xch_mode,
-                } = (&args).into();
+            Action::Img {
+                fname,
+                url,
+                xch_mode,
+            }
+            | Action::Image {
+                fname,
+                url,
+                xch_mode,
+            } => {
                 if let Some(xch_mode) = xch_mode {
                     self.pueblo_active = true;
                     match xch_mode {
@@ -377,23 +386,45 @@ impl Transformer {
                     }
                 }
                 if let Some(url) = url {
-                    let fname = fname.unwrap_or("");
+                    let fname = match fname {
+                        Some(fname) => fname.as_str(),
+                        None => "",
+                    };
                     self.output.append_image(format!("{url}{fname}"));
                 }
             }
-            ActionType::XchPage => {
+            Action::XchPage => {
                 self.pueblo_active = true;
                 self.mxp_off(false);
             }
-            ActionType::Var => {
-                let mxp::VarArgs { variable } = (&args).into();
+            Action::Var { variable } => {
                 if let Some(variable) = variable {
                     if mxp::EntityMap::global(variable).is_none() && mxp::is_valid(variable) {
-                        self.output.set_mxp_variable(variable.to_owned());
+                        self.output.set_mxp_variable(variable.clone());
                     }
                 }
             }
-            _ => (),
+            Action::Sound
+            | Action::Relocate
+            | Action::Frame
+            | Action::Dest
+            | Action::Filter
+            | Action::NoBr
+            | Action::Strike
+            | Action::Small
+            | Action::Tt
+            | Action::Samp
+            | Action::Center
+            | Action::Gauge
+            | Action::Stat
+            | Action::Expire
+            | Action::SetOption
+            | Action::RecommendOption
+            | Action::Body
+            | Action::Head
+            | Action::Html
+            | Action::Title
+            | Action::XchPane => (),
         }
     }
 

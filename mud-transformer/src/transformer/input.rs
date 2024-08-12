@@ -24,10 +24,6 @@ impl BufferedInput {
         self.buf.extend_from_slice(bytes);
     }
 
-    pub fn get_mut(&mut self) -> &mut Vec<u8> {
-        &mut self.buf
-    }
-
     pub fn drain(&mut self) -> Option<Drain> {
         if self.buf.is_empty() {
             return None;

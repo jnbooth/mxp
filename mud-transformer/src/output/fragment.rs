@@ -5,7 +5,7 @@ use bytes::Bytes;
 use enumeration::{Enum, EnumSet};
 
 use super::shared_string::SharedString;
-use super::span::{Heading, TextStyle};
+use super::span::TextStyle;
 use mxp::escape::ansi;
 use mxp::{RgbColor, TermColor};
 
@@ -60,7 +60,7 @@ pub struct TextFragment {
     pub foreground: TermColor,
     pub background: TermColor,
     pub action: Option<Box<mxp::Link>>,
-    pub heading: Option<Heading>,
+    pub heading: Option<mxp::Heading>,
     /// Which variable to set (FLAG in MXP).
     pub variable: Option<String>,
 }

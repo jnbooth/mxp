@@ -149,6 +149,10 @@ impl Arguments {
         self.keywords.contains(k)
     }
 
+    pub(crate) fn keywords(&self) -> EnumSet<Keyword> {
+        self.keywords
+    }
+
     pub fn push(&mut self, arg: Argument) {
         self.positional.push(arg);
     }

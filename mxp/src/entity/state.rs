@@ -1,5 +1,4 @@
-use crate::ActionType;
-
+use super::action::Action;
 use super::argument::{ArgumentIndex, Arguments, Keyword};
 use super::element::{Element, ElementComponent, ElementMap};
 use super::entity_map::EntityMap;
@@ -41,7 +40,7 @@ impl State {
         &'a self,
         element: &'a Element,
         args: &'a Arguments,
-    ) -> impl Iterator<Item = Result<(ActionType, Arguments), ParseError>> + 'a {
+    ) -> impl Iterator<Item = Result<Action<String>, ParseError>> + 'a {
         element.items.iter().map(move |item| {
             let mut newargs = Arguments::new();
             for (i, arg) in &item.arguments {
@@ -51,7 +50,8 @@ impl State {
                     ArgumentIndex::Named(key) => newargs.set(key, val),
                 }
             }
-            Ok((item.atom.action, newargs))
+            let action = Action::new(item.atom.action, &newargs).owned();
+            Ok(action)
         })
     }
 
