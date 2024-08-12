@@ -22,7 +22,7 @@ pub enum TagFlag {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum Action {
+pub enum ActionType {
     /// eg. <send href="go west"> west
     Send,
     /// bold
@@ -140,7 +140,7 @@ pub struct Atom {
     /// Secure, Command, etc.
     pub flags: EnumSet<TagFlag>,
     /// Its action.
-    pub action: Action,
+    pub action: ActionType,
     /// Supported arguments, e.g. href, hint
     pub args: Vec<&'static CaseFold<str>>,
 }
@@ -213,7 +213,7 @@ static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
         (name, atom)
     };
 
-    use Action::*;
+    use ActionType::*;
     use TagFlag::*;
     vec![
         atom("a", enums![], Hyperlink, &["href", "xch_cmd", "xch_hint"]),

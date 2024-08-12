@@ -2,7 +2,7 @@ mod argument;
 pub use argument::{ArgumentIndex, Arguments, Keyword};
 
 mod atom;
-pub use atom::{Action, Atom, TagFlag};
+pub use atom::{ActionType, Atom, TagFlag};
 
 mod element;
 pub use element::{CollectedElement, Element, ElementComponent, ElementMap};

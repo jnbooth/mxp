@@ -237,8 +237,6 @@ impl Transformer {
                 self.mxp_open_atom(atom.action, args);
             }
             mxp::ElementComponent::Custom(el) => {
-                // create a temporary vector to avoid borrow conflict
-                // could clone the element instead, but that seems like a waste
                 let actions: Result<Vec<_>, mxp::ParseError> =
                     self.mxp_state.decode_element(el, &args).collect();
                 for (action, newargs) in actions? {
@@ -250,24 +248,24 @@ impl Transformer {
         Ok(())
     }
 
-    fn mxp_open_atom(&mut self, mut action: mxp::Action, args: mxp::Arguments) {
-        use mxp::{Action, Atom, Keyword, Link, SendTo};
+    fn mxp_open_atom(&mut self, mut action: mxp::ActionType, args: mxp::Arguments) {
+        use mxp::{ActionType, Atom, Keyword, Link, SendTo};
         const SPECIAL_LINK: &str = "&text;";
-        if action == Action::Hyperlink && args.get("xch_cmd").is_some() {
+        if action == ActionType::Hyperlink && args.get("xch_cmd").is_some() {
             self.pueblo_active = true;
-            action = Action::Send;
+            action = ActionType::Send;
         }
         match action {
-            Action::H1 => self.output.set_mxp_heading(Heading::H1),
-            Action::H2 => self.output.set_mxp_heading(Heading::H2),
-            Action::H3 => self.output.set_mxp_heading(Heading::H3),
-            Action::H4 => self.output.set_mxp_heading(Heading::H4),
-            Action::H5 => self.output.set_mxp_heading(Heading::H5),
-            Action::H6 => self.output.set_mxp_heading(Heading::H5),
-            Action::Bold => self.output.set_mxp_flag(TextStyle::Bold),
-            Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
-            Action::Italic => self.output.set_mxp_flag(TextStyle::Italic),
-            Action::Color => {
+            ActionType::H1 => self.output.set_mxp_heading(Heading::H1),
+            ActionType::H2 => self.output.set_mxp_heading(Heading::H2),
+            ActionType::H3 => self.output.set_mxp_heading(Heading::H3),
+            ActionType::H4 => self.output.set_mxp_heading(Heading::H4),
+            ActionType::H5 => self.output.set_mxp_heading(Heading::H5),
+            ActionType::H6 => self.output.set_mxp_heading(Heading::H5),
+            ActionType::Bold => self.output.set_mxp_flag(TextStyle::Bold),
+            ActionType::Underline => self.output.set_mxp_flag(TextStyle::Underline),
+            ActionType::Italic => self.output.set_mxp_flag(TextStyle::Italic),
+            ActionType::Color => {
                 let mxp::ColorArgs { fore, back } = (&args).into();
                 if let Some(fg) = fore {
                     self.output.set_mxp_foreground(fg);
@@ -276,8 +274,8 @@ impl Transformer {
                     self.output.set_mxp_background(bg);
                 }
             }
-            Action::High => self.output.set_mxp_flag(TextStyle::Highlight),
-            Action::Send => {
+            ActionType::High => self.output.set_mxp_flag(TextStyle::Highlight),
+            ActionType::Send => {
                 let mxp::SendArgs { href, hint, sendto } = (&args).into();
                 let action = href.unwrap_or(SPECIAL_LINK);
                 self.output.set_mxp_action(Link::new(action, hint, sendto));
@@ -290,7 +288,7 @@ impl Transformer {
                     self.mxp_active_tags.set_anchor_template(template);
                 }
             }
-            Action::Hyperlink => {
+            ActionType::Hyperlink => {
                 let mxp::HyperlinkArgs { href } = (&args).into();
                 let action = href.unwrap_or(SPECIAL_LINK);
                 self.output
@@ -299,7 +297,7 @@ impl Transformer {
                     self.mxp_active_tags.set_anchor_template(action.to_owned());
                 }
             }
-            Action::Font => {
+            ActionType::Font => {
                 let mxp::FontArgs { fgcolor, bgcolor } = (&args).into();
                 for fg in fgcolor {
                     match fg {
@@ -311,23 +309,23 @@ impl Transformer {
                     self.output.set_mxp_background(bg);
                 }
             }
-            Action::Version => self.input.append(
+            ActionType::Version => self.input.append(
                 mxp::responses::identify(&self.config.app_name, &self.config.version).as_bytes(),
             ),
-            Action::Afk => {
+            ActionType::Afk => {
                 let mxp::AfkArgs { challenge } = (&args).into();
                 self.output.append_afk(challenge.unwrap_or(""));
             }
-            Action::Support => Atom::fmt_supported(self.input.get_mut(), args),
-            Action::User => input_mxp_auth(&mut self.input, &self.config.player),
-            Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
-            Action::Br => {
+            ActionType::Support => Atom::fmt_supported(self.input.get_mut(), args),
+            ActionType::User => input_mxp_auth(&mut self.input, &self.config.player),
+            ActionType::Password => input_mxp_auth(&mut self.input, &self.config.password),
+            ActionType::Br => {
                 self.output.start_line();
             }
-            Action::Reset => {
+            ActionType::Reset => {
                 self.mxp_off(false);
             }
-            Action::Mxp => {
+            ActionType::Mxp => {
                 if args.has_keyword(Keyword::Off) {
                     self.mxp_off(true);
                 }
@@ -346,13 +344,13 @@ impl Transformer {
                     self.output.unset_format(TextFormat::Paragraph);
                 }
             }
-            Action::P => self.output.set_format(TextFormat::Paragraph),
-            Action::Script => self.mxp_script = true,
-            Action::Hr => self.output.append_hr(),
-            Action::Pre => self.output.set_format(TextFormat::Pre),
-            Action::Ul => self.output.set_mxp_list(InList::Unordered),
-            Action::Ol => self.output.set_mxp_list(InList::Ordered(0)),
-            Action::Li => match self.output.next_list_item() {
+            ActionType::P => self.output.set_format(TextFormat::Paragraph),
+            ActionType::Script => self.mxp_script = true,
+            ActionType::Hr => self.output.append_hr(),
+            ActionType::Pre => self.output.set_format(TextFormat::Pre),
+            ActionType::Ul => self.output.set_mxp_list(InList::Unordered),
+            ActionType::Ol => self.output.set_mxp_list(InList::Ordered(0)),
+            ActionType::Li => match self.output.next_list_item() {
                 Some(0) => {
                     self.output.start_line();
                     self.output.append("• ");
@@ -364,7 +362,7 @@ impl Transformer {
                 }
                 None => (),
             },
-            Action::Img | Action::Image => {
+            ActionType::Img | ActionType::Image => {
                 let mxp::ImageArgs {
                     fname,
                     url,
@@ -383,11 +381,11 @@ impl Transformer {
                     self.output.append_image(format!("{url}{fname}"));
                 }
             }
-            Action::XchPage => {
+            ActionType::XchPage => {
                 self.pueblo_active = true;
                 self.mxp_off(false);
             }
-            Action::Var => {
+            ActionType::Var => {
                 let mxp::VarArgs { variable } = (&args).into();
                 if let Some(variable) = variable {
                     if mxp::EntityMap::global(variable).is_none() && mxp::is_valid(variable) {
