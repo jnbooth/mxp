@@ -212,16 +212,21 @@ impl Transformer {
         match mxp::Element::collect(&self.take_mxp_string()?)? {
             mxp::CollectedElement::Definition(text) => self.mxp_definition(text),
             mxp::CollectedElement::TagClose(text) => self.mxp_endtag(text),
-            mxp::CollectedElement::TagOpen(text) => self.mxp_start_tag(text),
+            mxp::CollectedElement::TagOpen(text) => {
+                let mxp_state = mem::take(&mut self.mxp_state);
+                let result = self.mxp_start_tag(text, &mxp_state);
+                self.mxp_state = mxp_state;
+                result
+            }
         }
     }
 
-    fn mxp_start_tag(&mut self, tag: &str) -> Result<(), mxp::ParseError> {
+    fn mxp_start_tag(&mut self, tag: &str, mxp_state: &mxp::State) -> Result<(), mxp::ParseError> {
         let secure = self.mxp_mode.is_secure();
         self.mxp_restore_mode();
         let mut words = mxp::Words::new(tag);
         let name = words.validate_next_or(mxp::Error::InvalidElementName)?;
-        let component = self.mxp_state.get_component(name)?;
+        let component = mxp_state.get_component(name)?;
         let tag = Tag::new(component, secure, self.output.span_len())?;
         self.mxp_active_tags.push(tag);
 
@@ -233,17 +238,12 @@ impl Transformer {
 
         match component {
             mxp::ElementComponent::Atom(atom) => {
-                let scanner = self.mxp_state.decode_args(&mut args);
+                let scanner = mxp_state.decode_args(&mut args);
                 self.mxp_open_atom(&mxp::Action::new(atom.action, scanner)?);
             }
             mxp::ElementComponent::Custom(el) => {
-                let actions: Result<Vec<_>, mxp::ParseError> = self
-                    .mxp_state
-                    .decode_element(el, &args)
-                    .map(|el| el.map(mxp::Action::into_owned))
-                    .collect();
-                for action in actions? {
-                    self.mxp_open_atom(&action);
+                for action in mxp_state.decode_element(el, &args) {
+                    self.mxp_open_atom(&action?);
                 }
             }
         }
