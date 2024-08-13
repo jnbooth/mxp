@@ -1,14 +1,13 @@
 use crate::lookup::Lookup;
 
 use super::rgb::RgbColor;
-use std::str::FromStr;
 
 impl RgbColor {
     /// Finds a color by its name in the standard list of [148 CSS colors]. Case-insensitive.
     ///
     /// [148 CSS colors]: https://www.w3.org/wiki/CSS/Properties/color/keywords
     pub fn named(name: &str) -> Option<RgbColor> {
-        if let Ok(color) = RgbColor::from_str(name) {
+        if let Ok(color) = name.parse() {
             return Some(color);
         }
         NAMED_COLORS.get(name).copied()

@@ -276,7 +276,7 @@ impl Transformer {
     }
 
     fn mxp_open_atom<S: AsRef<str>>(&mut self, action: &mxp::Action<S>) {
-        use mxp::{Action, Keyword, Link, SendTo};
+        use mxp::{Action, Link, MxpKeyword, SendTo};
         const SPECIAL_LINK: &str = "&text;";
         /*
         if action == Action::Hyperlink && args.get("xch_cmd").is_some() {
@@ -360,21 +360,21 @@ impl Transformer {
                 self.mxp_off(false);
             }
             Action::Mxp { keywords } => {
-                if keywords.contains(Keyword::Off) {
+                if keywords.contains(MxpKeyword::Off) {
                     self.mxp_off(true);
                 }
 
-                if keywords.contains(Keyword::DefaultLocked) {
+                if keywords.contains(MxpKeyword::DefaultLocked) {
                     self.mxp_mode_default = mxp::Mode::LOCKED;
-                } else if keywords.contains(Keyword::DefaultSecure) {
+                } else if keywords.contains(MxpKeyword::DefaultSecure) {
                     self.mxp_mode_default = mxp::Mode::SECURE;
-                } else if keywords.contains(Keyword::DefaultOpen) {
+                } else if keywords.contains(MxpKeyword::DefaultOpen) {
                     self.mxp_mode_default = mxp::Mode::OPEN;
                 }
 
-                if keywords.contains(Keyword::IgnoreNewlines) {
+                if keywords.contains(MxpKeyword::IgnoreNewlines) {
                     self.output.set_format(TextFormat::Paragraph);
-                } else if keywords.contains(Keyword::UseNewlines) {
+                } else if keywords.contains(MxpKeyword::UseNewlines) {
                     self.output.unset_format(TextFormat::Paragraph);
                 }
             }
@@ -400,11 +400,13 @@ impl Transformer {
                 fname,
                 url,
                 xch_mode,
+                is_map: _,
             }
             | Action::Image {
                 fname,
                 url,
                 xch_mode,
+                is_map: _,
             } => {
                 if let Some(xch_mode) = xch_mode {
                     self.pueblo_active = true;
@@ -427,7 +429,7 @@ impl Transformer {
                 self.pueblo_active = true;
                 self.mxp_off(false);
             }
-            Action::Var { variable } => {
+            Action::Var { variable, .. } => {
                 if let Some(variable) = variable {
                     let variable = variable.as_ref();
                     if mxp::EntityMap::global(variable).is_none() && mxp::is_valid(variable) {

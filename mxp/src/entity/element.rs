@@ -6,8 +6,9 @@ use enumeration::{Enum, EnumSet};
 use super::atom::{Atom, TagFlag};
 use super::mode::Mode;
 use crate::argument::scan::{Decoder, Scan};
-use crate::argument::{Arguments, Keyword};
+use crate::argument::Arguments;
 use crate::color::RgbColor;
+use crate::keyword::ElementKeyword;
 use crate::parser::{Error, ErrorKind, UnrecognizedVariant, Words};
 
 /// List of arguments to an MXP tag.
@@ -171,7 +172,8 @@ impl Element {
         Ok(items)
     }
 
-    pub fn parse<D: Decoder>(name: String, mut scanner: Scan<D>) -> crate::Result<Self> {
+    pub fn parse<D: Decoder>(name: String, scanner: Scan<D>) -> crate::Result<Option<Self>> {
+        let mut scanner = scanner.with_keywords();
         let items = Self::parse_items(scanner.next()?)?;
 
         let attributes = match scanner.next_or(&["att"])? {
@@ -208,10 +210,16 @@ impl Element {
             }
         };
 
-        Ok(Self {
+        let keywords = scanner.into_keywords();
+
+        if keywords.contains(ElementKeyword::Delete) {
+            return Ok(None);
+        }
+
+        Ok(Some(Self {
             name,
-            open: scanner.has_keyword(Keyword::Open),
-            command: scanner.has_keyword(Keyword::Empty),
+            open: keywords.contains(ElementKeyword::Open),
+            command: keywords.contains(ElementKeyword::Empty),
             items,
             attributes,
             tag,
@@ -221,6 +229,6 @@ impl Element {
             back: None,
             gag: false,
             window: None,
-        })
+        }))
     }
 }

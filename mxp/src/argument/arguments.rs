@@ -1,15 +1,40 @@
-use casefold::ascii::CaseFoldMap;
-use enumeration::EnumSet;
+use std::iter::Filter;
+use std::slice;
+use std::str::FromStr;
 
-use super::keyword::Keyword;
+use casefold::ascii::CaseFoldMap;
+
 use super::scan::{Decoder, Scan};
 use crate::parser::{validate, Error, ErrorKind, Words};
+
+pub trait KeywordFilter {
+    type Iter<'a>: Iterator<Item = &'a String>;
+
+    fn iter(args: &[String]) -> Self::Iter<'_>;
+}
+
+pub struct NoKeywords;
+
+impl KeywordFilter for NoKeywords {
+    type Iter<'a> = slice::Iter<'a, String>;
+
+    fn iter(args: &[String]) -> Self::Iter<'_> {
+        args.iter()
+    }
+}
+
+impl<K: FromStr> KeywordFilter for K {
+    type Iter<'a> = Filter<slice::Iter<'a, String>, fn(&&String) -> bool>;
+
+    fn iter(args: &[String]) -> Self::Iter<'_> {
+        args.iter().filter(|arg| K::from_str(arg).is_err())
+    }
+}
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Arguments {
     positional: Vec<String>,
     named: CaseFoldMap<String, String>,
-    keywords: EnumSet<Keyword>,
 }
 
 impl Arguments {
@@ -21,31 +46,24 @@ impl Arguments {
         self.positional.is_empty() && self.named.is_empty()
     }
 
-    pub fn has_keyword(&self, k: Keyword) -> bool {
-        self.keywords.contains(k)
-    }
-
-    pub fn find_attribute<'a>(&'a self, entity: &str, other: &'a Self) -> Option<&'a str> {
+    pub fn find_attribute<'a, F: KeywordFilter>(
+        &'a self,
+        entity: &str,
+        other: &'a Self,
+    ) -> Option<&'a str> {
         if let Some(named) = self.named.get(entity) {
             return Some(other.named.get(entity).unwrap_or(named).as_str());
         }
-        let position = self
-            .positional
-            .iter()
-            .position(|attr| attr.eq_ignore_ascii_case(entity))?;
-        match other.positional.get(position) {
+        let position =
+            F::iter(&self.positional).position(|attr| attr.eq_ignore_ascii_case(entity))?;
+        match F::iter(&other.positional).nth(position) {
             Some(attr) => Some(attr.as_str()),
             None => Some(""),
         }
     }
 
     pub fn scan<D: Decoder>(&self, decoder: D) -> Scan<D> {
-        Scan {
-            decoder,
-            inner: self.positional.iter().map(String::as_str),
-            keywords: self.keywords,
-            named: &self.named,
-        }
+        Scan::new(decoder, &self.positional, &self.named)
     }
 
     pub fn parse(iter: Words) -> crate::Result<Self> {
@@ -70,8 +88,6 @@ impl Arguments {
                     .next()
                     .ok_or_else(|| Error::new(name, ErrorKind::NoArgument))?;
                 self.named.insert(name.to_lowercase(), val.to_owned());
-            } else if let Ok(keyword) = name.parse() {
-                self.keywords.insert(keyword);
             } else {
                 self.positional.push(name.to_owned());
             }
@@ -99,7 +115,6 @@ mod tests {
                 .iter()
                 .map(|(k, v)| (CaseFold::new(k.to_string()), v.to_string()))
                 .collect(),
-            keywords: Default::default(),
         };
         assert_eq!(args, should_be);
     }

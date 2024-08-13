@@ -1,11 +1,8 @@
 mod arguments;
-pub use arguments::Arguments;
+pub use arguments::{Arguments, KeywordFilter};
 
 mod font_args;
 pub use font_args::{FgColor, FontEffect, FontStyle};
-
-mod keyword;
-pub use keyword::Keyword;
 
 mod pueblo;
 pub use pueblo::XchMode;

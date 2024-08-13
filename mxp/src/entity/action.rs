@@ -1,12 +1,11 @@
-use std::str;
-
 use super::atom::Atom;
 use super::link::SendTo;
 use crate::argument::scan::{
     AfkArgs, ColorArgs, Decoder, FontArgs, HyperlinkArgs, ImageArgs, Scan, SendArgs, VarArgs,
 };
-use crate::argument::{FgColor, Keyword, XchMode};
+use crate::argument::{FgColor, XchMode};
 use crate::color::RgbColor;
+use crate::keyword::{EntityKeyword, MxpKeyword};
 use enumeration::{Enum, EnumSet};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
@@ -173,6 +172,7 @@ pub enum Action<S> {
         fname: Option<S>,
         url: Option<S>,
         xch_mode: Option<XchMode>,
+        is_map: bool,
     },
     /// sound/image filter
     Filter,
@@ -213,6 +213,7 @@ pub enum Action<S> {
     /// Set variable
     Var {
         variable: Option<S>,
+        keywords: EnumSet<EntityKeyword>,
     },
     /// AFK - away from keyboard time
     Afk {
@@ -231,7 +232,7 @@ pub enum Action<S> {
     Reset,
     /// MXP command (eg. MXP OFF)
     Mxp {
-        keywords: EnumSet<Keyword>,
+        keywords: EnumSet<MxpKeyword>,
     },
     /// what commands we support
     Support {
@@ -254,6 +255,7 @@ pub enum Action<S> {
         fname: Option<S>,
         url: Option<S>,
         xch_mode: Option<XchMode>,
+        is_map: bool,
     },
     XchPage,
     XchPane,
@@ -292,11 +294,13 @@ impl<S: AsRef<str>> Action<S> {
                     fname,
                     url,
                     xch_mode,
+                    is_map,
                 } = scanner.try_into()?;
                 Self::Image {
                     fname,
                     url,
                     xch_mode,
+                    is_map,
                 }
             }
             ActionType::Filter => Self::Filter,
@@ -325,8 +329,8 @@ impl<S: AsRef<str>> Action<S> {
             ActionType::Center => Self::Center,
             ActionType::High => Self::High,
             ActionType::Var => {
-                let VarArgs { variable } = scanner.try_into()?;
-                Self::Var { variable }
+                let VarArgs { keywords, variable } = scanner.try_into()?;
+                Self::Var { keywords, variable }
             }
             ActionType::Afk => {
                 let AfkArgs { challenge } = scanner.try_into()?;
@@ -337,7 +341,7 @@ impl<S: AsRef<str>> Action<S> {
             ActionType::Expire => Self::Expire,
             ActionType::Reset => Self::Reset,
             ActionType::Mxp => Self::Mxp {
-                keywords: scanner.keywords(),
+                keywords: scanner.with_keywords().into_keywords(),
             },
             ActionType::Support => {
                 let mut questions = Vec::with_capacity(scanner.len());
@@ -360,11 +364,13 @@ impl<S: AsRef<str>> Action<S> {
                     fname,
                     url,
                     xch_mode,
+                    is_map,
                 } = scanner.try_into()?;
                 Self::Img {
                     fname,
                     url,
                     xch_mode,
+                    is_map,
                 }
             }
             ActionType::XchPage => Self::XchPage,

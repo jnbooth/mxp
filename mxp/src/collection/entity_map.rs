@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut};
 use casefold::ascii::CaseFoldMap;
 
 use crate::argument::scan::Decoder;
-use crate::argument::Arguments;
+use crate::argument::{Arguments, KeywordFilter};
 use crate::entity::Element;
 
 use crate::parser::{Error, ErrorKind};
@@ -72,6 +72,31 @@ impl EntityMap {
             None | Some("\x00") => Err(Error::new(key, ErrorKind::DisallowedEntityNumber)),
             some => Ok(some),
         }
+    }
+
+    pub fn add_list_item(&mut self, key: &str, value: &str) {
+        let entity = match self.0.get_mut(key) {
+            Some(entity) => entity,
+            None => {
+                self.0.insert(key.to_owned(), value.to_owned());
+                return;
+            }
+        };
+        entity.reserve(value.len() + 1);
+        entity.push('|');
+        entity.push_str(value);
+    }
+
+    pub fn remove_list_item(&mut self, key: &str, value: &str) {
+        let entity = match self.0.get_mut(key) {
+            Some(entity) => entity,
+            None => return,
+        };
+        *entity = entity
+            .split('|')
+            .filter(|item| *item != value)
+            .collect::<Vec<_>>()
+            .join("|");
     }
 
     pub fn element_decoder<'a>(
@@ -198,7 +223,7 @@ impl EntityMap {
 impl Decoder for EntityMap {
     type Output<'a> = Cow<'a, str>;
 
-    fn decode<'a>(&self, s: &'a str) -> crate::Result<Self::Output<'a>> {
+    fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Self::Output<'a>> {
         decode_amps(s, |entity| self.get(entity))
     }
 }
@@ -213,12 +238,16 @@ pub struct ElementDecoder<'a> {
 impl<'d> Decoder for ElementDecoder<'d> {
     type Output<'a> = Cow<'a, str>;
 
-    fn decode<'a>(&self, s: &'a str) -> crate::Result<Self::Output<'a>> {
+    fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Self::Output<'a>> {
         decode_amps(s, |entity| {
             if entity == "text" {
                 return Ok(None);
             }
-            match self.element.attributes.find_attribute(entity, self.args) {
+            match self
+                .element
+                .attributes
+                .find_attribute::<F>(entity, self.args)
+            {
                 Some(attr) => Ok(Some(attr)),
                 None => self.entities.get(entity),
             }

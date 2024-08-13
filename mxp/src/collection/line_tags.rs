@@ -3,6 +3,7 @@ use crate::argument::scan::Decoder;
 use crate::argument::Arguments;
 use crate::color::RgbColor;
 use crate::entity::{Element, Mode};
+use crate::keyword::TagKeyword;
 use crate::parser::{Error, ErrorKind, Words};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -28,12 +29,26 @@ impl LineTag {
 
 const OFFSET: usize = Mode::USER_DEFINED_MIN.0 as usize;
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct LineTags {
     inner: Vec<LineTag>,
 }
 
+impl Default for LineTags {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl LineTags {
+    pub const fn new() -> Self {
+        Self { inner: Vec::new() }
+    }
+
+    pub fn clear(&mut self) {
+        self.inner.clear();
+    }
+
     pub fn get<'a>(&self, mode: usize, elements: &'a ElementMap) -> Option<&'a Element> {
         let i = mode.checked_sub(OFFSET)?;
         let tag = self.inner.get(i)?;
@@ -96,7 +111,7 @@ pub struct LineTagUpdate {
 impl LineTagUpdate {
     pub fn parse<D: Decoder>(words: Words, decoder: D) -> crate::Result<Self> {
         let args = Arguments::parse(words)?;
-        let mut scanner = args.scan(decoder);
+        let mut scanner = args.scan(decoder).with_keywords();
 
         let index_arg = scanner
             .next()?
@@ -116,15 +131,19 @@ impl LineTagUpdate {
             .get("fore")?
             .and_then(|color| RgbColor::named(color.as_ref()));
 
-        let mut gag: Option<bool> = None;
-        let mut enable: Option<bool> = None;
-        while let Some(word) = scanner.next()? {
-            match_ci! {word.as_ref(),
-                "ENABLE" => enable = Some(true),
-                "DISABLE" => enable = Some(false),
-                "GAG" => gag = Some(true),
-            };
-        }
+        let keywords = scanner.into_keywords();
+        let gag = if keywords.contains(TagKeyword::Gag) {
+            Some(true)
+        } else {
+            None
+        };
+        let enable = if keywords.contains(TagKeyword::Disable) {
+            Some(false)
+        } else if keywords.contains(TagKeyword::Enable) {
+            Some(true)
+        } else {
+            None
+        };
         Ok(Self {
             index,
             window,
