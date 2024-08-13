@@ -29,7 +29,7 @@ mod collection;
 pub use collection::{ElementComponent, ElementMap, EntityMap, State};
 
 mod color;
-pub use color::{HexOutOfRangeError, ParseHexColorError, RgbColor, TermColor};
+pub use color::{HexOutOfRangeError, ParseHexColorError, RgbColor};
 
 mod entity;
 pub use entity::*;

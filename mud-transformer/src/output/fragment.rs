@@ -6,8 +6,7 @@ use enumeration::{Enum, EnumSet};
 
 use super::shared_string::SharedString;
 use super::span::TextStyle;
-use mxp::escape::ansi;
-use mxp::{RgbColor, TermColor};
+use mxp::RgbColor;
 
 pub type OutputDrain<'a> = vec::Drain<'a, OutputFragment>;
 
@@ -57,8 +56,8 @@ impl From<TelnetFragment> for OutputFragment {
 pub struct TextFragment {
     pub text: SharedString,
     pub flags: EnumSet<TextStyle>,
-    pub foreground: TermColor,
-    pub background: TermColor,
+    pub foreground: RgbColor,
+    pub background: RgbColor,
     pub action: Option<Box<mxp::Link>>,
     pub heading: Option<mxp::Heading>,
     /// Which variable to set (FLAG in MXP).
@@ -74,18 +73,12 @@ impl From<TextFragment> for OutputFragment {
 impl Display for TextFragment {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         f.write_str("\x1B[")?;
-        match self.foreground {
-            TermColor::Ansi(code) => write!(f, "\x1B[{}", code + ansi::FG_BLACK),
-            TermColor::Rgb(color) => {
-                write!(f, "\x1B[38;2;{};{};{}", color.r, color.g, color.b)
-            }
-        }?;
-        match self.background {
-            TermColor::Ansi(0) => Ok(()),
-            TermColor::Rgb(RgbColor::BLACK) => Ok(()),
-            TermColor::Ansi(code) => write!(f, ";{}", code + ansi::BG_BLACK),
-            TermColor::Rgb(color) => write!(f, ";48;2;{};{};{}", color.r, color.g, color.b),
-        }?;
+        let fg = self.foreground;
+        write!(f, "\x1B[38;2;{};{};{}", fg.r, fg.g, fg.b)?;
+        let bg = self.background;
+        if bg != RgbColor::BLACK {
+            write!(f, ";48;2;{};{};{}", bg.r, bg.g, bg.b)?;
+        }
         for flag in self.flags {
             if let Some(ansi) = flag.ansi() {
                 write!(f, ";{ansi}")?;

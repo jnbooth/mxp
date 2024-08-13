@@ -5,10 +5,11 @@ use enumeration::EnumSet;
 
 use crate::output::fragment::EffectFragment;
 
+use super::color::TermColor;
 use super::fragment::{OutputDrain, OutputFragment, TelnetFragment, TextFragment};
 use super::shared_string::SharedString;
 use super::span::{InList, SpanList, TextFormat, TextStyle};
-use mxp::TermColor;
+use mxp::RgbColor;
 
 fn get_color(
     span_color: &Option<TermColor>,
@@ -32,6 +33,7 @@ pub struct BufferedOutput {
     fragments: Vec<OutputFragment>,
     ignore_mxp_colors: bool,
     last_linebreak: Option<usize>,
+    colors: Vec<RgbColor>,
 }
 
 impl Default for BufferedOutput {
@@ -51,6 +53,21 @@ impl BufferedOutput {
             fragments: Vec::new(),
             ignore_mxp_colors: false,
             last_linebreak: None,
+            colors: Vec::new(),
+        }
+    }
+
+    pub fn set_colors(&mut self, colors: Vec<RgbColor>) {
+        self.colors = colors;
+    }
+
+    fn color(&self, color: TermColor) -> RgbColor {
+        match color {
+            TermColor::Ansi(i) => match self.colors.get(i as usize) {
+                Some(color) => *color,
+                None => RgbColor::xterm(i),
+            },
+            TermColor::Rgb(color) => color,
         }
     }
 
@@ -97,8 +114,8 @@ impl BufferedOutput {
             TextFragment {
                 text,
                 flags: self.ansi_flags,
-                foreground: self.ansi_foreground,
-                background: self.ansi_background,
+                foreground: self.color(self.ansi_foreground),
+                background: self.color(self.ansi_background),
                 action: None,
                 heading: None,
                 variable: None,
@@ -109,18 +126,18 @@ impl BufferedOutput {
             TextFragment {
                 text,
                 flags: span.flags | self.ansi_flags,
-                foreground: get_color(
+                foreground: self.color(get_color(
                     &span.foreground,
                     self.ansi_foreground,
                     ignore_colors,
                     TermColor::WHITE,
-                ),
-                background: get_color(
+                )),
+                background: self.color(get_color(
                     &span.background,
                     self.ansi_background,
                     ignore_colors,
                     TermColor::BLACK,
-                ),
+                )),
                 action: span.action.clone().map(Box::new),
                 heading: span.heading,
                 variable: span.variable.clone(),

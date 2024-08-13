@@ -4,11 +4,11 @@ use super::config::{TransformerConfig, UseMxp};
 use super::input::{BufferedInput, Drain as InputDrain};
 use super::phase::Phase;
 use super::tag::{Tag, TagList};
-use crate::output::{BufferedOutput, InList, OutputDrain, TextFormat, TextStyle};
+use crate::output::{BufferedOutput, InList, OutputDrain, TermColor, TextFormat, TextStyle};
 use crate::receive::{Decompress, ReceiveCursor};
 use crate::EffectFragment;
 use mxp::escape::{ansi, telnet};
-use mxp::{RgbColor, TermColor};
+use mxp::RgbColor;
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
     if auth.is_empty() {
@@ -63,6 +63,7 @@ impl Default for Transformer {
 impl Transformer {
     pub fn new(config: TransformerConfig) -> Self {
         let mut output = BufferedOutput::new();
+        output.set_colors(config.colors.clone());
         if config.ignore_mxp_colors {
             output.disable_mxp_colors();
         }
@@ -107,6 +108,9 @@ impl Transformer {
             self.output.disable_mxp_colors();
         } else {
             self.output.enable_mxp_colors();
+        }
+        if config.colors != self.config.colors {
+            self.output.set_colors(config.colors.clone());
         }
         match config.use_mxp {
             UseMxp::Always => self.mxp_on(false, false),

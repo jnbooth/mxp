@@ -1,3 +1,4 @@
+use mxp::RgbColor;
 use std::collections::HashSet;
 
 use enumeration::Enum;
@@ -28,6 +29,7 @@ pub struct TransformerConfig {
     pub naws: bool,
     pub disable_utf8: bool,
     pub ignore_mxp_colors: bool,
+    pub colors: Vec<RgbColor>,
     pub will: HashSet<u8>,
 }
 
@@ -52,6 +54,7 @@ impl TransformerConfig {
             use_mxp: UseMxp::Command,
             terminal_identification: String::new(),
             ignore_mxp_colors: false,
+            colors: Vec::new(),
             will: HashSet::new(),
         }
     }

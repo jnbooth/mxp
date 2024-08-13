@@ -1,8 +1,9 @@
 use std::ops::Index;
 
+use super::color::TermColor;
 use enumeration::{Enum, EnumSet};
 use mxp::escape::ansi;
-use mxp::{Heading, TermColor};
+use mxp::Heading;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum TextStyle {
