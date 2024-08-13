@@ -141,18 +141,22 @@ impl Element {
         let items = Self::parse_items(scanner.next()?)?;
 
         let attributes = match scanner.next_or(&["att"])? {
-            Some(atts) => Arguments::parse(&atts)?,
+            Some(atts) => Arguments::parse(atts.as_ref())?,
             None => Arguments::default(),
         };
 
-        let tag = match scanner.next_or(&["tag"])?.and_then(|s| s.parse().ok()) {
+        let tag = match scanner
+            .next_or(&["tag"])?
+            .and_then(|s| s.as_ref().parse().ok())
+        {
             Some(i) if !(20..=99).contains(&i) => None,
             tag => tag,
         };
 
         let flag = scanner.next_or(&["flag"])?.map(|flag| {
+            let flag = flag.as_ref();
             flag.strip_prefix("set ")
-                .unwrap_or(&flag)
+                .unwrap_or(flag)
                 .trim()
                 .replace(' ', "_")
         });

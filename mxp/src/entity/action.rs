@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::str;
 
 use super::argument::Keyword;
@@ -156,7 +155,7 @@ pub enum Action<S> {
     Version,
     /// font appearance
     Font {
-        fgcolor: FgColor<S>,
+        fgcolor: Option<FgColor<S>>,
         bgcolor: Option<RgbColor>,
     },
     /// play sound
@@ -262,11 +261,14 @@ pub enum Action<S> {
     XchPane,
 }
 
-impl<'a> Action<Cow<'a, str>> {
-    pub fn new<D: Decoder>(
+impl<S: AsRef<str>> Action<S> {
+    pub fn new<'a, D: Decoder>(
         action: ActionType,
         mut scanner: Scan<'a, D>,
-    ) -> Result<Self, ParseError> {
+    ) -> Result<Self, ParseError>
+    where
+        D: Decoder<Output<'a> = S>,
+    {
         Ok(match action {
             ActionType::Send => {
                 let SendArgs { href, hint, sendto } = scanner.try_into()?;
@@ -373,90 +375,5 @@ impl<'a> Action<Cow<'a, str>> {
             ActionType::XchPage => Self::XchPage,
             ActionType::XchPane => Self::XchPane,
         })
-    }
-
-    pub fn into_owned(self) -> Action<String> {
-        match self {
-            Action::Send { href, hint, sendto } => Action::Send {
-                href: href.map(Cow::into_owned),
-                hint: hint.map(Cow::into_owned),
-                sendto,
-            },
-            Action::Bold => Action::Bold,
-            Action::Underline => Action::Underline,
-            Action::Italic => Action::Italic,
-            Action::Color { fore, back } => Action::Color { fore, back },
-            Action::Version => Action::Version,
-            Action::Font { fgcolor, bgcolor } => Action::Font {
-                fgcolor: FgColor {
-                    inner: fgcolor.inner.into_owned(),
-                },
-                bgcolor,
-            },
-            Action::Sound => Action::Sound,
-            Action::User => Action::User,
-            Action::Password => Action::Password,
-            Action::Relocate => Action::Relocate,
-            Action::Frame => Action::Frame,
-            Action::Dest => Action::Dest,
-            Action::Image {
-                fname,
-                url,
-                xch_mode,
-            } => Action::Image {
-                fname: fname.map(Cow::into_owned),
-                url: url.map(Cow::into_owned),
-                xch_mode,
-            },
-            Action::Filter => Action::Filter,
-            Action::Hyperlink { href } => Action::Hyperlink {
-                href: href.map(Cow::into_owned),
-            },
-            Action::Br => Action::Br,
-            Action::Heading(heading) => Action::Heading(heading),
-            Action::Hr => Action::Hr,
-            Action::NoBr => Action::NoBr,
-            Action::P => Action::P,
-            Action::Strike => Action::Strike,
-            Action::Script => Action::Script,
-            Action::Small => Action::Small,
-            Action::Tt => Action::Tt,
-            Action::Ul => Action::Ul,
-            Action::Ol => Action::Ol,
-            Action::Li => Action::Li,
-            Action::Samp => Action::Samp,
-            Action::Center => Action::Center,
-            Action::High => Action::High,
-            Action::Var { variable } => Action::Var {
-                variable: variable.map(Cow::into_owned),
-            },
-            Action::Afk { challenge } => Action::Afk {
-                challenge: challenge.map(Cow::into_owned),
-            },
-            Action::Gauge => Action::Gauge,
-            Action::Stat => Action::Stat,
-            Action::Expire => Action::Expire,
-            Action::Reset => Action::Reset,
-            Action::Mxp { keywords } => Action::Mxp { keywords },
-            Action::Support { supported } => Action::Support { supported },
-            Action::SetOption => Action::SetOption,
-            Action::RecommendOption => Action::RecommendOption,
-            Action::Pre => Action::Pre,
-            Action::Body => Action::Body,
-            Action::Head => Action::Head,
-            Action::Html => Action::Html,
-            Action::Title => Action::Title,
-            Action::Img {
-                fname,
-                url,
-                xch_mode,
-            } => Action::Img {
-                fname: fname.map(Cow::into_owned),
-                url: url.map(Cow::into_owned),
-                xch_mode,
-            },
-            Action::XchPage => Action::XchPage,
-            Action::XchPane => Action::XchPane,
-        }
     }
 }

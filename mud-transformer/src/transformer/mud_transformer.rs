@@ -304,10 +304,12 @@ impl Transformer {
                 }
             }
             Action::Font { fgcolor, bgcolor } => {
-                for fg in fgcolor.iter() {
-                    match fg {
-                        mxp::FontEffect::Color(fg) => self.output.set_mxp_foreground(fg),
-                        mxp::FontEffect::Style(style) => self.output.set_mxp_flag(style.into()),
+                if let Some(fgcolor) = fgcolor {
+                    for fg in fgcolor.iter() {
+                        match fg {
+                            mxp::FontEffect::Color(fg) => self.output.set_mxp_foreground(fg),
+                            mxp::FontEffect::Style(style) => self.output.set_mxp_flag(style.into()),
+                        }
                     }
                 }
                 if let Some(bg) = bgcolor {

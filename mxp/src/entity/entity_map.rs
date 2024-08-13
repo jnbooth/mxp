@@ -196,13 +196,17 @@ impl EntityMap {
 }
 
 impl Decoder for EntityMap {
-    fn decode<'a>(&self, s: &'a str) -> Result<Cow<'a, str>, ParseError> {
+    type Output<'a> = Cow<'a, str>;
+
+    fn decode<'a>(&self, s: &'a str) -> Result<Self::Output<'a>, ParseError> {
         decode_amps(s, |entity| self.get(entity))
     }
 }
 
 impl Decoder for &EntityMap {
-    fn decode<'a>(&self, s: &'a str) -> Result<Cow<'a, str>, ParseError> {
+    type Output<'a> = Cow<'a, str>;
+
+    fn decode<'a>(&self, s: &'a str) -> Result<Self::Output<'a>, ParseError> {
         EntityMap::decode(self, s)
     }
 }
@@ -214,8 +218,10 @@ pub struct ElementDecoder<'a> {
     args: &'a Arguments,
 }
 
-impl<'a> Decoder for ElementDecoder<'a> {
-    fn decode<'b>(&self, s: &'b str) -> Result<Cow<'b, str>, ParseError> {
+impl<'d> Decoder for ElementDecoder<'d> {
+    type Output<'a> = Cow<'a, str>;
+
+    fn decode<'a>(&self, s: &'a str) -> Result<Self::Output<'a>, ParseError> {
         decode_amps(s, |entity| {
             if entity == "text" {
                 return Ok(None);

@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::slice;
 
 use super::action::Action;
@@ -33,7 +32,7 @@ impl State {
         self.entities.get(name)
     }
 
-    pub fn decode_args<'a, 'b>(&'a self, args: &'b mut Arguments) -> Scan<'b, &'a EntityMap> {
+    pub fn decode_args<'a>(&self, args: &'a mut Arguments) -> Scan<'a, &EntityMap> {
         args.scan(&self.entities)
     }
 
@@ -108,7 +107,7 @@ pub struct DecodeElement<'a, D> {
 }
 
 impl<'a, D: Decoder + Copy> Iterator for DecodeElement<'a, D> {
-    type Item = Result<Action<Cow<'a, str>>, ParseError>;
+    type Item = Result<Action<D::Output<'a>>, ParseError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let item: &'a ElementItem = self.items.next()?;

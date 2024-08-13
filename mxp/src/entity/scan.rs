@@ -5,16 +5,20 @@ use crate::color::RgbColor;
 use crate::entity::argument::{Arg, Argument};
 use casefold::ascii::CaseFoldMap;
 use enumeration::{Enum, EnumSet};
-use std::borrow::{Borrow, Cow};
+use std::borrow::Borrow;
 use std::{iter, slice, str};
 
 pub trait Decoder {
-    fn decode<'a>(&self, s: &'a str) -> Result<Cow<'a, str>, ParseError>;
+    type Output<'a>: AsRef<str>;
+
+    fn decode<'a>(&self, s: &'a str) -> Result<Self::Output<'a>, ParseError>;
 }
 
 impl Decoder for () {
-    fn decode<'a>(&self, s: &'a str) -> Result<Cow<'a, str>, ParseError> {
-        Ok(Cow::Borrowed(s))
+    type Output<'a> = &'a str;
+
+    fn decode<'a>(&self, s: &'a str) -> Result<Self::Output<'a>, ParseError> {
+        Ok(s)
     }
 }
 
@@ -27,7 +31,7 @@ pub struct Scan<'a, D> {
 }
 
 impl<'a, D: Decoder> Scan<'a, D> {
-    fn decode<S>(&self, s: Option<&'a S>) -> Result<Option<Cow<'a, Arg>>, ParseError>
+    fn decode<S>(&self, s: Option<&'a S>) -> Result<Option<D::Output<'a>>, ParseError>
     where
         S: Borrow<str> + ?Sized,
     {
@@ -41,7 +45,7 @@ impl<'a, D: Decoder> Scan<'a, D> {
         self.inner.len()
     }
 
-    pub fn get(&self, name: &str) -> Result<Option<Cow<'a, Arg>>, ParseError> {
+    pub fn get(&self, name: &str) -> Result<Option<D::Output<'a>>, ParseError> {
         self.decode(self.named.get(name))
     }
 
@@ -53,12 +57,12 @@ impl<'a, D: Decoder> Scan<'a, D> {
         self.keywords.contains(keyword)
     }
 
-    pub fn next(&mut self) -> Result<Option<Cow<'a, Arg>>, ParseError> {
+    pub fn next(&mut self) -> Result<Option<D::Output<'a>>, ParseError> {
         let next = self.inner.next();
         self.decode(next)
     }
 
-    pub fn next_or(&mut self, names: &[&str]) -> Result<Option<Cow<'a, Arg>>, ParseError> {
+    pub fn next_or(&mut self, names: &[&str]) -> Result<Option<D::Output<'a>>, ParseError> {
         match self.inner.next() {
             Some(item) => self.decoder.decode(item).map(Option::Some),
             None => self.decode(names.iter().find_map(|&name| self.named.get(name))),
@@ -66,12 +70,12 @@ impl<'a, D: Decoder> Scan<'a, D> {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct AfkArgs<'a> {
-    pub challenge: Option<Cow<'a, str>>,
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct AfkArgs<S> {
+    pub challenge: Option<S>,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for AfkArgs<'a> {
+impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for AfkArgs<D::Output<'a>> {
     type Error = ParseError;
 
     fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, ParseError> {
@@ -94,10 +98,10 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ColorArgs {
         Ok(Self {
             fore: scanner
                 .next_or(&["fore"])?
-                .and_then(|fore| RgbColor::named(&fore)),
+                .and_then(|fore| RgbColor::named(fore.as_ref())),
             back: scanner
                 .next_or(&["back"])?
-                .and_then(|back| RgbColor::named(&back)),
+                .and_then(|back| RgbColor::named(back.as_ref())),
         })
     }
 }
@@ -150,35 +154,33 @@ impl<S: AsRef<str>> FgColor<S> {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct FontArgs<'a> {
-    pub fgcolor: FgColor<Cow<'a, str>>,
+#[derive(Copy, Clone, Debug)]
+pub struct FontArgs<S> {
+    pub fgcolor: Option<FgColor<S>>,
     pub bgcolor: Option<RgbColor>,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for FontArgs<'a> {
+impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for FontArgs<D::Output<'a>> {
     type Error = ParseError;
 
     fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, ParseError> {
         Ok(Self {
-            fgcolor: FgColor {
-                inner: scanner
-                    .next_or(&["color", "fgcolor"])?
-                    .unwrap_or(Cow::Borrowed("")),
-            },
+            fgcolor: scanner
+                .next_or(&["color", "fgcolor"])?
+                .map(|fgcolor| FgColor { inner: fgcolor }),
             bgcolor: scanner
                 .next_or(&["back", "bgcolor"])?
-                .and_then(|bgcolor| RgbColor::named(&bgcolor)),
+                .and_then(|bgcolor| RgbColor::named(bgcolor.as_ref())),
         })
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct HyperlinkArgs<'a> {
-    pub href: Option<Cow<'a, str>>,
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct HyperlinkArgs<S> {
+    pub href: Option<S>,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for HyperlinkArgs<'a> {
+impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for HyperlinkArgs<D::Output<'a>> {
     type Error = ParseError;
 
     fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, ParseError> {
@@ -206,14 +208,14 @@ impl XchMode {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ImageArgs<'a> {
-    pub fname: Option<Cow<'a, str>>,
-    pub url: Option<Cow<'a, str>>,
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ImageArgs<S> {
+    pub fname: Option<S>,
+    pub url: Option<S>,
     pub xch_mode: Option<XchMode>,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ImageArgs<'a> {
+impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ImageArgs<D::Output<'a>> {
     type Error = ParseError;
 
     fn try_from(scanner: Scan<'a, D>) -> Result<Self, ParseError> {
@@ -226,19 +228,19 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ImageArgs<'a> {
             url,
             xch_mode: scanner
                 .get("xch_mode")?
-                .and_then(|mode| XchMode::parse(&mode)),
+                .and_then(|mode| XchMode::parse(mode.as_ref())),
         })
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SendArgs<'a> {
-    pub href: Option<Cow<'a, str>>,
-    pub hint: Option<Cow<'a, str>>,
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SendArgs<S> {
+    pub href: Option<S>,
+    pub hint: Option<S>,
     pub sendto: SendTo,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for SendArgs<'a> {
+impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for SendArgs<D::Output<'a>> {
     type Error = ParseError;
 
     fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, ParseError> {
@@ -254,12 +256,12 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for SendArgs<'a> {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct VarArgs<'a> {
-    pub variable: Option<Cow<'a, str>>,
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct VarArgs<S> {
+    pub variable: Option<S>,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for VarArgs<'a> {
+impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for VarArgs<D::Output<'a>> {
     type Error = ParseError;
 
     fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, ParseError> {
