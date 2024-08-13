@@ -9,8 +9,6 @@ pub struct Tag {
     pub no_reset: bool,
     /// Index in a style's span list.
     pub span_index: usize,
-    /// Special replacement sequence for clickable links that use the text they contain.
-    pub anchor_template: Option<String>,
 }
 
 impl Tag {
@@ -29,7 +27,6 @@ impl Tag {
             secure,
             no_reset: flags.contains(mxp::TagFlag::NoReset),
             span_index,
-            anchor_template: None,
         })
     }
 
@@ -76,16 +73,6 @@ impl TagList {
 
     pub fn push(&mut self, tag: Tag) {
         self.inner.push(tag);
-    }
-
-    pub fn set_anchor_template(&mut self, template: String) -> bool {
-        match self.inner.last_mut() {
-            Some(tag) => {
-                tag.anchor_template = Some(template);
-                true
-            }
-            None => false,
-        }
     }
 
     pub fn last_resettable_index(&self) -> usize {

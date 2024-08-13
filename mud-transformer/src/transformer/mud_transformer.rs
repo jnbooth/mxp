@@ -307,14 +307,6 @@ impl Transformer {
                     hint.as_ref().map(AsRef::as_ref),
                     *sendto,
                 ));
-                if action.contains(SPECIAL_LINK) {
-                    let template = if *sendto == SendTo::Input {
-                        format!("echo:{}", action)
-                    } else {
-                        format!("send:{}", action)
-                    };
-                    self.mxp_active_tags.set_anchor_template(template);
-                }
             }
             Action::Hyperlink { href } => {
                 let action = match href {
@@ -323,9 +315,6 @@ impl Transformer {
                 };
                 self.output
                     .set_mxp_action(Link::new(action, None, SendTo::Internet));
-                if action.contains(SPECIAL_LINK) {
-                    self.mxp_active_tags.set_anchor_template(action.to_owned());
-                }
             }
             Action::Font { fgcolor, bgcolor } => {
                 if let Some(fgcolor) = fgcolor {
