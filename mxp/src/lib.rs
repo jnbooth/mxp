@@ -22,6 +22,12 @@ macro_rules! match_ci {
     };
 }
 
+mod argument;
+pub use argument::{ArgumentIndex, Arguments, FgColor, FontEffect, FontStyle, Keyword, XchMode};
+
+mod collection;
+pub use collection::{ElementComponent, ElementMap, EntityMap, State};
+
 mod color;
 pub use color::{HexOutOfRangeError, ParseHexColorError, RgbColor, TermColor};
 
@@ -34,5 +40,8 @@ mod lookup;
 
 mod protocol;
 pub use protocol::responses;
+
+mod parser;
+pub use parser::{is_valid, validate, Error, ParseError, Words};
 
 pub const VERSION: &str = "0.5";

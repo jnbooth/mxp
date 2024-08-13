@@ -1,14 +1,13 @@
 use std::str;
 
-use super::argument::Keyword;
 use super::atom::Atom;
-use super::error::ParseError;
 use super::link::SendTo;
-use super::scan::{
-    AfkArgs, ColorArgs, Decoder, FgColor, FontArgs, HyperlinkArgs, ImageArgs, Scan, SendArgs,
-    VarArgs, XchMode,
+use crate::argument::scan::{
+    AfkArgs, ColorArgs, Decoder, FontArgs, HyperlinkArgs, ImageArgs, Scan, SendArgs, VarArgs,
 };
+use crate::argument::{FgColor, Keyword, XchMode};
 use crate::color::RgbColor;
+use crate::parser::ParseError;
 use enumeration::{Enum, EnumSet};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]

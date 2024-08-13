@@ -1,12 +1,11 @@
 use std::slice;
 
-use super::action::Action;
-use super::argument::{Arguments, Keyword};
-use super::element::{Element, ElementComponent, ElementItem, ElementMap};
+use super::element_map::{ElementComponent, ElementMap};
 use super::entity_map::{ElementDecoder, EntityMap};
-use super::error::{Error as MxpError, ParseError};
-use super::scan::{Decoder, Scan};
-use super::words::Words;
+use crate::argument::scan::{Decoder, Scan};
+use crate::argument::{Arguments, Keyword};
+use crate::entity::{Action, Element, ElementItem};
+use crate::parser::{Error as MxpError, ParseError, Words};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct State {

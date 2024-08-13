@@ -3,78 +3,12 @@ use std::iter::{Chain, Enumerate, Map};
 use std::{slice, str};
 
 use casefold::ascii::{CaseFold, CaseFoldMap};
-use enumeration::{Enum, EnumSet};
+use enumeration::EnumSet;
 
-use super::error::{Error as MxpError, ParseError};
+use super::index::ArgumentIndex;
+use super::keyword::Keyword;
 use super::scan::{Decoder, Scan};
-use super::validation::validate;
-use super::words::Words;
-
-/// MXP elements can have both positional and named arguments.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum ArgumentIndex<'a> {
-    Positional(usize),
-    Named(&'a str),
-}
-impl<'a> From<usize> for ArgumentIndex<'a> {
-    fn from(value: usize) -> Self {
-        Self::Positional(value)
-    }
-}
-impl<'a> From<&'a str> for ArgumentIndex<'a> {
-    fn from(value: &'a str) -> Self {
-        Self::Named(value)
-    }
-}
-impl<'a> ArgumentIndex<'a> {
-    pub fn is_positional(self) -> bool {
-        match self {
-            Self::Positional(_) => true,
-            Self::Named(_) => false,
-        }
-    }
-
-    pub fn is_named(self) -> bool {
-        match self {
-            Self::Positional(_) => false,
-            Self::Named(_) => true,
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum Keyword {
-    Delete,
-    Open,
-    Empty,
-    Prompt,
-    Off,
-    DefaultOpen,
-    DefaultSecure,
-    DefaultLocked,
-    UseNewlines,
-    IgnoreNewlines,
-    IsMap,
-}
-
-impl Keyword {
-    fn parse(s: &str) -> Option<Self> {
-        match_ci! {s,
-            "delete" => Some(Self::Delete),
-            "open" => Some(Self::Open),
-            "empty" => Some(Self::Empty),
-            "prompt" => Some(Self::Prompt),
-            "off" => Some(Self::Off),
-            "defaultopen" => Some(Self::DefaultOpen),
-            "defaultsecure" => Some(Self::DefaultSecure),
-            "defaultlocked" => Some(Self::DefaultLocked),
-            "usenewlines" => Some(Self::UseNewlines),
-            "ignorenewlines" => Some(Self::IgnoreNewlines),
-            "ismap" => Some(Self::IsMap),
-            _ => None,
-        }
-    }
-}
+use crate::parser::{validate, Error as MxpError, ParseError, Words};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Arguments {

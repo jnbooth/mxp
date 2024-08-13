@@ -3,11 +3,11 @@ use std::ops::{Deref, DerefMut};
 
 use casefold::ascii::CaseFoldMap;
 
-use super::argument::{ArgumentIndex, Arguments};
-use super::element::Element;
-use super::scan::Decoder;
+use crate::argument::scan::Decoder;
+use crate::argument::{ArgumentIndex, Arguments};
+use crate::entity::Element;
 
-use super::error::{Error as MxpError, ParseError};
+use crate::parser::{Error as MxpError, ParseError};
 
 fn decode_amps<'a, F>(mut s: &str, mut f: F) -> Result<Cow<str>, ParseError>
 where

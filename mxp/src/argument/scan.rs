@@ -1,9 +1,11 @@
-use super::argument::Keyword;
-use super::error::ParseError;
-use super::link::SendTo;
+use super::font_args::FgColor;
+use super::keyword::Keyword;
+use super::pueblo::XchMode;
 use crate::color::RgbColor;
+use crate::entity::SendTo;
+use crate::parser::ParseError;
 use casefold::ascii::CaseFoldMap;
-use enumeration::{Enum, EnumSet};
+use enumeration::EnumSet;
 use std::borrow::Borrow;
 use std::{iter, slice, str};
 
@@ -105,54 +107,6 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ColorArgs {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum FontStyle {
-    Blink,
-    Bold,
-    Inverse,
-    Italic,
-    Underline,
-}
-
-impl FontStyle {
-    fn parse(s: &str) -> Option<Self> {
-        match_ci! {s,
-            "blink" => Some(FontStyle::Blink),
-            "bold" => Some(FontStyle::Bold),
-            "inverse" => Some(FontStyle::Inverse),
-            "italic" => Some(FontStyle::Italic),
-            "underline" => Some(FontStyle::Underline),
-            _ => None,
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum FontEffect {
-    Color(RgbColor),
-    Style(FontStyle),
-}
-
-impl FontEffect {
-    pub fn parse(s: &str) -> Option<Self> {
-        match FontStyle::parse(s) {
-            Some(style) => Some(Self::Style(style)),
-            None => RgbColor::named(s).map(Self::Color),
-        }
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct FgColor<S> {
-    pub(crate) inner: S,
-}
-
-impl<S: AsRef<str>> FgColor<S> {
-    pub fn iter(&self) -> impl Iterator<Item = FontEffect> + '_ {
-        self.inner.as_ref().split(',').flat_map(FontEffect::parse)
-    }
-}
-
 #[derive(Copy, Clone, Debug)]
 pub struct FontArgs<S> {
     pub fgcolor: Option<FgColor<S>>,
@@ -186,24 +140,6 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for HyperlinkArgs<D::Output<'a>> {
         Ok(Self {
             href: scanner.next_or(&["href"])?,
         })
-    }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum XchMode {
-    Text,
-    Html,
-    PureHtml,
-}
-
-impl XchMode {
-    fn parse(s: &str) -> Option<Self> {
-        match_ci! {s,
-            "text" => Some(Self::Text),
-            "html" => Some(Self::Html),
-            "purehtml" => Some(Self::PureHtml),
-            _ => None,
-        }
     }
 }
 
