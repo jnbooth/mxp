@@ -1,0 +1,152 @@
+use super::element_map::ElementMap;
+use crate::argument::scan::Decoder;
+use crate::argument::Arguments;
+use crate::color::RgbColor;
+use crate::entity::{Element, Mode};
+use crate::parser::{Error as MxpError, ParseError, Words};
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct LineTag {
+    element: String,
+    enabled: bool,
+}
+
+impl Default for LineTag {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl LineTag {
+    pub const fn new() -> Self {
+        Self {
+            element: String::new(),
+            enabled: false,
+        }
+    }
+}
+
+const OFFSET: usize = Mode::USER_DEFINED_MIN.0 as usize;
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct LineTags {
+    inner: Vec<LineTag>,
+}
+
+impl LineTags {
+    pub fn get<'a>(&self, mode: usize, elements: &'a ElementMap) -> Option<&'a Element> {
+        let i = mode.checked_sub(OFFSET)?;
+        let tag = self.inner.get(i)?;
+        if !tag.enabled {
+            return None;
+        }
+        elements.get(&tag.element)
+    }
+
+    pub fn set(&mut self, mode: usize, element: String) {
+        let i = match mode.checked_sub(OFFSET) {
+            Some(i) => i,
+            None => return,
+        };
+        if self.inner.len() <= i {
+            self.inner.resize_with(i + 1, Default::default);
+        }
+        let el = &mut self.inner[i];
+        el.element = element;
+        el.enabled = true;
+    }
+
+    pub fn update<'a>(
+        &mut self,
+        update: LineTagUpdate,
+        elements: &'a mut ElementMap,
+    ) -> Option<&'a mut Element> {
+        let i = (update.index as usize).checked_sub(OFFSET)?;
+        let tag = self.inner.get_mut(i)?;
+        if let Some(enable) = update.enable {
+            tag.enabled = enable;
+        }
+        let element = elements.get_mut(&tag.element)?;
+        if let Some(window) = update.window {
+            element.window = Some(window.clone());
+        }
+        if let Some(gag) = update.gag {
+            element.gag = gag;
+        }
+        if let Some(fore) = update.fore {
+            element.fore = Some(fore);
+        }
+        if let Some(back) = update.back {
+            element.back = Some(back);
+        }
+        Some(element)
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct LineTagUpdate {
+    index: u8,
+    window: Option<String>,
+    gag: Option<bool>,
+    fore: Option<RgbColor>,
+    back: Option<RgbColor>,
+    enable: Option<bool>,
+}
+
+impl LineTagUpdate {
+    pub fn parse<D: Decoder>(words: Words, decoder: D) -> Result<Self, ParseError> {
+        let args = Arguments::parse(words)?;
+        let mut scanner = args.scan(decoder);
+
+        let index_arg = scanner
+            .next()?
+            .ok_or(ParseError::new("", MxpError::NoArgument))?;
+        let index_str = index_arg.as_ref();
+        let index: u8 = index_str
+            .parse()
+            .map_err(|_| ParseError::new(index_str, MxpError::InvalidEntityNumber))?;
+
+        let window = scanner.get("windowname")?.map(|s| s.as_ref().to_owned());
+
+        let fore = scanner
+            .get("fore")?
+            .and_then(|color| RgbColor::named(color.as_ref()));
+
+        let back = scanner
+            .get("fore")?
+            .and_then(|color| RgbColor::named(color.as_ref()));
+
+        let mut gag: Option<bool> = None;
+        let mut enable: Option<bool> = None;
+        while let Some(word) = scanner.next()? {
+            match_ci! {word.as_ref(),
+                "enable" => enable = Some(true),
+                "disable" => enable = Some(false),
+                "gag" => gag = Some(true),
+            };
+        }
+        Ok(Self {
+            index,
+            window,
+            gag,
+            fore,
+            back,
+            enable,
+        })
+    }
+}
+
+/*
+INDEX is the tag number (20-99) to change.
+
+WINDOWNAME specifies the name of a window to redirect the text to.
+
+GAG indicates that the text should be gagged from the main MUD window.
+
+FORE is the text color.
+
+BACK is the background color of the text.
+
+ENABLE and DISABLE can be used to turn this tag on or off.
+
+ */

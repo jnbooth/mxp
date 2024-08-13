@@ -68,6 +68,8 @@ pub struct Span {
     pub(super) heading: Option<Heading>,
     /// Which variable to set (FLAG in MXP).
     pub(super) variable: Option<String>,
+    pub(super) gag: bool,
+    pub(super) window: Option<String>,
 }
 
 impl Default for Span {
@@ -88,6 +90,8 @@ impl Span {
             list: None,
             heading: None,
             variable: None,
+            gag: false,
+            window: None,
         }
     }
 }
@@ -265,5 +269,13 @@ impl SpanList {
 
     pub fn set_variable(&mut self, variable: String) -> bool {
         set_prop!(self, variable);
+    }
+
+    pub fn set_gag(&mut self) -> bool {
+        set_prop!(self, gag, true);
+    }
+
+    pub fn set_window(&mut self, window: String) -> bool {
+        set_prop!(self, window);
     }
 }

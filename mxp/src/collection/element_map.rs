@@ -6,7 +6,8 @@ use enumeration::EnumSet;
 use crate::lookup::Lookup;
 
 use crate::argument::Arguments;
-use crate::entity::{Atom, Element, ElementItem, TagFlag};
+use crate::color::RgbColor;
+use crate::entity::{Atom, Element, TagFlag};
 use crate::parser::{validate, Error as MxpError, ParseError};
 
 #[derive(Copy, Clone, Debug)]
@@ -76,35 +77,30 @@ impl ElementMap {
 }
 
 static WELL_KNOWN_ELEMENTS: Lookup<Element> = Lookup::new(|| {
-    let color_atom = Atom::get("color").unwrap();
-    let color_el = |color: &'static str| {
-        let color_name = color[..color.len() - "MXP".len()].to_ascii_lowercase();
+    let color_el = |name: &'static str, hex: u32| {
         let el = Element {
-            name: color.to_owned(),
-            items: vec![ElementItem {
-                atom: color_atom,
-                arguments: Arguments::predefined(
-                    vec![color_name],
-                    Default::default(),
-                    Default::default(),
-                ),
-            }],
+            name: name.to_owned(),
             attributes: Arguments::new(),
+            items: Vec::new(),
             tag: None,
             variable: None,
             open: true,
             command: false,
+            fore: Some(RgbColor::hex(hex)),
+            back: None,
+            gag: false,
+            window: None,
         };
-        (color, el)
+        (name, el)
     };
     vec![
-        color_el("BlackMXP"),
-        color_el("RedMXP"),
-        color_el("GreenMXP"),
-        color_el("YellowMXP"),
-        color_el("BlueMXP"),
-        color_el("MagentaMXP"),
-        color_el("CyanMXP"),
-        color_el("WhiteMXP"),
+        color_el("BlackMXP", 0x000000),
+        color_el("RedMXP", 0xFF0000),
+        color_el("GreenMXP", 0x008000),
+        color_el("YellowMXP", 0xFFFF00),
+        color_el("BlueMXP", 0x0000FF),
+        color_el("MagentaMXP", 0xFF00FF),
+        color_el("CyanMXP", 0x00FFFF),
+        color_el("WhiteMXP", 0xFFFFFF),
     ]
 });

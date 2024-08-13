@@ -245,13 +245,33 @@ impl Transformer {
                 let scanner = mxp_state.decode_args(&mut args);
                 self.mxp_open_atom(&mxp::Action::new(atom.action, scanner)?);
             }
-            mxp::ElementComponent::Custom(el) => {
-                for action in mxp_state.decode_element(el, &args) {
-                    self.mxp_open_atom(&action?);
-                }
-            }
+            mxp::ElementComponent::Custom(el) => self.mxp_open_element(el, args, mxp_state)?,
         }
 
+        Ok(())
+    }
+
+    fn mxp_open_element(
+        &mut self,
+        el: &mxp::Element,
+        args: mxp::Arguments,
+        mxp_state: &mxp::State,
+    ) -> Result<(), mxp::ParseError> {
+        if el.gag {
+            self.output.set_mxp_gag();
+        }
+        if let Some(window) = &el.window {
+            self.output.set_mxp_window(window.clone())
+        }
+        for action in mxp_state.decode_element(el, &args) {
+            self.mxp_open_atom(&action?);
+        }
+        if let Some(fore) = el.fore {
+            self.output.set_mxp_foreground(fore);
+        }
+        if let Some(back) = el.back {
+            self.output.set_mxp_background(back);
+        }
         Ok(())
     }
 
@@ -476,6 +496,16 @@ impl Transformer {
             _ => (),
         }
         self.mxp_mode = newmode;
+        if !newmode.is_user_defined() {
+            return;
+        }
+        let mxp_state = mem::take(&mut self.mxp_state);
+        if let Some(element) = mxp_state.get_line_tag(newmode) {
+            if let Err(e) = self.mxp_open_element(element, mxp::Arguments::new(), &mxp_state) {
+                self.handle_mxp_error(e);
+            }
+        }
+        self.mxp_state = mxp_state;
     }
 
     fn interpret_ansi(&mut self, code: u8) {

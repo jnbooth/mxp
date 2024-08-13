@@ -8,7 +8,14 @@ use super::shared_string::SharedString;
 use super::span::TextStyle;
 use mxp::RgbColor;
 
-pub type OutputDrain<'a> = vec::Drain<'a, OutputFragment>;
+pub type OutputDrain<'a> = vec::Drain<'a, Output>;
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Output {
+    pub fragment: OutputFragment,
+    pub gag: bool,
+    pub window: Option<String>,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum OutputFragment {

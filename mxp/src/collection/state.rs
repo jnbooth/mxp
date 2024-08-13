@@ -2,15 +2,17 @@ use std::slice;
 
 use super::element_map::{ElementComponent, ElementMap};
 use super::entity_map::{ElementDecoder, EntityMap};
+use super::line_tags::{LineTagUpdate, LineTags};
 use crate::argument::scan::{Decoder, Scan};
 use crate::argument::{Arguments, Keyword};
-use crate::entity::{Action, Element, ElementItem};
+use crate::entity::{Action, Element, ElementItem, Mode};
 use crate::parser::{Error as MxpError, ParseError, Words};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct State {
     elements: ElementMap,
     entities: EntityMap,
+    line_tags: LineTags,
 }
 
 impl State {
@@ -29,6 +31,10 @@ impl State {
 
     pub fn get_entity(&self, name: &str) -> Result<Option<&str>, ParseError> {
         self.entities.get(name)
+    }
+
+    pub fn get_line_tag(&self, mode: Mode) -> Option<&Element> {
+        self.line_tags.get(mode.0 as usize, &self.elements)
     }
 
     pub fn decode_args<'a>(&self, args: &'a mut Arguments) -> Scan<'a, &EntityMap> {
@@ -51,6 +57,9 @@ impl State {
         let mut words = Words::new(tag);
 
         let definition = words.validate_next_or(MxpError::InvalidDefinition)?;
+        if definition.eq_ignore_ascii_case("tag") {
+            return self.define_line_tag(words);
+        }
         let name = words.validate_next_or(MxpError::InvalidElementName)?;
         match_ci! {definition,
             "element" | "el" => self.define_element(name, words),
@@ -67,7 +76,16 @@ impl State {
             return Ok(());
         }
         let el = Element::parse(name.to_owned(), args.scan(&self.entities))?;
+        if let Some(tag) = el.tag {
+            self.line_tags.set(tag.get() as usize, el.name.clone());
+        }
         self.elements.insert(name.to_owned(), el);
+        Ok(())
+    }
+
+    pub fn define_line_tag(&mut self, words: Words) -> Result<(), ParseError> {
+        let update = LineTagUpdate::parse(words, &self.entities)?;
+        self.line_tags.update(update, &mut self.elements);
         Ok(())
     }
 

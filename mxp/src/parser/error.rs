@@ -27,9 +27,8 @@ pub enum Error {
     InvalidDefinition,
     ///  cannot redefine inbuilt element
     CannotRedefineElement,
-    ///  no < in element definition, eg.
+    ///  no < in element definition, eg. <!ELEMENT foo 'bold' >  (should be '<bold>')
     NoTagInDefinition,
-    // <!ELEMENT foo 'bold' >  (should be '<bold>' )
     ///  eg. <!ELEMENT foo '<<bold>' >
     UnexpectedDefinitionSymbol,
     ///  eg. <!ELEMENT foo '<send "west>' >

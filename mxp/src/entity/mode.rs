@@ -18,6 +18,9 @@ impl Mode {
     pub const PERM_SECURE: Self = Self(6);
     /// Locked mode until mode change.
     pub const PERM_LOCKED: Self = Self(7);
+
+    pub const USER_DEFINED_MIN: Self = Self(20);
+    pub const USER_DEFINED_MAX: Self = Self(99);
 }
 
 impl Mode {
@@ -32,5 +35,8 @@ impl Mode {
             self,
             Self::OPEN | Self::PERM_OPEN | Self::SECURE | Self::SECURE_ONCE | Self::PERM_SECURE
         )
+    }
+    pub const fn is_user_defined(self) -> bool {
+        self.0 >= Self::USER_DEFINED_MIN.0 && self.0 <= Self::USER_DEFINED_MAX.0
     }
 }

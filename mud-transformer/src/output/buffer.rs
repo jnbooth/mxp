@@ -6,7 +6,7 @@ use enumeration::EnumSet;
 use crate::output::fragment::EffectFragment;
 
 use super::color::TermColor;
-use super::fragment::{OutputDrain, OutputFragment, TelnetFragment, TextFragment};
+use super::fragment::{Output, OutputDrain, OutputFragment, TelnetFragment, TextFragment};
 use super::shared_string::SharedString;
 use super::span::{InList, SpanList, TextFormat, TextStyle};
 use mxp::RgbColor;
@@ -30,7 +30,7 @@ pub struct BufferedOutput {
     ansi_foreground: TermColor,
     ansi_background: TermColor,
     buf: BytesMut,
-    fragments: Vec<OutputFragment>,
+    fragments: Vec<Output>,
     ignore_mxp_colors: bool,
     last_linebreak: Option<usize>,
     colors: Vec<RgbColor>,
@@ -96,7 +96,20 @@ impl BufferedOutput {
     }
 
     fn output<T: Into<OutputFragment>>(&mut self, fragment: T) {
-        self.fragments.push(fragment.into())
+        let fragment = fragment.into();
+        let output = match self.spans.get() {
+            Some(span) => Output {
+                fragment,
+                gag: span.gag,
+                window: span.window.clone(),
+            },
+            None => Output {
+                fragment,
+                gag: false,
+                window: None,
+            },
+        };
+        self.fragments.push(output)
     }
 
     fn take_buf(&mut self) -> SharedString {
@@ -359,6 +372,18 @@ impl BufferedOutput {
     pub fn set_mxp_variable(&mut self, variable: String) {
         if self.spans.set_variable(variable) {
             self.flush_mxp();
+        }
+    }
+
+    pub fn set_mxp_gag(&mut self) {
+        if self.spans.set_gag() {
+            self.flush_mxp()
+        }
+    }
+
+    pub fn set_mxp_window(&mut self, window: String) {
+        if self.spans.set_window(window) {
+            self.flush_mxp()
         }
     }
 }

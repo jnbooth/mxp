@@ -17,18 +17,6 @@ impl Arguments {
         Self::default()
     }
 
-    pub(crate) fn predefined(
-        positional: Vec<String>,
-        named: CaseFoldMap<String, String>,
-        keywords: EnumSet<Keyword>,
-    ) -> Self {
-        Self {
-            positional,
-            named,
-            keywords,
-        }
-    }
-
     pub fn is_empty(&self) -> bool {
         self.positional.is_empty() && self.named.is_empty()
     }

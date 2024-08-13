@@ -8,8 +8,8 @@ mod receive;
 
 mod output;
 pub use output::{
-    EffectFragment, OutputDrain, OutputFragment, SharedString, TelnetFragment, TextFragment,
-    TextStyle,
+    EffectFragment, Output, OutputDrain, OutputFragment, SharedString, TelnetFragment,
+    TextFragment, TextStyle,
 };
 
 mod transformer;

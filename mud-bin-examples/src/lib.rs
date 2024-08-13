@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use mud_transformer::{OutputFragment, TransformerConfig};
+use mud_transformer::{Output, OutputFragment, TransformerConfig};
 
 pub fn get_config() -> TransformerConfig {
     TransformerConfig {
@@ -9,13 +9,13 @@ pub fn get_config() -> TransformerConfig {
     }
 }
 
-pub fn write_output<I, W>(output: I, mut writer: W) -> io::Result<()>
+pub fn write_output<I, W>(iter: I, mut writer: W) -> io::Result<()>
 where
-    I: Iterator<Item = OutputFragment>,
+    I: Iterator<Item = Output>,
     W: Write,
 {
-    for fragment in output {
-        match fragment {
+    for output in iter {
+        match output.fragment {
             OutputFragment::Text(fragment) => {
                 write!(writer, "{}", fragment)?;
             }
