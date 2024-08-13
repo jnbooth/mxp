@@ -277,7 +277,6 @@ impl Transformer {
 
     fn mxp_open_atom<S: AsRef<str>>(&mut self, action: &mxp::Action<S>) {
         use mxp::{Action, Link, MxpKeyword, SendTo};
-        const SPECIAL_LINK: &str = "&text;";
         /*
         if action == Action::Hyperlink && args.get("xch_cmd").is_some() {
             self.pueblo_active = true;
@@ -300,7 +299,7 @@ impl Transformer {
             Action::Send { href, hint, sendto } => {
                 let action = match href {
                     Some(href) => href.as_ref(),
-                    None => SPECIAL_LINK,
+                    None => Link::EMBED_ENTITY,
                 };
                 self.output.set_mxp_action(Link::new(
                     action,
@@ -311,7 +310,7 @@ impl Transformer {
             Action::Hyperlink { href } => {
                 let action = match href {
                     Some(href) => href.as_ref(),
-                    None => SPECIAL_LINK,
+                    None => Link::EMBED_ENTITY,
                 };
                 self.output
                     .set_mxp_action(Link::new(action, None, SendTo::Internet));

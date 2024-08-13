@@ -72,7 +72,7 @@ pub struct TextFragment {
     pub flags: EnumSet<TextStyle>,
     pub foreground: RgbColor,
     pub background: RgbColor,
-    pub action: Option<Box<mxp::Link>>,
+    pub action: Option<mxp::Link>,
     pub heading: Option<mxp::Heading>,
     /// Which variable to set (FLAG in MXP).
     pub variable: Option<String>,

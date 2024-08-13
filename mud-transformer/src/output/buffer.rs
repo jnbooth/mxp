@@ -137,7 +137,6 @@ impl BufferedOutput {
             let span = &self.spans[self.spans.len() - i];
             let ignore_colors = self.ignore_mxp_colors;
             TextFragment {
-                text,
                 flags: span.flags | self.ansi_flags,
                 foreground: self.color(get_color(
                     &span.foreground,
@@ -151,9 +150,10 @@ impl BufferedOutput {
                     ignore_colors,
                     TermColor::BLACK,
                 )),
-                action: span.action.clone().map(Box::new),
+                action: span.action.as_ref().map(|action| action.with_text(&text)),
                 heading: span.heading,
                 variable: span.variable.clone(),
+                text,
             }
         };
         self.output(fragment);

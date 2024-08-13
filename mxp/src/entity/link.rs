@@ -25,6 +25,8 @@ pub struct Link {
 }
 
 impl Link {
+    pub const EMBED_ENTITY: &'static str = "&text;";
+
     pub fn new(action: &str, hints: Option<&str>, sendto: SendTo) -> Self {
         let (action, actions) = split_list(action);
         match hints {
@@ -45,6 +47,23 @@ impl Link {
             }
         }
     }
+
+    pub fn with_text(&self, text: &str) -> Self {
+        Self {
+            action: embed(&self.action, text),
+            hint: self.hint.clone(),
+            prompts: self
+                .prompts
+                .iter()
+                .map(|prompt| embed(prompt, text))
+                .collect(),
+            sendto: self.sendto,
+        }
+    }
+}
+
+fn embed(action: &str, text: &str) -> String {
+    action.replace(Link::EMBED_ENTITY, text)
 }
 
 fn split_list(list: &str) -> (String, Vec<String>) {
