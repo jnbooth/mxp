@@ -15,11 +15,11 @@ pub trait Decoder {
     fn decode<'a>(&self, s: &'a str) -> Result<Self::Output<'a>, ParseError>;
 }
 
-impl Decoder for () {
-    type Output<'a> = &'a str;
+impl<D: Decoder> Decoder for &D {
+    type Output<'a> = D::Output<'a>;
 
     fn decode<'a>(&self, s: &'a str) -> Result<Self::Output<'a>, ParseError> {
-        Ok(s)
+        D::decode(self, s)
     }
 }
 

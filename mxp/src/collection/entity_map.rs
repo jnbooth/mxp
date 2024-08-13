@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut};
 use casefold::ascii::CaseFoldMap;
 
 use crate::argument::scan::Decoder;
-use crate::argument::{ArgumentIndex, Arguments};
+use crate::argument::Arguments;
 use crate::entity::Element;
 
 use crate::parser::{Error as MxpError, ParseError};
@@ -203,14 +203,6 @@ impl Decoder for EntityMap {
     }
 }
 
-impl Decoder for &EntityMap {
-    type Output<'a> = Cow<'a, str>;
-
-    fn decode<'a>(&self, s: &'a str) -> Result<Self::Output<'a>, ParseError> {
-        EntityMap::decode(self, s)
-    }
-}
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ElementDecoder<'a> {
     element: &'a Element,
@@ -226,16 +218,9 @@ impl<'d> Decoder for ElementDecoder<'d> {
             if entity == "text" {
                 return Ok(None);
             }
-            match self.element.attributes.iter().find(|&(i, attr)| match i {
-                ArgumentIndex::Positional(_) => attr.eq_ignore_ascii_case(entity),
-                ArgumentIndex::Named(name) => name.eq_ignore_ascii_case(entity),
-            }) {
+            match self.element.attributes.find_attribute(entity, self.args) {
+                Some(attr) => Ok(Some(attr)),
                 None => self.entities.get(entity),
-                Some((i, attr)) => Ok(match self.args.get(i) {
-                    Some(arg) => Some(arg),
-                    None if i.is_named() => Some(attr), // default replacement
-                    None => Some(""),                   // TODO is this right?
-                }),
             }
         })
     }

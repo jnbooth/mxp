@@ -30,7 +30,7 @@ impl ElementItem {
             .ok_or_else(|| ParseError::new(atom_name, MxpError::NoInbuiltDefinitionTag))?;
         Ok(Self {
             atom,
-            arguments: Arguments::parse_words(words)?,
+            arguments: Arguments::parse(words)?,
         })
     }
 }
@@ -134,7 +134,7 @@ impl Element {
         let items = Self::parse_items(scanner.next()?)?;
 
         let attributes = match scanner.next_or(&["att"])? {
-            Some(atts) => Arguments::parse(atts.as_ref())?,
+            Some(atts) => Arguments::parse(Words::new(atts.as_ref()))?,
             None => Arguments::default(),
         };
 

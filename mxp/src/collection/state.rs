@@ -61,12 +61,12 @@ impl State {
     }
 
     fn define_element(&mut self, name: &str, words: Words) -> Result<(), ParseError> {
-        let args = Arguments::parse_words(words)?;
+        let args = Arguments::parse(words)?;
         if args.has_keyword(Keyword::Delete) {
             self.elements.remove(&name);
             return Ok(());
         }
-        let el = Element::parse(name.to_owned(), args.scan(()))?;
+        let el = Element::parse(name.to_owned(), args.scan(&self.entities))?;
         self.elements.insert(name.to_owned(), el);
         Ok(())
     }

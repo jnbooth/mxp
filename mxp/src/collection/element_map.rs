@@ -78,13 +78,16 @@ impl ElementMap {
 static WELL_KNOWN_ELEMENTS: Lookup<Element> = Lookup::new(|| {
     let color_atom = Atom::get("color").unwrap();
     let color_el = |color: &'static str| {
-        let mut arguments = Arguments::new();
-        arguments.push(color[..color.len() - "MXP".len()].to_ascii_lowercase());
+        let color_name = color[..color.len() - "MXP".len()].to_ascii_lowercase();
         let el = Element {
             name: color.to_owned(),
             items: vec![ElementItem {
                 atom: color_atom,
-                arguments,
+                arguments: Arguments::predefined(
+                    vec![color_name],
+                    Default::default(),
+                    Default::default(),
+                ),
             }],
             attributes: Arguments::new(),
             tag: None,

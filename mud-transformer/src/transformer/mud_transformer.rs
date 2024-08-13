@@ -234,7 +234,7 @@ impl Transformer {
             self.output.set_mxp_variable(variable);
         }
 
-        let mut args = mxp::Arguments::parse_words(words)?;
+        let mut args = mxp::Arguments::parse(words)?;
 
         match component {
             mxp::ElementComponent::Atom(atom) => {
