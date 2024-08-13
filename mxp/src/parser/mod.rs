@@ -1,5 +1,5 @@
 mod error;
-pub use error::{Error, ErrorKind};
+pub use error::{Error, ErrorKind, UnrecognizedVariant};
 
 mod validation;
 pub use validation::{is_valid, validate};

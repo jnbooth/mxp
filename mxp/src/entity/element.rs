@@ -1,4 +1,5 @@
 use std::num::NonZeroU8;
+use std::str::FromStr;
 
 use enumeration::{Enum, EnumSet};
 
@@ -7,7 +8,7 @@ use super::mode::Mode;
 use crate::argument::scan::{Decoder, Scan};
 use crate::argument::{Arguments, Keyword};
 use crate::color::RgbColor;
-use crate::parser::{Error, ErrorKind, Words};
+use crate::parser::{Error, ErrorKind, UnrecognizedVariant, Words};
 
 /// List of arguments to an MXP tag.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -76,16 +77,18 @@ pub enum ParseAs {
     Prompt,
 }
 
-impl ParseAs {
-    pub fn parse(s: &str) -> Option<Self> {
-        match_ci! {s,
-            "RoomName" => Some(Self::RoomName),
-            "RoomDesc" => Some(Self::RoomDesc),
-            "RoomExit" => Some(Self::RoomExit),
-            "RoomNum" => Some(Self::RoomNum),
-            "Prompt" => Some(Self::Prompt),
-            _ => None,
-        }
+impl FromStr for ParseAs {
+    type Err = UnrecognizedVariant<Self>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match_ci! {s,
+            "RoomName" => Self::RoomName,
+            "RoomDesc" => Self::RoomDesc,
+            "RoomExit" => Self::RoomExit,
+            "RoomNum" => Self::RoomNum,
+            "Prompt" => Self::Prompt,
+            _ => return Err(Self::Err::new(s)),
+        })
     }
 }
 
@@ -200,7 +203,7 @@ impl Element {
                 if flag[.."set ".len()].eq_ignore_ascii_case("set ") {
                     (None, Some(flag["set ".len()..].to_owned()))
                 } else {
-                    (ParseAs::parse(flag), None)
+                    (flag.parse().ok(), None)
                 }
             }
         };

@@ -1,4 +1,8 @@
+use std::str::FromStr;
+
 use enumeration::Enum;
+
+use crate::parser::UnrecognizedVariant;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum XchMode {
@@ -7,13 +11,15 @@ pub enum XchMode {
     PureHtml,
 }
 
-impl XchMode {
-    pub fn parse(s: &str) -> Option<Self> {
-        match_ci! {s,
-            "text" => Some(Self::Text),
-            "html" => Some(Self::Html),
-            "purehtml" => Some(Self::PureHtml),
-            _ => None,
-        }
+impl FromStr for XchMode {
+    type Err = UnrecognizedVariant<Self>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match_ci! {s,
+            "text" => Self::Text,
+            "html" => Self::Html,
+            "purehtml" => Self::PureHtml,
+            _ => return Err(Self::Err::new(s)),
+        })
     }
 }

@@ -1,4 +1,7 @@
+use std::str::FromStr;
+
 use crate::color::RgbColor;
+use crate::parser::UnrecognizedVariant;
 use enumeration::Enum;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
@@ -10,16 +13,18 @@ pub enum FontStyle {
     Underline,
 }
 
-impl FontStyle {
-    fn parse(s: &str) -> Option<Self> {
-        match_ci! {s,
-            "blink" => Some(FontStyle::Blink),
-            "bold" => Some(FontStyle::Bold),
-            "inverse" => Some(FontStyle::Inverse),
-            "italic" => Some(FontStyle::Italic),
-            "underline" => Some(FontStyle::Underline),
-            _ => None,
-        }
+impl FromStr for FontStyle {
+    type Err = UnrecognizedVariant<Self>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match_ci! {s,
+            "blink" => Self::Blink,
+            "bold" => Self::Bold,
+            "inverse" => Self::Inverse,
+            "italic" => Self::Italic,
+            "underline" => Self::Underline,
+            _ => return Err(Self::Err::new(s)),
+        })
     }
 }
 
@@ -31,9 +36,9 @@ pub enum FontEffect {
 
 impl FontEffect {
     pub fn parse(s: &str) -> Option<Self> {
-        match FontStyle::parse(s) {
-            Some(style) => Some(Self::Style(style)),
-            None => RgbColor::named(s).map(Self::Color),
+        match s.parse() {
+            Ok(style) => Some(Self::Style(style)),
+            Err(_) => RgbColor::named(s).map(Self::Color),
         }
     }
 }

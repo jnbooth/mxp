@@ -163,7 +163,7 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ImageArgs<D::Output<'a>> {
             url,
             xch_mode: scanner
                 .get("xch_mode")?
-                .and_then(|mode| XchMode::parse(mode.as_ref())),
+                .and_then(|mode| mode.as_ref().parse().ok()),
         })
     }
 }

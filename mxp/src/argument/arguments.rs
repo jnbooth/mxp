@@ -70,7 +70,7 @@ impl Arguments {
                     .next()
                     .ok_or_else(|| Error::new(name, ErrorKind::NoArgument))?;
                 self.named.insert(name.to_lowercase(), val.to_owned());
-            } else if let Some(keyword) = Keyword::parse(name) {
+            } else if let Ok(keyword) = name.parse() {
                 self.keywords.insert(keyword);
             } else {
                 self.positional.push(name.to_owned());

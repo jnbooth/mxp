@@ -1,4 +1,5 @@
-use std::fmt::{self, Display, Formatter};
+use std::fmt::{self, Debug, Display, Formatter};
+use std::marker::PhantomData;
 use std::str;
 
 use enumeration::Enum;
@@ -155,3 +156,31 @@ impl ParseErrorTarget for &Vec<u8> {
         String::from_utf8_lossy(self).into_owned()
     }
 }
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct UnrecognizedVariant<T> {
+    input: String,
+    __marker: PhantomData<T>,
+}
+
+impl<T> UnrecognizedVariant<T> {
+    pub fn new(input: &str) -> Self {
+        Self {
+            input: input.to_owned(),
+            __marker: PhantomData,
+        }
+    }
+}
+
+impl<T: Debug + Enum> Display for UnrecognizedVariant<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let mut range = T::enumerate(..);
+        write!(f, "got {}, expected one of: {:?}", self.input, range.next())?;
+        for variant in range {
+            write!(f, ", {:?}", variant)?;
+        }
+        Ok(())
+    }
+}
+
+impl<T: Debug + Enum> std::error::Error for UnrecognizedVariant<T> {}

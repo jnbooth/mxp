@@ -1,4 +1,8 @@
+use std::str::FromStr;
+
 use enumeration::Enum;
+
+use crate::parser::UnrecognizedVariant;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum Keyword {
@@ -15,21 +19,23 @@ pub enum Keyword {
     IsMap,
 }
 
-impl Keyword {
-    pub fn parse(s: &str) -> Option<Self> {
-        match_ci! {s,
-            "delete" => Some(Self::Delete),
-            "open" => Some(Self::Open),
-            "empty" => Some(Self::Empty),
-            "prompt" => Some(Self::Prompt),
-            "off" => Some(Self::Off),
-            "defaultopen" => Some(Self::DefaultOpen),
-            "defaultsecure" => Some(Self::DefaultSecure),
-            "defaultlocked" => Some(Self::DefaultLocked),
-            "usenewlines" => Some(Self::UseNewlines),
-            "ignorenewlines" => Some(Self::IgnoreNewlines),
-            "ismap" => Some(Self::IsMap),
-            _ => None,
-        }
+impl FromStr for Keyword {
+    type Err = UnrecognizedVariant<Self>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match_ci! {s,
+            "delete" => Self::Delete,
+            "open" => Self::Open,
+            "empty" => Self::Empty,
+            "prompt" => Self::Prompt,
+            "off" => Self::Off,
+            "defaultopen" => Self::DefaultOpen,
+            "defaultsecure" => Self::DefaultSecure,
+            "defaultlocked" => Self::DefaultLocked,
+            "usenewlines" => Self::UseNewlines,
+            "ignorenewlines" => Self::IgnoreNewlines,
+            "ismap" => Self::IsMap,
+            _ => return Err(Self::Err::new(s)),
+        })
     }
 }
