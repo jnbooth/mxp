@@ -62,9 +62,9 @@ impl State {
         }
         let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
         match_ci! {definition,
-            "element" | "el" => self.define_element(name, words),
-            "entity" | "en" => self.define_entity(name, words),
-            "attlist" | "att" => self.define_attributes(name, words),
+            "ELEMENT" | "EL" => self.define_element(name, words),
+            "ENTITY" | "EN" => self.define_entity(name, words),
+            "ATTLIST" | "ATT" => self.define_attributes(name, words),
             _ => Err(Error::new(definition, ErrorKind::InvalidDefinition))
         }
     }

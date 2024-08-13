@@ -83,6 +83,7 @@ static WELL_KNOWN_ELEMENTS: Lookup<Element> = Lookup::new(|| {
             attributes: Arguments::new(),
             items: Vec::new(),
             tag: None,
+            parse_as: None,
             variable: None,
             open: true,
             command: false,

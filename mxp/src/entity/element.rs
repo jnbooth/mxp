@@ -1,6 +1,6 @@
 use std::num::NonZeroU8;
 
-use enumeration::EnumSet;
+use enumeration::{Enum, EnumSet};
 
 use super::atom::{Atom, TagFlag};
 use super::mode::Mode;
@@ -62,6 +62,33 @@ impl<'a> CollectedElement<'a> {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+pub enum ParseAs {
+    /// The text for the element is parsed by the automapper as the name of a room
+    RoomName,
+    /// he text for the element is parsed by the automapper as the description of a room
+    RoomDesc,
+    /// The text for the element is parsed by the automapper as exits for the room
+    RoomExit,
+    /// The text for the element is parsed by the automapper as a room number
+    RoomNum,
+    /// The text for the element is parsed by as a MUD Prompt
+    Prompt,
+}
+
+impl ParseAs {
+    pub fn parse(s: &str) -> Option<Self> {
+        match_ci! {s,
+            "RoomName" => Some(Self::RoomName),
+            "RoomDesc" => Some(Self::RoomDesc),
+            "RoomExit" => Some(Self::RoomExit),
+            "RoomNum" => Some(Self::RoomNum),
+            "Prompt" => Some(Self::Prompt),
+            _ => None,
+        }
+    }
+}
+
 /// User-defined MXP tags that we recognise, e.g. <boldcolor>.
 /// For example: <!ELEMENT boldtext '<COLOR &col;><B>' ATT='col=red'>
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -74,6 +101,8 @@ pub struct Element {
     pub attributes: Arguments,
     /// Line tag number (20 - 99) (TAG=n)
     pub tag: Option<NonZeroU8>,
+    /// Parsing flag
+    pub parse_as: Option<ParseAs>,
     /// Which variable to set (SET x)
     pub variable: Option<String>,
     /// Whether the element is open (OPEN)
@@ -164,13 +193,17 @@ impl Element {
             tag => tag,
         };
 
-        let flag = scanner.next_or(&["flag"])?.map(|flag| {
-            let flag = flag.as_ref();
-            flag.strip_prefix("set ")
-                .unwrap_or(flag)
-                .trim()
-                .replace(' ', "_")
-        });
+        let (parse_as, variable) = match scanner.next_or(&["flag"])? {
+            None => (None, None),
+            Some(flag) => {
+                let flag = flag.as_ref();
+                if flag[.."set ".len()].eq_ignore_ascii_case("set ") {
+                    (None, Some(flag["set ".len()..].to_owned()))
+                } else {
+                    (ParseAs::parse(flag), None)
+                }
+            }
+        };
 
         Ok(Self {
             name,
@@ -179,7 +212,8 @@ impl Element {
             items,
             attributes,
             tag,
-            variable: flag,
+            parse_as,
+            variable,
             fore: None,
             back: None,
             gag: false,

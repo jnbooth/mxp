@@ -120,9 +120,9 @@ impl LineTagUpdate {
         let mut enable: Option<bool> = None;
         while let Some(word) = scanner.next()? {
             match_ci! {word.as_ref(),
-                "enable" => enable = Some(true),
-                "disable" => enable = Some(false),
-                "gag" => gag = Some(true),
+                "ENABLE" => enable = Some(true),
+                "DISABLE" => enable = Some(false),
+                "GAG" => gag = Some(true),
             };
         }
         Ok(Self {
