@@ -4,3 +4,6 @@ members = ["mxp", "mud-bin-examples", "mud-stream", "mud-transformer"]
 
 [workspace.lints.clippy]
 manual_map = "allow"
+
+[workspace.package]
+version = "0.5.0"
