@@ -3,7 +3,7 @@ use enumeration::EnumSet;
 
 use super::keyword::Keyword;
 use super::scan::{Decoder, Scan};
-use crate::parser::{validate, Error as MxpError, ParseError, Words};
+use crate::parser::{validate, Error, ErrorKind, Words};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Arguments {
@@ -48,27 +48,27 @@ impl Arguments {
         }
     }
 
-    pub fn parse(iter: Words) -> Result<Self, ParseError> {
+    pub fn parse(iter: Words) -> crate::Result<Self> {
         let mut this = Self::new();
         this.append(iter)?;
         Ok(this)
     }
 
-    pub(crate) fn append(&mut self, mut iter: Words) -> Result<(), ParseError> {
+    pub(crate) fn append(&mut self, mut iter: Words) -> crate::Result<()> {
         while let Some(name) = iter.next() {
             if name == "/" {
                 if iter.next().is_none() {
                     return Ok(());
                 } else {
-                    return Err(ParseError::new(name, MxpError::InvalidArgumentName));
+                    return Err(Error::new(name, ErrorKind::InvalidArgumentName));
                 }
             }
             if iter.as_str().starts_with('=') {
-                validate(name, MxpError::InvalidArgumentName)?;
+                validate(name, ErrorKind::InvalidArgumentName)?;
                 iter.next();
                 let val = iter
                     .next()
-                    .ok_or_else(|| ParseError::new(name, MxpError::NoArgument))?;
+                    .ok_or_else(|| Error::new(name, ErrorKind::NoArgument))?;
                 self.named.insert(name.to_lowercase(), val.to_owned());
             } else if let Some(keyword) = Keyword::parse(name) {
                 self.keywords.insert(keyword);

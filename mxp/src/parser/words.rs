@@ -1,7 +1,7 @@
 use std::iter::FusedIterator;
 use std::str::{self, CharIndices};
 
-use super::error::{Error as MxpError, ParseError};
+use super::error::{Error, ErrorKind};
 use super::validation::validate;
 
 #[derive(Clone, Debug)]
@@ -29,9 +29,9 @@ impl<'a> Words<'a> {
         }
     }
 
-    pub fn validate_next_or(&mut self, e: MxpError) -> Result<&'a str, ParseError> {
+    pub fn validate_next_or(&mut self, e: ErrorKind) -> crate::Result<&'a str> {
         match self.next() {
-            None => Err(ParseError::new("", e)),
+            None => Err(Error::new("", e)),
             Some(next) => {
                 validate(next, e)?;
                 Ok(next)

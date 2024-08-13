@@ -42,6 +42,8 @@ mod protocol;
 pub use protocol::responses;
 
 mod parser;
-pub use parser::{is_valid, validate, Error, ParseError, Words};
+pub use parser::{is_valid, validate, Error, ErrorKind, Words};
+
+pub type Result<T> = std::result::Result<T, Error>;
 
 pub const VERSION: &str = "0.5";

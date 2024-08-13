@@ -223,6 +223,10 @@ impl BufferedOutput {
         self.output(OutputFragment::Image(src));
     }
 
+    pub fn append_mxp_error(&mut self, error: mxp::Error) {
+        self.output(error);
+    }
+
     pub fn append_page_break(&mut self) {
         self.flush_line();
         self.output(OutputFragment::PageBreak);

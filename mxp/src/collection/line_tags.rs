@@ -3,7 +3,7 @@ use crate::argument::scan::Decoder;
 use crate::argument::Arguments;
 use crate::color::RgbColor;
 use crate::entity::{Element, Mode};
-use crate::parser::{Error as MxpError, ParseError, Words};
+use crate::parser::{Error, ErrorKind, Words};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct LineTag {
@@ -94,17 +94,17 @@ pub struct LineTagUpdate {
 }
 
 impl LineTagUpdate {
-    pub fn parse<D: Decoder>(words: Words, decoder: D) -> Result<Self, ParseError> {
+    pub fn parse<D: Decoder>(words: Words, decoder: D) -> crate::Result<Self> {
         let args = Arguments::parse(words)?;
         let mut scanner = args.scan(decoder);
 
         let index_arg = scanner
             .next()?
-            .ok_or(ParseError::new("", MxpError::NoArgument))?;
+            .ok_or(Error::new("", ErrorKind::NoArgument))?;
         let index_str = index_arg.as_ref();
         let index: u8 = index_str
             .parse()
-            .map_err(|_| ParseError::new(index_str, MxpError::InvalidEntityNumber))?;
+            .map_err(|_| Error::new(index_str, ErrorKind::InvalidEntityNumber))?;
 
         let window = scanner.get("windowname")?.map(|s| s.as_ref().to_owned());
 

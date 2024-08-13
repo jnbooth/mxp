@@ -133,14 +133,14 @@ impl Transformer {
         self.input.drain()
     }
 
-    fn handle_mxp_error(&self, err: mxp::ParseError) {
-        eprintln!("MXP Error: {}", err);
+    fn handle_mxp_error(&mut self, err: mxp::Error) {
+        self.output.append_mxp_error(err);
     }
 
-    fn take_mxp_string(&mut self) -> Result<String, mxp::ParseError> {
+    fn take_mxp_string(&mut self) -> mxp::Result<String> {
         String::from_utf8(mem::take(&mut self.mxp_string)).map_err(|e| {
             let bytes_debug = format!("{:?}", e.as_bytes());
-            mxp::ParseError::new(bytes_debug, mxp::Error::MalformedBytes)
+            mxp::Error::new(bytes_debug, mxp::ErrorKind::MalformedBytes)
         })
     }
 
@@ -191,7 +191,7 @@ impl Transformer {
         self.mxp_state.clear();
     }
 
-    fn mxp_endtag(&mut self, tag_body: &str) -> Result<(), mxp::ParseError> {
+    fn mxp_endtag(&mut self, tag_body: &str) -> mxp::Result<()> {
         let was_secure = self.mxp_mode.is_secure();
         self.mxp_restore_mode();
         let name = Tag::parse_closing_tag(tag_body)?;
@@ -200,19 +200,19 @@ impl Transformer {
         Ok(())
     }
 
-    fn mxp_definition(&mut self, tag: &str) -> Result<(), mxp::ParseError> {
+    fn mxp_definition(&mut self, tag: &str) -> mxp::Result<()> {
         let was_secure = self.mxp_mode.is_secure();
         self.mxp_restore_mode();
         if !was_secure {
-            return Err(mxp::ParseError::new(
+            return Err(mxp::Error::new(
                 tag,
-                mxp::Error::DefinitionWhenNotSecure,
+                mxp::ErrorKind::DefinitionWhenNotSecure,
             ));
         }
         self.mxp_state.define(tag)
     }
 
-    fn mxp_collected_element(&mut self) -> Result<(), mxp::ParseError> {
+    fn mxp_collected_element(&mut self) -> mxp::Result<()> {
         match mxp::Element::collect(&self.take_mxp_string()?)? {
             mxp::CollectedElement::Definition(text) => self.mxp_definition(text),
             mxp::CollectedElement::TagClose(text) => self.mxp_endtag(text),
@@ -225,11 +225,11 @@ impl Transformer {
         }
     }
 
-    fn mxp_start_tag(&mut self, tag: &str, mxp_state: &mxp::State) -> Result<(), mxp::ParseError> {
+    fn mxp_start_tag(&mut self, tag: &str, mxp_state: &mxp::State) -> mxp::Result<()> {
         let secure = self.mxp_mode.is_secure();
         self.mxp_restore_mode();
         let mut words = mxp::Words::new(tag);
-        let name = words.validate_next_or(mxp::Error::InvalidElementName)?;
+        let name = words.validate_next_or(mxp::ErrorKind::InvalidElementName)?;
         let component = mxp_state.get_component(name)?;
         let tag = Tag::new(component, secure, self.output.span_len())?;
         self.mxp_active_tags.push(tag);
@@ -256,7 +256,7 @@ impl Transformer {
         el: &mxp::Element,
         args: mxp::Arguments,
         mxp_state: &mxp::State,
-    ) -> Result<(), mxp::ParseError> {
+    ) -> mxp::Result<()> {
         if el.gag {
             self.output.set_mxp_gag();
         }
@@ -465,10 +465,10 @@ impl Transformer {
         }
     }
 
-    fn mxp_collected_entity(&mut self) -> Result<(), mxp::ParseError> {
+    fn mxp_collected_entity(&mut self) -> mxp::Result<()> {
         let mxp_string = self.take_mxp_string()?;
         let name = mxp_string.trim();
-        mxp::validate(name, mxp::Error::InvalidEntityName)?;
+        mxp::validate(name, mxp::ErrorKind::InvalidEntityName)?;
         if let Some(entity) = self.mxp_state.get_entity(name)? {
             self.mxp_active = false;
             self.output.append(entity);
@@ -924,9 +924,9 @@ impl Transformer {
                 }
                 b'<' => {
                     self.mxp_string.push(c);
-                    self.handle_mxp_error(mxp::ParseError::new(
+                    self.handle_mxp_error(mxp::Error::new(
                         &self.mxp_string,
-                        mxp::Error::UnterminatedElement,
+                        mxp::ErrorKind::UnterminatedElement,
                     ));
                     self.mxp_string.clear();
                 }
@@ -967,17 +967,17 @@ impl Transformer {
                 }
                 b'&' => {
                     self.mxp_string.push(c);
-                    self.handle_mxp_error(mxp::ParseError::new(
+                    self.handle_mxp_error(mxp::Error::new(
                         &self.mxp_string,
-                        mxp::Error::UnterminatedEntity,
+                        mxp::ErrorKind::UnterminatedEntity,
                     ));
                     self.mxp_string.clear();
                 }
                 b'<' => {
                     self.mxp_string.push(c);
-                    self.handle_mxp_error(mxp::ParseError::new(
+                    self.handle_mxp_error(mxp::Error::new(
                         &self.mxp_string,
-                        mxp::Error::UnterminatedEntity,
+                        mxp::ErrorKind::UnterminatedEntity,
                     ));
                     self.mxp_string.clear();
                     self.phase = Phase::MxpElement;

@@ -3,7 +3,7 @@ use super::keyword::Keyword;
 use super::pueblo::XchMode;
 use crate::color::RgbColor;
 use crate::entity::SendTo;
-use crate::parser::ParseError;
+use crate::parser::Error;
 use casefold::ascii::CaseFoldMap;
 use enumeration::EnumSet;
 use std::borrow::Borrow;
@@ -12,13 +12,13 @@ use std::{iter, slice, str};
 pub trait Decoder {
     type Output<'a>: AsRef<str>;
 
-    fn decode<'a>(&self, s: &'a str) -> Result<Self::Output<'a>, ParseError>;
+    fn decode<'a>(&self, s: &'a str) -> crate::Result<Self::Output<'a>>;
 }
 
 impl<D: Decoder> Decoder for &D {
     type Output<'a> = D::Output<'a>;
 
-    fn decode<'a>(&self, s: &'a str) -> Result<Self::Output<'a>, ParseError> {
+    fn decode<'a>(&self, s: &'a str) -> crate::Result<Self::Output<'a>> {
         D::decode(self, s)
     }
 }
@@ -32,7 +32,7 @@ pub struct Scan<'a, D> {
 }
 
 impl<'a, D: Decoder> Scan<'a, D> {
-    fn decode<S>(&self, s: Option<&'a S>) -> Result<Option<D::Output<'a>>, ParseError>
+    fn decode<S>(&self, s: Option<&'a S>) -> crate::Result<Option<D::Output<'a>>>
     where
         S: Borrow<str> + ?Sized,
     {
@@ -46,7 +46,7 @@ impl<'a, D: Decoder> Scan<'a, D> {
         self.inner.len()
     }
 
-    pub fn get(&self, name: &str) -> Result<Option<D::Output<'a>>, ParseError> {
+    pub fn get(&self, name: &str) -> crate::Result<Option<D::Output<'a>>> {
         self.decode(self.named.get(name))
     }
 
@@ -58,12 +58,12 @@ impl<'a, D: Decoder> Scan<'a, D> {
         self.keywords.contains(keyword)
     }
 
-    pub fn next(&mut self) -> Result<Option<D::Output<'a>>, ParseError> {
+    pub fn next(&mut self) -> crate::Result<Option<D::Output<'a>>> {
         let next = self.inner.next();
         self.decode(next)
     }
 
-    pub fn next_or(&mut self, names: &[&str]) -> Result<Option<D::Output<'a>>, ParseError> {
+    pub fn next_or(&mut self, names: &[&str]) -> crate::Result<Option<D::Output<'a>>> {
         match self.inner.next() {
             Some(item) => self.decoder.decode(item).map(Option::Some),
             None => self.decode(names.iter().find_map(|&name| self.named.get(name))),
@@ -77,9 +77,9 @@ pub struct AfkArgs<S> {
 }
 
 impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for AfkArgs<D::Output<'a>> {
-    type Error = ParseError;
+    type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, ParseError> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             challenge: scanner.next_or(&["challenge"])?,
         })
@@ -93,9 +93,9 @@ pub struct ColorArgs {
 }
 
 impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ColorArgs {
-    type Error = ParseError;
+    type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, ParseError> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             fore: scanner
                 .next_or(&["fore"])?
@@ -114,9 +114,9 @@ pub struct FontArgs<S> {
 }
 
 impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for FontArgs<D::Output<'a>> {
-    type Error = ParseError;
+    type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, ParseError> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             fgcolor: scanner
                 .next_or(&["color", "fgcolor"])?
@@ -134,9 +134,9 @@ pub struct HyperlinkArgs<S> {
 }
 
 impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for HyperlinkArgs<D::Output<'a>> {
-    type Error = ParseError;
+    type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, ParseError> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             href: scanner.next_or(&["href"])?,
         })
@@ -151,9 +151,9 @@ pub struct ImageArgs<S> {
 }
 
 impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ImageArgs<D::Output<'a>> {
-    type Error = ParseError;
+    type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D>) -> Result<Self, ParseError> {
+    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let url = match scanner.get("url")? {
             Some(url) => Some(url),
             None => scanner.get("src")?,
@@ -176,9 +176,9 @@ pub struct SendArgs<S> {
 }
 
 impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for SendArgs<D::Output<'a>> {
-    type Error = ParseError;
+    type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, ParseError> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             href: scanner.next_or(&["href", "xch_cmd"])?,
             hint: scanner.next_or(&["hint", "xch_hint"])?,
@@ -197,9 +197,9 @@ pub struct VarArgs<S> {
 }
 
 impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for VarArgs<D::Output<'a>> {
-    type Error = ParseError;
+    type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, ParseError> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             variable: scanner.next()?,
         })

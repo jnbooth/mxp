@@ -7,7 +7,6 @@ use crate::argument::scan::{
 };
 use crate::argument::{FgColor, Keyword, XchMode};
 use crate::color::RgbColor;
-use crate::parser::ParseError;
 use enumeration::{Enum, EnumSet};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
@@ -261,10 +260,7 @@ pub enum Action<S> {
 }
 
 impl<S: AsRef<str>> Action<S> {
-    pub fn new<'a, D: Decoder>(
-        action: ActionType,
-        mut scanner: Scan<'a, D>,
-    ) -> Result<Self, ParseError>
+    pub fn new<'a, D: Decoder>(action: ActionType, mut scanner: Scan<'a, D>) -> crate::Result<Self>
     where
         D: Decoder<Output<'a> = S>,
     {

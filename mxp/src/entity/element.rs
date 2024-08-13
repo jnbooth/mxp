@@ -7,7 +7,7 @@ use super::mode::Mode;
 use crate::argument::scan::{Decoder, Scan};
 use crate::argument::{Arguments, Keyword};
 use crate::color::RgbColor;
-use crate::parser::{Error as MxpError, ParseError, Words};
+use crate::parser::{Error, ErrorKind, Words};
 
 /// List of arguments to an MXP tag.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -17,21 +17,21 @@ pub struct ElementItem {
 }
 
 impl ElementItem {
-    pub fn parse(tag: &str) -> Result<Self, ParseError> {
+    pub fn parse(tag: &str) -> crate::Result<Self> {
         let mut words = Words::new(tag);
         let atom_name = words
             .next()
-            .ok_or_else(|| ParseError::new(tag, MxpError::NoDefinitionTag))?;
+            .ok_or_else(|| Error::new(tag, ErrorKind::NoDefinitionTag))?;
         let invalid_name = match atom_name {
-            "/" => Some(MxpError::DefinitionCannotCloseElement),
-            "!" => Some(MxpError::DefinitionCannotDefineElement),
+            "/" => Some(ErrorKind::DefinitionCannotCloseElement),
+            "!" => Some(ErrorKind::DefinitionCannotDefineElement),
             _ => None,
         };
         if let Some(invalid) = invalid_name {
-            return Err(ParseError::new(words.next().unwrap_or(""), invalid));
+            return Err(Error::new(words.next().unwrap_or(""), invalid));
         }
         let atom = Atom::get(atom_name)
-            .ok_or_else(|| ParseError::new(atom_name, MxpError::NoInbuiltDefinitionTag))?;
+            .ok_or_else(|| Error::new(atom_name, ErrorKind::NoInbuiltDefinitionTag))?;
         Ok(Self {
             atom,
             arguments: Arguments::parse(words)?,
@@ -48,11 +48,11 @@ pub enum CollectedElement<'a> {
 
 impl<'a> CollectedElement<'a> {
     #[allow(clippy::should_implement_trait)]
-    pub fn from_str(text: &'a str) -> Result<Self, ParseError> {
+    pub fn from_str(text: &'a str) -> crate::Result<Self> {
         let tag = *text
             .as_bytes()
             .first()
-            .ok_or_else(|| ParseError::new("collected element", MxpError::EmptyElement))?;
+            .ok_or_else(|| Error::new("collected element", ErrorKind::EmptyElement))?;
 
         match tag {
             b'!' => Ok(Self::Definition(&text[1..])),
@@ -103,11 +103,11 @@ impl Element {
         }
     }
 
-    pub fn collect(text: &str) -> Result<CollectedElement, ParseError> {
+    pub fn collect(text: &str) -> crate::Result<CollectedElement> {
         CollectedElement::from_str(text)
     }
 
-    fn parse_items<S: AsRef<str>>(argument: Option<S>) -> Result<Vec<ElementItem>, ParseError> {
+    fn parse_items<S: AsRef<str>>(argument: Option<S>) -> crate::Result<Vec<ElementItem>> {
         let argument = match argument {
             Some(argument) => argument,
             None => return Ok(Vec::new()),
@@ -119,22 +119,19 @@ impl Element {
         let mut iter = definitions.char_indices();
         while let Some((start, startc)) = iter.next() {
             if startc != '<' {
-                return Err(ParseError::new(definitions, MxpError::NoTagInDefinition));
+                return Err(Error::new(definitions, ErrorKind::NoTagInDefinition));
             }
             loop {
-                let (end, endc) = iter.next().ok_or_else(|| {
-                    ParseError::new(definitions, MxpError::NoClosingDefinitionQuote)
-                })?;
+                let (end, endc) = iter
+                    .next()
+                    .ok_or_else(|| Error::new(definitions, ErrorKind::NoClosingDefinitionQuote))?;
                 if endc == '>' {
                     let definition = &definitions[start + 1..end];
                     items.push(ElementItem::parse(definition)?);
                     break;
                 }
                 if (endc == '\'' || endc == '"') && !iter.any(|(_, c)| c == endc) {
-                    return Err(ParseError::new(
-                        definitions,
-                        MxpError::NoClosingDefinitionQuote,
-                    ));
+                    return Err(Error::new(definitions, ErrorKind::NoClosingDefinitionQuote));
                 }
             }
         }
@@ -142,7 +139,7 @@ impl Element {
         Ok(items)
     }
 
-    pub fn parse<D: Decoder>(name: String, mut scanner: Scan<D>) -> Result<Self, ParseError> {
+    pub fn parse<D: Decoder>(name: String, mut scanner: Scan<D>) -> crate::Result<Self> {
         let items = Self::parse_items(scanner.next()?)?;
 
         let attributes = match scanner.next_or(&["att"])? {

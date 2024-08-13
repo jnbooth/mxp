@@ -8,7 +8,7 @@ use crate::lookup::Lookup;
 use crate::argument::Arguments;
 use crate::color::RgbColor;
 use crate::entity::{Atom, Element, TagFlag};
-use crate::parser::{validate, Error as MxpError, ParseError};
+use crate::parser::{validate, Error, ErrorKind};
 
 #[derive(Copy, Clone, Debug)]
 pub enum ElementComponent<'a> {
@@ -61,8 +61,8 @@ impl ElementMap {
         Self::default()
     }
 
-    pub fn get_component(&self, key: &str) -> Result<ElementComponent, ParseError> {
-        validate(key, MxpError::InvalidElementName)?;
+    pub fn get_component(&self, key: &str) -> crate::Result<ElementComponent> {
+        validate(key, ErrorKind::InvalidElementName)?;
 
         if let Some(atom) = Atom::get(key) {
             Ok(ElementComponent::Atom(atom))
@@ -71,7 +71,7 @@ impl ElementMap {
         } else if let Some(custom) = WELL_KNOWN_ELEMENTS.get(key) {
             Ok(ElementComponent::Custom(custom))
         } else {
-            Err(ParseError::new(key, MxpError::UnknownElement))
+            Err(Error::new(key, ErrorKind::UnknownElement))
         }
     }
 }

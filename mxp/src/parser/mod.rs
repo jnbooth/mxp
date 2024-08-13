@@ -1,5 +1,5 @@
 mod error;
-pub use error::{Error, ParseError};
+pub use error::{Error, ErrorKind};
 
 mod validation;
 pub use validation::{is_valid, validate};

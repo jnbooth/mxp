@@ -6,7 +6,7 @@ use super::line_tags::{LineTagUpdate, LineTags};
 use crate::argument::scan::{Decoder, Scan};
 use crate::argument::{Arguments, Keyword};
 use crate::entity::{Action, Element, ElementItem, Mode};
-use crate::parser::{Error as MxpError, ParseError, Words};
+use crate::parser::{Error, ErrorKind, Words};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct State {
@@ -25,11 +25,11 @@ impl State {
         self.entities.clear();
     }
 
-    pub fn get_component(&self, name: &str) -> Result<ElementComponent, ParseError> {
+    pub fn get_component(&self, name: &str) -> crate::Result<ElementComponent> {
         self.elements.get_component(name)
     }
 
-    pub fn get_entity(&self, name: &str) -> Result<Option<&str>, ParseError> {
+    pub fn get_entity(&self, name: &str) -> crate::Result<Option<&str>> {
         self.entities.get(name)
     }
 
@@ -53,23 +53,23 @@ impl State {
         }
     }
 
-    pub fn define(&mut self, tag: &str) -> Result<(), ParseError> {
+    pub fn define(&mut self, tag: &str) -> crate::Result<()> {
         let mut words = Words::new(tag);
 
-        let definition = words.validate_next_or(MxpError::InvalidDefinition)?;
+        let definition = words.validate_next_or(ErrorKind::InvalidDefinition)?;
         if definition.eq_ignore_ascii_case("tag") {
             return self.define_line_tag(words);
         }
-        let name = words.validate_next_or(MxpError::InvalidElementName)?;
+        let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
         match_ci! {definition,
             "element" | "el" => self.define_element(name, words),
             "entity" | "en" => self.define_entity(name, words),
             "attlist" | "att" => self.define_attributes(name, words),
-            _ => Err(ParseError::new(definition, MxpError::InvalidDefinition))
+            _ => Err(Error::new(definition, ErrorKind::InvalidDefinition))
         }
     }
 
-    fn define_element(&mut self, name: &str, words: Words) -> Result<(), ParseError> {
+    fn define_element(&mut self, name: &str, words: Words) -> crate::Result<()> {
         let args = Arguments::parse(words)?;
         if args.has_keyword(Keyword::Delete) {
             self.elements.remove(&name);
@@ -83,15 +83,15 @@ impl State {
         Ok(())
     }
 
-    pub fn define_line_tag(&mut self, words: Words) -> Result<(), ParseError> {
+    pub fn define_line_tag(&mut self, words: Words) -> crate::Result<()> {
         let update = LineTagUpdate::parse(words, &self.entities)?;
         self.line_tags.update(update, &mut self.elements);
         Ok(())
     }
 
-    fn define_entity(&mut self, key: &str, mut words: Words) -> Result<(), ParseError> {
+    fn define_entity(&mut self, key: &str, mut words: Words) -> crate::Result<()> {
         if EntityMap::global(key).is_some() {
-            return Err(ParseError::new(key, MxpError::CannotRedefineEntity));
+            return Err(Error::new(key, ErrorKind::CannotRedefineEntity));
         }
         match words.next() {
             Some(body) // once told me
@@ -109,10 +109,10 @@ impl State {
         Ok(())
     }
 
-    fn define_attributes(&mut self, key: &str, words: Words) -> Result<(), ParseError> {
+    fn define_attributes(&mut self, key: &str, words: Words) -> crate::Result<()> {
         self.elements
             .get_mut(key)
-            .ok_or_else(|| ParseError::new(key, MxpError::UnknownElementInAttlist))?
+            .ok_or_else(|| Error::new(key, ErrorKind::UnknownElementInAttlist))?
             .attributes
             .append(words)
     }
@@ -124,7 +124,7 @@ pub struct DecodeElement<'a, D> {
 }
 
 impl<'a, D: Decoder + Copy> Iterator for DecodeElement<'a, D> {
-    type Item = Result<Action<D::Output<'a>>, ParseError>;
+    type Item = crate::Result<Action<D::Output<'a>>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let item: &'a ElementItem = self.items.next()?;

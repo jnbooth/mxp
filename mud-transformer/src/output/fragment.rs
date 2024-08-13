@@ -23,6 +23,7 @@ pub enum OutputFragment {
     Hr,
     Image(String),
     LineBreak,
+    MxpError(mxp::Error),
     PageBreak,
     Telnet(TelnetFragment),
     Text(TextFragment),
@@ -40,6 +41,12 @@ pub enum EffectFragment {
 impl From<EffectFragment> for OutputFragment {
     fn from(value: EffectFragment) -> Self {
         Self::Effect(value)
+    }
+}
+
+impl From<mxp::Error> for OutputFragment {
+    fn from(value: mxp::Error) -> Self {
+        Self::MxpError(value)
     }
 }
 

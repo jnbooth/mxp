@@ -18,11 +18,11 @@ impl Tag {
         component: mxp::ElementComponent,
         secure: bool,
         span_index: usize,
-    ) -> Result<Self, mxp::ParseError> {
+    ) -> mxp::Result<Self> {
         let name = component.name().to_owned();
         let flags = component.flags();
         if !flags.contains(mxp::TagFlag::Open) && !secure {
-            return Err(mxp::ParseError::new(name, mxp::Error::ElementWhenNotSecure));
+            return Err(mxp::Error::new(name, mxp::ErrorKind::ElementWhenNotSecure));
         }
         Ok(Self {
             name,
@@ -33,14 +33,14 @@ impl Tag {
         })
     }
 
-    pub fn parse_closing_tag(tag_body: &str) -> Result<&str, mxp::ParseError> {
+    pub fn parse_closing_tag(tag_body: &str) -> mxp::Result<&str> {
         let mut words = mxp::Words::new(tag_body);
-        let name = words.validate_next_or(mxp::Error::InvalidElementName)?;
+        let name = words.validate_next_or(mxp::ErrorKind::InvalidElementName)?;
 
         if words.next().is_some() {
-            return Err(mxp::ParseError::new(
+            return Err(mxp::Error::new(
                 tag_body,
-                mxp::Error::ArgumentsToClosingTag,
+                mxp::ErrorKind::ArgumentsToClosingTag,
             ));
         }
 
@@ -102,25 +102,22 @@ impl TagList {
         }
     }
 
-    pub fn find_last(&self, secure: bool, name: &str) -> Result<(usize, &Tag), mxp::ParseError> {
+    pub fn find_last(&self, secure: bool, name: &str) -> mxp::Result<(usize, &Tag)> {
         for (i, tag) in self.inner.iter().enumerate().rev() {
             if tag.name.eq_ignore_ascii_case(name) {
                 if !secure && tag.secure {
-                    return Err(mxp::ParseError::new(
-                        name,
-                        mxp::Error::TagOpenedInSecureMode,
-                    ));
+                    return Err(mxp::Error::new(name, mxp::ErrorKind::TagOpenedInSecureMode));
                 } else {
                     return Ok((i, tag));
                 }
             }
             if !secure && tag.secure {
-                return Err(mxp::ParseError::new(
+                return Err(mxp::Error::new(
                     tag.name.clone(),
-                    mxp::Error::OpenTagBlockedBySecureTag,
+                    mxp::ErrorKind::OpenTagBlockedBySecureTag,
                 ));
             }
         }
-        Err(mxp::ParseError::new(name, mxp::Error::OpenTagNotThere))
+        Err(mxp::Error::new(name, mxp::ErrorKind::OpenTagNotThere))
     }
 }

@@ -7,11 +7,11 @@ use crate::argument::scan::Decoder;
 use crate::argument::Arguments;
 use crate::entity::Element;
 
-use crate::parser::{Error as MxpError, ParseError};
+use crate::parser::{Error, ErrorKind};
 
-fn decode_amps<'a, F>(mut s: &str, mut f: F) -> Result<Cow<str>, ParseError>
+fn decode_amps<'a, F>(mut s: &str, mut f: F) -> crate::Result<Cow<str>>
 where
-    F: FnMut(&str) -> Result<Option<&'a str>, ParseError>,
+    F: FnMut(&str) -> crate::Result<Option<&'a str>>,
 {
     let mut res = String::new();
     while let Some(start) = s.find('&') {
@@ -21,7 +21,7 @@ where
         s = &s[start..];
         let end = s
             .find(';')
-            .ok_or_else(|| ParseError::new(s, MxpError::NoClosingSemicolon))?;
+            .ok_or_else(|| Error::new(s, ErrorKind::NoClosingSemicolon))?;
         res.push_str(f(&s[1..end])?.unwrap_or(&s[..=end]));
         s = &s[end + 1..];
     }
@@ -58,7 +58,7 @@ impl EntityMap {
         Self::default()
     }
 
-    pub fn get(&self, key: &str) -> Result<Option<&str>, ParseError> {
+    pub fn get(&self, key: &str) -> crate::Result<Option<&str>> {
         if !key.starts_with('#') {
             return Ok(Self::global(key).or_else(|| self.0.get(key).map(String::as_str)));
         }
@@ -66,10 +66,10 @@ impl EntityMap {
             Some(hex) => u8::from_str_radix(hex, 16),
             None => key.parse::<u8>(),
         }
-        .map_err(|_| ParseError::new(key, MxpError::InvalidEntityNumber))?;
+        .map_err(|_| Error::new(key, ErrorKind::InvalidEntityNumber))?;
         let id = id as usize;
         match CHARS.get(id..=id) {
-            None | Some("\x00") => Err(ParseError::new(key, MxpError::DisallowedEntityNumber)),
+            None | Some("\x00") => Err(Error::new(key, ErrorKind::DisallowedEntityNumber)),
             some => Ok(some),
         }
     }
@@ -198,7 +198,7 @@ impl EntityMap {
 impl Decoder for EntityMap {
     type Output<'a> = Cow<'a, str>;
 
-    fn decode<'a>(&self, s: &'a str) -> Result<Self::Output<'a>, ParseError> {
+    fn decode<'a>(&self, s: &'a str) -> crate::Result<Self::Output<'a>> {
         decode_amps(s, |entity| self.get(entity))
     }
 }
@@ -213,7 +213,7 @@ pub struct ElementDecoder<'a> {
 impl<'d> Decoder for ElementDecoder<'d> {
     type Output<'a> = Cow<'a, str>;
 
-    fn decode<'a>(&self, s: &'a str) -> Result<Self::Output<'a>, ParseError> {
+    fn decode<'a>(&self, s: &'a str) -> crate::Result<Self::Output<'a>> {
         decode_amps(s, |entity| {
             if entity == "text" {
                 return Ok(None);

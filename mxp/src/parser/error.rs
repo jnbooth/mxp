@@ -4,7 +4,7 @@ use std::str;
 use enumeration::Enum;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum Error {
+pub enum ErrorKind {
     ///  eg. < ... \n
     UnterminatedElement,
     ///  eg. <!-- ... \n
@@ -100,21 +100,21 @@ pub enum Error {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ParseError {
+pub struct Error {
     target: String,
-    error: Error,
+    error: ErrorKind,
 }
 
-impl Display for ParseError {
+impl Display for Error {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(f, "{:?}: \"{}\"", self.error, self.target)
     }
 }
 
-impl std::error::Error for ParseError {}
+impl std::error::Error for Error {}
 
-impl ParseError {
-    pub fn new<T: ParseErrorTarget>(target: T, error: Error) -> Self {
+impl Error {
+    pub fn new<T: ParseErrorTarget>(target: T, error: ErrorKind) -> Self {
         Self {
             target: target.into_target(),
             error,
