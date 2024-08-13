@@ -2,7 +2,6 @@ use super::argument::Keyword;
 use super::error::ParseError;
 use super::link::SendTo;
 use crate::color::RgbColor;
-use crate::entity::argument::{Arg, Argument};
 use casefold::ascii::CaseFoldMap;
 use enumeration::{Enum, EnumSet};
 use std::borrow::Borrow;
@@ -25,9 +24,9 @@ impl Decoder for () {
 #[derive(Clone, Debug)]
 pub struct Scan<'a, D> {
     pub(super) decoder: D,
-    pub(super) inner: iter::Map<slice::Iter<'a, Argument>, fn(&Argument) -> &Arg>,
+    pub(super) inner: iter::Map<slice::Iter<'a, String>, fn(&String) -> &str>,
     pub(super) keywords: EnumSet<Keyword>,
-    pub(super) named: &'a CaseFoldMap<String, Argument>,
+    pub(super) named: &'a CaseFoldMap<String, String>,
 }
 
 impl<'a, D: Decoder> Scan<'a, D> {

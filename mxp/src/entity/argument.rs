@@ -10,9 +10,6 @@ use super::scan::{Decoder, Scan};
 use super::validation::validate;
 use super::words::Words;
 
-pub type Argument = String;
-pub type Arg = str;
-
 /// MXP elements can have both positional and named arguments.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ArgumentIndex<'a> {
@@ -81,8 +78,8 @@ impl Keyword {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Arguments {
-    positional: Vec<Argument>,
-    named: CaseFoldMap<String, Argument>,
+    positional: Vec<String>,
+    named: CaseFoldMap<String, String>,
     keywords: EnumSet<Keyword>,
 }
 
@@ -105,7 +102,7 @@ impl Arguments {
         self.keywords.clear();
     }
 
-    pub fn get<'a, Idx: Into<ArgumentIndex<'a>>>(&self, idx: Idx) -> Option<&Arg> {
+    pub fn get<'a, Idx: Into<ArgumentIndex<'a>>>(&self, idx: Idx) -> Option<&str> {
         match idx.into() {
             ArgumentIndex::Positional(i) => self.positional.get(i),
             ArgumentIndex::Named(name) => self.named.get(name),
@@ -113,7 +110,7 @@ impl Arguments {
         .map(String::as_str)
     }
 
-    pub fn get_mut<'a, Idx: Into<ArgumentIndex<'a>>>(&mut self, idx: Idx) -> Option<&mut Argument> {
+    pub fn get_mut<'a, Idx: Into<ArgumentIndex<'a>>>(&mut self, idx: Idx) -> Option<&mut String> {
         match idx.into() {
             ArgumentIndex::Positional(i) => self.positional.get_mut(i),
             ArgumentIndex::Named(name) => self.named.get_mut(name),
@@ -124,30 +121,30 @@ impl Arguments {
         self.keywords.contains(k)
     }
 
-    pub fn push(&mut self, arg: Argument) {
+    pub fn push(&mut self, arg: String) {
         self.positional.push(arg);
     }
 
-    pub fn set(&mut self, key: &str, arg: Argument) {
+    pub fn set(&mut self, key: &str, arg: String) {
         self.named.insert(key.to_owned(), arg);
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (ArgumentIndex, &Arg)> {
+    pub fn iter(&self) -> impl Iterator<Item = (ArgumentIndex, &str)> {
         self.into_iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl Iterator<Item = (ArgumentIndex, &mut Argument)> {
+    pub fn iter_mut(&mut self) -> impl Iterator<Item = (ArgumentIndex, &mut String)> {
         self.into_iter()
     }
 
-    pub fn values(&self) -> impl Iterator<Item = &Arg> {
+    pub fn values(&self) -> impl Iterator<Item = &str> {
         self.positional
             .iter()
             .chain(self.named.values())
             .map(String::as_str)
     }
 
-    pub fn values_mut(&mut self) -> impl Iterator<Item = &mut Argument> {
+    pub fn values_mut(&mut self) -> impl Iterator<Item = &mut String> {
         self.positional.iter_mut().chain(self.named.values_mut())
     }
 
@@ -199,14 +196,14 @@ impl Arguments {
 // Just some nicknames for internal use
 type Index<'a> = ArgumentIndex<'a>;
 
-type IterItem<'a> = (Index<'a>, &'a Arg);
-type IterItemMut<'a> = (Index<'a>, &'a mut Argument);
+type IterItem<'a> = (Index<'a>, &'a str);
+type IterItemMut<'a> = (Index<'a>, &'a mut String);
 
-type PositionalEntry<'a> = (usize, &'a Argument);
-type PositionalEntryMut<'a> = (usize, &'a mut Argument);
+type PositionalEntry<'a> = (usize, &'a String);
+type PositionalEntryMut<'a> = (usize, &'a mut String);
 
-type NamedEntry<'a> = (&'a CaseFold<String>, &'a Argument);
-type NamedEntryMut<'a> = (&'a CaseFold<String>, &'a mut Argument);
+type NamedEntry<'a> = (&'a CaseFold<String>, &'a String);
+type NamedEntryMut<'a> = (&'a CaseFold<String>, &'a mut String);
 
 type Iter<'a, A, B, SliceIter, MapIter> = Chain<
     Map<Enumerate<SliceIter>, fn((usize, A)) -> (Index<'a>, B)>,
@@ -214,17 +211,17 @@ type Iter<'a, A, B, SliceIter, MapIter> = Chain<
 >;
 type IntoIter<'a> = Iter<
     'a,
-    &'a Argument,
-    &'a Arg,
-    slice::Iter<'a, Argument>,
-    hash_map::Iter<'a, CaseFold<String>, Argument>,
+    &'a String,
+    &'a str,
+    slice::Iter<'a, String>,
+    hash_map::Iter<'a, CaseFold<String>, String>,
 >;
 type IntoIterMut<'a> = Iter<
     'a,
-    &'a mut Argument,
-    &'a mut Argument,
-    slice::IterMut<'a, Argument>,
-    hash_map::IterMut<'a, CaseFold<String>, Argument>,
+    &'a mut String,
+    &'a mut String,
+    slice::IterMut<'a, String>,
+    hash_map::IterMut<'a, CaseFold<String>, String>,
 >;
 
 impl<'a> IntoIterator for &'a Arguments {
