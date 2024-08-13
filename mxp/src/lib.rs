@@ -2,7 +2,12 @@
 extern crate enumeration;
 
 macro_rules! match_ci {
-    ($s:expr, $l_first:literal $(| $lo_first:literal)* => $i_first:expr, $($l:literal $(| $lo:literal)* => $i:expr),* $(, _ => $default:expr)? $(,)?) => {
+    (
+        $s:expr,
+        $l_first:literal $(| $lo_first:literal)* => $i_first:expr,
+        $($l:literal $(| $lo:literal)* => $i:expr),*
+        $(, _ => $default:expr)? $(,)?
+    ) => {
         if $s.eq_ignore_ascii_case($l_first) $(|| $s.eq_ignore_ascii_case($lo_first))* {
             $i_first
         }
