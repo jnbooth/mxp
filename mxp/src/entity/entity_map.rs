@@ -86,30 +86,6 @@ impl EntityMap {
         }
     }
 
-    pub fn decode_el<'a>(
-        &self,
-        el: &Element,
-        s: &'a str,
-        args: &Arguments,
-    ) -> Result<Cow<'a, str>, ParseError> {
-        decode_amps(s, |entity| {
-            if entity == "text" {
-                return Ok(None);
-            }
-            match el.attributes.iter().find(|&(i, attr)| match i {
-                ArgumentIndex::Positional(_) => attr.eq_ignore_ascii_case(entity),
-                ArgumentIndex::Named(name) => name.eq_ignore_ascii_case(entity),
-            }) {
-                None => self.get(entity),
-                Some((i, attr)) => Ok(match args.get(i) {
-                    Some(arg) => Some(arg),
-                    None if i.is_named() => Some(attr), // default replacement
-                    None => Some(""),                   // TODO is this right?
-                }),
-            }
-        })
-    }
-
     pub const fn global(key: &str) -> Option<&'static str> {
         match key.as_bytes() {
             b"lt" => Some("<"),
