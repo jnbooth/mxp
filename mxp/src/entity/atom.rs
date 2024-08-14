@@ -13,8 +13,6 @@ pub enum TagFlag {
     Open,
     /// Tag is a command (doesn't have closing tag)
     Command,
-    /// Tag is Pueblo-only
-    Pueblo,
     /// Not closed by reset (eg. body)
     NoReset,
     /// Not really implemented (for <supports> tag)
@@ -112,10 +110,9 @@ static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
     };
 
     vec![
-        atom("a", enums![], Hyperlink, &["href", "xch_cmd", "xch_hint"]),
-        atom("afk", enums![Command], Afk, &[]),
+        atom("a", enums![], Hyperlink, &["href", "hint", "expire"]),
+        atom("afk", enums![Command], Afk, &["challenge"]),
         atom("b", enums![Open], Bold, &[]),
-        atom("body", enums![Pueblo, NoReset], Body, &[]),
         atom("bold", enums![Open], Bold, &[]),
         atom("br", enums![Command], Br, &[]),
         atom("c", enums![Open], Color, &["fore", "back"]),
@@ -134,13 +131,15 @@ static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
         atom("h4", enums![NotImp], H4, &[]),
         atom("h5", enums![NotImp], H5, &[]),
         atom("h6", enums![NotImp], H6, &[]),
-        atom("head", enums![Pueblo, NoReset], Head, &[]),
         atom("high", enums![Open], High, &[]),
         atom("hr", enums![Command], Hr, &[]),
-        atom("html", enums![Pueblo, NoReset], Html, &[]),
         atom("i", enums![Open], Italic, &[]),
-        atom("image", enums![Command, NotImp], Image, &["url", "fname"]),
-        atom("img", enums![Pueblo, Command], Img, &["src", "xch_mode"]),
+        atom(
+            "image",
+            enums![Command, NotImp],
+            Image,
+            &["url", "src", "fname", "ismap"],
+        ),
         atom("italic", enums![Open], Italic, &[]),
         atom("li", enums![Command], Li, &[]),
         atom("music", enums![Command, NotImp], Sound, &[]),
@@ -151,7 +150,6 @@ static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
         atom("p", enums![], P, &[]),
         atom("pass", enums![Command], Password, &[]),
         atom("password", enums![Command], Password, &[]),
-        atom("pre", enums![Pueblo], Pre, &[]),
         atom("recommend_option", enums![Command], RecommendOption, &[]),
         atom("relocate", enums![Command, NotImp], Relocate, &[]),
         atom("reset", enums![Command], Reset, &[]),
@@ -166,7 +164,6 @@ static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
         atom("strikeout", enums![Open, NotImp], Strike, &[]),
         atom("strong", enums![Open], Bold, &[]),
         atom("support", enums![Command], Support, &[]),
-        atom("title", enums![Pueblo], Title, &[]),
         atom("tt", enums![Open, NotImp], Tt, &[]),
         atom("u", enums![Open], Underline, &[]),
         atom("ul", enums![], Ul, &[]),
@@ -176,8 +173,6 @@ static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
         atom("v", enums![], Var, &[]),
         atom("var", enums![], Var, &[]),
         atom("version", enums![Command], Version, &[]),
-        atom("xch_page", enums![Pueblo, Command], XchPage, &[]),
-        atom("xch_pane", enums![Pueblo, Command, NotImp], XchPane, &[]),
         atom(
             "font",
             enums![Open],
@@ -188,7 +183,7 @@ static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
             "send",
             enums![],
             Send,
-            &["href", "hint", "xch_cmd", "xch_hint", "prompt"],
+            &["href", "hint", "prompt", "expire"],
         ),
     ]
 });

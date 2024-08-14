@@ -70,12 +70,6 @@ pub enum ErrorKind {
     InvalidArgumentName,
     ///  eg. <font color=>
     NoArgument,
-    ///  using Pueblo element in MXP mode
-    PuebloOnly,
-    ///  using MXP element in Pueblo mode
-    MxpOnly,
-    ///  Pueblo does not support <!ELEMENT> or <!ENTITY>
-    DefinitionAttemptInPueblo,
     ///  invalid argument to <support> tag
     InvalidSupportArgument,
     ///  invalid argument to <option> tag

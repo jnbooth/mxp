@@ -13,4 +13,4 @@ mod shared_string;
 pub use shared_string::SharedString;
 
 mod span;
-pub use span::{InList, TextFormat, TextStyle};
+pub use span::{InList, TextStyle};

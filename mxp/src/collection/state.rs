@@ -105,7 +105,7 @@ impl State {
         let Some(value) = scanner.next()? else {
             return Err(Error::new(s, ErrorKind::NoDefinitionTag));
         };
-        let desc = scanner.next_or(&["desc"])?;
+        let desc = scanner.next_or("desc")?;
         let keywords = scanner.into_keywords();
         self.entities
             .set(key, &value, desc.map(Cow::into_owned), keywords);

@@ -30,7 +30,7 @@ macro_rules! match_ci {
 }
 
 mod argument;
-pub use argument::{Arguments, FgColor, FontEffect, FontStyle, XchMode};
+pub use argument::{Arguments, FgColor, FontEffect, FontStyle};
 
 mod collection;
 pub use collection::{ElementComponent, ElementMap, EntityMap, PublishedIter, State, VariableMap};

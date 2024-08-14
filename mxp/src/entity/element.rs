@@ -184,20 +184,20 @@ impl Element {
         let mut scanner = scanner.with_keywords();
         let items = Self::parse_items(scanner.next()?)?;
 
-        let attributes = match scanner.next_or(&["att"])? {
+        let attributes = match scanner.next_or("att")? {
             Some(atts) => Arguments::parse(Words::new(atts.as_ref()))?,
             None => Arguments::default(),
         };
 
         let tag = match scanner
-            .next_or(&["tag"])?
+            .next_or("tag")?
             .and_then(|s| s.as_ref().parse().ok())
         {
             Some(i) if !(MIN_TAG..=MAX_TAG).contains(&i) => None,
             tag => tag,
         };
 
-        let (parse_as, variable) = match scanner.next_or(&["flag"])? {
+        let (parse_as, variable) = match scanner.next_or("flag")? {
             None => (None, None),
             Some(flag) => {
                 let flag = flag.as_ref();

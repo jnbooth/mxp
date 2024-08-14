@@ -6,7 +6,7 @@ use crate::argument::scan::{
     AfkArgs, ColorArgs, Decoder, ExpireArgs, FontArgs, HyperlinkArgs, ImageArgs, Scan, SendArgs,
     VarArgs,
 };
-use crate::argument::{FgColor, XchMode};
+use crate::argument::FgColor;
 use crate::color::RgbColor;
 use crate::keyword::{EntityKeyword, MxpKeyword};
 use enumeration::{Enum, EnumSet};
@@ -111,17 +111,6 @@ pub enum ActionType {
     SetOption,
     /// server sets option
     RecommendOption,
-
-    // Pueblo
-    /// Preformatted text
-    Pre,
-    Body,
-    Head,
-    Html,
-    Title,
-    Img,
-    XchPage,
-    XchPane,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
@@ -153,8 +142,8 @@ pub enum Action<S> {
     Font {
         face: Option<S>,
         size: Option<NonZeroU8>,
-        fgcolor: Option<FgColor<S>>,
-        bgcolor: Option<RgbColor>,
+        color: Option<FgColor<S>>,
+        back: Option<RgbColor>,
     },
     /// play sound
     Sound,
@@ -172,7 +161,6 @@ pub enum Action<S> {
     Image {
         fname: Option<S>,
         url: Option<S>,
-        xch_mode: Option<XchMode>,
         is_map: bool,
     },
     /// sound/image filter
@@ -217,9 +205,7 @@ pub enum Action<S> {
         keywords: EnumSet<EntityKeyword>,
     },
     /// AFK - away from keyboard time
-    Afk {
-        challenge: Option<S>,
-    },
+    Afk { challenge: Option<S> },
 
     // recent
     /// gauge
@@ -227,41 +213,19 @@ pub enum Action<S> {
     /// status
     Stat,
     /// expire
-    Expire {
-        name: Option<S>,
-    },
+    Expire { name: Option<S> },
 
     /// close all open tags
     Reset,
     /// MXP command (eg. MXP OFF)
-    Mxp {
-        keywords: EnumSet<MxpKeyword>,
-    },
+    Mxp { keywords: EnumSet<MxpKeyword> },
     /// what commands we support
-    Support {
-        supported: Vec<u8>,
-    },
+    Support { supported: Vec<u8> },
 
     /// client options set
     SetOption,
     /// server sets option
     RecommendOption,
-
-    // Pueblo
-    /// Preformatted text
-    Pre,
-    Body,
-    Head,
-    Html,
-    Title,
-    Img {
-        fname: Option<S>,
-        url: Option<S>,
-        xch_mode: Option<XchMode>,
-        is_map: bool,
-    },
-    XchPage,
-    XchPane,
 }
 
 impl<S: AsRef<str>> Action<S> {
@@ -286,14 +250,14 @@ impl<S: AsRef<str>> Action<S> {
                 let FontArgs {
                     face,
                     size,
-                    fgcolor,
-                    bgcolor,
+                    color,
+                    back,
                 } = scanner.try_into()?;
                 Self::Font {
                     face,
                     size,
-                    fgcolor,
-                    bgcolor,
+                    color,
+                    back,
                 }
             }
             ActionType::Sound => Self::Sound,
@@ -303,18 +267,8 @@ impl<S: AsRef<str>> Action<S> {
             ActionType::Frame => Self::Frame,
             ActionType::Dest => Self::Dest,
             ActionType::Image => {
-                let ImageArgs {
-                    fname,
-                    url,
-                    xch_mode,
-                    is_map,
-                } = scanner.try_into()?;
-                Self::Image {
-                    fname,
-                    url,
-                    xch_mode,
-                    is_map,
-                }
+                let ImageArgs { fname, url, is_map } = scanner.try_into()?;
+                Self::Image { fname, url, is_map }
             }
             ActionType::Filter => Self::Filter,
             ActionType::Hyperlink => {
@@ -371,27 +325,6 @@ impl<S: AsRef<str>> Action<S> {
             }
             ActionType::SetOption => Self::SetOption,
             ActionType::RecommendOption => Self::RecommendOption,
-            ActionType::Pre => Self::Pre,
-            ActionType::Body => Self::Body,
-            ActionType::Head => Self::Head,
-            ActionType::Html => Self::Html,
-            ActionType::Title => Self::Title,
-            ActionType::Img => {
-                let ImageArgs {
-                    fname,
-                    url,
-                    xch_mode,
-                    is_map,
-                } = scanner.try_into()?;
-                Self::Img {
-                    fname,
-                    url,
-                    xch_mode,
-                    is_map,
-                }
-            }
-            ActionType::XchPage => Self::XchPage,
-            ActionType::XchPane => Self::XchPane,
         })
     }
 }

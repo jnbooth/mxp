@@ -44,12 +44,6 @@ impl From<mxp::FontStyle> for TextStyle {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum TextFormat {
-    Paragraph,
-    Pre,
-}
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum InList {
     Ordered(u32),
@@ -62,7 +56,6 @@ pub enum InList {
 pub struct Span {
     populated: bool,
     pub(super) flags: EnumSet<TextStyle>,
-    pub(super) format: EnumSet<TextFormat>,
     pub(super) foreground: Option<TermColor>,
     pub(super) background: Option<TermColor>,
     pub(super) font: Option<String>,
@@ -88,7 +81,6 @@ impl Span {
         Self {
             populated: false,
             flags: EnumSet::new(),
-            format: EnumSet::new(),
             foreground: None,
             background: None,
             font: None,
@@ -194,13 +186,6 @@ impl SpanList {
         self.spans.last_mut()
     }
 
-    pub fn format(&self) -> EnumSet<TextFormat> {
-        match self.get() {
-            Some(span) => span.format,
-            None => EnumSet::new(),
-        }
-    }
-
     pub fn truncate(&mut self, i: usize) {
         self.spans.truncate(i);
     }
@@ -231,32 +216,6 @@ impl SpanList {
 
     pub fn set_flag(&mut self, flag: TextStyle) -> bool {
         set_flag!(self, flags, flag);
-    }
-
-    pub fn set_format(&mut self, format: TextFormat) -> bool {
-        set_flag!(self, format, format);
-    }
-
-    pub fn unset_format(&mut self, format: TextFormat) -> bool {
-        let Some(span) = self.get_mut() else {
-            return false;
-        };
-        if !span.format.contains(format) {
-            return false;
-        }
-        if !span.populated {
-            span.format.remove(format);
-            return false;
-        }
-        let mut format_flags = span.format;
-        format_flags.remove(format);
-        let next_span = Span {
-            populated: false,
-            format: format_flags,
-            ..span.clone()
-        };
-        self.spans.push(next_span);
-        true
     }
 
     pub fn set_foreground(&mut self, foreground: TermColor) -> bool {

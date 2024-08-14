@@ -9,7 +9,7 @@ use crate::output::fragment::EffectFragment;
 use super::color::TermColor;
 use super::fragment::{Output, OutputDrain, OutputFragment, TelnetFragment, TextFragment};
 use super::shared_string::SharedString;
-use super::span::{InList, SpanList, TextFormat, TextStyle};
+use super::span::{InList, SpanList, TextStyle};
 use mxp::RgbColor;
 
 fn get_color(
@@ -334,18 +334,6 @@ impl BufferedOutput {
     pub fn truncate_spans(&mut self, i: usize) {
         self.flush();
         self.spans.truncate(i);
-    }
-
-    pub fn format(&self) -> EnumSet<TextFormat> {
-        self.spans.format()
-    }
-
-    pub fn set_format(&mut self, format: TextFormat) {
-        self.spans.set_format(format);
-    }
-
-    pub fn unset_format(&mut self, format: TextFormat) {
-        self.spans.unset_format(format);
     }
 
     pub fn set_mxp_flag(&mut self, flag: TextStyle) {

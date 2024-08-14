@@ -6,7 +6,7 @@ use super::config::{TransformerConfig, UseMxp};
 use super::input::{BufferedInput, Drain as InputDrain};
 use super::phase::Phase;
 use super::tag::{Tag, TagList};
-use crate::output::{BufferedOutput, InList, OutputDrain, TermColor, TextFormat, TextStyle};
+use crate::output::{BufferedOutput, InList, OutputDrain, TermColor, TextStyle};
 use crate::receive::{Decompress, ReceiveCursor};
 use crate::EffectFragment;
 use enumeration::EnumSet;
@@ -30,12 +30,11 @@ pub struct Transformer {
     phase: Phase,
 
     mxp_active: bool,
-    pueblo_active: bool,
     supports_mccp_2: bool,
     no_echo: bool,
 
     mxp_script: bool,
-    suppress_newline: bool,
+    in_paragraph: bool,
     mxp_mode_default: mxp::Mode,
     mxp_mode: mxp::Mode,
     mxp_mode_previous: mxp::Mode,
@@ -76,12 +75,11 @@ impl Transformer {
             decompress: Decompress::new(),
 
             mxp_active: config.use_mxp == UseMxp::Always,
-            pueblo_active: false,
             supports_mccp_2: false,
             no_echo: false,
 
             mxp_script: false,
-            suppress_newline: false,
+            in_paragraph: false,
             mxp_mode_default: mxp::Mode::OPEN,
             mxp_mode: mxp::Mode::OPEN,
             mxp_mode_previous: mxp::Mode::OPEN,
@@ -116,7 +114,7 @@ impl Transformer {
             self.output.set_colors(config.colors.clone());
         }
         match config.use_mxp {
-            UseMxp::Always => self.mxp_on(false, false),
+            UseMxp::Always => self.mxp_on(false),
             UseMxp::Never => self.mxp_off(true),
             UseMxp::Command | UseMxp::Query => (),
         }
@@ -179,17 +177,15 @@ impl Transformer {
         if self.phase.is_mxp() {
             self.phase = Phase::Normal;
         }
-        self.pueblo_active = false;
         self.mxp_active = false;
     }
 
-    fn mxp_on(&mut self, pueblo: bool, manual: bool) {
+    fn mxp_on(&mut self, manual: bool) {
         if self.mxp_active {
             return;
         }
 
         self.mxp_active = true;
-        self.pueblo_active = pueblo;
         self.mxp_script = false;
 
         if manual {
@@ -288,11 +284,6 @@ impl Transformer {
 
     fn mxp_open_atom(&mut self, action: mxp::Action<Cow<str>>) {
         use mxp::{Action, MxpKeyword};
-        /*
-        if action == Action::Hyperlink && args.get("xch_cmd").is_some() {
-            self.pueblo_active = true;
-            action = Action::Send;
-        }*/
         match action {
             Action::Heading(heading) => self.output.set_mxp_heading(heading),
             Action::Bold => self.output.set_mxp_flag(TextStyle::Bold),
@@ -313,8 +304,8 @@ impl Transformer {
             Action::Font {
                 face,
                 size,
-                fgcolor,
-                bgcolor,
+                color,
+                back,
             } => {
                 if let Some(face) = face {
                     self.output.set_mxp_font(face.into_owned());
@@ -322,7 +313,7 @@ impl Transformer {
                 if let Some(size) = size {
                     self.output.set_mxp_size(size);
                 }
-                if let Some(fgcolor) = fgcolor {
+                if let Some(fgcolor) = color {
                     for fg in fgcolor.iter() {
                         match fg {
                             mxp::FontEffect::Color(fg) => self.output.set_mxp_foreground(fg),
@@ -330,7 +321,7 @@ impl Transformer {
                         }
                     }
                 }
-                if let Some(bg) = bgcolor {
+                if let Some(bg) = back {
                     self.output.set_mxp_background(bg);
                 }
             }
@@ -367,15 +358,14 @@ impl Transformer {
                 }
 
                 if keywords.contains(MxpKeyword::IgnoreNewlines) {
-                    self.output.set_format(TextFormat::Paragraph);
+                    self.in_paragraph = true;
                 } else if keywords.contains(MxpKeyword::UseNewlines) {
-                    self.output.unset_format(TextFormat::Paragraph);
+                    self.in_paragraph = false;
                 }
             }
-            Action::P => self.output.set_format(TextFormat::Paragraph),
+            Action::P => self.in_paragraph = true,
             Action::Script => self.mxp_script = true,
             Action::Hr => self.output.append_hr(),
-            Action::Pre => self.output.set_format(TextFormat::Pre),
             Action::Ul => self.output.set_mxp_list(InList::Unordered),
             Action::Ol => self.output.set_mxp_list(InList::Ordered(0)),
             Action::Li => match self.output.next_list_item() {
@@ -390,34 +380,15 @@ impl Transformer {
                 }
                 None => (),
             },
-            Action::Img {
+            Action::Image {
                 fname,
                 url,
-                xch_mode,
-                is_map: _,
-            }
-            | Action::Image {
-                fname,
-                url,
-                xch_mode,
                 is_map: _,
             } => {
-                if let Some(xch_mode) = xch_mode {
-                    self.pueblo_active = true;
-                    match xch_mode {
-                        mxp::XchMode::Text => (),
-                        mxp::XchMode::Html => self.suppress_newline = false,
-                        mxp::XchMode::PureHtml => self.suppress_newline = true,
-                    }
-                }
                 if let Some(url) = url {
                     let fname = fname.as_deref().unwrap_or_default();
                     self.output.append_image(format!("{url}{fname}"));
                 }
-            }
-            Action::XchPage => {
-                self.pueblo_active = true;
-                self.mxp_off(false);
             }
             Action::Var { keywords, variable } => {
                 if let Some(variable) = variable {
@@ -440,12 +411,7 @@ impl Transformer {
             | Action::Stat
             | Action::Expire { .. }
             | Action::SetOption
-            | Action::RecommendOption
-            | Action::Body
-            | Action::Head
-            | Action::Html
-            | Action::Title
-            | Action::XchPane => (),
+            | Action::RecommendOption => (),
         }
     }
 
@@ -770,7 +736,7 @@ impl Transformer {
                         UseMxp::Never => false,
                         UseMxp::Always | UseMxp::Command => true,
                         UseMxp::Query => {
-                            self.mxp_on(false, false);
+                            self.mxp_on(false);
                             true
                         }
                     },
@@ -810,7 +776,7 @@ impl Transformer {
                         UseMxp::Never => false,
                         UseMxp::Always | UseMxp::Command => true,
                         UseMxp::Query => {
-                            self.mxp_on(false, false);
+                            self.mxp_on(false);
                             true
                         }
                     },
@@ -863,7 +829,7 @@ impl Transformer {
                     }
                     telnet::MXP => {
                         if self.config.use_mxp == UseMxp::Command {
-                            self.mxp_on(false, false);
+                            self.mxp_on(false);
                         }
                     }
                     telnet::TERMINAL_TYPE if !self.config.terminal_identification.is_empty() => {
@@ -1001,20 +967,18 @@ impl Transformer {
                 0x08 => self.output.append_effect(EffectFragment::Backspace),
                 // FF
                 0x0C => self.output.append_page_break(),
-                b'\t' if self.output.format().contains(TextFormat::Paragraph) => {
+                b'\t' if self.in_paragraph => {
                     if last_char != b' ' {
                         self.output.append(" ");
                     }
                 }
                 b'\r' => (),
-                b' ' if last_char == b' '
-                    && self.output.format().contains(TextFormat::Paragraph) => {}
+                b' ' if last_char == b' ' && self.in_paragraph => {}
                 b'\n' => {
-                    if self.mxp_active && !self.pueblo_active {
+                    if self.mxp_active {
                         self.mxp_mode_change(None);
                     }
-                    let format = self.output.format();
-                    if format.contains(TextFormat::Paragraph) {
+                    if self.in_paragraph {
                         match last_char {
                             b'\n' => {
                                 self.output.start_line();
@@ -1024,7 +988,7 @@ impl Transformer {
                             b' ' | b'\t' | 0x0C => (),
                             _ => self.output.append(" "),
                         }
-                    } else if !self.suppress_newline && !format.contains(TextFormat::Pre) {
+                    } else {
                         self.output.start_line();
                     }
                 }

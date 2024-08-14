@@ -1,6 +1,5 @@
 use super::arguments::{KeywordFilter, NoKeywords};
 use super::font_args::FgColor;
-use super::pueblo::XchMode;
 use crate::color::RgbColor;
 use crate::entity::Link;
 use crate::entity::SendTo;
@@ -78,10 +77,6 @@ impl<'a, D: Decoder, F: KeywordFilter> Scan<'a, D, F> {
         }
     }
 
-    fn find_by_names(&self, names: &[&str]) -> crate::Result<Option<D::Output<'a>>> {
-        self.decode(names.iter().find_map(|&name| self.named.get(name)))
-    }
-
     pub fn len(&self) -> usize {
         self.inner.len()
     }
@@ -95,10 +90,10 @@ impl<'a, D: Decoder, F: KeywordFilter> Scan<'a, D, F> {
         self.decode(next)
     }
 
-    pub fn next_or(&mut self, names: &[&str]) -> crate::Result<Option<D::Output<'a>>> {
-        match self.next()? {
-            Some(item) => Ok(Some(item)),
-            None => self.find_by_names(names),
+    pub fn next_or(&mut self, name: &str) -> crate::Result<Option<D::Output<'a>>> {
+        match self.get(name)? {
+            Some(value) => Ok(Some(value)),
+            None => self.next(),
         }
     }
 }
@@ -143,10 +138,10 @@ impl<'a, D: Decoder, K: Enum + FromStr> KeywordScan<'a, D, K> {
         self.decode(next)
     }
 
-    pub fn next_or(&mut self, names: &[&str]) -> crate::Result<Option<D::Output<'a>>> {
-        match self.next()? {
-            Some(item) => Ok(Some(item)),
-            None => self.find_by_names(names),
+    pub fn next_or(&mut self, name: &str) -> crate::Result<Option<D::Output<'a>>> {
+        match self.get(name)? {
+            Some(value) => Ok(Some(value)),
+            None => self.next(),
         }
     }
 
@@ -169,7 +164,7 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for AfkArgs<D::Output<'a>> {
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
-            challenge: scanner.next_or(&["challenge"])?,
+            challenge: scanner.next_or("challenge")?,
         })
     }
 }
@@ -186,10 +181,10 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ColorArgs {
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             fore: scanner
-                .next_or(&["fore"])?
+                .next_or("fore")?
                 .and_then(|fore| RgbColor::named(fore.as_ref())),
             back: scanner
-                .next_or(&["back"])?
+                .next_or("back")?
                 .and_then(|back| RgbColor::named(back.as_ref())),
         })
     }
@@ -214,8 +209,8 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ExpireArgs<D::Output<'a>> {
 pub struct FontArgs<S> {
     pub face: Option<S>,
     pub size: Option<NonZeroU8>,
-    pub fgcolor: Option<FgColor<S>>,
-    pub bgcolor: Option<RgbColor>,
+    pub color: Option<FgColor<S>>,
+    pub back: Option<RgbColor>,
 }
 
 impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for FontArgs<D::Output<'a>> {
@@ -223,16 +218,16 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for FontArgs<D::Output<'a>> {
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
-            face: scanner.next_or(&["face"])?,
+            face: scanner.next_or("face")?,
             size: scanner
-                .next_or(&["size"])?
+                .next_or("size")?
                 .and_then(|size| size.as_ref().parse().ok()),
-            fgcolor: scanner
-                .next_or(&["color", "fgcolor"])?
-                .map(|fgcolor| FgColor { inner: fgcolor }),
-            bgcolor: scanner
-                .next_or(&["back", "bgcolor"])?
-                .and_then(|bgcolor| RgbColor::named(bgcolor.as_ref())),
+            color: scanner
+                .next_or("color")?
+                .map(|color| FgColor { inner: color }),
+            back: scanner
+                .next_or("back")?
+                .and_then(|back| RgbColor::named(back.as_ref())),
         })
     }
 }
@@ -250,10 +245,10 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for HyperlinkArgs<D::Output<'a>> {
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             href: scanner
-                .next_or(&["href"])?
+                .next_or("href")?
                 .ok_or_else(|| Error::new("", ErrorKind::NoArgument))?,
-            hint: scanner.next_or(&["hint"])?,
-            expire: scanner.next_or(&["expire"])?,
+            hint: scanner.next_or("hint")?,
+            expire: scanner.next_or("expire")?,
         })
     }
 }
@@ -262,7 +257,6 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for HyperlinkArgs<D::Output<'a>> {
 pub struct ImageArgs<S> {
     pub fname: Option<S>,
     pub url: Option<S>,
-    pub xch_mode: Option<XchMode>,
     pub is_map: bool,
 }
 
@@ -276,14 +270,10 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ImageArgs<D::Output<'a>> {
             None => scanner.get("src")?,
         };
         let fname = scanner.get("fname")?;
-        let xch_mode = scanner
-            .get("xch_mode")?
-            .and_then(|mode| mode.as_ref().parse().ok());
         let keywords = scanner.into_keywords();
         Ok(Self {
             fname,
             url,
-            xch_mode,
             is_map: keywords.contains(ImageKeyword::IsMap),
         })
     }
@@ -303,9 +293,9 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for SendArgs<D::Output<'a>> {
     fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         Ok(Self {
-            href: scanner.next_or(&["href", "xch_cmd"])?,
-            hint: scanner.next_or(&["hint", "xch_hint"])?,
-            expire: scanner.next_or(&["expire"])?,
+            href: scanner.next_or("href")?,
+            hint: scanner.next_or("hint")?,
+            expire: scanner.next_or("expire")?,
             sendto: if scanner.into_keywords().contains(SendKeyword::Prompt) {
                 SendTo::Input
             } else {
