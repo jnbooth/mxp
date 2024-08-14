@@ -22,7 +22,7 @@ pub struct Output {
 pub enum OutputFragment {
     Effect(EffectFragment),
     Hr,
-    Image(String),
+    Image(mxp::Image),
     LineBreak,
     MxpError(mxp::Error),
     MxpVariable { name: String, value: Option<String> },
@@ -49,6 +49,12 @@ impl From<EffectFragment> for OutputFragment {
 impl From<mxp::Error> for OutputFragment {
     fn from(value: mxp::Error) -> Self {
         Self::MxpError(value)
+    }
+}
+
+impl From<mxp::Image> for OutputFragment {
+    fn from(value: mxp::Image) -> Self {
+        Self::Image(value)
     }
 }
 

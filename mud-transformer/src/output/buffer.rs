@@ -1,4 +1,3 @@
-use std::num::NonZeroU8;
 use std::str;
 
 use bytes::BytesMut;
@@ -213,10 +212,15 @@ impl BufferedOutput {
         self.spans.set_populated();
     }
 
-    pub fn append_afk(&mut self, challenge: &str) {
+    pub fn append_afk(&mut self, challenge: Option<&str>) {
         self.flush();
-        self.buf.extend_from_slice(challenge.as_bytes());
-        let challenge = self.take_buf();
+        let challenge = match challenge {
+            Some(challenge) => {
+                self.buf.extend_from_slice(challenge.as_bytes());
+                self.take_buf()
+            }
+            None => SharedString::new(),
+        };
         self.output(TelnetFragment::Afk { challenge });
     }
 
@@ -235,9 +239,9 @@ impl BufferedOutput {
         self.output(TelnetFragment::IacGa);
     }
 
-    pub fn append_image(&mut self, src: String) {
+    pub fn append_image(&mut self, image: mxp::Image) {
         self.flush();
-        self.output(OutputFragment::Image(src));
+        self.output(image);
     }
 
     pub fn append_mxp_error(&mut self, error: mxp::Error) {
@@ -354,14 +358,32 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_mxp_font(&mut self, font: String) {
-        if self.spans.set_font(font) {
-            self.flush_mxp();
+    pub fn set_mxp_font(&mut self, font: mxp::Font) {
+        let mxp::Font {
+            face,
+            size,
+            color,
+            back,
+        } = font;
+        let mut changed = false;
+        if let Some(face) = face {
+            changed = self.spans.set_font(face) || changed;
         }
-    }
-
-    pub fn set_mxp_size(&mut self, size: NonZeroU8) {
-        if self.spans.set_size(size) {
+        if let Some(size) = size {
+            changed = self.spans.set_size(size) || changed;
+        }
+        if let Some(color) = color {
+            for fg in color.iter() {
+                changed = match fg {
+                    mxp::FontEffect::Color(fg) => self.spans.set_foreground(fg.into()),
+                    mxp::FontEffect::Style(style) => self.spans.set_flag(style.into()),
+                } || changed;
+            }
+        }
+        if let Some(back) = back {
+            changed = self.spans.set_background(back.into()) || changed;
+        }
+        if changed {
             self.flush_mxp();
         }
     }
@@ -378,8 +400,19 @@ impl BufferedOutput {
         }
     }
 
-    pub fn next_list_item(&mut self) -> Option<u32> {
-        self.spans.next_list_item()
+    pub fn advance_list(&mut self) {
+        match self.spans.next_list_item() {
+            Some(0) => {
+                self.start_line();
+                self.append("• ");
+            }
+            Some(i) => {
+                self.start_line();
+                self.append(i.to_string().as_str());
+                self.append(". ");
+            }
+            None => (),
+        };
     }
 
     pub fn set_mxp_heading(&mut self, heading: mxp::Heading) {

@@ -283,7 +283,8 @@ impl Transformer {
     }
 
     fn mxp_open_atom(&mut self, action: mxp::Action<Cow<str>>) {
-        use mxp::{Action, MxpKeyword};
+        use mxp::Action;
+
         match action {
             Action::Heading(heading) => self.output.set_mxp_heading(heading),
             Action::Bold => self.output.set_mxp_flag(TextStyle::Bold),
@@ -298,104 +299,31 @@ impl Transformer {
                 }
             }
             Action::High => self.output.set_mxp_flag(TextStyle::Highlight),
-            Action::Link(link) => {
-                self.output.set_mxp_action(link.clone());
+            Action::Link(link) => self.output.set_mxp_action(link.clone()),
+            Action::Font(font) => self.output.set_mxp_font(font.into_owned()),
+            Action::Version => {
+                let response =
+                    mxp::responses::identify(&self.config.app_name, &self.config.version);
+                self.input.append(response.as_bytes());
             }
-            Action::Font {
-                face,
-                size,
-                color,
-                back,
-            } => {
-                if let Some(face) = face {
-                    self.output.set_mxp_font(face.into_owned());
-                }
-                if let Some(size) = size {
-                    self.output.set_mxp_size(size);
-                }
-                if let Some(fgcolor) = color {
-                    for fg in fgcolor.iter() {
-                        match fg {
-                            mxp::FontEffect::Color(fg) => self.output.set_mxp_foreground(fg),
-                            mxp::FontEffect::Style(style) => self.output.set_mxp_flag(style.into()),
-                        }
-                    }
-                }
-                if let Some(bg) = back {
-                    self.output.set_mxp_background(bg);
-                }
-            }
-            Action::Version => self.input.append(
-                mxp::responses::identify(&self.config.app_name, &self.config.version).as_bytes(),
-            ),
-            Action::Afk { challenge } => {
-                let challenge = challenge.as_deref().unwrap_or_default();
-                self.output.append_afk(challenge);
-            }
+            Action::Afk { challenge } => self.output.append_afk(challenge.as_deref()),
             Action::Support { supported } => self.input.append(&supported),
             Action::User => input_mxp_auth(&mut self.input, &self.config.player),
             Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
-            Action::Br => {
-                self.output.start_line();
-            }
-            Action::SBr => {
-                self.output.push(b' ');
-            }
-            Action::Reset => {
-                self.mxp_off(false);
-            }
-            Action::Mxp { keywords } => {
-                if keywords.contains(MxpKeyword::Off) {
-                    self.mxp_off(true);
-                }
-
-                if keywords.contains(MxpKeyword::DefaultLocked) {
-                    self.mxp_mode_default = mxp::Mode::LOCKED;
-                } else if keywords.contains(MxpKeyword::DefaultSecure) {
-                    self.mxp_mode_default = mxp::Mode::SECURE;
-                } else if keywords.contains(MxpKeyword::DefaultOpen) {
-                    self.mxp_mode_default = mxp::Mode::OPEN;
-                }
-
-                if keywords.contains(MxpKeyword::IgnoreNewlines) {
-                    self.in_paragraph = true;
-                } else if keywords.contains(MxpKeyword::UseNewlines) {
-                    self.in_paragraph = false;
-                }
-            }
+            Action::Br => self.output.start_line(),
+            Action::SBr => self.output.push(b' '),
+            Action::Reset => self.mxp_off(false),
+            Action::Mxp { keywords } => self.mxp_set_keywords(keywords),
             Action::P => self.in_paragraph = true,
             Action::Script => self.mxp_script = true,
             Action::Hr => self.output.append_hr(),
             Action::Ul => self.output.set_mxp_list(InList::Unordered),
             Action::Ol => self.output.set_mxp_list(InList::Ordered(0)),
-            Action::Li => match self.output.next_list_item() {
-                Some(0) => {
-                    self.output.start_line();
-                    self.output.append("• ");
-                }
-                Some(i) => {
-                    self.output.start_line();
-                    self.output.append(i.to_string().as_str());
-                    self.output.append(". ");
-                }
-                None => (),
-            },
-            Action::Image {
-                fname,
-                url,
-                is_map: _,
-            } => {
-                if let Some(url) = url {
-                    let fname = fname.as_deref().unwrap_or_default();
-                    self.output.append_image(format!("{url}{fname}"));
-                }
-            }
-            Action::Var { keywords, variable } => {
-                if let Some(variable) = variable {
-                    self.output
-                        .set_mxp_variable(variable.into_owned(), keywords);
-                }
-            }
+            Action::Li => self.output.advance_list(),
+            Action::Image(image) => self.output.append_image(image.into_owned()),
+            Action::Var { keywords, variable } => self
+                .output
+                .set_mxp_variable(variable.into_owned(), keywords),
             Action::Sound
             | Action::Relocate
             | Action::Frame
@@ -412,6 +340,26 @@ impl Transformer {
             | Action::Expire { .. }
             | Action::SetOption
             | Action::RecommendOption => (),
+        }
+    }
+
+    fn mxp_set_keywords(&mut self, keywords: EnumSet<mxp::MxpKeyword>) {
+        use mxp::{Mode, MxpKeyword};
+        if keywords.contains(MxpKeyword::Off) {
+            self.mxp_off(true);
+        }
+        if keywords.contains(MxpKeyword::DefaultLocked) {
+            self.mxp_mode_default = Mode::LOCKED;
+        } else if keywords.contains(MxpKeyword::DefaultSecure) {
+            self.mxp_mode_default = Mode::SECURE;
+        } else if keywords.contains(MxpKeyword::DefaultOpen) {
+            self.mxp_mode_default = Mode::OPEN;
+        }
+
+        if keywords.contains(MxpKeyword::IgnoreNewlines) {
+            self.in_paragraph = true;
+        } else if keywords.contains(MxpKeyword::UseNewlines) {
+            self.in_paragraph = false;
         }
     }
 

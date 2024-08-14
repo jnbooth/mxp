@@ -1,16 +1,12 @@
 use super::arguments::{KeywordFilter, NoKeywords};
-use super::font_args::FgColor;
 use crate::color::RgbColor;
-use crate::entity::Link;
-use crate::entity::SendTo;
-use crate::keyword::{EntityKeyword, ImageKeyword, SendKeyword};
-use crate::parser::Error;
-use crate::ErrorKind;
+use crate::entity::{Atom, Link, SendTo};
+use crate::keyword::{EntityKeyword, MxpKeyword, SendKeyword};
+use crate::parser::{Error, ErrorKind};
 use casefold::ascii::CaseFoldMap;
 use enumeration::{Enum, EnumSet};
 use std::borrow::Borrow;
 use std::marker::PhantomData;
-use std::num::NonZeroU8;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 use std::{slice, str};
@@ -205,33 +201,6 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ExpireArgs<D::Output<'a>> {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
-pub struct FontArgs<S> {
-    pub face: Option<S>,
-    pub size: Option<NonZeroU8>,
-    pub color: Option<FgColor<S>>,
-    pub back: Option<RgbColor>,
-}
-
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for FontArgs<D::Output<'a>> {
-    type Error = Error;
-
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
-        Ok(Self {
-            face: scanner.next_or("face")?,
-            size: scanner
-                .next_or("size")?
-                .and_then(|size| size.as_ref().parse().ok()),
-            color: scanner
-                .next_or("color")?
-                .map(|color| FgColor { inner: color }),
-            back: scanner
-                .next_or("back")?
-                .and_then(|back| RgbColor::named(back.as_ref())),
-        })
-    }
-}
-
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct HyperlinkArgs<S> {
     pub href: S,
@@ -253,28 +222,29 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for HyperlinkArgs<D::Output<'a>> {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ImageArgs<S> {
-    pub fname: Option<S>,
-    pub url: Option<S>,
-    pub is_map: bool,
+impl<S: AsRef<str>> From<HyperlinkArgs<S>> for Link {
+    fn from(value: HyperlinkArgs<S>) -> Self {
+        Self::new(
+            value.href.as_ref(),
+            value.hint.as_ref().map(AsRef::as_ref),
+            SendTo::Internet,
+            value.expire.map(|expire| expire.as_ref().to_owned()),
+        )
+    }
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ImageArgs<D::Output<'a>> {
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct MxpArgs {
+    pub keywords: EnumSet<MxpKeyword>,
+}
+
+impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for MxpArgs {
     type Error = Error;
 
     fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let scanner = scanner.with_keywords();
-        let url = match scanner.get("url")? {
-            Some(url) => Some(url),
-            None => scanner.get("src")?,
-        };
-        let fname = scanner.get("fname")?;
-        let keywords = scanner.into_keywords();
         Ok(Self {
-            fname,
-            url,
-            is_map: keywords.contains(ImageKeyword::IsMap),
+            keywords: scanner.into_keywords(),
         })
     }
 }
@@ -319,20 +289,28 @@ impl<S: AsRef<str>> From<SendArgs<S>> for Link {
     }
 }
 
-impl<S: AsRef<str>> From<HyperlinkArgs<S>> for Link {
-    fn from(value: HyperlinkArgs<S>) -> Self {
-        Self::new(
-            value.href.as_ref(),
-            value.hint.as_ref().map(AsRef::as_ref),
-            SendTo::Internet,
-            value.expire.map(|expire| expire.as_ref().to_owned()),
-        )
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct SupportArgs {
+    pub supported: Vec<u8>,
+}
+
+impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for SupportArgs {
+    type Error = Error;
+
+    fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, Self::Error> {
+        let mut questions = Vec::with_capacity(scanner.len());
+        while let Some(question) = scanner.next()? {
+            questions.push(question);
+        }
+        let mut supported = Vec::new();
+        Atom::fmt_supported(&mut supported, &questions);
+        Ok(Self { supported })
     }
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct VarArgs<S> {
-    pub variable: Option<S>,
+    pub variable: S,
     pub keywords: EnumSet<EntityKeyword>,
 }
 
@@ -342,7 +320,9 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for VarArgs<D::Output<'a>> {
     fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         Ok(Self {
-            variable: scanner.next()?,
+            variable: scanner
+                .next()?
+                .ok_or_else(|| Error::new("", ErrorKind::NoArgument))?,
             keywords: scanner.into_keywords(),
         })
     }

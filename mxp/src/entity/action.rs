@@ -1,12 +1,10 @@
-use std::num::NonZeroU8;
-
-use super::atom::Atom;
+use super::font::Font;
+use super::image::Image;
 use super::link::Link;
 use crate::argument::scan::{
-    AfkArgs, ColorArgs, Decoder, ExpireArgs, FontArgs, HyperlinkArgs, ImageArgs, Scan, SendArgs,
+    AfkArgs, ColorArgs, Decoder, ExpireArgs, HyperlinkArgs, MxpArgs, Scan, SendArgs, SupportArgs,
     VarArgs,
 };
-use crate::argument::FgColor;
 use crate::color::RgbColor;
 use crate::keyword::{EntityKeyword, MxpKeyword};
 use enumeration::{Enum, EnumSet};
@@ -139,12 +137,7 @@ pub enum Action<S> {
     /// version request
     Version,
     /// font appearance
-    Font {
-        face: Option<S>,
-        size: Option<NonZeroU8>,
-        color: Option<FgColor<S>>,
-        back: Option<RgbColor>,
-    },
+    Font(Font<S>),
     /// play sound
     Sound,
     /// send username
@@ -158,11 +151,7 @@ pub enum Action<S> {
     /// destination frame
     Dest,
     /// show image
-    Image {
-        fname: Option<S>,
-        url: Option<S>,
-        is_map: bool,
-    },
+    Image(Image<S>),
     /// sound/image filter
     Filter,
     /// Hyperlink or send prompt (secure)
@@ -201,7 +190,7 @@ pub enum Action<S> {
     High,
     /// Set variable
     Var {
-        variable: Option<S>,
+        variable: S,
         keywords: EnumSet<EntityKeyword>,
     },
     /// AFK - away from keyboard time
@@ -229,102 +218,76 @@ pub enum Action<S> {
 }
 
 impl<S: AsRef<str>> Action<S> {
-    pub fn new<'a, D: Decoder>(action: ActionType, mut scanner: Scan<'a, D>) -> crate::Result<Self>
+    pub fn new<'a, D: Decoder>(action: ActionType, scanner: Scan<'a, D>) -> crate::Result<Self>
     where
         D: Decoder<Output<'a> = S>,
     {
         Ok(match action {
-            ActionType::Send => {
-                let args = SendArgs::try_from(scanner)?;
-                Self::Link(args.into())
+            ActionType::Afk => {
+                let AfkArgs { challenge } = scanner.try_into()?;
+                Self::Afk { challenge }
             }
             ActionType::Bold => Self::Bold,
-            ActionType::Underline => Self::Underline,
-            ActionType::Italic => Self::Italic,
+            ActionType::Br => Self::Br,
+            ActionType::Center => Self::Center,
             ActionType::Color => {
                 let ColorArgs { fore, back } = scanner.try_into()?;
                 Self::Color { fore, back }
             }
-            ActionType::Version => Self::Version,
-            ActionType::Font => {
-                let FontArgs {
-                    face,
-                    size,
-                    color,
-                    back,
-                } = scanner.try_into()?;
-                Self::Font {
-                    face,
-                    size,
-                    color,
-                    back,
-                }
-            }
-            ActionType::Sound => Self::Sound,
-            ActionType::User => Self::User,
-            ActionType::Password => Self::Password,
-            ActionType::Relocate => Self::Relocate,
-            ActionType::Frame => Self::Frame,
             ActionType::Dest => Self::Dest,
-            ActionType::Image => {
-                let ImageArgs { fname, url, is_map } = scanner.try_into()?;
-                Self::Image { fname, url, is_map }
+            ActionType::Expire => {
+                let ExpireArgs { name } = scanner.try_into()?;
+                Self::Expire { name }
             }
             ActionType::Filter => Self::Filter,
-            ActionType::Hyperlink => {
-                let args = HyperlinkArgs::try_from(scanner)?;
-                Self::Link(args.into())
-            }
-            ActionType::Br => Self::Br,
+            ActionType::Font => Self::Font(Font::try_from(scanner)?),
+            ActionType::Frame => Self::Frame,
+            ActionType::Gauge => Self::Gauge,
             ActionType::H1 => Self::Heading(Heading::H1),
             ActionType::H2 => Self::Heading(Heading::H2),
             ActionType::H3 => Self::Heading(Heading::H3),
             ActionType::H4 => Self::Heading(Heading::H4),
             ActionType::H5 => Self::Heading(Heading::H5),
             ActionType::H6 => Self::Heading(Heading::H6),
-            ActionType::Hr => Self::Hr,
-            ActionType::NoBr => Self::NoBr,
-            ActionType::SBr => Self::SBr,
-            ActionType::P => Self::P,
-            ActionType::Strike => Self::Strike,
-            ActionType::Script => Self::Script,
-            ActionType::Small => Self::Small,
-            ActionType::Tt => Self::Tt,
-            ActionType::Ul => Self::Ul,
-            ActionType::Ol => Self::Ol,
-            ActionType::Li => Self::Li,
-            ActionType::Samp => Self::Samp,
-            ActionType::Center => Self::Center,
             ActionType::High => Self::High,
-            ActionType::Var => {
-                let VarArgs { keywords, variable } = scanner.try_into()?;
-                Self::Var { keywords, variable }
+            ActionType::Hr => Self::Hr,
+            ActionType::Hyperlink => Self::Link(HyperlinkArgs::try_from(scanner)?.into()),
+            ActionType::Image => Self::Image(Image::try_from(scanner)?),
+            ActionType::Italic => Self::Italic,
+            ActionType::Li => Self::Li,
+            ActionType::Mxp => {
+                let MxpArgs { keywords } = scanner.try_into()?;
+                Self::Mxp { keywords }
             }
-            ActionType::Afk => {
-                let AfkArgs { challenge } = scanner.try_into()?;
-                Self::Afk { challenge }
-            }
-            ActionType::Gauge => Self::Gauge,
-            ActionType::Stat => Self::Stat,
-            ActionType::Expire => {
-                let ExpireArgs { name } = scanner.try_into()?;
-                Self::Expire { name }
-            }
+            ActionType::NoBr => Self::NoBr,
+            ActionType::Ol => Self::Ol,
+            ActionType::P => Self::P,
+            ActionType::Password => Self::Password,
+            ActionType::RecommendOption => Self::RecommendOption,
+            ActionType::Relocate => Self::Relocate,
             ActionType::Reset => Self::Reset,
-            ActionType::Mxp => Self::Mxp {
-                keywords: scanner.with_keywords().into_keywords(),
-            },
+            ActionType::Samp => Self::Samp,
+            ActionType::SBr => Self::SBr,
+            ActionType::Script => Self::Script,
+            ActionType::Send => Self::Link(SendArgs::try_from(scanner)?.into()),
+            ActionType::SetOption => Self::SetOption,
+            ActionType::Small => Self::Small,
+            ActionType::Sound => Self::Sound,
+            ActionType::Stat => Self::Stat,
+            ActionType::Strike => Self::Strike,
             ActionType::Support => {
-                let mut questions = Vec::with_capacity(scanner.len());
-                while let Some(question) = scanner.next()? {
-                    questions.push(question);
-                }
-                let mut supported = Vec::new();
-                Atom::fmt_supported(&mut supported, &questions);
+                let SupportArgs { supported } = scanner.try_into()?;
                 Self::Support { supported }
             }
-            ActionType::SetOption => Self::SetOption,
-            ActionType::RecommendOption => Self::RecommendOption,
+            ActionType::Tt => Self::Tt,
+            ActionType::Ul => Self::Ul,
+            ActionType::Underline => Self::Underline,
+            ActionType::User => Self::User,
+            ActionType::Var => {
+                let VarArgs { variable, keywords } = scanner.try_into()?;
+                Self::Var { variable, keywords }
+            }
+            ActionType::Version => Self::Version,
         })
     }
 }

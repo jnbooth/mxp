@@ -134,12 +134,6 @@ static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
         atom("high", enums![Open], High, &[]),
         atom("hr", enums![Command], Hr, &[]),
         atom("i", enums![Open], Italic, &[]),
-        atom(
-            "image",
-            enums![Command, NotImp],
-            Image,
-            &["url", "src", "fname", "ismap"],
-        ),
         atom("italic", enums![Open], Italic, &[]),
         atom("li", enums![Command], Li, &[]),
         atom("music", enums![Command, NotImp], Sound, &[]),
@@ -178,6 +172,14 @@ static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
             enums![Open],
             Font,
             &["face", "size", "color", "back"],
+        ),
+        atom(
+            "image",
+            enums![Command, NotImp],
+            Image,
+            &[
+                "url", "fname", "t", "h", "w", "hspace", "vspace", "align", "ismap",
+            ],
         ),
         atom(
             "send",

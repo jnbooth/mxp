@@ -5,12 +5,24 @@ use std::str;
 
 use bytes::Bytes;
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SharedString {
     inner: Bytes,
 }
 
+impl Default for SharedString {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SharedString {
+    pub const fn new() -> Self {
+        Self {
+            inner: Bytes::new(),
+        }
+    }
+
     /// Converts a `Bytes` to a string slice without checking
     /// that the string contains valid UTF-8.
     ///
