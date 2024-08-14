@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::num::NonZeroU8;
 use std::{io, mem};
 
@@ -253,7 +254,7 @@ impl Transformer {
         match component {
             mxp::ElementComponent::Atom(atom) => {
                 let scanner = mxp_state.decode_args(&mut args);
-                self.mxp_open_atom(&mxp::Action::new(atom.action, scanner)?);
+                self.mxp_open_atom(mxp::Action::new(atom.action, scanner)?);
             }
             mxp::ElementComponent::Custom(el) => self.mxp_open_element(el, &args, mxp_state)?,
         }
@@ -274,7 +275,7 @@ impl Transformer {
             self.output.set_mxp_window(window.clone());
         }
         for action in mxp_state.decode_element(el, args) {
-            self.mxp_open_atom(&action?);
+            self.mxp_open_atom(action?);
         }
         if let Some(fore) = el.fore {
             self.output.set_mxp_foreground(fore);
@@ -285,7 +286,7 @@ impl Transformer {
         Ok(())
     }
 
-    fn mxp_open_atom<S: AsRef<str>>(&mut self, action: &mxp::Action<S>) {
+    fn mxp_open_atom(&mut self, action: mxp::Action<Cow<str>>) {
         use mxp::{Action, MxpKeyword};
         /*
         if action == Action::Hyperlink && args.get("xch_cmd").is_some() {
@@ -293,16 +294,16 @@ impl Transformer {
             action = Action::Send;
         }*/
         match action {
-            Action::Heading(heading) => self.output.set_mxp_heading(*heading),
+            Action::Heading(heading) => self.output.set_mxp_heading(heading),
             Action::Bold => self.output.set_mxp_flag(TextStyle::Bold),
             Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
             Action::Italic => self.output.set_mxp_flag(TextStyle::Italic),
             Action::Color { fore, back } => {
                 if let Some(fg) = fore {
-                    self.output.set_mxp_foreground(*fg);
+                    self.output.set_mxp_foreground(fg);
                 }
                 if let Some(bg) = back {
-                    self.output.set_mxp_background(*bg);
+                    self.output.set_mxp_background(bg);
                 }
             }
             Action::High => self.output.set_mxp_flag(TextStyle::Highlight),
@@ -316,10 +317,10 @@ impl Transformer {
                 bgcolor,
             } => {
                 if let Some(face) = face {
-                    self.output.set_mxp_font(face.as_ref().to_owned());
+                    self.output.set_mxp_font(face.into_owned());
                 }
                 if let Some(size) = size {
-                    self.output.set_mxp_size(*size);
+                    self.output.set_mxp_size(size);
                 }
                 if let Some(fgcolor) = fgcolor {
                     for fg in fgcolor.iter() {
@@ -330,20 +331,17 @@ impl Transformer {
                     }
                 }
                 if let Some(bg) = bgcolor {
-                    self.output.set_mxp_background(*bg);
+                    self.output.set_mxp_background(bg);
                 }
             }
             Action::Version => self.input.append(
                 mxp::responses::identify(&self.config.app_name, &self.config.version).as_bytes(),
             ),
             Action::Afk { challenge } => {
-                let challenge = match challenge {
-                    Some(challenge) => challenge.as_ref(),
-                    None => "",
-                };
+                let challenge = challenge.as_deref().unwrap_or_default();
                 self.output.append_afk(challenge);
             }
-            Action::Support { supported } => self.input.append(supported),
+            Action::Support { supported } => self.input.append(&supported),
             Action::User => input_mxp_auth(&mut self.input, &self.config.player),
             Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
             Action::Br => {
@@ -413,11 +411,7 @@ impl Transformer {
                     }
                 }
                 if let Some(url) = url {
-                    let fname = match fname {
-                        Some(fname) => fname.as_ref(),
-                        None => "",
-                    };
-                    let url = url.as_ref();
+                    let fname = fname.as_deref().unwrap_or_default();
                     self.output.append_image(format!("{url}{fname}"));
                 }
             }
@@ -427,8 +421,8 @@ impl Transformer {
             }
             Action::Var { keywords, variable } => {
                 if let Some(variable) = variable {
-                    let variable = variable.as_ref();
-                    self.output.set_mxp_variable(variable.to_owned(), *keywords);
+                    self.output
+                        .set_mxp_variable(variable.into_owned(), keywords);
                 }
             }
             Action::Sound
