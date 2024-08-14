@@ -2,13 +2,16 @@ use super::arguments::{KeywordFilter, NoKeywords};
 use super::font_args::FgColor;
 use super::pueblo::XchMode;
 use crate::color::RgbColor;
+use crate::entity::Link;
 use crate::entity::SendTo;
 use crate::keyword::{EntityKeyword, ImageKeyword, SendKeyword};
 use crate::parser::Error;
+use crate::ErrorKind;
 use casefold::ascii::CaseFoldMap;
 use enumeration::{Enum, EnumSet};
 use std::borrow::Borrow;
 use std::marker::PhantomData;
+use std::num::NonZeroU8;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 use std::{slice, str};
@@ -192,8 +195,25 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ColorArgs {
     }
 }
 
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct ExpireArgs<S> {
+    pub name: Option<S>,
+}
+
+impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ExpireArgs<D::Output<'a>> {
+    type Error = Error;
+
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+        Ok(Self {
+            name: scanner.next()?,
+        })
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub struct FontArgs<S> {
+    pub face: Option<S>,
+    pub size: Option<NonZeroU8>,
     pub fgcolor: Option<FgColor<S>>,
     pub bgcolor: Option<RgbColor>,
 }
@@ -203,6 +223,10 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for FontArgs<D::Output<'a>> {
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
+            face: scanner.next_or(&["face"])?,
+            size: scanner
+                .next_or(&["size"])?
+                .and_then(|size| size.as_ref().parse().ok()),
             fgcolor: scanner
                 .next_or(&["color", "fgcolor"])?
                 .map(|fgcolor| FgColor { inner: fgcolor }),
@@ -215,7 +239,9 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for FontArgs<D::Output<'a>> {
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct HyperlinkArgs<S> {
-    pub href: Option<S>,
+    pub href: S,
+    pub hint: Option<S>,
+    pub expire: Option<S>,
 }
 
 impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for HyperlinkArgs<D::Output<'a>> {
@@ -223,7 +249,11 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for HyperlinkArgs<D::Output<'a>> {
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
-            href: scanner.next_or(&["href"])?,
+            href: scanner
+                .next_or(&["href"])?
+                .ok_or_else(|| Error::new("", ErrorKind::NoArgument))?,
+            hint: scanner.next_or(&["hint"])?,
+            expire: scanner.next_or(&["expire"])?,
         })
     }
 }
@@ -264,6 +294,7 @@ pub struct SendArgs<S> {
     pub href: Option<S>,
     pub hint: Option<S>,
     pub sendto: SendTo,
+    pub expire: Option<S>,
 }
 
 impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for SendArgs<D::Output<'a>> {
@@ -274,12 +305,38 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for SendArgs<D::Output<'a>> {
         Ok(Self {
             href: scanner.next_or(&["href", "xch_cmd"])?,
             hint: scanner.next_or(&["hint", "xch_hint"])?,
+            expire: scanner.next_or(&["expire"])?,
             sendto: if scanner.into_keywords().contains(SendKeyword::Prompt) {
                 SendTo::Input
             } else {
                 SendTo::World
             },
         })
+    }
+}
+
+impl<S: AsRef<str>> From<SendArgs<S>> for Link {
+    fn from(value: SendArgs<S>) -> Self {
+        Self::new(
+            value
+                .href
+                .as_ref()
+                .map_or(Link::EMBED_ENTITY, AsRef::as_ref),
+            value.hint.as_ref().map(AsRef::as_ref),
+            value.sendto,
+            value.expire.map(|expire| expire.as_ref().to_owned()),
+        )
+    }
+}
+
+impl<S: AsRef<str>> From<HyperlinkArgs<S>> for Link {
+    fn from(value: HyperlinkArgs<S>) -> Self {
+        Self::new(
+            value.href.as_ref(),
+            value.hint.as_ref().map(AsRef::as_ref),
+            SendTo::Internet,
+            value.expire.map(|expire| expire.as_ref().to_owned()),
+        )
     }
 }
 

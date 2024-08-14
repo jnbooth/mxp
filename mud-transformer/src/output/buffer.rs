@@ -1,3 +1,4 @@
+use std::num::NonZeroU8;
 use std::str;
 
 use bytes::BytesMut;
@@ -131,6 +132,8 @@ impl BufferedOutput {
                 flags: self.ansi_flags,
                 foreground: self.color(self.ansi_foreground),
                 background: self.color(self.ansi_background),
+                font: None,
+                size: None,
                 action: None,
                 heading: None,
             });
@@ -165,6 +168,8 @@ impl BufferedOutput {
                 ignore_colors,
                 TermColor::BLACK,
             )),
+            font: span.font.clone(),
+            size: span.size,
             action: span.action.as_ref().map(|action| action.with_text(&text)),
             heading: span.heading,
             text,
@@ -357,6 +362,18 @@ impl BufferedOutput {
 
     pub fn set_mxp_background<C: Into<TermColor>>(&mut self, background: C) {
         if self.spans.set_background(background.into()) {
+            self.flush_mxp();
+        }
+    }
+
+    pub fn set_mxp_font(&mut self, font: String) {
+        if self.spans.set_font(font) {
+            self.flush_mxp();
+        }
+    }
+
+    pub fn set_mxp_size(&mut self, size: NonZeroU8) {
+        if self.spans.set_size(size) {
             self.flush_mxp();
         }
     }

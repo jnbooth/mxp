@@ -1,4 +1,5 @@
 use std::fmt::{self, Display, Formatter};
+use std::num::NonZeroU8;
 use std::vec;
 
 use bytes::Bytes;
@@ -73,6 +74,8 @@ pub struct TextFragment {
     pub flags: EnumSet<TextStyle>,
     pub foreground: RgbColor,
     pub background: RgbColor,
+    pub font: Option<String>,
+    pub size: Option<NonZeroU8>,
     pub action: Option<mxp::Link>,
     pub heading: Option<mxp::Heading>,
 }

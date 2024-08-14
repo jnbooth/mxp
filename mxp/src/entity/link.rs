@@ -22,12 +22,14 @@ pub struct Link {
     pub prompts: Vec<String>,
     /// Where to send the result of clicking on the link.
     pub sendto: SendTo,
+    /// Optional scope for the link.
+    pub expires: Option<String>,
 }
 
 impl Link {
     pub const EMBED_ENTITY: &'static str = "&text;";
 
-    pub fn new(action: &str, hints: Option<&str>, sendto: SendTo) -> Self {
+    pub fn new(action: &str, hints: Option<&str>, sendto: SendTo, expires: Option<String>) -> Self {
         let (action, actions) = split_list(action);
         match hints {
             None => Self {
@@ -35,6 +37,7 @@ impl Link {
                 hint: None,
                 prompts: actions,
                 sendto,
+                expires,
             },
             Some(hints) => {
                 let (hint, prompts) = split_list(hints);
@@ -43,6 +46,7 @@ impl Link {
                     hint: Some(hint),
                     prompts: if prompts.is_empty() { actions } else { prompts },
                     sendto,
+                    expires,
                 }
             }
         }
@@ -59,6 +63,7 @@ impl Link {
                 .map(|prompt| embed(prompt, text))
                 .collect(),
             sendto: self.sendto,
+            expires: self.expires.clone(),
         }
     }
 }

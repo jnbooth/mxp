@@ -1,3 +1,4 @@
+use std::num::NonZeroU8;
 use std::{io, mem};
 
 use super::config::{TransformerConfig, UseMxp};
@@ -37,7 +38,7 @@ pub struct Transformer {
     mxp_mode_default: mxp::Mode,
     mxp_mode: mxp::Mode,
     mxp_mode_previous: mxp::Mode,
-    mxp_quote_terminator: Option<u8>,
+    mxp_quote_terminator: Option<NonZeroU8>,
     mxp_string: Vec<u8>,
     mxp_active_tags: TagList,
     mxp_state: mxp::State,
@@ -285,7 +286,7 @@ impl Transformer {
     }
 
     fn mxp_open_atom<S: AsRef<str>>(&mut self, action: &mxp::Action<S>) {
-        use mxp::{Action, Link, MxpKeyword, SendTo};
+        use mxp::{Action, MxpKeyword};
         /*
         if action == Action::Hyperlink && args.get("xch_cmd").is_some() {
             self.pueblo_active = true;
@@ -305,26 +306,21 @@ impl Transformer {
                 }
             }
             Action::High => self.output.set_mxp_flag(TextStyle::Highlight),
-            Action::Send { href, hint, sendto } => {
-                let action = match href {
-                    Some(href) => href.as_ref(),
-                    None => Link::EMBED_ENTITY,
-                };
-                self.output.set_mxp_action(Link::new(
-                    action,
-                    hint.as_ref().map(AsRef::as_ref),
-                    *sendto,
-                ));
+            Action::Link(link) => {
+                self.output.set_mxp_action(link.clone());
             }
-            Action::Hyperlink { href } => {
-                let action = match href {
-                    Some(href) => href.as_ref(),
-                    None => Link::EMBED_ENTITY,
-                };
-                self.output
-                    .set_mxp_action(Link::new(action, None, SendTo::Internet));
-            }
-            Action::Font { fgcolor, bgcolor } => {
+            Action::Font {
+                face,
+                size,
+                fgcolor,
+                bgcolor,
+            } => {
+                if let Some(face) = face {
+                    self.output.set_mxp_font(face.as_ref().to_owned());
+                }
+                if let Some(size) = size {
+                    self.output.set_mxp_size(*size);
+                }
                 if let Some(fgcolor) = fgcolor {
                     for fg in fgcolor.iter() {
                         match fg {
@@ -352,6 +348,9 @@ impl Transformer {
             Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
             Action::Br => {
                 self.output.start_line();
+            }
+            Action::SBr => {
+                self.output.push(b' ');
             }
             Action::Reset => {
                 self.mxp_off(false);
@@ -445,7 +444,7 @@ impl Transformer {
             | Action::Center
             | Action::Gauge
             | Action::Stat
-            | Action::Expire
+            | Action::Expire { .. }
             | Action::SetOption
             | Action::RecommendOption
             | Action::Body
@@ -927,9 +926,22 @@ impl Transformer {
                     ));
                     self.mxp_string.clear();
                 }
-                b'\'' | b'"' => {
+                b'\'' => {
+                    const NON_ZERO_APOSTROPHE: NonZeroU8 = match NonZeroU8::new(b'\'') {
+                        Some(quote) => quote,
+                        None => unreachable!(),
+                    };
                     self.mxp_string.push(c);
-                    self.mxp_quote_terminator = Some(c);
+                    self.mxp_quote_terminator = Some(NON_ZERO_APOSTROPHE);
+                    self.phase = Phase::MxpQuote;
+                }
+                b'"' => {
+                    const NON_ZERO_QUOTE: NonZeroU8 = match NonZeroU8::new(b'"') {
+                        Some(quote) => quote,
+                        None => unreachable!(),
+                    };
+                    self.mxp_string.push(c);
+                    self.mxp_quote_terminator = Some(NON_ZERO_QUOTE);
                     self.phase = Phase::MxpQuote;
                 }
                 b'-' => {
@@ -948,9 +960,11 @@ impl Transformer {
             Phase::MxpComment => self.mxp_string.push(c),
 
             Phase::MxpQuote => {
-                if self.mxp_quote_terminator == Some(c) {
-                    self.phase = Phase::MxpElement;
-                    self.mxp_quote_terminator = None;
+                if let Some(terminator) = self.mxp_quote_terminator {
+                    if terminator.get() == c {
+                        self.phase = Phase::MxpElement;
+                        self.mxp_quote_terminator = None;
+                    }
                 }
                 self.mxp_string.push(c);
             }

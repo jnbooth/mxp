@@ -1,4 +1,5 @@
 #![allow(clippy::redundant_field_names)]
+use std::num::NonZeroU8;
 use std::ops::Index;
 
 use super::color::TermColor;
@@ -64,14 +65,16 @@ pub struct Span {
     pub(super) format: EnumSet<TextFormat>,
     pub(super) foreground: Option<TermColor>,
     pub(super) background: Option<TermColor>,
+    pub(super) font: Option<String>,
+    pub(super) size: Option<NonZeroU8>,
     pub(super) action: Option<mxp::Link>,
     pub(super) list: Option<InList>,
     pub(super) heading: Option<Heading>,
+    pub(super) gag: bool,
+    pub(super) window: Option<String>,
     /// Which variable to set (FLAG in MXP).
     pub(super) variable: Option<String>,
     pub(super) variable_flags: EnumSet<mxp::EntityKeyword>,
-    pub(super) gag: bool,
-    pub(super) window: Option<String>,
 }
 
 impl Default for Span {
@@ -88,6 +91,8 @@ impl Span {
             format: EnumSet::new(),
             foreground: None,
             background: None,
+            font: None,
+            size: None,
             action: None,
             list: None,
             heading: None,
@@ -260,6 +265,14 @@ impl SpanList {
 
     pub fn set_background(&mut self, background: TermColor) -> bool {
         set_prop!(self, background);
+    }
+
+    pub fn set_font(&mut self, font: String) -> bool {
+        set_prop!(self, font);
+    }
+
+    pub fn set_size(&mut self, size: NonZeroU8) -> bool {
+        set_prop!(self, size);
     }
 
     pub fn set_action(&mut self, action: mxp::Link) -> bool {

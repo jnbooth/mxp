@@ -1,7 +1,10 @@
+use std::num::NonZeroU8;
+
 use super::atom::Atom;
-use super::link::SendTo;
+use super::link::Link;
 use crate::argument::scan::{
-    AfkArgs, ColorArgs, Decoder, FontArgs, HyperlinkArgs, ImageArgs, Scan, SendArgs, VarArgs,
+    AfkArgs, ColorArgs, Decoder, ExpireArgs, FontArgs, HyperlinkArgs, ImageArgs, Scan, SendArgs,
+    VarArgs,
 };
 use crate::argument::{FgColor, XchMode};
 use crate::color::RgbColor;
@@ -60,6 +63,8 @@ pub enum ActionType {
     Hr,
     /// non-breaking newline
     NoBr,
+    /// Soft line break
+    SBr,
     /// Paragraph break (secure)
     P,
     /// Strikethrough
@@ -131,12 +136,6 @@ pub enum Heading {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Action<S> {
-    /// eg. <send href="go west"> west
-    Send {
-        href: Option<S>,
-        hint: Option<S>,
-        sendto: SendTo,
-    },
     /// bold
     Bold,
     /// underline
@@ -152,6 +151,8 @@ pub enum Action<S> {
     Version,
     /// font appearance
     Font {
+        face: Option<S>,
+        size: Option<NonZeroU8>,
         fgcolor: Option<FgColor<S>>,
         bgcolor: Option<RgbColor>,
     },
@@ -176,10 +177,8 @@ pub enum Action<S> {
     },
     /// sound/image filter
     Filter,
-    /// Hyperlink (secure)
-    Hyperlink {
-        href: Option<S>,
-    },
+    /// Hyperlink or send prompt (secure)
+    Link(Link),
     /// Hard Line break (secure)
     Br,
     /// heading (secure)
@@ -188,6 +187,8 @@ pub enum Action<S> {
     Hr,
     /// non-breaking newline
     NoBr,
+    /// Soft linebreak
+    SBr,
     /// Paragraph break (secure)
     P,
     /// Strikethrough
@@ -226,7 +227,9 @@ pub enum Action<S> {
     /// status
     Stat,
     /// expire
-    Expire,
+    Expire {
+        name: Option<S>,
+    },
 
     /// close all open tags
     Reset,
@@ -268,8 +271,8 @@ impl<S: AsRef<str>> Action<S> {
     {
         Ok(match action {
             ActionType::Send => {
-                let SendArgs { href, hint, sendto } = scanner.try_into()?;
-                Self::Send { href, hint, sendto }
+                let args = SendArgs::try_from(scanner)?;
+                Self::Link(args.into())
             }
             ActionType::Bold => Self::Bold,
             ActionType::Underline => Self::Underline,
@@ -280,8 +283,18 @@ impl<S: AsRef<str>> Action<S> {
             }
             ActionType::Version => Self::Version,
             ActionType::Font => {
-                let FontArgs { fgcolor, bgcolor } = scanner.try_into()?;
-                Self::Font { fgcolor, bgcolor }
+                let FontArgs {
+                    face,
+                    size,
+                    fgcolor,
+                    bgcolor,
+                } = scanner.try_into()?;
+                Self::Font {
+                    face,
+                    size,
+                    fgcolor,
+                    bgcolor,
+                }
             }
             ActionType::Sound => Self::Sound,
             ActionType::User => Self::User,
@@ -305,8 +318,8 @@ impl<S: AsRef<str>> Action<S> {
             }
             ActionType::Filter => Self::Filter,
             ActionType::Hyperlink => {
-                let HyperlinkArgs { href } = scanner.try_into()?;
-                Self::Hyperlink { href }
+                let args = HyperlinkArgs::try_from(scanner)?;
+                Self::Link(args.into())
             }
             ActionType::Br => Self::Br,
             ActionType::H1 => Self::Heading(Heading::H1),
@@ -317,6 +330,7 @@ impl<S: AsRef<str>> Action<S> {
             ActionType::H6 => Self::Heading(Heading::H6),
             ActionType::Hr => Self::Hr,
             ActionType::NoBr => Self::NoBr,
+            ActionType::SBr => Self::SBr,
             ActionType::P => Self::P,
             ActionType::Strike => Self::Strike,
             ActionType::Script => Self::Script,
@@ -338,7 +352,10 @@ impl<S: AsRef<str>> Action<S> {
             }
             ActionType::Gauge => Self::Gauge,
             ActionType::Stat => Self::Stat,
-            ActionType::Expire => Self::Expire,
+            ActionType::Expire => {
+                let ExpireArgs { name } = scanner.try_into()?;
+                Self::Expire { name }
+            }
             ActionType::Reset => Self::Reset,
             ActionType::Mxp => Self::Mxp {
                 keywords: scanner.with_keywords().into_keywords(),
