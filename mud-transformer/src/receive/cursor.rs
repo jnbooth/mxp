@@ -1,7 +1,8 @@
 use std::io::{self, BufRead, IoSliceMut, Read};
 use std::iter::FusedIterator;
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ReceiveCursor<'a> {
     inner: &'a [u8],
 }
@@ -51,7 +52,7 @@ impl<'a> BufRead for ReceiveCursor<'a> {
 
     #[inline]
     fn consume(&mut self, amt: usize) {
-        self.inner.consume(amt)
+        self.inner.consume(amt);
     }
 }
 

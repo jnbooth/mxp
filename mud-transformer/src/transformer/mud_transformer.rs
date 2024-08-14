@@ -254,7 +254,7 @@ impl Transformer {
                 let scanner = mxp_state.decode_args(&mut args);
                 self.mxp_open_atom(&mxp::Action::new(atom.action, scanner)?);
             }
-            mxp::ElementComponent::Custom(el) => self.mxp_open_element(el, args, mxp_state)?,
+            mxp::ElementComponent::Custom(el) => self.mxp_open_element(el, &args, mxp_state)?,
         }
 
         Ok(())
@@ -263,16 +263,16 @@ impl Transformer {
     fn mxp_open_element(
         &mut self,
         el: &mxp::Element,
-        args: mxp::Arguments,
+        args: &mxp::Arguments,
         mxp_state: &mxp::State,
     ) -> mxp::Result<()> {
         if el.gag {
             self.output.set_mxp_gag();
         }
         if let Some(window) = &el.window {
-            self.output.set_mxp_window(window.clone())
+            self.output.set_mxp_window(window.clone());
         }
-        for action in mxp_state.decode_element(el, &args) {
+        for action in mxp_state.decode_element(el, args) {
             self.mxp_open_atom(&action?);
         }
         if let Some(fore) = el.fore {
@@ -484,11 +484,11 @@ impl Transformer {
         }
         match newmode {
             mxp::Mode::OPEN | mxp::Mode::SECURE | mxp::Mode::LOCKED => {
-                self.mxp_mode_default = mxp::Mode::OPEN
+                self.mxp_mode_default = mxp::Mode::OPEN;
             }
             mxp::Mode::SECURE_ONCE => self.mxp_mode_previous = self.mxp_mode,
             mxp::Mode::PERM_OPEN | mxp::Mode::PERM_SECURE | mxp::Mode::PERM_LOCKED => {
-                self.mxp_mode_default = newmode
+                self.mxp_mode_default = newmode;
             }
             _ => (),
         }
@@ -498,7 +498,7 @@ impl Transformer {
         }
         let mxp_state = mem::take(&mut self.mxp_state);
         if let Some(element) = mxp_state.get_line_tag(newmode) {
-            if let Err(e) = self.mxp_open_element(element, mxp::Arguments::new(), &mxp_state) {
+            if let Err(e) = self.mxp_open_element(element, &mxp::Arguments::new(), &mxp_state) {
                 self.handle_mxp_error(e);
             }
         }
@@ -510,18 +510,18 @@ impl Transformer {
             ansi::RESET => self.output.reset_ansi(),
 
             ansi::BOLD => self.output.set_ansi_flag(TextStyle::Bold),
-            ansi::BLINK => self.output.set_ansi_flag(TextStyle::Italic),
+            ansi::BLINK | ansi::SLOW_BLINK | ansi::FAST_BLINK => {
+                self.output.set_ansi_flag(TextStyle::Italic);
+            }
             ansi::UNDERLINE => self.output.set_ansi_flag(TextStyle::Underline),
-            ansi::SLOW_BLINK => self.output.set_ansi_flag(TextStyle::Italic),
-            ansi::FAST_BLINK => self.output.set_ansi_flag(TextStyle::Italic),
             ansi::INVERSE => self.output.set_ansi_flag(TextStyle::Inverse),
             ansi::STRIKEOUT => self.output.set_ansi_flag(TextStyle::Strikeout),
 
             ansi::CANCEL_BOLD => self.output.unset_ansi_flag(TextStyle::Bold),
-            ansi::CANCEL_BLINK => self.output.unset_ansi_flag(TextStyle::Italic),
+            ansi::CANCEL_BLINK | ansi::CANCEL_SLOW_BLINK | ansi::CANCEL_FAST_BLINK => {
+                self.output.unset_ansi_flag(TextStyle::Italic);
+            }
             ansi::CANCEL_UNDERLINE => self.output.unset_ansi_flag(TextStyle::Underline),
-            ansi::CANCEL_SLOW_BLINK => self.output.unset_ansi_flag(TextStyle::Italic),
-            ansi::CANCEL_FAST_BLINK => self.output.unset_ansi_flag(TextStyle::Italic),
             ansi::CANCEL_INVERSE => self.output.unset_ansi_flag(TextStyle::Inverse),
             ansi::CANCEL_STRIKEOUT => self.output.unset_ansi_flag(TextStyle::Strikeout),
 
@@ -657,6 +657,7 @@ impl Transformer {
         Ok(())
     }
 
+    #[allow(clippy::match_same_arms)]
     fn receive_byte(&mut self, c: u8) {
         let last_char = self.output.last().unwrap_or(b'\n');
 
@@ -766,7 +767,7 @@ impl Transformer {
                         self.supports_mccp_2 = true;
                         true
                     }
-                    telnet::SGA | telnet::MUD_SPECIFIC => true,
+                    telnet::SGA | telnet::MUD_SPECIFIC | telnet::CHARSET => true,
                     telnet::ECHO if self.config.no_echo_off => false,
                     telnet::ECHO => {
                         self.no_echo = true;
@@ -781,7 +782,6 @@ impl Transformer {
                         }
                     },
                     telnet::WILL_EOR => self.config.convert_ga_to_newline,
-                    telnet::CHARSET => true,
                     _ if self.config.will.contains(&c) => {
                         self.output.append_telnet_will(c);
                         true
@@ -1030,7 +1030,7 @@ impl Transformer {
                     self.phase = Phase::MxpElement;
                 }
                 _ if self.mxp_mode == mxp::Mode::SECURE_ONCE => {
-                    self.mxp_mode = self.mxp_mode_previous
+                    self.mxp_mode = self.mxp_mode_previous;
                 }
                 _ if self.mxp_script => (),
                 b'&' => {

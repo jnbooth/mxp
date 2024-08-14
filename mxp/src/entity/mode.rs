@@ -27,15 +27,18 @@ impl Mode {
     pub const fn is_open(self) -> bool {
         matches!(self, Self::OPEN | Self::PERM_OPEN)
     }
+
     pub const fn is_secure(self) -> bool {
         matches!(self, Self::SECURE | Self::SECURE_ONCE | Self::PERM_SECURE)
     }
+
     pub const fn is_mxp(self) -> bool {
         matches!(
             self,
             Self::OPEN | Self::PERM_OPEN | Self::SECURE | Self::SECURE_ONCE | Self::PERM_SECURE
         )
     }
+
     pub const fn is_user_defined(self) -> bool {
         self.0 >= Self::USER_DEFINED_MIN.0 && self.0 <= Self::USER_DEFINED_MAX.0
     }

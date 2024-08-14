@@ -2,7 +2,6 @@ use std::io::{self, Write};
 
 use mud_transformer::{Output, OutputFragment, TransformerConfig};
 
-#[must_use]
 pub fn get_config() -> TransformerConfig {
     TransformerConfig {
         terminal_identification: "mushclient".to_owned(),

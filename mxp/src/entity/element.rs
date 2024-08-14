@@ -141,9 +141,8 @@ impl Element {
     }
 
     fn parse_items<S: AsRef<str>>(argument: Option<S>) -> crate::Result<Vec<ElementItem>> {
-        let argument = match argument {
-            Some(argument) => argument,
-            None => return Ok(Vec::new()),
+        let Some(argument) = argument else {
+            return Ok(Vec::new());
         };
         let definitions = argument.as_ref();
         let size_guess = definitions.bytes().filter(|&c| c == b'<').count();
@@ -173,14 +172,6 @@ impl Element {
     }
 
     pub fn parse<D: Decoder>(name: String, scanner: Scan<D>) -> crate::Result<Option<Self>> {
-        let mut scanner = scanner.with_keywords();
-        let items = Self::parse_items(scanner.next()?)?;
-
-        let attributes = match scanner.next_or(&["att"])? {
-            Some(atts) => Arguments::parse(Words::new(atts.as_ref()))?,
-            None => Arguments::default(),
-        };
-
         const fn nonzero(n: Mode) -> NonZeroU8 {
             match NonZeroU8::new(n.0) {
                 Some(n) => n,
@@ -189,6 +180,14 @@ impl Element {
         }
         const MIN_TAG: NonZeroU8 = nonzero(Mode::USER_DEFINED_MIN);
         const MAX_TAG: NonZeroU8 = nonzero(Mode::USER_DEFINED_MAX);
+
+        let mut scanner = scanner.with_keywords();
+        let items = Self::parse_items(scanner.next()?)?;
+
+        let attributes = match scanner.next_or(&["att"])? {
+            Some(atts) => Arguments::parse(Words::new(atts.as_ref()))?,
+            None => Arguments::default(),
+        };
 
         let tag = match scanner
             .next_or(&["tag"])?

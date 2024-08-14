@@ -59,9 +59,8 @@ impl LineTags {
     }
 
     pub fn set(&mut self, mode: usize, element: String) {
-        let i = match mode.checked_sub(OFFSET) {
-            Some(i) => i,
-            None => return,
+        let Some(i) = mode.checked_sub(OFFSET) else {
+            return;
         };
         if self.inner.len() <= i {
             self.inner.resize_with(i + 1, Default::default);

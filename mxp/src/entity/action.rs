@@ -346,7 +346,7 @@ impl<S: AsRef<str>> Action<S> {
             ActionType::Support => {
                 let mut questions = Vec::with_capacity(scanner.len());
                 while let Some(question) = scanner.next()? {
-                    questions.push(question)
+                    questions.push(question);
                 }
                 let mut supported = Vec::new();
                 Atom::fmt_supported(&mut supported, &questions);

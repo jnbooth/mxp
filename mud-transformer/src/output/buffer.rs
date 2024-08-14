@@ -12,13 +12,13 @@ use super::span::{InList, SpanList, TextFormat, TextStyle};
 use mxp::RgbColor;
 
 fn get_color(
-    span_color: &Option<TermColor>,
+    span_color: Option<TermColor>,
     ansi_color: TermColor,
     ignore_mxp: bool,
     default: TermColor,
 ) -> TermColor {
     match span_color {
-        Some(span_color) if !ignore_mxp && *span_color != default => *span_color,
+        Some(span_color) if !ignore_mxp && span_color != default => span_color,
         _ => ansi_color,
     }
 }
@@ -111,7 +111,7 @@ impl BufferedOutput {
                 window: None,
             },
         };
-        self.fragments.push(output)
+        self.fragments.push(output);
     }
 
     fn take_buf(&mut self) -> SharedString {
@@ -154,13 +154,13 @@ impl BufferedOutput {
         self.output(TextFragment {
             flags: span.flags | self.ansi_flags,
             foreground: self.color(get_color(
-                &span.foreground,
+                span.foreground,
                 self.ansi_foreground,
                 ignore_colors,
                 TermColor::WHITE,
             )),
             background: self.color(get_color(
-                &span.background,
+                span.background,
                 self.ansi_background,
                 ignore_colors,
                 TermColor::BLACK,
@@ -212,7 +212,7 @@ impl BufferedOutput {
         self.flush();
         self.buf.extend_from_slice(challenge.as_bytes());
         let challenge = self.take_buf();
-        self.output(TelnetFragment::Afk { challenge })
+        self.output(TelnetFragment::Afk { challenge });
     }
 
     pub fn append_effect(&mut self, effect: EffectFragment) {
@@ -248,7 +248,7 @@ impl BufferedOutput {
         self.flush();
         self.buf.extend_from_slice(data);
         let data = self.buf.split().freeze();
-        self.output(TelnetFragment::Subnegotiation { code, data })
+        self.output(TelnetFragment::Subnegotiation { code, data });
     }
 
     pub fn append_telnet_naws(&mut self) {
@@ -280,9 +280,8 @@ impl BufferedOutput {
             return;
         }
         self.ansi_foreground = foreground;
-        let span = match self.spans.get() {
-            Some(span) => span,
-            None => return,
+        let Some(span) = self.spans.get() else {
+            return;
         };
         match &span.foreground {
             Some(color) if *color == foreground => (),
@@ -296,9 +295,8 @@ impl BufferedOutput {
             return;
         }
         self.ansi_background = background;
-        let span = match self.spans.get() {
-            Some(span) => span,
-            None => return,
+        let Some(span) = self.spans.get() else {
+            return;
         };
         match &span.background {
             Some(color) if *color == background => (),

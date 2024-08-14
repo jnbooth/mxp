@@ -50,6 +50,6 @@ pub struct FgColor<S> {
 
 impl<S: AsRef<str>> FgColor<S> {
     pub fn iter(&self) -> impl Iterator<Item = FontEffect> + '_ {
-        self.inner.as_ref().split(',').flat_map(FontEffect::parse)
+        self.inner.as_ref().split(',').filter_map(FontEffect::parse)
     }
 }

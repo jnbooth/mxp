@@ -94,9 +94,8 @@ impl TagList {
             if tag.name.eq_ignore_ascii_case(name) {
                 if !secure && tag.secure {
                     return Err(mxp::Error::new(name, mxp::ErrorKind::TagOpenedInSecureMode));
-                } else {
-                    return Ok((i, tag));
                 }
+                return Ok((i, tag));
             }
             if !secure && tag.secure {
                 return Err(mxp::Error::new(

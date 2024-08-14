@@ -149,7 +149,7 @@ impl<'a, D: Decoder, K: Enum + FromStr> KeywordScan<'a, D, K> {
 
     pub fn into_keywords(self) -> EnumSet<K> {
         let mut keywords = self.keywords;
-        for keyword in self.inner.inner.flat_map(|arg| arg.parse().ok()) {
+        for keyword in self.inner.inner.filter_map(|arg| arg.parse().ok()) {
             keywords.insert(keyword);
         }
         keywords

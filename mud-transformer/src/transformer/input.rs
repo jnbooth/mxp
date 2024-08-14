@@ -36,6 +36,7 @@ impl BufferedInput {
     }
 }
 
+#[must_use = "if the output is unused, use self.clear() instead"]
 pub struct Drain<'a> {
     external_cursor: &'a mut usize,
     cursor: usize,

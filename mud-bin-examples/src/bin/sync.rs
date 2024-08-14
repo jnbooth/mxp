@@ -19,7 +19,9 @@ fn main() -> io::Result<()> {
                 write_output(output, &mut stdout)?;
                 None
             }
-            Ok(None) => return Ok(()),
+            Ok(None) => {
+                return Ok(());
+            }
             Err(e)
                 if e.kind() == io::ErrorKind::WouldBlock || e.kind() == io::ErrorKind::TimedOut =>
             {
@@ -29,7 +31,9 @@ fn main() -> io::Result<()> {
                 }
                 Some(&buf[..n])
             }
-            Err(e) => return Err(e),
+            Err(e) => {
+                return Err(e);
+            }
         };
         if let Some(input) = input {
             stream.write_all(input)?;

@@ -65,7 +65,7 @@ impl VariableMap {
         if keywords.contains(EntityKeyword::Private) {
             self.published.remove(key);
         } else if keywords.contains(EntityKeyword::Publish) {
-            self.published.insert(key.to_owned(), desc)
+            self.published.insert(key.to_owned(), desc);
         }
         if keywords.contains(EntityKeyword::Remove) {
             return self.remove_list_item(key, value);
@@ -79,12 +79,9 @@ impl VariableMap {
     }
 
     pub fn add_list_item(&mut self, key: &str, value: &str) {
-        let entity = match self.inner.get_mut(key) {
-            Some(entity) => entity,
-            None => {
-                self.inner.insert(key.to_owned(), value.to_owned());
-                return;
-            }
+        let Some(entity) = self.inner.get_mut(key) else {
+            self.inner.insert(key.to_owned(), value.to_owned());
+            return;
         };
         entity.reserve(value.len() + 1);
         entity.push('|');
@@ -92,9 +89,8 @@ impl VariableMap {
     }
 
     pub fn remove_list_item(&mut self, key: &str, value: &str) -> bool {
-        let entity = match self.inner.get_mut(key) {
-            Some(entity) => entity,
-            None => return false,
+        let Some(entity) = self.inner.get_mut(key) else {
+            return false;
         };
         *entity = entity
             .split('|')
@@ -112,6 +108,8 @@ pub struct EntityInfo<'a> {
     value: &'a str,
 }
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Clone, Debug)]
 pub struct PublishedIter<'a> {
     inner: slice::Iter<'a, PublishedEntity>,
     map: &'a CaseFoldMap<String, String>,

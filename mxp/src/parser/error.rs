@@ -177,7 +177,7 @@ impl<T: Debug + Enum> Display for UnrecognizedVariant<T> {
         let mut range = T::enumerate(..);
         write!(f, "got {}, expected one of: {:?}", self.input, range.next())?;
         for variant in range {
-            write!(f, ", {:?}", variant)?;
+            write!(f, ", {variant:?}")?;
         }
         Ok(())
     }

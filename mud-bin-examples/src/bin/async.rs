@@ -29,7 +29,9 @@ async fn main() -> io::Result<()> {
                     write_output(output, &mut stdout)?;
                     continue;
                 }
-                None => return Ok(())
+                None => {
+                    return Ok(());
+                }
             }
         };
         if let Some(input) = input {

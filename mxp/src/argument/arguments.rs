@@ -77,9 +77,8 @@ impl Arguments {
             if name == "/" {
                 if iter.next().is_none() {
                     return Ok(());
-                } else {
-                    return Err(Error::new(name, ErrorKind::InvalidArgumentName));
                 }
+                return Err(Error::new(name, ErrorKind::InvalidArgumentName));
             }
             if iter.as_str().starts_with('=') {
                 validate(name, ErrorKind::InvalidArgumentName)?;
@@ -113,7 +112,7 @@ mod tests {
                 .collect(),
             named: [("flag", "RoomName")]
                 .iter()
-                .map(|(k, v)| (CaseFold::new(k.to_string()), v.to_string()))
+                .map(|&(k, v)| (CaseFold::new(k.to_owned()), v.to_owned()))
                 .collect(),
         };
         assert_eq!(args, should_be);

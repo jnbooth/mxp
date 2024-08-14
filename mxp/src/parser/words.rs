@@ -4,6 +4,7 @@ use std::str::{self, CharIndices};
 use super::error::{Error, ErrorKind};
 use super::validation::validate;
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
 pub struct Words<'a> {
     s: &'a str,
@@ -76,8 +77,12 @@ impl<'a> Iterator for Words<'a> {
         };
         let (mut end, nextchar) = match self.current {
             Some(x) => x,
-            None if first == '"' || first == '\'' => return Some(&self.s[start..self.s.len() - 1]),
-            None => return Some(&self.s[start..]),
+            None if first == '"' || first == '\'' => {
+                return Some(&self.s[start..self.s.len() - 1]);
+            }
+            None => {
+                return Some(&self.s[start..]);
+            }
         };
         if first == '"' || first == '\'' {
             end -= 1; // shrink back from quote

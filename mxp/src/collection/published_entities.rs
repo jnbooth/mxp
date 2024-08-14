@@ -30,7 +30,7 @@ impl PublishedEntities {
         match self.inner.binary_search_by(|entity| entity.name.cmp(&name)) {
             Ok(pos) => {
                 if let Some(desc) = desc {
-                    self.inner[pos].desc = desc
+                    self.inner[pos].desc = desc;
                 }
             }
             Err(pos) => self.inner.insert(

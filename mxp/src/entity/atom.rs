@@ -46,7 +46,7 @@ impl Atom {
     {
         buf.extend_from_slice(b"\x1B[1z<SUPPORTS ");
         let mut has_args = false;
-        for arg in iter.into_iter() {
+        for arg in iter {
             has_args = true;
             let mut questions = arg.as_ref().split('.');
             let tag = questions.next().unwrap();
@@ -57,7 +57,7 @@ impl Atom {
                     None => write_can(buf, tag),
                     Some("*") => write_can_args(buf, atom),
                     Some(subtag) if atom.args.contains(&CaseFold::borrow(subtag)) => {
-                        write_can(buf, subtag)
+                        write_can(buf, subtag);
                     }
                     Some(subtag) => write_cant(buf, subtag),
                 },
@@ -96,7 +96,11 @@ fn write_can_args(buf: &mut Vec<u8>, atom: &Atom) {
     }
 }
 
+#[allow(clippy::enum_glob_use)]
 static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
+    use ActionType::*;
+    use TagFlag::*;
+
     let atom = |name: &'static str, flags, action, args: &[&'static str]| {
         let atom = Atom {
             name: name.to_owned(),
@@ -107,8 +111,6 @@ static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
         (name, atom)
     };
 
-    use ActionType::*;
-    use TagFlag::*;
     vec![
         atom("a", enums![], Hyperlink, &["href", "xch_cmd", "xch_hint"]),
         atom("afk", enums![Command], Afk, &[]),

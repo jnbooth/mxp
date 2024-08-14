@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::slice;
 
 use super::element_map::{ElementComponent, ElementMap};
@@ -77,12 +78,9 @@ impl State {
 
     fn define_element(&mut self, name: &str, words: Words) -> crate::Result<()> {
         let args = Arguments::parse(words)?;
-        let el = match Element::parse(name.to_owned(), args.scan(&self.entities))? {
-            Some(el) => el,
-            None => {
-                self.elements.remove(&name);
-                return Ok(());
-            }
+        let Some(el) = Element::parse(name.to_owned(), args.scan(&self.entities))? else {
+            self.elements.remove(&name);
+            return Ok(());
         };
         if let Some(tag) = el.tag {
             self.line_tags.set(tag.get() as usize, el.name.clone());
@@ -104,14 +102,13 @@ impl State {
         let s = words.as_str();
         let args = Arguments::parse(words)?;
         let mut scanner = args.scan(&self.entities).with_keywords();
-        let value = match scanner.next()? {
-            Some(value) => value,
-            None => return Err(Error::new(s, ErrorKind::NoDefinitionTag)),
+        let Some(value) = scanner.next()? else {
+            return Err(Error::new(s, ErrorKind::NoDefinitionTag));
         };
         let desc = scanner.next_or(&["desc"])?;
         let keywords = scanner.into_keywords();
         self.entities
-            .set(key, &value, desc.map(|desc| desc.into_owned()), keywords);
+            .set(key, &value, desc.map(Cow::into_owned), keywords);
         Ok(())
     }
 
@@ -124,6 +121,7 @@ impl State {
     }
 }
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct DecodeElement<'a, D> {
     decoder: D,
     items: slice::Iter<'a, ElementItem>,

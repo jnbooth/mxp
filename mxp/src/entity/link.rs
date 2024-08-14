@@ -48,6 +48,7 @@ impl Link {
         }
     }
 
+    #[must_use = "function returns a new link"]
     pub fn with_text(&self, text: &str) -> Self {
         Self {
             action: embed(&self.action, text),

@@ -25,6 +25,16 @@ const fn first_xterm_colors<const N: usize>() -> &'static [RgbColor; N] {
 }
 
 const fn create_xterm_colors() -> [RgbColor; 256] {
+    const COLOR_SCALE: &[u8] = &[
+        0,
+        95,
+        95 + 40,
+        95 + 40 + 40,
+        95 + 40 + 40 + 40,
+        95 + 40 + 40 + 40 + 40,
+    ];
+    const COLOR_SCALE_LEN: usize = COLOR_SCALE.len();
+
     let mut colors = [RgbColor::rgb(0, 0, 0); 256];
     colors[1] = RgbColor::rgb(128, 0, 0); // maroon
     colors[2] = RgbColor::rgb(0, 128, 0); // green
@@ -41,15 +51,6 @@ const fn create_xterm_colors() -> [RgbColor; 256] {
     colors[13] = RgbColor::rgb(255, 0, 255); // magenta
     colors[14] = RgbColor::rgb(0, 255, 255); // cyan
     colors[15] = RgbColor::rgb(255, 255, 255); // white
-    const COLOR_SCALE: &[u8] = &[
-        0,
-        95,
-        95 + 40,
-        95 + 40 + 40,
-        95 + 40 + 40 + 40,
-        95 + 40 + 40 + 40 + 40,
-    ];
-    const COLOR_SCALE_LEN: usize = COLOR_SCALE.len();
     let mut i = 16;
     let mut red_i = 0;
     while red_i < COLOR_SCALE_LEN {

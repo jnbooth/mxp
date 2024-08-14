@@ -102,7 +102,9 @@ impl Span {
 macro_rules! set_flag {
     ($self:ident, $p:ident, $val:ident) => {
         let span = match $self.get_mut() {
-            Some(span) if span.$p.contains($val) => return false,
+            Some(span) if span.$p.contains($val) => {
+                return false;
+            }
             Some(span) if !span.populated => {
                 span.$p.insert($val);
                 return false;
@@ -130,7 +132,9 @@ macro_rules! set_prop {
     };
     ($self:ident, $p:ident, $val:expr) => {
         let span = match $self.get_mut() {
-            Some(span) if span.$p == $val => return false,
+            Some(span) if span.$p == $val => {
+                return false;
+            }
             Some(span) if !span.populated => {
                 span.$p = $val;
                 return false;
@@ -193,11 +197,11 @@ impl SpanList {
     }
 
     pub fn truncate(&mut self, i: usize) {
-        self.spans.truncate(i)
+        self.spans.truncate(i);
     }
 
     pub fn clear(&mut self) {
-        self.spans.clear()
+        self.spans.clear();
     }
 
     pub fn len(&self) -> usize {
@@ -229,24 +233,24 @@ impl SpanList {
     }
 
     pub fn unset_format(&mut self, format: TextFormat) -> bool {
-        let span = match self.get_mut() {
-            Some(span) if !span.format.contains(format) => return false,
-            Some(span) if !span.populated => {
-                span.format.remove(format);
-                return false;
-            }
-            Some(span) => {
-                let mut format_flags = span.format;
-                format_flags.remove(format);
-                Span {
-                    populated: false,
-                    format: format_flags,
-                    ..span.clone()
-                }
-            }
-            None => return false,
+        let Some(span) = self.get_mut() else {
+            return false;
         };
-        self.spans.push(span);
+        if !span.format.contains(format) {
+            return false;
+        }
+        if !span.populated {
+            span.format.remove(format);
+            return false;
+        }
+        let mut format_flags = span.format;
+        format_flags.remove(format);
+        let next_span = Span {
+            populated: false,
+            format: format_flags,
+            ..span.clone()
+        };
+        self.spans.push(next_span);
         true
     }
 
