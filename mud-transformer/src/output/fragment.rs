@@ -24,6 +24,7 @@ pub enum OutputFragment {
     Image(String),
     LineBreak,
     MxpError(mxp::Error),
+    MxpVariable { name: String, value: Option<String> },
     PageBreak,
     Telnet(TelnetFragment),
     Text(TextFragment),
@@ -74,8 +75,6 @@ pub struct TextFragment {
     pub background: RgbColor,
     pub action: Option<mxp::Link>,
     pub heading: Option<mxp::Heading>,
-    /// Which variable to set (FLAG in MXP).
-    pub variable: Option<String>,
 }
 
 impl From<TextFragment> for OutputFragment {

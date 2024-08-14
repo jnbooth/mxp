@@ -2,6 +2,7 @@ use std::io::{self, Write};
 
 use mud_transformer::{Output, OutputFragment, TransformerConfig};
 
+#[must_use]
 pub fn get_config() -> TransformerConfig {
     TransformerConfig {
         terminal_identification: "mushclient".to_owned(),
@@ -17,7 +18,7 @@ where
     for output in iter {
         match output.fragment {
             OutputFragment::Text(fragment) => {
-                write!(writer, "{}", fragment)?;
+                write!(writer, "{fragment}")?;
             }
             OutputFragment::LineBreak => {
                 writer.write_all(b"\n")?;

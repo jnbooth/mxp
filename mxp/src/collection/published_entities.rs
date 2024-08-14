@@ -26,10 +26,20 @@ impl PublishedEntities {
         self.inner.clear();
     }
 
-    pub fn insert(&mut self, name: String, desc: String) {
+    pub fn insert(&mut self, name: String, desc: Option<String>) {
         match self.inner.binary_search_by(|entity| entity.name.cmp(&name)) {
-            Ok(pos) => self.inner[pos].desc = desc,
-            Err(pos) => self.inner.insert(pos, PublishedEntity { name, desc }),
+            Ok(pos) => {
+                if let Some(desc) = desc {
+                    self.inner[pos].desc = desc
+                }
+            }
+            Err(pos) => self.inner.insert(
+                pos,
+                PublishedEntity {
+                    name,
+                    desc: desc.unwrap_or_default(),
+                },
+            ),
         }
     }
 

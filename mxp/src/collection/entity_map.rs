@@ -1,8 +1,7 @@
 use std::borrow::Cow;
 use std::ops::{Deref, DerefMut};
 
-use casefold::ascii::CaseFoldMap;
-
+use super::variable_map::VariableMap;
 use crate::argument::scan::Decoder;
 use crate::argument::{Arguments, KeywordFilter};
 use crate::entity::Element;
@@ -35,10 +34,10 @@ where
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct EntityMap(CaseFoldMap<String, String>);
+pub struct EntityMap(VariableMap);
 
 impl Deref for EntityMap {
-    type Target = CaseFoldMap<String, String>;
+    type Target = VariableMap;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -72,31 +71,6 @@ impl EntityMap {
             None | Some("\x00") => Err(Error::new(key, ErrorKind::DisallowedEntityNumber)),
             some => Ok(some),
         }
-    }
-
-    pub fn add_list_item(&mut self, key: &str, value: &str) {
-        let entity = match self.0.get_mut(key) {
-            Some(entity) => entity,
-            None => {
-                self.0.insert(key.to_owned(), value.to_owned());
-                return;
-            }
-        };
-        entity.reserve(value.len() + 1);
-        entity.push('|');
-        entity.push_str(value);
-    }
-
-    pub fn remove_list_item(&mut self, key: &str, value: &str) {
-        let entity = match self.0.get_mut(key) {
-            Some(entity) => entity,
-            None => return,
-        };
-        *entity = entity
-            .split('|')
-            .filter(|item| *item != value)
-            .collect::<Vec<_>>()
-            .join("|");
     }
 
     pub fn element_decoder<'a>(

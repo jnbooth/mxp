@@ -33,7 +33,7 @@ mod argument;
 pub use argument::{Arguments, FgColor, FontEffect, FontStyle, XchMode};
 
 mod collection;
-pub use collection::{ElementComponent, ElementMap, EntityMap, State};
+pub use collection::{ElementComponent, ElementMap, EntityMap, PublishedIter, State, VariableMap};
 
 mod color;
 pub use color::{HexOutOfRangeError, ParseHexColorError, RgbColor};
@@ -44,7 +44,7 @@ pub use entity::*;
 pub mod escape;
 
 mod keyword;
-pub use keyword::MxpKeyword;
+pub use keyword::{EntityKeyword, MxpKeyword};
 
 mod lookup;
 

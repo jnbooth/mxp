@@ -3,11 +3,10 @@ use std::slice;
 use super::element_map::{ElementComponent, ElementMap};
 use super::entity_map::{ElementDecoder, EntityMap};
 use super::line_tags::{LineTagUpdate, LineTags};
-use super::published_entities::{PublishedEntities, PublishedEntity};
+use super::variable_map::PublishedIter;
 use crate::argument::scan::{Decoder, Scan};
 use crate::argument::Arguments;
 use crate::entity::{Action, Element, ElementItem, Mode};
-use crate::keyword::EntityKeyword;
 use crate::parser::{Error, ErrorKind, Words};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -15,7 +14,6 @@ pub struct State {
     elements: ElementMap,
     entities: EntityMap,
     line_tags: LineTags,
-    published: PublishedEntities,
 }
 
 impl State {
@@ -27,11 +25,10 @@ impl State {
         self.elements.clear();
         self.entities.clear();
         self.line_tags.clear();
-        self.published.clear();
     }
 
-    pub fn published_entities(&self) -> slice::Iter<PublishedEntity> {
-        self.published.iter()
+    pub fn published_entities(&self) -> PublishedIter {
+        self.entities.published()
     }
 
     pub fn get_component(&self, name: &str) -> crate::Result<ElementComponent> {
@@ -113,29 +110,8 @@ impl State {
         };
         let desc = scanner.next_or(&["desc"])?;
         let keywords = scanner.into_keywords();
-        if keywords.contains(EntityKeyword::Delete) {
-            self.entities.remove(key);
-            self.published.remove(key);
-            return Ok(());
-        }
-        if keywords.contains(EntityKeyword::Private) {
-            self.published.remove(key);
-        } else if keywords.contains(EntityKeyword::Publish) {
-            let desc = match desc {
-                Some(desc) => desc.into_owned(),
-                None => String::new(),
-            };
-            self.published.insert(key.to_owned(), desc)
-        }
-        if keywords.contains(EntityKeyword::Remove) {
-            self.entities.remove_list_item(key, &value);
-            return Ok(());
-        }
-        if keywords.contains(EntityKeyword::Add) {
-            self.entities.add_list_item(key, &value);
-            return Ok(());
-        }
-        self.entities.insert(key.to_owned(), value.into_owned());
+        self.entities
+            .set(key, &value, desc.map(|desc| desc.into_owned()), keywords);
         Ok(())
     }
 

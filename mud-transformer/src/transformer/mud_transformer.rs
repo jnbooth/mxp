@@ -7,6 +7,7 @@ use super::tag::{Tag, TagList};
 use crate::output::{BufferedOutput, InList, OutputDrain, TermColor, TextFormat, TextStyle};
 use crate::receive::{Decompress, ReceiveCursor};
 use crate::EffectFragment;
+use enumeration::EnumSet;
 use mxp::escape::{ansi, telnet};
 use mxp::RgbColor;
 
@@ -133,6 +134,14 @@ impl Transformer {
         self.input.drain()
     }
 
+    pub fn published_entities(&self) -> mxp::PublishedIter {
+        self.mxp_state.published_entities()
+    }
+
+    pub fn published_variables(&self) -> mxp::PublishedIter {
+        self.output.published_variables()
+    }
+
     fn handle_mxp_error(&mut self, err: mxp::Error) {
         self.output.append_mxp_error(err);
     }
@@ -235,7 +244,7 @@ impl Transformer {
         self.mxp_active_tags.push(tag);
 
         if let Some(variable) = component.variable() {
-            self.output.set_mxp_variable(variable);
+            self.output.set_mxp_variable(variable, EnumSet::new());
         }
 
         let mut args = mxp::Arguments::parse(words)?;
@@ -417,12 +426,10 @@ impl Transformer {
                 self.pueblo_active = true;
                 self.mxp_off(false);
             }
-            Action::Var { variable, .. } => {
+            Action::Var { keywords, variable } => {
                 if let Some(variable) = variable {
                     let variable = variable.as_ref();
-                    if mxp::EntityMap::global(variable).is_none() && mxp::is_valid(variable) {
-                        self.output.set_mxp_variable(variable.to_owned());
-                    }
+                    self.output.set_mxp_variable(variable.to_owned(), *keywords);
                 }
             }
             Action::Sound

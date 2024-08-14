@@ -66,7 +66,7 @@ impl<T: Read + Write> MudStream<T> {
 
         self.transformer.receive(received, decompress_buf)?;
         if let Some(mut drain) = self.transformer.drain_input() {
-            drain.write_all_to(&mut self.stream)?
+            drain.write_all_to(&mut self.stream)?;
         }
         Ok(Some(self.transformer.drain_output()))
     }

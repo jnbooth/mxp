@@ -10,3 +10,6 @@ mod published_entities;
 
 mod state;
 pub use state::State;
+
+mod variable_map;
+pub use variable_map::{PublishedIter, VariableMap};

@@ -1,3 +1,4 @@
+#![allow(clippy::redundant_field_names)]
 use std::ops::Index;
 
 use super::color::TermColor;
@@ -68,6 +69,7 @@ pub struct Span {
     pub(super) heading: Option<Heading>,
     /// Which variable to set (FLAG in MXP).
     pub(super) variable: Option<String>,
+    pub(super) variable_flags: EnumSet<mxp::EntityKeyword>,
     pub(super) gag: bool,
     pub(super) window: Option<String>,
 }
@@ -90,6 +92,7 @@ impl Span {
             list: None,
             heading: None,
             variable: None,
+            variable_flags: EnumSet::new(),
             gag: false,
             window: None,
         }
@@ -269,6 +272,10 @@ impl SpanList {
 
     pub fn set_variable(&mut self, variable: String) -> bool {
         set_prop!(self, variable);
+    }
+
+    pub fn set_variable_flags(&mut self, variable_flags: EnumSet<mxp::EntityKeyword>) -> bool {
+        set_prop!(self, variable_flags, variable_flags);
     }
 
     pub fn set_gag(&mut self) -> bool {

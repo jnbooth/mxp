@@ -23,7 +23,7 @@ fn get_color(
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BufferedOutput {
     spans: SpanList,
     ansi_flags: EnumSet<TextStyle>,
@@ -34,6 +34,7 @@ pub struct BufferedOutput {
     ignore_mxp_colors: bool,
     last_linebreak: Option<usize>,
     colors: Vec<RgbColor>,
+    variables: mxp::VariableMap,
 }
 
 impl Default for BufferedOutput {
@@ -54,6 +55,7 @@ impl BufferedOutput {
             ignore_mxp_colors: false,
             last_linebreak: None,
             colors: Vec::new(),
+            variables: mxp::VariableMap::new(),
         }
     }
 
@@ -123,40 +125,50 @@ impl BufferedOutput {
             return;
         }
         let text = self.take_buf();
-        let fragment = if self.spans.len() < i {
-            TextFragment {
+        if self.spans.len() < i {
+            self.output(TextFragment {
                 text,
                 flags: self.ansi_flags,
                 foreground: self.color(self.ansi_foreground),
                 background: self.color(self.ansi_background),
                 action: None,
                 heading: None,
-                variable: None,
-            }
-        } else {
-            let span = &self.spans[self.spans.len() - i];
-            let ignore_colors = self.ignore_mxp_colors;
-            TextFragment {
-                flags: span.flags | self.ansi_flags,
-                foreground: self.color(get_color(
-                    &span.foreground,
-                    self.ansi_foreground,
-                    ignore_colors,
-                    TermColor::WHITE,
-                )),
-                background: self.color(get_color(
-                    &span.background,
-                    self.ansi_background,
-                    ignore_colors,
-                    TermColor::BLACK,
-                )),
-                action: span.action.as_ref().map(|action| action.with_text(&text)),
-                heading: span.heading,
-                variable: span.variable.clone(),
-                text,
-            }
-        };
-        self.output(fragment);
+            });
+            return;
+        }
+        let span = &self.spans[self.spans.len() - i];
+        let ignore_colors = self.ignore_mxp_colors;
+        if let Some(variable) = &span.variable {
+            self.variables
+                .set(variable, &text, None, span.variable_flags);
+            let fragment = OutputFragment::MxpVariable {
+                name: variable.clone(),
+                value: self.variables.get(variable).map(ToOwned::to_owned),
+            };
+            self.fragments.push(Output {
+                fragment,
+                gag: false,
+                window: None,
+            });
+        }
+        self.output(TextFragment {
+            flags: span.flags | self.ansi_flags,
+            foreground: self.color(get_color(
+                &span.foreground,
+                self.ansi_foreground,
+                ignore_colors,
+                TermColor::WHITE,
+            )),
+            background: self.color(get_color(
+                &span.background,
+                self.ansi_background,
+                ignore_colors,
+                TermColor::BLACK,
+            )),
+            action: span.action.as_ref().map(|action| action.with_text(&text)),
+            heading: span.heading,
+            text,
+        });
     }
 
     fn flush_mxp(&mut self) {
@@ -373,21 +385,26 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_mxp_variable(&mut self, variable: String) {
+    pub fn set_mxp_variable(&mut self, variable: String, flags: EnumSet<mxp::EntityKeyword>) {
         if self.spans.set_variable(variable) {
             self.flush_mxp();
         }
+        self.spans.set_variable_flags(flags);
     }
 
     pub fn set_mxp_gag(&mut self) {
         if self.spans.set_gag() {
-            self.flush_mxp()
+            self.flush_mxp();
         }
     }
 
     pub fn set_mxp_window(&mut self, window: String) {
         if self.spans.set_window(window) {
-            self.flush_mxp()
+            self.flush_mxp();
         }
+    }
+
+    pub fn published_variables(&self) -> mxp::PublishedIter {
+        self.variables.published()
     }
 }
