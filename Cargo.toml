@@ -16,4 +16,4 @@ too_many_lines = "allow"
 unreadable_literal = "allow"
 
 [workspace.package]
-version = "0.5.0"
+version = "0.6.0"
