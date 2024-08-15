@@ -172,14 +172,8 @@ impl Element {
     }
 
     pub fn parse<D: Decoder>(name: String, scanner: Scan<D>) -> crate::Result<Option<Self>> {
-        const fn nonzero(n: Mode) -> NonZeroU8 {
-            match NonZeroU8::new(n.0) {
-                Some(n) => n,
-                None => unreachable!(),
-            }
-        }
-        const MIN_TAG: NonZeroU8 = nonzero(Mode::USER_DEFINED_MIN);
-        const MAX_TAG: NonZeroU8 = nonzero(Mode::USER_DEFINED_MAX);
+        const_non_zero!(MIN_TAG, NonZeroU8, Mode::USER_DEFINED_MIN.0);
+        const_non_zero!(MAX_TAG, NonZeroU8, Mode::USER_DEFINED_MAX.0);
 
         let mut scanner = scanner.with_keywords();
         let items = Self::parse_items(scanner.next()?)?;

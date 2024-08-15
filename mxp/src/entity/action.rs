@@ -1,10 +1,9 @@
 use super::font::Font;
+use super::frame::{DestArgs, Frame};
 use super::image::Image;
-use super::link::Link;
-use crate::argument::scan::{
-    AfkArgs, ColorArgs, Decoder, ExpireArgs, HyperlinkArgs, MxpArgs, Scan, SendArgs, SupportArgs,
-    VarArgs,
-};
+use super::link::{ExpireArgs, HyperlinkArgs, Link, SendArgs};
+use super::sound::{Music, Sound};
+use crate::argument::scan::{AfkArgs, ColorArgs, Decoder, MxpArgs, Scan, SupportArgs, VarArgs};
 use crate::color::RgbColor;
 use crate::keyword::{EntityKeyword, MxpKeyword};
 use enumeration::{Enum, EnumSet};
@@ -27,6 +26,8 @@ pub enum ActionType {
     Font,
     /// play sound
     Sound,
+    /// play music
+    Music,
     /// send username
     User,
     /// send password
@@ -59,14 +60,14 @@ pub enum ActionType {
     H6,
     /// Horizontal rule (secure)
     Hr,
-    /// non-breaking newline
+    /// ignore next newline
     NoBr,
     /// Soft line break
     SBr,
     /// Paragraph break (secure)
     P,
     /// Strikethrough
-    Strike,
+    Strikeout,
     /// Client script (secure)
     Script,
     /// Small text
@@ -139,7 +140,13 @@ pub enum Action<S> {
     /// font appearance
     Font(Font<S>),
     /// play sound
-    Sound,
+    Sound(Sound<S>),
+    /// stop all sound
+    SoundOff,
+    // play music
+    Music(Music<S>),
+    /// stop all music
+    MusicOff,
     /// send username
     User,
     /// send password
@@ -147,9 +154,11 @@ pub enum Action<S> {
     /// causes a new connect to open
     Relocate,
     /// frame
-    Frame,
+    Frame(Frame<S>),
     /// destination frame
-    Dest,
+    Dest {
+        name: S,
+    },
     /// show image
     Image(Image<S>),
     /// sound/image filter
@@ -162,14 +171,14 @@ pub enum Action<S> {
     Heading(Heading),
     /// Horizontal rule (secure)
     Hr,
-    /// non-breaking newline
+    /// ignore next newline
     NoBr,
     /// Soft linebreak
     SBr,
     /// Paragraph break (secure)
     P,
     /// Strikethrough
-    Strike,
+    Strikeout,
     /// Client script (secure)
     Script,
     /// Small text
@@ -194,7 +203,9 @@ pub enum Action<S> {
         keywords: EnumSet<EntityKeyword>,
     },
     /// AFK - away from keyboard time
-    Afk { challenge: Option<S> },
+    Afk {
+        challenge: Option<S>,
+    },
 
     // recent
     /// gauge
@@ -202,14 +213,20 @@ pub enum Action<S> {
     /// status
     Stat,
     /// expire
-    Expire { name: Option<S> },
+    Expire {
+        name: Option<S>,
+    },
 
     /// close all open tags
     Reset,
     /// MXP command (eg. MXP OFF)
-    Mxp { keywords: EnumSet<MxpKeyword> },
+    Mxp {
+        keywords: EnumSet<MxpKeyword>,
+    },
     /// what commands we support
-    Support { supported: Vec<u8> },
+    Support {
+        supported: Vec<u8>,
+    },
 
     /// client options set
     SetOption,
@@ -234,14 +251,17 @@ impl<S: AsRef<str>> Action<S> {
                 let ColorArgs { fore, back } = scanner.try_into()?;
                 Self::Color { fore, back }
             }
-            ActionType::Dest => Self::Dest,
+            ActionType::Dest => {
+                let DestArgs { name } = scanner.try_into()?;
+                Self::Dest { name }
+            }
             ActionType::Expire => {
                 let ExpireArgs { name } = scanner.try_into()?;
                 Self::Expire { name }
             }
             ActionType::Filter => Self::Filter,
-            ActionType::Font => Self::Font(Font::try_from(scanner)?),
-            ActionType::Frame => Self::Frame,
+            ActionType::Font => Self::Font(scanner.try_into()?),
+            ActionType::Frame => Self::Frame(scanner.try_into()?),
             ActionType::Gauge => Self::Gauge,
             ActionType::H1 => Self::Heading(Heading::H1),
             ActionType::H2 => Self::Heading(Heading::H2),
@@ -259,6 +279,14 @@ impl<S: AsRef<str>> Action<S> {
                 let MxpArgs { keywords } = scanner.try_into()?;
                 Self::Mxp { keywords }
             }
+            ActionType::Music => {
+                let music = Music::try_from(scanner)?;
+                if music.is_off() {
+                    Self::MusicOff
+                } else {
+                    Self::Music(music)
+                }
+            }
             ActionType::NoBr => Self::NoBr,
             ActionType::Ol => Self::Ol,
             ActionType::P => Self::P,
@@ -272,9 +300,16 @@ impl<S: AsRef<str>> Action<S> {
             ActionType::Send => Self::Link(SendArgs::try_from(scanner)?.into()),
             ActionType::SetOption => Self::SetOption,
             ActionType::Small => Self::Small,
-            ActionType::Sound => Self::Sound,
+            ActionType::Sound => {
+                let sound = Sound::try_from(scanner)?;
+                if sound.is_off() {
+                    Self::SoundOff
+                } else {
+                    Self::Sound(sound)
+                }
+            }
             ActionType::Stat => Self::Stat,
-            ActionType::Strike => Self::Strike,
+            ActionType::Strikeout => Self::Strikeout,
             ActionType::Support => {
                 let SupportArgs { supported } = scanner.try_into()?;
                 Self::Support { supported }

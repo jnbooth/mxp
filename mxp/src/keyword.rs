@@ -49,6 +49,24 @@ impl FromStr for EntityKeyword {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+pub enum FrameKeyword {
+    Floating,
+    Internal,
+}
+
+impl FromStr for FrameKeyword {
+    type Err = UnrecognizedVariant<Self>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match_ci! {s,
+            "FLOATING" => Self::Floating,
+            "INTERNAL" => Self::Internal,
+            _ => return Err(Self::Err::new(s))
+        })
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum ImageKeyword {
     IsMap,
 }

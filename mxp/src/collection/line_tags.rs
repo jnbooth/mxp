@@ -109,25 +109,28 @@ pub struct LineTagUpdate {
 
 impl LineTagUpdate {
     pub fn parse<D: Decoder>(words: Words, decoder: D) -> crate::Result<Self> {
+        let s = words.as_str();
         let args = Arguments::parse(words)?;
         let mut scanner = args.scan(decoder).with_keywords();
 
         let index_arg = scanner
             .next()?
-            .ok_or(Error::new("", ErrorKind::NoArgument))?;
+            .ok_or(Error::new(s, ErrorKind::IncompleteArguments))?;
         let index_str = index_arg.as_ref();
         let index: u8 = index_str
             .parse()
-            .map_err(|_| Error::new(index_str, ErrorKind::InvalidEntityNumber))?;
+            .map_err(|_| Error::new(index_str, ErrorKind::InvalidNumber))?;
 
-        let window = scanner.get("windowname")?.map(|s| s.as_ref().to_owned());
+        let window = scanner
+            .next_or("windowname")?
+            .map(|s| s.as_ref().to_owned());
 
         let fore = scanner
-            .get("fore")?
+            .next_or("fore")?
             .and_then(|color| RgbColor::named(color.as_ref()));
 
         let back = scanner
-            .get("fore")?
+            .next_or("back")?
             .and_then(|color| RgbColor::named(color.as_ref()));
 
         let keywords = scanner.into_keywords();

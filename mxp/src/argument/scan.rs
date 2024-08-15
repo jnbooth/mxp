@@ -1,12 +1,13 @@
 use super::arguments::{KeywordFilter, NoKeywords};
 use crate::color::RgbColor;
-use crate::entity::{Atom, Link, SendTo};
-use crate::keyword::{EntityKeyword, MxpKeyword, SendKeyword};
+use crate::entity::Atom;
+use crate::keyword::{EntityKeyword, MxpKeyword};
 use crate::parser::{Error, ErrorKind};
 use casefold::ascii::CaseFoldMap;
 use enumeration::{Enum, EnumSet};
 use std::borrow::Borrow;
 use std::marker::PhantomData;
+use std::num::ParseIntError;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 use std::{slice, str};
@@ -77,8 +78,24 @@ impl<'a, D: Decoder, F: KeywordFilter> Scan<'a, D, F> {
         self.inner.len()
     }
 
-    pub fn get(&self, name: &str) -> crate::Result<Option<D::Output<'a>>> {
+    fn get(&self, name: &str) -> crate::Result<Option<D::Output<'a>>> {
         self.decode(self.named.get(name))
+    }
+
+    pub fn next_number_or<T>(&mut self, name: &str) -> crate::Result<Option<T>>
+    where
+        T: FromStr<Err = ParseIntError>,
+    {
+        let output = match self.next_or(name) {
+            Ok(Some(output)) => output,
+            Ok(None) => return Ok(None),
+            Err(e) => return Err(e),
+        };
+        let output = output.as_ref();
+        match output.parse() {
+            Ok(parsed) => Ok(Some(parsed)),
+            Err(_) => Err(Error::new(output, ErrorKind::InvalidNumber)),
+        }
     }
 
     pub fn next(&mut self) -> crate::Result<Option<D::Output<'a>>> {
@@ -187,53 +204,6 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ColorArgs {
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ExpireArgs<S> {
-    pub name: Option<S>,
-}
-
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ExpireArgs<D::Output<'a>> {
-    type Error = Error;
-
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
-        Ok(Self {
-            name: scanner.next()?,
-        })
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct HyperlinkArgs<S> {
-    pub href: S,
-    pub hint: Option<S>,
-    pub expire: Option<S>,
-}
-
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for HyperlinkArgs<D::Output<'a>> {
-    type Error = Error;
-
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
-        Ok(Self {
-            href: scanner
-                .next_or("href")?
-                .ok_or_else(|| Error::new("", ErrorKind::NoArgument))?,
-            hint: scanner.next_or("hint")?,
-            expire: scanner.next_or("expire")?,
-        })
-    }
-}
-
-impl<S: AsRef<str>> From<HyperlinkArgs<S>> for Link {
-    fn from(value: HyperlinkArgs<S>) -> Self {
-        Self::new(
-            value.href.as_ref(),
-            value.hint.as_ref().map(AsRef::as_ref),
-            SendTo::Internet,
-            value.expire.map(|expire| expire.as_ref().to_owned()),
-        )
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct MxpArgs {
     pub keywords: EnumSet<MxpKeyword>,
 }
@@ -246,46 +216,6 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for MxpArgs {
         Ok(Self {
             keywords: scanner.into_keywords(),
         })
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SendArgs<S> {
-    pub href: Option<S>,
-    pub hint: Option<S>,
-    pub sendto: SendTo,
-    pub expire: Option<S>,
-}
-
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for SendArgs<D::Output<'a>> {
-    type Error = Error;
-
-    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
-        let mut scanner = scanner.with_keywords();
-        Ok(Self {
-            href: scanner.next_or("href")?,
-            hint: scanner.next_or("hint")?,
-            expire: scanner.next_or("expire")?,
-            sendto: if scanner.into_keywords().contains(SendKeyword::Prompt) {
-                SendTo::Input
-            } else {
-                SendTo::World
-            },
-        })
-    }
-}
-
-impl<S: AsRef<str>> From<SendArgs<S>> for Link {
-    fn from(value: SendArgs<S>) -> Self {
-        Self::new(
-            value
-                .href
-                .as_ref()
-                .map_or(Link::EMBED_ENTITY, AsRef::as_ref),
-            value.hint.as_ref().map(AsRef::as_ref),
-            value.sendto,
-            value.expire.map(|expire| expire.as_ref().to_owned()),
-        )
     }
 }
 
@@ -322,7 +252,7 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for VarArgs<D::Output<'a>> {
         Ok(Self {
             variable: scanner
                 .next()?
-                .ok_or_else(|| Error::new("", ErrorKind::NoArgument))?,
+                .ok_or_else(|| Error::new("variable", ErrorKind::IncompleteArguments))?,
             keywords: scanner.into_keywords(),
         })
     }

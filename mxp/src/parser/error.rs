@@ -60,6 +60,8 @@ pub enum ErrorKind {
     ClosingUnknownTag,
     ///  argument to COLOR or FONT not recognised color
     UnknownColor,
+    /// eg. 12d4
+    InvalidNumber,
     ///  eg. &#xxx;
     InvalidEntityNumber,
     ///  eg. &#5000;
@@ -70,6 +72,8 @@ pub enum ErrorKind {
     InvalidArgumentName,
     ///  eg. <font color=>
     NoArgument,
+    /// eg. <a>
+    IncompleteArguments,
     ///  invalid argument to <support> tag
     InvalidSupportArgument,
     ///  invalid argument to <option> tag

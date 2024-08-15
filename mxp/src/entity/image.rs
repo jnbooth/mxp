@@ -1,20 +1,18 @@
-use std::borrow::Cow;
-use std::str::FromStr;
-
 use super::screen::{Align, Dimension};
 use crate::argument::scan::{Decoder, Scan};
 use crate::keyword::ImageKeyword;
-use crate::parser::{Error, ErrorKind};
+use crate::parser::Error;
+use std::borrow::Cow;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Image<S = String> {
     pub fname: Option<S>,
     pub url: Option<S>,
     pub class: Option<S>,
-    pub height: Option<Dimension>,
-    pub width: Option<Dimension>,
-    pub hspace: Option<Dimension>,
-    pub vspace: Option<Dimension>,
+    pub height: Option<Dimension<u32>>,
+    pub width: Option<Dimension<u32>>,
+    pub hspace: Option<Dimension<u32>>,
+    pub vspace: Option<Dimension<u32>>,
     pub align: Option<Align>,
     pub is_map: bool,
 }
@@ -51,21 +49,6 @@ impl<'a> Image<Cow<'a, str>> {
     }
 }
 
-fn try_parse<S: AsRef<str>, T: FromStr>(
-    output: crate::Result<Option<S>>,
-) -> crate::Result<Option<T>> {
-    let output = match output {
-        Ok(Some(output)) => output,
-        Ok(None) => return Ok(None),
-        Err(e) => return Err(e),
-    };
-    let output = output.as_ref();
-    match output.parse() {
-        Ok(parsed) => Ok(Some(parsed)),
-        Err(_) => Err(Error::new(output, ErrorKind::InvalidEntityNumber)),
-    }
-}
-
 impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Image<D::Output<'a>> {
     type Error = Error;
 
@@ -74,12 +57,14 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Image<D::Output<'a>> {
         Ok(Self {
             fname: scanner.next_or("fname")?,
             url: scanner.next_or("url")?,
-            class: scanner.get("T")?,
-            height: try_parse(scanner.get("H"))?,
-            width: try_parse(scanner.get("W"))?,
-            hspace: try_parse(scanner.get("HSPACE"))?,
-            vspace: try_parse(scanner.get("VSPACE"))?,
-            align: try_parse(scanner.get("ALIGN"))?,
+            class: scanner.next_or("T")?,
+            height: scanner.next_number_or("H")?,
+            width: scanner.next_number_or("W")?,
+            hspace: scanner.next_number_or("HSPACE")?,
+            vspace: scanner.next_number_or("VSPACE")?,
+            align: scanner
+                .next_or("ALIGN")?
+                .and_then(|align| align.as_ref().parse().ok()),
             is_map: scanner.into_keywords().contains(ImageKeyword::IsMap),
         })
     }

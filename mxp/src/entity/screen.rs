@@ -1,3 +1,4 @@
+use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
 use enumeration::Enum;
@@ -11,6 +12,12 @@ pub enum Align {
     Top,
     Middle,
     Bottom,
+}
+
+impl Default for Align {
+    fn default() -> Self {
+        Self::Top
+    }
 }
 
 impl FromStr for Align {
@@ -35,14 +42,54 @@ pub enum DimensionUnit {
     Percentage,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Dimension {
-    amount: u32,
+impl Default for DimensionUnit {
+    fn default() -> Self {
+        Self::Pixel
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Dimension<T = u32> {
+    amount: T,
     unit: DimensionUnit,
 }
 
-impl FromStr for Dimension {
-    type Err = <u32 as FromStr>::Err;
+impl<T> Dimension<T> {
+    pub const fn pixels(amount: T) -> Self {
+        Self {
+            amount,
+            unit: DimensionUnit::Pixel,
+        }
+    }
+
+    pub const fn character_height(amount: T) -> Self {
+        Self {
+            amount,
+            unit: DimensionUnit::CharacterHeight,
+        }
+    }
+
+    pub const fn percentage(amount: T) -> Self {
+        Self {
+            amount,
+            unit: DimensionUnit::Percentage,
+        }
+    }
+}
+
+impl<T: Display> Display for Dimension<T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        self.amount.fmt(f)?;
+        match self.unit {
+            DimensionUnit::Pixel => Ok(()),
+            DimensionUnit::CharacterHeight => f.write_str("c"),
+            DimensionUnit::Percentage => f.write_str("%"),
+        }
+    }
+}
+
+impl<T: FromStr> FromStr for Dimension<T> {
+    type Err = T::Err;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let (unit, s) = match s.as_bytes().last() {

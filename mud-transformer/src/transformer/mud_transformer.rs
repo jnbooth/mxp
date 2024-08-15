@@ -7,8 +7,8 @@ use super::input::{BufferedInput, Drain as InputDrain};
 use super::phase::Phase;
 use super::tag::{Tag, TagList};
 use crate::output::{BufferedOutput, InList, OutputDrain, TermColor, TextStyle};
+use crate::output::{EffectFragment, OutputFragment, TelnetFragment};
 use crate::receive::{Decompress, ReceiveCursor};
-use crate::EffectFragment;
 use enumeration::EnumSet;
 use mxp::escape::{ansi, telnet};
 use mxp::RgbColor;
@@ -35,6 +35,7 @@ pub struct Transformer {
 
     mxp_script: bool,
     in_paragraph: bool,
+    ignore_next_newline: bool,
     mxp_mode_default: mxp::Mode,
     mxp_mode: mxp::Mode,
     mxp_mode_previous: mxp::Mode,
@@ -80,6 +81,7 @@ impl Transformer {
 
             mxp_script: false,
             in_paragraph: false,
+            ignore_next_newline: false,
             mxp_mode_default: mxp::Mode::OPEN,
             mxp_mode: mxp::Mode::OPEN,
             mxp_mode_previous: mxp::Mode::OPEN,
@@ -143,7 +145,7 @@ impl Transformer {
     }
 
     fn handle_mxp_error(&mut self, err: mxp::Error) {
-        self.output.append_mxp_error(err);
+        self.output.append(err);
     }
 
     fn take_mxp_string(&mut self) -> mxp::Result<String> {
@@ -290,6 +292,7 @@ impl Transformer {
             Action::Bold => self.output.set_mxp_flag(TextStyle::Bold),
             Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
             Action::Italic => self.output.set_mxp_flag(TextStyle::Italic),
+            Action::Strikeout => self.output.set_mxp_flag(TextStyle::Strikeout),
             Action::Color { fore, back } => {
                 if let Some(fg) = fore {
                     self.output.set_mxp_foreground(fg);
@@ -312,32 +315,37 @@ impl Transformer {
             Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
             Action::Br => self.output.start_line(),
             Action::SBr => self.output.push(b' '),
+            Action::NoBr => self.ignore_next_newline = true,
             Action::Reset => self.mxp_off(false),
             Action::Mxp { keywords } => self.mxp_set_keywords(keywords),
             Action::P => self.in_paragraph = true,
             Action::Script => self.mxp_script = true,
-            Action::Hr => self.output.append_hr(),
+            Action::Hr => self.output.append(OutputFragment::Hr),
             Action::Ul => self.output.set_mxp_list(InList::Unordered),
             Action::Ol => self.output.set_mxp_list(InList::Ordered(0)),
             Action::Li => self.output.advance_list(),
-            Action::Image(image) => self.output.append_image(image.into_owned()),
+            Action::Image(image) => self.output.append(image.into_owned()),
             Action::Var { keywords, variable } => self
                 .output
                 .set_mxp_variable(variable.into_owned(), keywords),
-            Action::Sound
-            | Action::Relocate
-            | Action::Frame
-            | Action::Dest
+            Action::Music(music) => self.output.append(music.into_owned()),
+            Action::MusicOff => self.output.append(EffectFragment::MusicOff),
+            Action::Sound(sound) => self.output.append(sound.into_owned()),
+            Action::SoundOff => self.output.append(EffectFragment::SoundOff),
+            Action::Frame(frame) => self.output.append(frame.into_owned()),
+            Action::Dest { name } => self.output.set_mxp_window(name.into_owned()),
+            Action::Expire { name } => self
+                .output
+                .append(EffectFragment::ExpireLinks(name.map(Cow::into_owned))),
+
+            Action::Relocate
             | Action::Filter
-            | Action::NoBr
-            | Action::Strike
             | Action::Small
             | Action::Tt
             | Action::Samp
             | Action::Center
             | Action::Gauge
             | Action::Stat
-            | Action::Expire { .. }
             | Action::SetOption
             | Action::RecommendOption => (),
         }
@@ -375,7 +383,7 @@ impl Transformer {
         mxp::validate(name, mxp::ErrorKind::InvalidEntityName)?;
         if let Some(entity) = self.mxp_state.get_entity(name)? {
             self.mxp_active = false;
-            self.output.append(entity);
+            self.output.append_text(entity);
             self.mxp_active = true;
         }
         Ok(())
@@ -569,7 +577,7 @@ impl Transformer {
         let last_char = self.output.last().unwrap_or(b'\n');
 
         if last_char == b'\r' && c != b'\n' {
-            self.output.append_effect(EffectFragment::CarriageReturn);
+            self.output.append(EffectFragment::CarriageReturn);
             return;
         }
 
@@ -637,7 +645,7 @@ impl Transformer {
                 match c {
                     telnet::EOR | telnet::GA => {
                         self.phase = Phase::Normal;
-                        self.output.append_iac_ga();
+                        self.output.append(TelnetFragment::IacGa);
                         if self.config.convert_ga_to_newline {
                             self.output.start_line();
                         }
@@ -653,11 +661,11 @@ impl Transformer {
                     }
                     telnet::EC => {
                         self.phase = Phase::Normal;
-                        self.output.append_effect(EffectFragment::EraseCharacter);
+                        self.output.append(EffectFragment::EraseCharacter);
                     }
                     telnet::EL => {
                         self.phase = Phase::Normal;
-                        self.output.append_effect(EffectFragment::EraseLine);
+                        self.output.append(EffectFragment::EraseLine);
                     }
                     _ => self.phase = Phase::Normal,
                 }
@@ -690,7 +698,7 @@ impl Transformer {
                     },
                     telnet::WILL_EOR => self.config.convert_ga_to_newline,
                     _ if self.config.will.contains(&c) => {
-                        self.output.append_telnet_will(c);
+                        self.output.append(TelnetFragment::Will { code: c });
                         true
                     }
                     _ => false,
@@ -717,7 +725,7 @@ impl Transformer {
                     }
                     telnet::NAWS if !self.config.naws => false,
                     telnet::NAWS => {
-                        self.output.append_telnet_naws();
+                        self.output.append(TelnetFragment::Naws);
                         true
                     }
                     telnet::MXP => match self.config.use_mxp {
@@ -729,7 +737,7 @@ impl Transformer {
                         }
                     },
                     _ if self.config.will.contains(&c) => {
-                        self.output.append_telnet_do(c);
+                        self.output.append(TelnetFragment::Do { code: c });
                         true
                     }
                     _ => false,
@@ -835,19 +843,13 @@ impl Transformer {
                     self.mxp_string.clear();
                 }
                 b'\'' => {
-                    const NON_ZERO_APOSTROPHE: NonZeroU8 = match NonZeroU8::new(b'\'') {
-                        Some(quote) => quote,
-                        None => unreachable!(),
-                    };
+                    const_non_zero!(NON_ZERO_APOSTROPHE, NonZeroU8, b'\'');
                     self.mxp_string.push(c);
                     self.mxp_quote_terminator = Some(NON_ZERO_APOSTROPHE);
                     self.phase = Phase::MxpQuote;
                 }
                 b'"' => {
-                    const NON_ZERO_QUOTE: NonZeroU8 = match NonZeroU8::new(b'"') {
-                        Some(quote) => quote,
-                        None => unreachable!(),
-                    };
+                    const_non_zero!(NON_ZERO_QUOTE, NonZeroU8, b'"');
                     self.mxp_string.push(c);
                     self.mxp_quote_terminator = Some(NON_ZERO_QUOTE);
                     self.phase = Phase::MxpQuote;
@@ -910,14 +912,14 @@ impl Transformer {
                 telnet::ESC => self.phase = Phase::Esc,
                 telnet::IAC => self.phase = Phase::Iac,
                 // BEL
-                0x07 => self.output.append_effect(EffectFragment::Beep),
+                0x07 => self.output.append(EffectFragment::Beep),
                 // BS
-                0x08 => self.output.append_effect(EffectFragment::Backspace),
+                0x08 => self.output.append(EffectFragment::Backspace),
                 // FF
-                0x0C => self.output.append_page_break(),
+                0x0C => self.output.append(OutputFragment::PageBreak),
                 b'\t' if self.in_paragraph => {
                     if last_char != b' ' {
-                        self.output.append(" ");
+                        self.output.append_text(" ");
                     }
                 }
                 b'\r' => (),
@@ -932,10 +934,12 @@ impl Transformer {
                                 self.output.start_line();
                                 self.output.start_line();
                             }
-                            b'.' => self.output.append("  "),
+                            b'.' => self.output.append_text("  "),
                             b' ' | b'\t' | 0x0C => (),
-                            _ => self.output.append(" "),
+                            _ => self.output.append_text(" "),
                         }
+                    } else if self.ignore_next_newline {
+                        self.ignore_next_newline = false;
                     } else {
                         self.output.start_line();
                     }

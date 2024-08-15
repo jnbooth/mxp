@@ -3,8 +3,6 @@ use std::str;
 use bytes::BytesMut;
 use enumeration::EnumSet;
 
-use crate::output::fragment::EffectFragment;
-
 use super::color::TermColor;
 use super::fragment::{Output, OutputDrain, OutputFragment, TelnetFragment, TextFragment};
 use super::shared_string::SharedString;
@@ -97,8 +95,14 @@ impl BufferedOutput {
         }
     }
 
-    fn output<T: Into<OutputFragment>>(&mut self, fragment: T) {
+    pub fn append<T: Into<OutputFragment>>(&mut self, fragment: T) {
         let fragment = fragment.into();
+        if fragment.should_flush() {
+            self.flush();
+            if fragment.is_newline() {
+                self.last_linebreak = Some(self.fragments.len());
+            }
+        }
         let output = match self.spans.get() {
             Some(span) => Output {
                 fragment,
@@ -126,7 +130,7 @@ impl BufferedOutput {
         }
         let text = self.take_buf();
         if self.spans.len() < i {
-            self.output(TextFragment {
+            self.append(TextFragment {
                 text,
                 flags: self.ansi_flags,
                 foreground: self.color(self.ansi_foreground),
@@ -153,7 +157,7 @@ impl BufferedOutput {
                 window: None,
             });
         }
-        self.output(TextFragment {
+        self.append(TextFragment {
             flags: span.flags | self.ansi_flags,
             foreground: self.color(get_color(
                 span.foreground,
@@ -183,14 +187,8 @@ impl BufferedOutput {
         self.flush_last(1);
     }
 
-    fn flush_line(&mut self) {
-        self.flush();
-        self.last_linebreak = Some(self.fragments.len());
-    }
-
     pub fn start_line(&mut self) {
-        self.flush_line();
-        self.output(OutputFragment::LineBreak);
+        self.append(OutputFragment::LineBreak);
     }
 
     pub fn push(&mut self, byte: u8) {
@@ -198,7 +196,7 @@ impl BufferedOutput {
         self.spans.set_populated();
     }
 
-    pub fn append(&mut self, output: &str) {
+    pub fn append_text(&mut self, output: &str) {
         self.buf.extend_from_slice(output.as_bytes());
         self.spans.set_populated();
     }
@@ -213,7 +211,6 @@ impl BufferedOutput {
     }
 
     pub fn append_afk(&mut self, challenge: Option<&str>) {
-        self.flush();
         let challenge = match challenge {
             Some(challenge) => {
                 self.buf.extend_from_slice(challenge.as_bytes());
@@ -221,58 +218,14 @@ impl BufferedOutput {
             }
             None => SharedString::new(),
         };
-        self.output(TelnetFragment::Afk { challenge });
-    }
-
-    pub fn append_effect(&mut self, effect: EffectFragment) {
-        self.flush();
-        self.output(effect);
-    }
-
-    pub fn append_hr(&mut self) {
-        self.flush_line();
-        self.output(OutputFragment::Hr);
-    }
-
-    pub fn append_iac_ga(&mut self) {
-        self.flush();
-        self.output(TelnetFragment::IacGa);
-    }
-
-    pub fn append_image(&mut self, image: mxp::Image) {
-        self.flush();
-        self.output(image);
-    }
-
-    pub fn append_mxp_error(&mut self, error: mxp::Error) {
-        self.output(error);
-    }
-
-    pub fn append_page_break(&mut self) {
-        self.flush_line();
-        self.output(OutputFragment::PageBreak);
+        self.append(TelnetFragment::Afk { challenge });
     }
 
     pub fn append_subnegotiation(&mut self, code: u8, data: &[u8]) {
         self.flush();
         self.buf.extend_from_slice(data);
         let data = self.buf.split().freeze();
-        self.output(TelnetFragment::Subnegotiation { code, data });
-    }
-
-    pub fn append_telnet_naws(&mut self) {
-        self.flush();
-        self.output(TelnetFragment::Naws);
-    }
-
-    pub fn append_telnet_do(&mut self, code: u8) {
-        self.flush();
-        self.output(TelnetFragment::Do { code });
-    }
-
-    pub fn append_telnet_will(&mut self, code: u8) {
-        self.flush();
-        self.output(TelnetFragment::Will { code });
+        self.append(TelnetFragment::Subnegotiation { code, data });
     }
 
     pub fn set_ansi_flag(&mut self, flag: TextStyle) {
@@ -404,12 +357,12 @@ impl BufferedOutput {
         match self.spans.next_list_item() {
             Some(0) => {
                 self.start_line();
-                self.append("• ");
+                self.append_text("• ");
             }
             Some(i) => {
                 self.start_line();
-                self.append(i.to_string().as_str());
-                self.append(". ");
+                self.append_text(i.to_string().as_str());
+                self.append_text(". ");
             }
             None => (),
         };
