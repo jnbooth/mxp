@@ -1,5 +1,5 @@
 mod action;
-pub use action::{Action, ActionType, Heading};
+pub use action::{Action, ActionKind, Heading};
 
 mod atom;
 pub use atom::{Atom, TagFlag};

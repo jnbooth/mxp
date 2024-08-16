@@ -36,6 +36,18 @@ impl BufferedInput {
     }
 }
 
+impl AsRef<Vec<u8>> for BufferedInput {
+    fn as_ref(&self) -> &Vec<u8> {
+        &self.buf
+    }
+}
+
+impl AsMut<Vec<u8>> for BufferedInput {
+    fn as_mut(&mut self) -> &mut Vec<u8> {
+        &mut self.buf
+    }
+}
+
 #[must_use = "if the output is unused, use self.clear() instead"]
 pub struct Drain<'a> {
     external_cursor: &'a mut usize,

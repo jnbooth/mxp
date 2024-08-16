@@ -1,7 +1,7 @@
 use mxp::RgbColor;
 use std::collections::HashSet;
 
-use enumeration::Enum;
+use enumeration::{Enum, EnumSet};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -14,7 +14,6 @@ pub enum UseMxp {
     Never,
 }
 
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TransformerConfig {
     pub use_mxp: UseMxp,
@@ -31,6 +30,7 @@ pub struct TransformerConfig {
     pub ignore_mxp_colors: bool,
     pub colors: Vec<RgbColor>,
     pub will: HashSet<u8>,
+    pub unsupported_actions: EnumSet<mxp::ActionKind>,
 }
 
 impl Default for TransformerConfig {
@@ -56,6 +56,7 @@ impl TransformerConfig {
             ignore_mxp_colors: false,
             colors: Vec::new(),
             will: HashSet::new(),
+            unsupported_actions: EnumSet::new(),
         }
     }
 }

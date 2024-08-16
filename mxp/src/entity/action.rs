@@ -9,7 +9,7 @@ use crate::keyword::{EntityKeyword, MxpKeyword};
 use enumeration::{Enum, EnumSet};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum ActionType {
+pub enum ActionKind {
     /// eg. <send href="go west"> west
     Send,
     /// bold
@@ -225,7 +225,7 @@ pub enum Action<S> {
     },
     /// what commands we support
     Support {
-        supported: Vec<u8>,
+        questions: Vec<S>,
     },
 
     /// client options set
@@ -235,51 +235,51 @@ pub enum Action<S> {
 }
 
 impl<S: AsRef<str>> Action<S> {
-    pub fn new<'a, D: Decoder>(action: ActionType, scanner: Scan<'a, D>) -> crate::Result<Self>
+    pub fn new<'a, D: Decoder>(action: ActionKind, scanner: Scan<'a, D>) -> crate::Result<Self>
     where
         D: Decoder<Output<'a> = S>,
     {
         Ok(match action {
-            ActionType::Afk => {
+            ActionKind::Afk => {
                 let AfkArgs { challenge } = scanner.try_into()?;
                 Self::Afk { challenge }
             }
-            ActionType::Bold => Self::Bold,
-            ActionType::Br => Self::Br,
-            ActionType::Center => Self::Center,
-            ActionType::Color => {
+            ActionKind::Bold => Self::Bold,
+            ActionKind::Br => Self::Br,
+            ActionKind::Center => Self::Center,
+            ActionKind::Color => {
                 let ColorArgs { fore, back } = scanner.try_into()?;
                 Self::Color { fore, back }
             }
-            ActionType::Dest => {
+            ActionKind::Dest => {
                 let DestArgs { name } = scanner.try_into()?;
                 Self::Dest { name }
             }
-            ActionType::Expire => {
+            ActionKind::Expire => {
                 let ExpireArgs { name } = scanner.try_into()?;
                 Self::Expire { name }
             }
-            ActionType::Filter => Self::Filter,
-            ActionType::Font => Self::Font(scanner.try_into()?),
-            ActionType::Frame => Self::Frame(scanner.try_into()?),
-            ActionType::Gauge => Self::Gauge,
-            ActionType::H1 => Self::Heading(Heading::H1),
-            ActionType::H2 => Self::Heading(Heading::H2),
-            ActionType::H3 => Self::Heading(Heading::H3),
-            ActionType::H4 => Self::Heading(Heading::H4),
-            ActionType::H5 => Self::Heading(Heading::H5),
-            ActionType::H6 => Self::Heading(Heading::H6),
-            ActionType::High => Self::High,
-            ActionType::Hr => Self::Hr,
-            ActionType::Hyperlink => Self::Link(HyperlinkArgs::try_from(scanner)?.into()),
-            ActionType::Image => Self::Image(Image::try_from(scanner)?),
-            ActionType::Italic => Self::Italic,
-            ActionType::Li => Self::Li,
-            ActionType::Mxp => {
+            ActionKind::Filter => Self::Filter,
+            ActionKind::Font => Self::Font(scanner.try_into()?),
+            ActionKind::Frame => Self::Frame(scanner.try_into()?),
+            ActionKind::Gauge => Self::Gauge,
+            ActionKind::H1 => Self::Heading(Heading::H1),
+            ActionKind::H2 => Self::Heading(Heading::H2),
+            ActionKind::H3 => Self::Heading(Heading::H3),
+            ActionKind::H4 => Self::Heading(Heading::H4),
+            ActionKind::H5 => Self::Heading(Heading::H5),
+            ActionKind::H6 => Self::Heading(Heading::H6),
+            ActionKind::High => Self::High,
+            ActionKind::Hr => Self::Hr,
+            ActionKind::Hyperlink => Self::Link(HyperlinkArgs::try_from(scanner)?.into()),
+            ActionKind::Image => Self::Image(Image::try_from(scanner)?),
+            ActionKind::Italic => Self::Italic,
+            ActionKind::Li => Self::Li,
+            ActionKind::Mxp => {
                 let MxpArgs { keywords } = scanner.try_into()?;
                 Self::Mxp { keywords }
             }
-            ActionType::Music => {
+            ActionKind::Music => {
                 let music = Music::try_from(scanner)?;
                 if music.is_off() {
                     Self::MusicOff
@@ -287,20 +287,20 @@ impl<S: AsRef<str>> Action<S> {
                     Self::Music(music)
                 }
             }
-            ActionType::NoBr => Self::NoBr,
-            ActionType::Ol => Self::Ol,
-            ActionType::P => Self::P,
-            ActionType::Password => Self::Password,
-            ActionType::RecommendOption => Self::RecommendOption,
-            ActionType::Relocate => Self::Relocate,
-            ActionType::Reset => Self::Reset,
-            ActionType::Samp => Self::Samp,
-            ActionType::SBr => Self::SBr,
-            ActionType::Script => Self::Script,
-            ActionType::Send => Self::Link(SendArgs::try_from(scanner)?.into()),
-            ActionType::SetOption => Self::SetOption,
-            ActionType::Small => Self::Small,
-            ActionType::Sound => {
+            ActionKind::NoBr => Self::NoBr,
+            ActionKind::Ol => Self::Ol,
+            ActionKind::P => Self::P,
+            ActionKind::Password => Self::Password,
+            ActionKind::RecommendOption => Self::RecommendOption,
+            ActionKind::Relocate => Self::Relocate,
+            ActionKind::Reset => Self::Reset,
+            ActionKind::Samp => Self::Samp,
+            ActionKind::SBr => Self::SBr,
+            ActionKind::Script => Self::Script,
+            ActionKind::Send => Self::Link(SendArgs::try_from(scanner)?.into()),
+            ActionKind::SetOption => Self::SetOption,
+            ActionKind::Small => Self::Small,
+            ActionKind::Sound => {
                 let sound = Sound::try_from(scanner)?;
                 if sound.is_off() {
                     Self::SoundOff
@@ -308,21 +308,21 @@ impl<S: AsRef<str>> Action<S> {
                     Self::Sound(sound)
                 }
             }
-            ActionType::Stat => Self::Stat,
-            ActionType::Strikeout => Self::Strikeout,
-            ActionType::Support => {
-                let SupportArgs { supported } = scanner.try_into()?;
-                Self::Support { supported }
+            ActionKind::Stat => Self::Stat,
+            ActionKind::Strikeout => Self::Strikeout,
+            ActionKind::Support => {
+                let SupportArgs { questions } = scanner.try_into()?;
+                Self::Support { questions }
             }
-            ActionType::Tt => Self::Tt,
-            ActionType::Ul => Self::Ul,
-            ActionType::Underline => Self::Underline,
-            ActionType::User => Self::User,
-            ActionType::Var => {
+            ActionKind::Tt => Self::Tt,
+            ActionKind::Ul => Self::Ul,
+            ActionKind::Underline => Self::Underline,
+            ActionKind::User => Self::User,
+            ActionKind::Var => {
                 let VarArgs { variable, keywords } = scanner.try_into()?;
                 Self::Var { variable, keywords }
             }
-            ActionType::Version => Self::Version,
+            ActionKind::Version => Self::Version,
         })
     }
 }

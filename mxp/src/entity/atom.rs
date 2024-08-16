@@ -5,7 +5,7 @@ use enumeration::{self, enums, Enum, EnumSet};
 
 use crate::lookup::Lookup;
 
-use super::action::ActionType;
+use super::action::ActionKind;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum TagFlag {
@@ -27,7 +27,7 @@ pub struct Atom {
     /// Secure, Command, etc.
     pub flags: EnumSet<TagFlag>,
     /// Its action.
-    pub action: ActionType,
+    pub action: ActionKind,
     /// Supported arguments, e.g. href, hint
     pub args: Vec<&'static CaseFold<str>>,
 }
@@ -37,7 +37,7 @@ impl Atom {
         ALL_ATOMS.get(name)
     }
 
-    pub fn fmt_supported<I>(buf: &mut Vec<u8>, iter: I)
+    pub fn fmt_supported<I>(buf: &mut Vec<u8>, iter: I, unsupported: EnumSet<ActionKind>)
     where
         I: IntoIterator,
         I::Item: AsRef<str>,
@@ -50,7 +50,11 @@ impl Atom {
             let tag = questions.next().unwrap();
             match Atom::get(tag) {
                 None => write_cant(buf, tag),
-                Some(atom) if atom.flags.contains(TagFlag::NotImp) => write_cant(buf, tag),
+                Some(atom)
+                    if atom.flags.contains(TagFlag::NotImp) | unsupported.contains(atom.action) =>
+                {
+                    write_cant(buf, tag);
+                }
                 Some(atom) => match questions.next() {
                     None => write_can(buf, tag),
                     Some("*") => write_can_args(buf, atom),
@@ -63,8 +67,12 @@ impl Atom {
         }
         if !has_args {
             for atom in ALL_ATOMS.values() {
-                write_can(buf, &atom.name);
-                write_can_args(buf, atom);
+                if atom.flags.contains(TagFlag::NotImp) | unsupported.contains(atom.action) {
+                    write_cant(buf, &atom.name);
+                } else {
+                    write_can(buf, &atom.name);
+                    write_can_args(buf, atom);
+                }
             }
         }
         buf.extend_from_slice(b">\n");
@@ -96,7 +104,7 @@ fn write_can_args(buf: &mut Vec<u8>, atom: &Atom) {
 
 #[allow(clippy::enum_glob_use)]
 static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
-    use ActionType::*;
+    use ActionKind::*;
     use TagFlag::*;
 
     let atom = |name: &'static str, flags, action, args: &[&'static str]| {

@@ -310,7 +310,11 @@ impl Transformer {
                 self.input.append(response.as_bytes());
             }
             Action::Afk { challenge } => self.output.append_afk(challenge.as_deref()),
-            Action::Support { supported } => self.input.append(&supported),
+            Action::Support { questions } => mxp::Atom::fmt_supported(
+                self.input.as_mut(),
+                questions,
+                self.config.unsupported_actions,
+            ),
             Action::User => input_mxp_auth(&mut self.input, &self.config.player),
             Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
             Action::Br => self.output.start_line(),

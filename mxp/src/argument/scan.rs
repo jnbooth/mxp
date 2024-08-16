@@ -1,6 +1,5 @@
 use super::arguments::{KeywordFilter, NoKeywords};
 use crate::color::RgbColor;
-use crate::entity::Atom;
 use crate::keyword::{EntityKeyword, MxpKeyword};
 use crate::parser::{Error, ErrorKind};
 use casefold::ascii::CaseFoldMap;
@@ -220,11 +219,11 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for MxpArgs {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SupportArgs {
-    pub supported: Vec<u8>,
+pub struct SupportArgs<S> {
+    pub questions: Vec<S>,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for SupportArgs {
+impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for SupportArgs<D::Output<'a>> {
     type Error = Error;
 
     fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, Self::Error> {
@@ -232,9 +231,7 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for SupportArgs {
         while let Some(question) = scanner.next()? {
             questions.push(question);
         }
-        let mut supported = Vec::new();
-        Atom::fmt_supported(&mut supported, &questions);
-        Ok(Self { supported })
+        Ok(Self { questions })
     }
 }
 
