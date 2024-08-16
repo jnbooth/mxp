@@ -956,9 +956,9 @@ impl Transformer {
                 b'<' => {
                     self.mxp_string.clear();
                     self.phase = Phase::MxpElement;
-                }
-                _ if self.mxp_mode == mxp::Mode::SECURE_ONCE => {
-                    self.mxp_mode = self.mxp_mode_previous;
+                    if self.mxp_mode == mxp::Mode::SECURE_ONCE {
+                        self.mxp_mode = self.mxp_mode_previous;
+                    }
                 }
                 _ if self.mxp_script => (),
                 b'&' => {
