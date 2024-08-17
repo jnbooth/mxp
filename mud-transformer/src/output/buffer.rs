@@ -29,16 +29,19 @@ fn get_color(
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BufferedOutput {
+    buf: BytesMut,
+    fragments: Vec<Output>,
     spans: SpanList,
+    variables: mxp::EntityMap,
+
+    last_linebreak: Option<usize>,
+
     ansi_flags: EnumSet<TextStyle>,
     ansi_foreground: TermColor,
     ansi_background: TermColor,
-    buf: BytesMut,
-    fragments: Vec<Output>,
-    ignore_mxp_colors: bool,
-    last_linebreak: Option<usize>,
     colors: Vec<RgbColor>,
-    variables: mxp::EntityMap,
+    ignore_mxp_colors: bool,
+
     in_variable: bool,
     variable: Vec<u8>,
 }

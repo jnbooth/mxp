@@ -16,21 +16,21 @@ pub enum UseMxp {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TransformerConfig {
-    pub use_mxp: UseMxp,
-    pub disable_compression: bool,
-    pub terminal_identification: String,
     pub app_name: String,
-    pub version: String,
-    pub player: String,
-    pub password: String,
+    pub colors: Vec<RgbColor>,
     pub convert_ga_to_newline: bool,
-    pub no_echo_off: bool,
-    pub naws: bool,
+    pub disable_compression: bool,
     pub disable_utf8: bool,
     pub ignore_mxp_colors: bool,
-    pub colors: Vec<RgbColor>,
-    pub will: HashSet<u8>,
+    pub naws: bool,
+    pub no_echo_off: bool,
+    pub password: String,
+    pub player: String,
+    pub terminal_identification: String,
     pub unsupported_actions: EnumSet<mxp::ActionKind>,
+    pub use_mxp: UseMxp,
+    pub version: String,
+    pub will: HashSet<u8>,
 }
 
 impl Default for TransformerConfig {
@@ -43,20 +43,20 @@ impl TransformerConfig {
     pub fn new() -> Self {
         Self {
             app_name: String::new(),
-            version: String::new(),
-            player: String::new(),
-            password: String::new(),
-            convert_ga_to_newline: false,
-            no_echo_off: false,
-            naws: false,
-            disable_utf8: false,
-            disable_compression: false,
-            use_mxp: UseMxp::Command,
-            terminal_identification: String::new(),
-            ignore_mxp_colors: false,
             colors: Vec::new(),
-            will: HashSet::new(),
+            convert_ga_to_newline: false,
+            disable_compression: false,
+            disable_utf8: false,
+            ignore_mxp_colors: false,
+            naws: false,
+            no_echo_off: false,
+            password: String::new(),
+            player: String::new(),
+            terminal_identification: String::new(),
             unsupported_actions: EnumSet::new(),
+            use_mxp: UseMxp::Command,
+            version: String::new(),
+            will: HashSet::new(),
         }
     }
 }

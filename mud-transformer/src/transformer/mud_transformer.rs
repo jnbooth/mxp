@@ -26,36 +26,35 @@ fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
 #[derive(Debug)]
 pub struct Transformer {
     config: TransformerConfig,
-    decompressing: bool,
+
     decompress: Decompress,
+    decompressing: bool,
+    supports_mccp_2: bool,
 
     phase: Phase,
-
-    mxp_active: bool,
-    supports_mccp_2: bool,
-    no_echo: bool,
-
     in_paragraph: bool,
     ignore_next_newline: bool,
+
+    mxp_active: bool,
+    mxp_entity_string: Vec<u8>,
     mxp_mode_default: mxp::Mode,
-    mxp_mode: mxp::Mode,
     mxp_mode_previous: mxp::Mode,
+    mxp_mode: mxp::Mode,
     mxp_quote_terminator: Option<NonZeroU8>,
-    mxp_string: Vec<u8>,
-    mxp_active_tags: TagList,
     mxp_state: mxp::State,
+    mxp_tags: TagList,
 
-    subnegotiation_type: u8,
-    subnegotiation_data: Vec<u8>,
-    ttype_sequence: u8,
-    ansi_code: u8,
-    ansi_red: u8,
-    ansi_green: u8,
     ansi_blue: u8,
-
+    ansi_code: u8,
+    ansi_green: u8,
+    ansi_red: u8,
+    subnegotiation_data: Vec<u8>,
+    subnegotiation_type: u8,
+    ttype_sequence: u8,
     utf8_sequence: Vec<u8>,
-    output: BufferedOutput,
+
     input: BufferedInput,
+    output: BufferedOutput,
 }
 
 impl Default for Transformer {
@@ -82,7 +81,6 @@ impl Transformer {
 
             mxp_active: config.use_mxp == UseMxp::Always,
             supports_mccp_2: false,
-            no_echo: false,
 
             in_paragraph: false,
             ignore_next_newline: false,
@@ -90,8 +88,8 @@ impl Transformer {
             mxp_mode: mxp::Mode::OPEN,
             mxp_mode_previous: mxp::Mode::OPEN,
             mxp_quote_terminator: None,
-            mxp_string: Vec::new(),
-            mxp_active_tags: TagList::new(),
+            mxp_entity_string: Vec::new(),
+            mxp_tags: TagList::new(),
             mxp_state,
 
             subnegotiation_type: 0,
@@ -153,7 +151,7 @@ impl Transformer {
     }
 
     fn take_mxp_string(&mut self) -> mxp::Result<String> {
-        String::from_utf8(mem::take(&mut self.mxp_string)).map_err(|e| {
+        String::from_utf8(mem::take(&mut self.mxp_entity_string)).map_err(|e| {
             let bytes_debug = format!("{:?}", e.as_bytes());
             mxp::Error::new(bytes_debug, mxp::ErrorKind::MalformedBytes)
         })
@@ -197,7 +195,7 @@ impl Transformer {
 
         self.mxp_mode_default = mxp::Mode::OPEN;
         self.mxp_mode = mxp::Mode::OPEN;
-        self.mxp_active_tags.clear();
+        self.mxp_tags.clear();
         self.mxp_state.clear();
         self.mxp_state.add_globals();
     }
@@ -206,7 +204,7 @@ impl Transformer {
         let was_secure = self.mxp_mode.is_secure();
         self.mxp_restore_mode();
         let name = Tag::parse_closing_tag(tag_body)?;
-        let (closed, _tag) = self.mxp_active_tags.find_last(was_secure, name)?;
+        let (closed, _tag) = self.mxp_tags.find_last(was_secure, name)?;
         self.mxp_close_tags_from(closed);
         Ok(())
     }
@@ -248,7 +246,7 @@ impl Transformer {
         let component = mxp_state.get_component(name)?;
         if !component.is_command() {
             let tag = Tag::new(component, secure, self.output.span_len())?;
-            self.mxp_active_tags.push(tag);
+            self.mxp_tags.push(tag);
         }
 
         let mut args = mxp::Arguments::parse(words)?;
@@ -401,7 +399,7 @@ impl Transformer {
     }
 
     fn mxp_close_tags_from(&mut self, pos: usize) {
-        if let Some(span_index) = self.mxp_active_tags.truncate(pos) {
+        if let Some(span_index) = self.mxp_tags.truncate(pos) {
             self.output
                 .truncate_spans(span_index, self.mxp_state.entities_mut());
         }
@@ -424,7 +422,7 @@ impl Transformer {
         let newmode = newmode.unwrap_or(self.mxp_mode_default);
         let closing = oldmode.is_open() && !newmode.is_open();
         if closing {
-            let closed = self.mxp_active_tags.last_unsecure_index();
+            let closed = self.mxp_tags.last_unsecure_index();
             self.mxp_close_tags_from(closed);
         }
         match newmode {
@@ -715,7 +713,8 @@ impl Transformer {
                     telnet::SGA | telnet::MUD_SPECIFIC | telnet::CHARSET => true,
                     telnet::ECHO if self.config.no_echo_off => false,
                     telnet::ECHO => {
-                        self.no_echo = true;
+                        self.output
+                            .append(TelnetFragment::SetEcho { should_echo: false });
                         true
                     }
                     telnet::MXP => match self.config.use_mxp {
@@ -738,8 +737,9 @@ impl Transformer {
 
             Phase::Wont => {
                 self.phase = Phase::Normal;
-                if !self.config.no_echo_off {
-                    self.no_echo = false;
+                if c == telnet::ECHO && !self.config.no_echo_off {
+                    self.output
+                        .append(TelnetFragment::SetEcho { should_echo: true });
                 }
                 self.input.append(&telnet::supports_do(c, false));
             }
@@ -865,39 +865,39 @@ impl Transformer {
                     self.phase = Phase::Normal;
                 }
                 b'<' => {
-                    self.mxp_string.push(c);
+                    self.mxp_entity_string.push(c);
                     self.handle_mxp_error(mxp::Error::new(
-                        &self.mxp_string,
+                        &self.mxp_entity_string,
                         mxp::ErrorKind::UnterminatedElement,
                     ));
-                    self.mxp_string.clear();
+                    self.mxp_entity_string.clear();
                 }
                 b'\'' => {
                     const_non_zero!(NON_ZERO_APOSTROPHE, NonZeroU8, b'\'');
-                    self.mxp_string.push(c);
+                    self.mxp_entity_string.push(c);
                     self.mxp_quote_terminator = Some(NON_ZERO_APOSTROPHE);
                     self.phase = Phase::MxpQuote;
                 }
                 b'"' => {
                     const_non_zero!(NON_ZERO_QUOTE, NonZeroU8, b'"');
-                    self.mxp_string.push(c);
+                    self.mxp_entity_string.push(c);
                     self.mxp_quote_terminator = Some(NON_ZERO_QUOTE);
                     self.phase = Phase::MxpQuote;
                 }
                 b'-' => {
-                    self.mxp_string.push(c);
-                    if self.mxp_string.starts_with(b"!--") {
+                    self.mxp_entity_string.push(c);
+                    if self.mxp_entity_string.starts_with(b"!--") {
                         self.phase = Phase::MxpComment;
                     }
                 }
-                _ => self.mxp_string.push(c),
+                _ => self.mxp_entity_string.push(c),
             },
 
-            Phase::MxpComment if c == b'>' && self.mxp_string.ends_with(b"--") => {
+            Phase::MxpComment if c == b'>' && self.mxp_entity_string.ends_with(b"--") => {
                 self.phase = Phase::Normal;
             }
 
-            Phase::MxpComment => self.mxp_string.push(c),
+            Phase::MxpComment => self.mxp_entity_string.push(c),
 
             Phase::MxpQuote => {
                 if let Some(terminator) = self.mxp_quote_terminator {
@@ -906,7 +906,7 @@ impl Transformer {
                         self.mxp_quote_terminator = None;
                     }
                 }
-                self.mxp_string.push(c);
+                self.mxp_entity_string.push(c);
             }
 
             Phase::MxpEntity => match c {
@@ -917,23 +917,23 @@ impl Transformer {
                     }
                 }
                 b'&' => {
-                    self.mxp_string.push(c);
+                    self.mxp_entity_string.push(c);
                     self.handle_mxp_error(mxp::Error::new(
-                        &self.mxp_string,
+                        &self.mxp_entity_string,
                         mxp::ErrorKind::UnterminatedEntity,
                     ));
-                    self.mxp_string.clear();
+                    self.mxp_entity_string.clear();
                 }
                 b'<' => {
-                    self.mxp_string.push(c);
+                    self.mxp_entity_string.push(c);
                     self.handle_mxp_error(mxp::Error::new(
-                        &self.mxp_string,
+                        &self.mxp_entity_string,
                         mxp::ErrorKind::UnterminatedEntity,
                     ));
-                    self.mxp_string.clear();
+                    self.mxp_entity_string.clear();
                     self.phase = Phase::MxpElement;
                 }
-                _ => self.mxp_string.push(c),
+                _ => self.mxp_entity_string.push(c),
             },
 
             Phase::MxpWelcome => (),
@@ -980,14 +980,14 @@ impl Transformer {
                 }
                 _ if !self.mxp_active || !self.mxp_mode.is_mxp() => self.output.push(c),
                 b'<' => {
-                    self.mxp_string.clear();
+                    self.mxp_entity_string.clear();
                     self.phase = Phase::MxpElement;
                     if self.mxp_mode == mxp::Mode::SECURE_ONCE {
                         self.mxp_mode = self.mxp_mode_previous;
                     }
                 }
                 b'&' => {
-                    self.mxp_string.clear();
+                    self.mxp_entity_string.clear();
                     self.phase = Phase::MxpEntity;
                 }
                 _ => self.output.push(c),

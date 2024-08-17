@@ -211,6 +211,7 @@ pub enum TelnetFragment {
     Do { code: u8 },
     IacGa,
     Naws,
+    SetEcho { should_echo: bool },
     Subnegotiation { code: u8, data: Bytes },
     Will { code: u8 },
 }
