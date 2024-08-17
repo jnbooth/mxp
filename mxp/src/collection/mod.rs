@@ -1,5 +1,5 @@
 mod element_map;
-pub use element_map::{ElementComponent, ElementMap};
+pub use element_map::ElementComponent;
 
 mod line_tags;
 

@@ -42,7 +42,7 @@ mod argument;
 pub use argument::Arguments;
 
 mod collection;
-pub use collection::{ElementComponent, ElementMap, State};
+pub use collection::{ElementComponent, State};
 
 mod color;
 pub use color::{HexOutOfRangeError, ParseHexColorError, RgbColor};
@@ -64,7 +64,7 @@ mod protocol;
 pub use protocol::responses;
 
 mod parser;
-pub use parser::{is_valid, validate, Error, ErrorKind, Words};
+pub use parser::{validate, Error, ErrorKind, Words};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
