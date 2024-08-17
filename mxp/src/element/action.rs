@@ -12,42 +12,28 @@ use enumeration::{Enum, EnumSet};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum ActionKind {
-    /// eg. <send href="go west"> west
-    Send,
+    /// AFK - away from keyboard time
+    Afk,
     /// bold
     Bold,
-    /// underline
-    Underline,
-    /// italic
-    Italic,
-    /// eg. <color fore=red back=blue>
-    Color,
-    /// version request
-    Version,
-    /// Font appearance
-    Font,
-    /// play sound
-    Sound,
-    /// play music
-    Music,
-    /// send username
-    User,
-    /// send password
-    Password,
-    /// causes a new connect to open
-    Relocate,
-    /// frame
-    Frame,
-    /// destination frame
-    Dest,
-    /// show image
-    Image,
-    /// sound/image filter
-    Filter,
-    /// Hyperlink (secure)
-    Hyperlink,
     /// Hard Line break (secure)
     Br,
+    /// Centre text
+    Center,
+    /// eg. <color fore=red back=blue>
+    Color,
+    /// destination frame
+    Dest,
+    /// expire
+    Expire,
+    /// sound/image filter
+    Filter,
+    /// Font appearance
+    Font,
+    /// frame
+    Frame,
+    /// gauge
+    Gauge,
     /// Level 1 heading (secure)
     H1,
     /// Level 2 heading (secure)
@@ -60,58 +46,68 @@ pub enum ActionKind {
     H5,
     /// Level 6 heading (secure)
     H6,
+    /// Highlight text
+    High,
     /// Horizontal rule (secure)
     Hr,
+    /// Hyperlink (secure)
+    Hyperlink,
+    /// show image
+    Image,
+    /// italic
+    Italic,
+    /// List item
+    Li,
+    /// play music
+    Music,
+    /// MXP command (eg. MXP OFF)
+    Mxp,
     /// ignore next newline
     NoBr,
-    /// Soft line break
-    SBr,
+    /// Ordered list
+    Ol,
     /// Paragraph break (secure)
     P,
-    /// Strikethrough
-    Strikeout,
+    /// send password
+    Password,
+    /// server sets option
+    RecommendOption,
+    /// causes a new connect to open
+    Relocate,
+    /// close all open tags
+    Reset,
+    /// Sample text
+    Samp,
+    /// Soft line break
+    SBr,
     /// Client script (secure)
     Script,
+    /// eg. <send href="go west"> west
+    Send,
+    /// client options set
+    SetOption,
     /// Small text
     Small,
+    /// play sound
+    Sound,
+    /// status
+    Stat,
+    /// Strikethrough
+    Strikeout,
+    /// what commands we support
+    Support,
     /// Non-proportional font
     Tt,
     /// Unordered list
     Ul,
-    /// Ordered list
-    Ol,
-    /// List item
-    Li,
-    /// Sample text
-    Samp,
-    /// Centre text
-    Center,
-    /// Highlight text
-    High,
+    /// underline
+    Underline,
+    /// send username
+    User,
     /// Set variable
     Var,
-    /// AFK - away from keyboard time
-    Afk,
-
-    // recent
-    /// gauge
-    Gauge,
-    /// status
-    Stat,
-    /// expire
-    Expire,
-
-    /// close all open tags
-    Reset,
-    /// MXP command (eg. MXP OFF)
-    Mxp,
-    /// what commands we support
-    Support,
-
-    /// client options set
-    SetOption,
-    /// server sets option
-    RecommendOption,
+    /// version request
+    Version,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
@@ -126,113 +122,100 @@ pub enum Heading {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Action<S> {
+    /// AFK - away from keyboard time
+    Afk { challenge: Option<S> },
     /// bold
     Bold,
-    /// underline
-    Underline,
-    /// italic
-    Italic,
+    /// Hard Line break (secure)
+    Br,
+    /// Centre text
+    Center,
     /// eg. <color fore=red back=blue>
     Color {
         fore: Option<RgbColor>,
         back: Option<RgbColor>,
     },
-    /// version request
-    Version,
+    /// destination frame
+    Dest { name: S },
+    /// expire
+    Expire { name: Option<S> },
+    /// sound/image filter
+    Filter,
     /// font appearance
     Font(Font<S>),
+    /// frame
+    Frame(Frame<S>),
+    /// gauge
+    Gauge(Gauge<S>),
+    /// heading (secure)
+    Heading(Heading),
+    /// Highlight text
+    High,
+    /// Horizontal rule (secure)
+    Hr,
+    /// show image
+    Image(Image<S>),
+    /// italic
+    Italic,
+    /// List item
+    Li,
+    /// Hyperlink or send prompt (secure)
+    Link(Link),
+    /// play music
+    Music(Music<S>),
+    /// stop all music
+    MusicOff,
+    /// MXP command (eg. MXP OFF)
+    Mxp { keywords: EnumSet<MxpKeyword> },
+    /// ignore next newline
+    NoBr,
+    /// Ordered list
+    Ol,
+    /// Paragraph break (secure)
+    P,
+    /// send password
+    Password,
+    /// server sets option
+    RecommendOption,
+    /// causes a new connect to open
+    Relocate,
+    /// close all open tags
+    Reset,
+    /// Sample text
+    Samp,
+    /// Soft linebreak
+    SBr,
+    /// Client script (secure)
+    Script,
+    /// client options set
+    SetOption,
+    /// Small text
+    Small,
     /// play sound
     Sound(Sound<S>),
     /// stop all sound
     SoundOff,
-    // play music
-    Music(Music<S>),
-    /// stop all music
-    MusicOff,
-    /// send username
-    User,
-    /// send password
-    Password,
-    /// causes a new connect to open
-    Relocate,
-    /// frame
-    Frame(Frame<S>),
-    /// destination frame
-    Dest {
-        name: S,
-    },
-    /// show image
-    Image(Image<S>),
-    /// sound/image filter
-    Filter,
-    /// Hyperlink or send prompt (secure)
-    Link(Link),
-    /// Hard Line break (secure)
-    Br,
-    /// heading (secure)
-    Heading(Heading),
-    /// Horizontal rule (secure)
-    Hr,
-    /// ignore next newline
-    NoBr,
-    /// Soft linebreak
-    SBr,
-    /// Paragraph break (secure)
-    P,
+    /// status
+    Stat(Stat<S>),
     /// Strikethrough
     Strikeout,
-    /// Client script (secure)
-    Script,
-    /// Small text
-    Small,
+    /// what commands we support
+    Support { questions: Vec<S> },
     /// Non-proportional font
     Tt,
     /// Unordered list
     Ul,
-    /// Ordered list
-    Ol,
-    /// List item
-    Li,
-    /// Sample text
-    Samp,
-    /// Centre text
-    Center,
-    /// Highlight text
-    High,
+    /// underline
+    Underline,
+    /// send username
+    User,
     /// Set variable
     Var {
         variable: S,
         keywords: EnumSet<EntityKeyword>,
     },
-    /// AFK - away from keyboard time
-    Afk {
-        challenge: Option<S>,
-    },
-
-    /// gauge
-    Gauge(Gauge<S>),
-    /// status
-    Stat(Stat<S>),
-    /// expire
-    Expire {
-        name: Option<S>,
-    },
-
-    /// close all open tags
-    Reset,
-    /// MXP command (eg. MXP OFF)
-    Mxp {
-        keywords: EnumSet<MxpKeyword>,
-    },
-    /// what commands we support
-    Support {
-        questions: Vec<S>,
-    },
-
-    /// client options set
-    SetOption,
-    /// server sets option
-    RecommendOption,
+    /// version request
+    Version,
 }
 
 impl<S: AsRef<str>> Action<S> {

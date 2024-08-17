@@ -324,11 +324,9 @@ impl Transformer {
         use mxp::Action;
 
         match action {
-            Action::Heading(heading) => self.output.set_mxp_heading(heading),
+            Action::Afk { challenge } => self.output.append_afk(challenge.as_deref()),
             Action::Bold => self.output.set_mxp_flag(TextStyle::Bold),
-            Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
-            Action::Italic => self.output.set_mxp_flag(TextStyle::Italic),
-            Action::Strikeout => self.output.set_mxp_flag(TextStyle::Strikeout),
+            Action::Br => self.output.start_line(),
             Action::Color { fore, back } => {
                 if let Some(fg) = fore {
                     self.output.set_mxp_foreground(fg);
@@ -337,9 +335,45 @@ impl Transformer {
                     self.output.set_mxp_background(bg);
                 }
             }
-            Action::High => self.output.set_mxp_flag(TextStyle::Highlight),
-            Action::Link(link) => self.output.set_mxp_action(link.clone()),
+            Action::Dest { name } => self.output.set_mxp_window(name.into_owned()),
+            Action::Expire { name } => self
+                .output
+                .append(EffectFragment::ExpireLinks(name.map(Cow::into_owned))),
             Action::Font(font) => self.output.set_mxp_font(font.into_owned()),
+            Action::Frame(frame) => self.output.append(frame.into_owned()),
+            Action::Gauge(gauge) => self.output.append(gauge.into_owned()),
+            Action::Heading(heading) => self.output.set_mxp_heading(heading),
+            Action::High => self.output.set_mxp_flag(TextStyle::Highlight),
+            Action::Hr => self.output.append(OutputFragment::Hr),
+            Action::Image(image) => self.output.append(image.into_owned()),
+            Action::Italic => self.output.set_mxp_flag(TextStyle::Italic),
+            Action::Li => self.output.advance_list(),
+            Action::Link(link) => self.output.set_mxp_action(link.clone()),
+            Action::Music(music) => self.output.append(music.into_owned()),
+            Action::MusicOff => self.output.append(EffectFragment::MusicOff),
+            Action::Mxp { keywords } => self.mxp_set_keywords(keywords),
+            Action::NoBr => self.ignore_next_newline = true,
+            Action::Ol => self.output.set_mxp_list(InList::Ordered(0)),
+            Action::P => self.in_paragraph = true,
+            Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
+            Action::Reset => self.mxp_off(false),
+            Action::SBr => self.output.push(b' '),
+            Action::Script => self.mxp_script = true,
+            Action::Sound(sound) => self.output.append(sound.into_owned()),
+            Action::SoundOff => self.output.append(EffectFragment::SoundOff),
+            Action::Stat(stat) => self.output.append(stat.into_owned()),
+            Action::Strikeout => self.output.set_mxp_flag(TextStyle::Strikeout),
+            Action::Support { questions } => mxp::Atom::fmt_supported(
+                self.input.as_mut(),
+                questions,
+                self.config.unsupported_actions,
+            ),
+            Action::Ul => self.output.set_mxp_list(InList::Unordered),
+            Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
+            Action::User => input_mxp_auth(&mut self.input, &self.config.player),
+            Action::Var { variable, keywords } => {
+                self.mxp_set_entity(variable.into_owned(), keywords, mxp_state);
+            }
             Action::Version => {
                 let response = mxp::responses::IdentifyResponse {
                     name: &self.config.app_name,
@@ -347,40 +381,6 @@ impl Transformer {
                 };
                 write!(self.input, "{response}").unwrap();
             }
-            Action::Afk { challenge } => self.output.append_afk(challenge.as_deref()),
-            Action::Support { questions } => mxp::Atom::fmt_supported(
-                self.input.as_mut(),
-                questions,
-                self.config.unsupported_actions,
-            ),
-            Action::User => input_mxp_auth(&mut self.input, &self.config.player),
-            Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
-            Action::Br => self.output.start_line(),
-            Action::SBr => self.output.push(b' '),
-            Action::NoBr => self.ignore_next_newline = true,
-            Action::Reset => self.mxp_off(false),
-            Action::Mxp { keywords } => self.mxp_set_keywords(keywords),
-            Action::P => self.in_paragraph = true,
-            Action::Script => self.mxp_script = true,
-            Action::Hr => self.output.append(OutputFragment::Hr),
-            Action::Ul => self.output.set_mxp_list(InList::Unordered),
-            Action::Ol => self.output.set_mxp_list(InList::Ordered(0)),
-            Action::Li => self.output.advance_list(),
-            Action::Image(image) => self.output.append(image.into_owned()),
-            Action::Var { variable, keywords } => {
-                self.mxp_set_entity(variable.into_owned(), keywords, mxp_state);
-            }
-            Action::Music(music) => self.output.append(music.into_owned()),
-            Action::MusicOff => self.output.append(EffectFragment::MusicOff),
-            Action::Sound(sound) => self.output.append(sound.into_owned()),
-            Action::SoundOff => self.output.append(EffectFragment::SoundOff),
-            Action::Frame(frame) => self.output.append(frame.into_owned()),
-            Action::Dest { name } => self.output.set_mxp_window(name.into_owned()),
-            Action::Expire { name } => self
-                .output
-                .append(EffectFragment::ExpireLinks(name.map(Cow::into_owned))),
-            Action::Gauge(gauge) => self.output.append(gauge.into_owned()),
-            Action::Stat(stat) => self.output.append(stat.into_owned()),
 
             Action::Relocate
             | Action::Filter
