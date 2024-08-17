@@ -4,7 +4,7 @@ use std::slice;
 use super::element_map::{ElementComponent, ElementMap};
 use super::entity_map::{ElementDecoder, EntityMap};
 use super::line_tags::{LineTagUpdate, LineTags};
-use super::variable_map::{EntityEntry, PublishedIter};
+use super::entity_map::{EntityEntry, PublishedIter};
 use crate::argument::scan::{Decoder, Scan};
 use crate::argument::Arguments;
 use crate::entity::{Action, Element, ElementItem, Mode};

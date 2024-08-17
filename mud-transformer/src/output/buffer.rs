@@ -38,7 +38,7 @@ pub struct BufferedOutput {
     ignore_mxp_colors: bool,
     last_linebreak: Option<usize>,
     colors: Vec<RgbColor>,
-    variables: mxp::VariableMap,
+    variables: mxp::EntityMap,
     in_variable: bool,
     variable: Vec<u8>,
 }
@@ -61,7 +61,7 @@ impl BufferedOutput {
             ignore_mxp_colors: false,
             last_linebreak: None,
             colors: Vec::new(),
-            variables: mxp::VariableMap::new(),
+            variables: mxp::EntityMap::new(),
             in_variable: false,
             variable: Vec::new(),
         }

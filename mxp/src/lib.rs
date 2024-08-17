@@ -43,7 +43,7 @@ pub use argument::Arguments;
 
 mod collection;
 pub use collection::{
-    ElementComponent, ElementMap, Entity, EntityEntry, EntityMap, PublishedIter, State, VariableMap,
+    ElementComponent, ElementMap, Entity, EntityEntry, EntityMap, PublishedIter, State,
 };
 
 mod color;
