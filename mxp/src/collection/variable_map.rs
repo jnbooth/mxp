@@ -1,22 +1,59 @@
-use std::collections::HashMap;
+use std::collections::{hash_map, HashMap};
 use std::iter::FusedIterator;
 use std::ops::{Deref, DerefMut};
-use std::slice;
 
 use crate::keyword::EntityKeyword;
 use std::collections::hash_map::Entry;
 
-use super::published_entities::{PublishedEntities, PublishedEntity};
 use enumeration::EnumSet;
+
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Entity {
+    pub value: String,
+    pub published: bool,
+    pub description: String,
+}
+
+impl Entity {
+    pub const fn new(value: String) -> Self {
+        Self {
+            value,
+            published: false,
+            description: String::new(),
+        }
+    }
+
+    pub fn apply_keywords(&mut self, keywords: EnumSet<EntityKeyword>) {
+        if keywords.contains(EntityKeyword::Private) {
+            self.published = false;
+        } else if keywords.contains(EntityKeyword::Publish) {
+            self.published = true;
+        }
+    }
+
+    pub fn add(&mut self, value: &str) {
+        self.value.reserve(value.len() + 1);
+        self.value.push('|');
+        self.value.push_str(value);
+    }
+
+    pub fn remove(&mut self, value: &str) {
+        self.value = self
+            .value
+            .split('|')
+            .filter(|item| *item != value)
+            .collect::<Vec<_>>()
+            .join("|");
+    }
+}
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct VariableMap {
-    inner: HashMap<String, String>,
-    published: PublishedEntities,
+    inner: HashMap<String, Entity>,
 }
 
 impl Deref for VariableMap {
-    type Target = HashMap<String, String>;
+    type Target = HashMap<String, Entity>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
@@ -31,7 +68,7 @@ impl DerefMut for VariableMap {
 
 pub struct EntityEntry<'a> {
     pub name: &'a str,
-    pub value: Option<&'a str>,
+    pub value: Option<&'a Entity>,
 }
 
 impl VariableMap {
@@ -41,26 +78,23 @@ impl VariableMap {
 
     pub fn clear(&mut self) {
         self.inner.clear();
-        self.published.clear();
+    }
+
+    pub fn remove(&mut self, key: &str) -> Option<Entity> {
+        self.inner.remove(key)
     }
 
     pub fn published(&self) -> PublishedIter {
         PublishedIter {
-            inner: self.published.iter(),
-            map: &self.inner,
+            inner: self.inner.iter(),
         }
-    }
-
-    pub fn remove(&mut self, key: &str) -> Option<String> {
-        self.published.remove(key);
-        self.inner.remove(key)
     }
 
     pub fn set<'a>(
         &'a mut self,
         key: &'a str,
         value: &str,
-        desc: Option<String>,
+        description: Option<String>,
         keywords: EnumSet<EntityKeyword>,
     ) -> Option<EntityEntry<'a>> {
         if keywords.contains(EntityKeyword::Delete) {
@@ -69,16 +103,15 @@ impl VariableMap {
                 value: None,
             });
         }
-        if keywords.contains(EntityKeyword::Private) {
-            self.published.remove(key);
-        } else if keywords.contains(EntityKeyword::Publish) {
-            self.published.insert(key.to_owned(), desc);
-        }
         let entity = match self.inner.entry(key.to_owned()) {
             Entry::Vacant(_) if keywords.contains(EntityKeyword::Remove) => return None,
-            Entry::Vacant(entry) => entry.insert(value.to_owned()),
+            Entry::Vacant(entry) => entry.insert(Entity {
+                value: value.to_owned(),
+                published: keywords.contains(EntityKeyword::Publish),
+                description: String::new(),
+            }),
             Entry::Occupied(entry) if keywords.contains(EntityKeyword::Remove) => {
-                if entry.get() == value {
+                if entry.get().value == value {
                     entry.remove();
                     return Some(EntityEntry {
                         name: key,
@@ -86,26 +119,35 @@ impl VariableMap {
                     });
                 }
                 let entity = entry.into_mut();
-                *entity = entity
-                    .split('|')
-                    .filter(|item| *item != value)
-                    .collect::<Vec<_>>()
-                    .join("|");
+                entity.remove(value);
+                entity.apply_keywords(keywords);
                 entity
             }
             Entry::Occupied(entry) if keywords.contains(EntityKeyword::Add) => {
                 let entity = entry.into_mut();
-                entity.reserve(value.len() + 1);
-                entity.push('|');
-                entity.push_str(value);
+                entity.add(value);
+                entity.apply_keywords(keywords);
                 entity
             }
             Entry::Occupied(entry) => {
                 let entity = entry.into_mut();
-                if entity == value {
-                    return None;
+                let description_unchanged = match description {
+                    Some(description) if entity.description != description => {
+                        entity.description = description;
+                        false
+                    }
+                    _ => true,
+                };
+                if description_unchanged && entity.value == value {
+                    let old_published = entity.published;
+                    entity.apply_keywords(keywords);
+                    if entity.published == old_published {
+                        return None;
+                    }
+                } else {
+                    entity.value = value.to_owned();
+                    entity.apply_keywords(keywords);
                 }
-                *entity = value.to_owned();
                 entity
             }
         };
@@ -119,69 +161,39 @@ impl VariableMap {
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EntityInfo<'a> {
     name: &'a str,
-    desc: &'a str,
+    description: &'a str,
     value: &'a str,
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
 pub struct PublishedIter<'a> {
-    inner: slice::Iter<'a, PublishedEntity>,
-    map: &'a HashMap<String, String>,
-}
-
-impl<'a> PublishedIter<'a> {
-    fn lookup(&self, entity: &'a PublishedEntity) -> EntityInfo<'a> {
-        EntityInfo {
-            name: &entity.name,
-            desc: &entity.desc,
-            value: match self.map.get(&entity.name) {
-                Some(entity) => entity.as_str(),
-                None => "",
-            },
-        }
-    }
+    inner: hash_map::Iter<'a, String, Entity>,
 }
 
 impl<'a> Iterator for PublishedIter<'a> {
     type Item = EntityInfo<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|entity| self.lookup(entity))
+        for (name, entity) in &mut self.inner {
+            if entity.published {
+                return Some(EntityInfo {
+                    name,
+                    description: entity.description.as_str(),
+                    value: entity.value.as_str(),
+                });
+            }
+        }
+        None
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let len = self.len();
-        (len, Some(len))
+        (0, Some(self.inner.len()))
     }
 
     fn count(self) -> usize {
-        self.len()
-    }
-
-    fn last(mut self) -> Option<Self::Item> {
-        self.inner.next_back().map(|entity| self.lookup(entity))
-    }
-
-    fn nth(&mut self, n: usize) -> Option<Self::Item> {
-        self.inner.nth(n).map(|entity| self.lookup(entity))
+        self.inner.filter(|item| item.1.published).count()
     }
 }
 
 impl<'a> FusedIterator for PublishedIter<'a> {}
-
-impl<'a> ExactSizeIterator for PublishedIter<'a> {
-    fn len(&self) -> usize {
-        self.inner.len()
-    }
-}
-
-impl<'a> DoubleEndedIterator for PublishedIter<'a> {
-    fn next_back(&mut self) -> Option<Self::Item> {
-        self.inner.next_back().map(|entity| self.lookup(entity))
-    }
-
-    fn nth_back(&mut self, n: usize) -> Option<Self::Item> {
-        self.inner.nth_back(n).map(|entity| self.lookup(entity))
-    }
-}

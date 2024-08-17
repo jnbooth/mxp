@@ -79,7 +79,7 @@ pub enum EntityFragment {
     Set {
         name: String,
         value: String,
-        publish: Option<bool>,
+        publish: bool,
         is_variable: bool,
     },
     Unset {
@@ -99,10 +99,10 @@ impl EntityFragment {
 
     fn new(entry: &mxp::EntityEntry, is_variable: bool) -> Self {
         match entry.value {
-            Some(value) => Self::Set {
+            Some(entity) => Self::Set {
                 name: entry.name.to_owned(),
-                value: value.to_owned(),
-                publish: None,
+                value: entity.value.clone(),
+                publish: entity.published,
                 is_variable,
             },
             None => Self::Unset {

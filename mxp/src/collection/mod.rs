@@ -6,10 +6,8 @@ pub use entity_map::EntityMap;
 
 mod line_tags;
 
-mod published_entities;
-
 mod state;
 pub use state::State;
 
 mod variable_map;
-pub use variable_map::{EntityEntry, PublishedIter, VariableMap};
+pub use variable_map::{Entity, EntityEntry, PublishedIter, VariableMap};

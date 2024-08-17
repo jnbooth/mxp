@@ -59,7 +59,10 @@ impl EntityMap {
 
     pub fn get(&self, key: &str) -> crate::Result<Option<&str>> {
         if !key.starts_with('#') {
-            return Ok(Self::global(key).or_else(|| self.0.get(key).map(String::as_str)));
+            if let Some(global) = Self::global(key) {
+                return Ok(Some(global));
+            }
+            return Ok(self.0.get(key).map(|entity| entity.value.as_str()));
         }
         let id = match key.strip_prefix('x') {
             Some(hex) => u8::from_str_radix(hex, 16),
