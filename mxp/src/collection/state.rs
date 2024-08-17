@@ -3,11 +3,11 @@ use std::slice;
 
 use super::element_map::{ElementComponent, ElementMap};
 use super::entity_map::{ElementDecoder, EntityMap};
-use super::line_tags::{LineTagUpdate, LineTags};
 use super::entity_map::{EntityEntry, PublishedIter};
+use super::line_tags::{LineTagUpdate, LineTags};
 use crate::argument::scan::{Decoder, Scan};
 use crate::argument::Arguments;
-use crate::entity::{Action, Element, ElementItem, Mode};
+use crate::element::{Action, Element, ElementItem, Mode};
 use crate::parser::{Error, ErrorKind, Words};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]

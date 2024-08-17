@@ -2,7 +2,7 @@ use super::element_map::ElementMap;
 use crate::argument::scan::Decoder;
 use crate::argument::Arguments;
 use crate::color::RgbColor;
-use crate::entity::{Element, Mode};
+use crate::element::{Element, Mode};
 use crate::keyword::TagKeyword;
 use crate::parser::{Error, ErrorKind, Words};
 

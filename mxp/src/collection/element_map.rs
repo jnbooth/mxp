@@ -7,7 +7,7 @@ use crate::lookup::Lookup;
 
 use crate::argument::Arguments;
 use crate::color::RgbColor;
-use crate::entity::{Atom, Element, TagFlag};
+use crate::element::{Atom, Element, TagFlag};
 use crate::parser::{validate, Error, ErrorKind};
 
 #[derive(Copy, Clone, Debug)]

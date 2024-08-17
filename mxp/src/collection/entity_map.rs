@@ -11,7 +11,7 @@ use crate::parser::{Error, ErrorKind};
 use std::collections::hash_map::Entry;
 
 use super::decode::{decode_amps, CHARS};
-use crate::entity::Element;
+use crate::element::Element;
 
 use enumeration::EnumSet;
 

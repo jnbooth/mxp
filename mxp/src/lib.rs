@@ -49,8 +49,8 @@ pub use collection::{
 mod color;
 pub use color::{HexOutOfRangeError, ParseHexColorError, RgbColor};
 
-mod entity;
-pub use entity::*;
+mod element;
+pub use element::*;
 
 pub mod escape;
 
