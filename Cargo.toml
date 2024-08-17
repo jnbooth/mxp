@@ -2,6 +2,9 @@
 resolver = "2"
 members = ["mxp", "mud-bin-examples", "mud-stream", "mud-transformer"]
 
+[workspace.package]
+version = "0.7.0"
+
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 cast_lossless = "allow"
@@ -15,6 +18,3 @@ must_use_candidate = "allow"
 struct_excessive_bools = "allow"
 too_many_lines = "allow"
 unreadable_literal = "allow"
-
-[workspace.package]
-version = "0.6.0"
