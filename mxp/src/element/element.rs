@@ -5,8 +5,7 @@ use enumeration::{Enum, EnumSet};
 
 use super::atom::{Atom, TagFlag};
 use super::mode::Mode;
-use crate::argument::scan::{Decoder, Scan};
-use crate::argument::Arguments;
+use crate::argument::{Arguments, Decoder, Scan};
 use crate::color::RgbColor;
 use crate::keyword::ElementKeyword;
 use crate::parser::{Error, ErrorKind, UnrecognizedVariant, Words};

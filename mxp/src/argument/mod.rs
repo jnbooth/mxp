@@ -1,4 +1,12 @@
-mod arguments;
-pub use arguments::{Arguments, KeywordFilter};
+pub mod args;
 
-pub mod scan;
+mod arguments;
+pub use arguments::Arguments;
+
+mod decode;
+pub use decode::ElementDecoder;
+
+mod keyword_filter;
+
+mod scan;
+pub use scan::{Decoder, Scan};

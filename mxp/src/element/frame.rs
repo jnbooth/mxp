@@ -4,7 +4,7 @@ use std::str::FromStr;
 use enumeration::Enum;
 
 use super::screen::Align;
-use crate::argument::scan::{Decoder, Scan};
+use crate::argument::{Decoder, Scan};
 use crate::keyword::FrameKeyword;
 use crate::parser::{Error, ErrorKind, UnrecognizedVariant};
 use crate::Dimension;

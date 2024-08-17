@@ -1,4 +1,4 @@
-use crate::argument::scan::{Decoder, Scan};
+use crate::argument::{Decoder, Scan};
 use crate::parser::{Error, ErrorKind, UnrecognizedVariant};
 use enumeration::Enum;
 use std::borrow::Cow;

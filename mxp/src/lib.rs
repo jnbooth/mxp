@@ -42,15 +42,16 @@ mod argument;
 pub use argument::Arguments;
 
 mod collection;
-pub use collection::{
-    ElementComponent, ElementMap, Entity, EntityEntry, EntityMap, PublishedIter, State,
-};
+pub use collection::{ElementComponent, ElementMap, State};
 
 mod color;
 pub use color::{HexOutOfRangeError, ParseHexColorError, RgbColor};
 
 mod element;
 pub use element::*;
+
+mod entity;
+pub use entity::{Entity, EntityEntry, EntityMap, PublishedIter};
 
 pub mod escape;
 

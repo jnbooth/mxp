@@ -1,5 +1,4 @@
-use crate::argument::scan::Decoder;
-use crate::argument::scan::Scan;
+use crate::argument::{Decoder, Scan};
 use crate::color::RgbColor;
 use crate::parser::Error;
 use crate::parser::UnrecognizedVariant;

@@ -1,59 +1,15 @@
-use std::borrow::Cow;
-use std::collections::{hash_map, HashMap, HashSet};
-use std::iter::FusedIterator;
+use std::collections::{HashMap, HashSet};
 use std::ops::{Deref, DerefMut};
 
-use super::global_entities::GLOBAL_ENTITIES;
-use crate::argument::scan::Decoder;
-use crate::argument::{Arguments, KeywordFilter};
+use super::global::{CHARS, GLOBAL_ENTITIES, MIN_CHAR};
 use crate::keyword::EntityKeyword;
 use crate::parser::{Error, ErrorKind};
 use std::collections::hash_map::Entry;
 
-use super::decode::{decode_amps, CHARS};
-use crate::element::Element;
+use super::iter::PublishedIter;
 
+use super::entity::Entity;
 use enumeration::EnumSet;
-
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Entity {
-    pub value: String,
-    pub published: bool,
-    pub description: String,
-}
-
-impl Entity {
-    pub const fn new(value: String) -> Self {
-        Self {
-            value,
-            published: false,
-            description: String::new(),
-        }
-    }
-
-    pub fn apply_keywords(&mut self, keywords: EnumSet<EntityKeyword>) {
-        if keywords.contains(EntityKeyword::Private) {
-            self.published = false;
-        } else if keywords.contains(EntityKeyword::Publish) {
-            self.published = true;
-        }
-    }
-
-    pub fn add(&mut self, value: &str) {
-        self.value.reserve(value.len() + 1);
-        self.value.push('|');
-        self.value.push_str(value);
-    }
-
-    pub fn remove(&mut self, value: &str) {
-        self.value = self
-            .value
-            .split('|')
-            .filter(|item| *item != value)
-            .collect::<Vec<_>>()
-            .join("|");
-    }
-}
 
 pub struct EntityEntry<'a> {
     pub name: &'a str,
@@ -189,105 +145,17 @@ impl EntityMap {
     }
 
     pub fn decode_entity(&self, key: &str) -> crate::Result<Option<&str>> {
-        if !key.starts_with('#') {
+        let Some(code) = key.strip_prefix('#') else {
             return Ok(self.inner.get(key).map(|entity| entity.value.as_ref()));
-        }
-        let id = match key.strip_prefix('x') {
-            Some(hex) => u8::from_str_radix(hex, 16),
-            None => key.parse::<u8>(),
+        };
+        let id = match code.strip_prefix('x') {
+            Some(hex) => usize::from_str_radix(hex, 16),
+            None => code.parse::<usize>(),
         }
         .map_err(|_| Error::new(key, ErrorKind::InvalidEntityNumber))?;
-        let id = id as usize;
-        match CHARS.get(id..=id) {
-            None | Some("\x00") => Err(Error::new(key, ErrorKind::DisallowedEntityNumber)),
+        match id.checked_sub(MIN_CHAR).and_then(|id| CHARS.get(id..=id)) {
+            None => Err(Error::new(key, ErrorKind::DisallowedEntityNumber)),
             some => Ok(some),
         }
     }
-
-    pub fn element_decoder<'a>(
-        &'a self,
-        element: &'a Element,
-        args: &'a Arguments,
-    ) -> ElementDecoder {
-        ElementDecoder {
-            element,
-            entities: self,
-            args,
-        }
-    }
 }
-
-impl Decoder for EntityMap {
-    type Output<'a> = Cow<'a, str>;
-
-    fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Self::Output<'a>> {
-        decode_amps(s, |entity| self.decode_entity(entity))
-    }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct ElementDecoder<'a> {
-    element: &'a Element,
-    entities: &'a EntityMap,
-    args: &'a Arguments,
-}
-
-impl<'d> Decoder for ElementDecoder<'d> {
-    type Output<'a> = Cow<'a, str>;
-
-    fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Self::Output<'a>> {
-        decode_amps(s, |entity| {
-            if entity == "text" {
-                return Ok(None);
-            }
-            match self
-                .element
-                .attributes
-                .find_attribute::<F>(entity, self.args)
-            {
-                Some(attr) => Ok(Some(attr)),
-                None => self.entities.decode_entity(entity),
-            }
-        })
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct EntityInfo<'a> {
-    name: &'a str,
-    description: &'a str,
-    value: &'a str,
-}
-
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-#[derive(Clone, Debug)]
-pub struct PublishedIter<'a> {
-    inner: hash_map::Iter<'a, String, Entity>,
-}
-
-impl<'a> Iterator for PublishedIter<'a> {
-    type Item = EntityInfo<'a>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        for (name, entity) in &mut self.inner {
-            if entity.published {
-                return Some(EntityInfo {
-                    name,
-                    description: entity.description.as_str(),
-                    value: entity.value.as_str(),
-                });
-            }
-        }
-        None
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, Some(self.inner.len()))
-    }
-
-    fn count(self) -> usize {
-        self.inner.filter(|item| item.1.published).count()
-    }
-}
-
-impl<'a> FusedIterator for PublishedIter<'a> {}

@@ -2,12 +2,10 @@ use std::borrow::Cow;
 use std::slice;
 
 use super::element_map::{ElementComponent, ElementMap};
-use super::entity_map::{ElementDecoder, EntityMap};
-use super::entity_map::{EntityEntry, PublishedIter};
 use super::line_tags::{LineTagUpdate, LineTags};
-use crate::argument::scan::{Decoder, Scan};
-use crate::argument::Arguments;
+use crate::argument::{Arguments, Decoder, ElementDecoder, Scan};
 use crate::element::{Action, Element, ElementItem, Mode};
+use crate::entity::{EntityEntry, EntityMap, PublishedIter};
 use crate::parser::{Error, ErrorKind, Words};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -65,10 +63,13 @@ impl State {
         element: &'a Element,
         args: &'a Arguments,
     ) -> DecodeElement<'a, ElementDecoder<'a>> {
-        let decoder = self.entities.element_decoder(element, args);
         DecodeElement {
-            decoder,
             items: element.items.iter(),
+            decoder: ElementDecoder {
+                element,
+                args,
+                entities: &self.entities,
+            },
         }
     }
 

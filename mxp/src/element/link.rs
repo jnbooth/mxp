@@ -1,6 +1,6 @@
 use enumeration::Enum;
 
-use crate::argument::scan::{Decoder, Scan};
+use crate::argument::{Decoder, Scan};
 use crate::keyword::SendKeyword;
 use crate::parser::{Error, ErrorKind};
 

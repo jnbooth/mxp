@@ -1,5 +1,5 @@
 use super::screen::{Align, Dimension};
-use crate::argument::scan::{Decoder, Scan};
+use crate::argument::{Decoder, Scan};
 use crate::keyword::ImageKeyword;
 use crate::parser::Error;
 use std::borrow::Cow;

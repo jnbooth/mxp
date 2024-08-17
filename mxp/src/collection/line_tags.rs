@@ -1,6 +1,5 @@
 use super::element_map::ElementMap;
-use crate::argument::scan::Decoder;
-use crate::argument::Arguments;
+use crate::argument::{Arguments, Decoder};
 use crate::color::RgbColor;
 use crate::element::{Element, Mode};
 use crate::keyword::TagKeyword;
