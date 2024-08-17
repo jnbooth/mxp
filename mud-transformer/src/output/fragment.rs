@@ -131,6 +131,7 @@ pub enum EffectFragment {
     Gauge(mxp::Gauge),
     Music(mxp::Music),
     MusicOff,
+    Relocate(mxp::Relocate),
     Sound(mxp::Sound),
     SoundOff,
     StatusBar(mxp::Stat),
@@ -184,6 +185,12 @@ impl From<mxp::Image> for OutputFragment {
 impl From<mxp::Music> for OutputFragment {
     fn from(value: mxp::Music) -> Self {
         Self::Effect(EffectFragment::Music(value))
+    }
+}
+
+impl From<mxp::Relocate> for OutputFragment {
+    fn from(value: mxp::Relocate) -> Self {
+        Self::Effect(EffectFragment::Relocate(value))
     }
 }
 

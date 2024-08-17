@@ -350,6 +350,7 @@ impl Transformer {
             Action::NoBr => self.ignore_next_newline = true,
             Action::P => self.in_paragraph = true,
             Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
+            Action::Relocate(relocate) => self.output.append(relocate.into_owned()),
             Action::Reset => self.mxp_off(false),
             Action::SBr => self.output.push(b' '),
             Action::Small => self.output.set_mxp_flag(TextStyle::Small),
@@ -375,8 +376,6 @@ impl Transformer {
                 };
                 write!(self.input, "{response}").unwrap();
             }
-
-            Action::Relocate => (),
         }
     }
 

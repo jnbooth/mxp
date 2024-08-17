@@ -28,6 +28,9 @@ pub use link::{Link, SendTo};
 mod mode;
 pub use mode::Mode;
 
+mod relocate;
+pub use relocate::Relocate;
+
 mod screen;
 pub use screen::{Align, Dimension, DimensionUnit};
 

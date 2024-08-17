@@ -4,6 +4,7 @@ use super::font::Font;
 use super::frame::{DestArgs, Frame};
 use super::image::Image;
 use super::link::{ExpireArgs, HyperlinkArgs, Link, SendArgs};
+use super::relocate::Relocate;
 use super::sound::{Music, Sound};
 use crate::argument::args::{ColorArgs, MxpArgs, SupportArgs, VarArgs};
 use crate::argument::{Decoder, Scan};
@@ -151,7 +152,7 @@ pub enum Action<S> {
     /// send password
     Password,
     /// causes a new connect to open
-    Relocate,
+    Relocate(Relocate<S>),
     /// close all open tags
     Reset,
     /// Soft linebreak
@@ -233,7 +234,7 @@ impl<S: AsRef<str>> Action<S> {
             ActionKind::NoBr => Self::NoBr,
             ActionKind::P => Self::P,
             ActionKind::Password => Self::Password,
-            ActionKind::Relocate => Self::Relocate,
+            ActionKind::Relocate => Self::Relocate(scanner.try_into()?),
             ActionKind::Reset => Self::Reset,
             ActionKind::SBr => Self::SBr,
             ActionKind::Send => Self::Link(SendArgs::try_from(scanner)?.into()),
