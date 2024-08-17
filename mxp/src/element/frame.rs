@@ -71,7 +71,7 @@ pub struct Frame<S = String> {
 }
 
 impl Frame<&str> {
-    pub fn into_owned(&self) -> Frame {
+    pub fn into_owned(self) -> Frame {
         Frame {
             name: self.name.to_owned(),
             action: self.action,

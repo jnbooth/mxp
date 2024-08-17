@@ -119,7 +119,7 @@ impl<S: AsRef<str>> Sound<S> {
 }
 
 impl Sound<&str> {
-    pub fn into_owned(&self) -> Sound {
+    pub fn into_owned(self) -> Sound {
         Sound {
             fname: self.fname.to_owned(),
             volume: self.volume,
@@ -177,7 +177,7 @@ impl<S: AsRef<str>> Music<S> {
 }
 
 impl Music<&str> {
-    pub fn into_owned(&self) -> Music {
+    pub fn into_owned(self) -> Music {
         Music {
             fname: self.fname.to_owned(),
             volume: self.volume,

@@ -67,7 +67,7 @@ pub struct Font<S = String> {
 }
 
 impl<'a> Font<&'a str> {
-    pub fn into_owned(&self) -> Font {
+    pub fn into_owned(self) -> Font {
         Font {
             face: self.face.map(ToOwned::to_owned),
             size: self.size,

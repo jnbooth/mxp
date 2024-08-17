@@ -18,7 +18,7 @@ pub struct Image<S = String> {
 }
 
 impl<'a> Image<&'a str> {
-    pub fn into_owned(&self) -> Image {
+    pub fn into_owned(self) -> Image {
         Image {
             fname: self.fname.map(ToOwned::to_owned),
             url: self.url.map(ToOwned::to_owned),
