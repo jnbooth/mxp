@@ -2,7 +2,7 @@ mod action;
 pub use action::{Action, ActionKind, Heading};
 
 mod atom;
-pub use atom::{Atom, TagFlag};
+pub use atom::Atom;
 
 mod bar;
 pub use bar::{Gauge, Stat};

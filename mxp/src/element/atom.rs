@@ -1,31 +1,21 @@
 use std::str;
 
 use casefold::ascii::CaseFold;
-use enumeration::{self, enums, Enum, EnumSet};
+use enumeration::EnumSet;
 
 use crate::lookup::Lookup;
 
 use super::action::ActionKind;
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum TagFlag {
-    /// Tag is an open one (otherwise secure)
-    Open,
-    /// Tag is a command (doesn't have closing tag)
-    Command,
-    /// Not closed by reset (eg. body)
-    NoReset,
-    /// Not really implemented (for <supports> tag)
-    NotImp,
-}
 
 /// Atomic MXP tags that we recognise, e.g. <b>.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Atom {
     /// Tag name, e.g. bold
     pub name: String,
-    /// Secure, Command, etc.
-    pub flags: EnumSet<TagFlag>,
+    /// Whether the atom is open (OPEN)
+    pub open: bool,
+    /// Whether the atom has no closing tag (EMPTY)
+    pub command: bool,
     /// Its action.
     pub action: ActionKind,
     /// Supported arguments, e.g. href, hint
@@ -50,9 +40,7 @@ impl Atom {
             let tag = questions.next().unwrap();
             match Atom::get(tag) {
                 None => write_cant(buf, tag),
-                Some(atom)
-                    if atom.flags.contains(TagFlag::NotImp) | unsupported.contains(atom.action) =>
-                {
+                Some(atom) if unsupported.contains(atom.action) => {
                     write_cant(buf, tag);
                 }
                 Some(atom) => match questions.next() {
@@ -67,9 +55,7 @@ impl Atom {
         }
         if !has_args {
             for atom in ALL_ATOMS.values() {
-                if atom.flags.contains(TagFlag::NotImp) | unsupported.contains(atom.action) {
-                    write_cant(buf, &atom.name);
-                } else {
+                if !unsupported.contains(atom.action) {
                     write_can(buf, &atom.name);
                     write_can_args(buf, atom);
                 }
@@ -105,115 +91,89 @@ fn write_can_args(buf: &mut Vec<u8>, atom: &Atom) {
 #[allow(clippy::enum_glob_use)]
 static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
     use ActionKind::*;
-    use TagFlag::*;
 
-    let atom = |name: &'static str, flags, action, args: &[&'static str]| {
+    const COMMAND: EnumSet<ActionKind> = enums![
+        Br, Expire, Filter, Gauge, Hr, Music, Mxp, NoBr, Password, Relocate, Reset, SBr, Stat,
+        Support, User, Version, Frame, Image, Music, Sound
+    ];
+
+    const OPEN: EnumSet<ActionKind> =
+        enums![Bold, Color, Italic, Highlight, Strikeout, Small, Tt, Underline, Font];
+
+    [
+        ("a", Hyperlink, "href hint expire"),
+        ("b", Bold, ""),
+        ("bold", Bold, ""),
+        ("br", Br, ""),
+        ("c", Color, "fore back"),
+        ("color", Color, "fore back"),
+        ("dest", Dest, ""),
+        ("destination", Dest, ""),
+        ("em", Italic, ""),
+        ("expire", Expire, ""),
+        ("filter", Filter, ""),
+        ("font", Font, "face size color back"),
+        (
+            "frame",
+            Frame,
+            "name action title internal align left top width height scrolling floating",
+        ),
+        ("gauge", Gauge, ""),
+        ("h", Highlight, ""),
+        ("h1", H1, ""),
+        ("h2", H2, ""),
+        ("h3", H3, ""),
+        ("h4", H4, ""),
+        ("h5", H5, ""),
+        ("h6", H6, ""),
+        ("high", Highlight, ""),
+        ("hr", Hr, ""),
+        ("i", Italic, ""),
+        ("image", Image, "url fname t h w hspace vspace align ismap"),
+        ("italic", Italic, ""),
+        ("music", Music, "fname v l c t u"),
+        ("music", Sound, ""),
+        ("mxp", Mxp, "off"),
+        ("nobr", NoBr, ""),
+        ("p", P, ""),
+        ("pass", Password, ""),
+        ("password", Password, ""),
+        ("relocate", Relocate, ""),
+        ("reset", Reset, ""),
+        ("s", Strikeout, ""),
+        ("sbr", SBr, ""),
+        ("send", Send, "href hint prompt expire"),
+        ("small", Small, ""),
+        ("sound", Sound, "fname v l p t u"),
+        ("stat", Stat, ""),
+        ("strike", Strikeout, ""),
+        ("strikeout", Strikeout, ""),
+        ("strong", Bold, ""),
+        ("support", Support, ""),
+        ("tt", Tt, ""),
+        ("u", Underline, ""),
+        ("underline", Underline, ""),
+        ("user", User, ""),
+        ("username", User, ""),
+        ("v", Var, ""),
+        ("var", Var, ""),
+        ("version", Version, ""),
+    ]
+    .into_iter()
+    .map(|(name, action, args)| {
+        let args = if args.is_empty() {
+            Vec::new()
+        } else {
+            args.split(' ').map(CaseFold::borrow).collect()
+        };
         let atom = Atom {
             name: name.to_owned(),
-            flags,
+            command: COMMAND.contains(action),
+            open: OPEN.contains(action),
             action,
-            args: args.iter().map(|&s| CaseFold::borrow(s)).collect(),
+            args,
         };
         (name, atom)
-    };
-
-    vec![
-        atom("a", enums![], Hyperlink, &["href", "hint", "expire"]),
-        atom("b", enums![Open], Bold, &[]),
-        atom("bold", enums![Open], Bold, &[]),
-        atom("br", enums![Command], Br, &[]),
-        atom("c", enums![Open], Color, &["fore", "back"]),
-        atom("color", enums![Open], Color, &["fore", "back"]),
-        atom("dest", enums![], Dest, &[]),
-        atom("destination", enums![], Dest, &[]),
-        atom("em", enums![Open], Italic, &[]),
-        atom("expire", enums![Command], Expire, &[]),
-        atom("filter", enums![Command], Filter, &[]),
-        atom("gauge", enums![Command], Gauge, &[]),
-        atom("h", enums![Open], Highlight, &[]),
-        atom("h1", enums![], H1, &[]),
-        atom("h2", enums![], H2, &[]),
-        atom("h3", enums![], H3, &[]),
-        atom("h4", enums![], H4, &[]),
-        atom("h5", enums![], H5, &[]),
-        atom("h6", enums![], H6, &[]),
-        atom("high", enums![Open], Highlight, &[]),
-        atom("hr", enums![Command], Hr, &[]),
-        atom("i", enums![Open], Italic, &[]),
-        atom("italic", enums![Open], Italic, &[]),
-        atom("music", enums![Command], Sound, &[]),
-        atom("mxp", enums![Command], Mxp, &["off"]),
-        atom("nobr", enums![Command], NoBr, &[]),
-        atom("p", enums![], P, &[]),
-        atom("pass", enums![Command], Password, &[]),
-        atom("password", enums![Command], Password, &[]),
-        atom("relocate", enums![Command, NotImp], Relocate, &[]),
-        atom("reset", enums![Command], Reset, &[]),
-        atom("s", enums![Open], Strikeout, &[]),
-        atom("sbr", enums![Command, Open], SBr, &[]),
-        atom("small", enums![Open, NotImp], Small, &[]),
-        atom("stat", enums![Command], Stat, &[]),
-        atom("strike", enums![Open], Strikeout, &[]),
-        atom("strikeout", enums![Open], Strikeout, &[]),
-        atom("strong", enums![Open], Bold, &[]),
-        atom("support", enums![Command], Support, &[]),
-        atom("tt", enums![Open], Tt, &[]),
-        atom("u", enums![Open], Underline, &[]),
-        atom("underline", enums![Open], Underline, &[]),
-        atom("user", enums![Command], User, &[]),
-        atom("username", enums![Command], User, &[]),
-        atom("v", enums![], Var, &[]),
-        atom("var", enums![], Var, &[]),
-        atom("version", enums![Command], Version, &[]),
-        atom(
-            "font",
-            enums![Open],
-            Font,
-            &["face", "size", "color", "back"],
-        ),
-        atom(
-            "frame",
-            enums![Command],
-            Frame,
-            &[
-                "name",
-                "action",
-                "title",
-                "internal",
-                "align",
-                "left",
-                "top",
-                "width",
-                "height",
-                "scrolling",
-                "floating",
-            ],
-        ),
-        atom(
-            "image",
-            enums![Command],
-            Image,
-            &[
-                "url", "fname", "t", "h", "w", "hspace", "vspace", "align", "ismap",
-            ],
-        ),
-        atom(
-            "music",
-            enums![Command],
-            Music,
-            &["fname", "v", "l", "c", "t", "u"],
-        ),
-        atom(
-            "send",
-            enums![],
-            Send,
-            &["href", "hint", "prompt", "expire"],
-        ),
-        atom(
-            "sound",
-            enums![Command],
-            Sound,
-            &["fname", "v", "l", "p", "t", "u"],
-        ),
-    ]
+    })
+    .collect()
 });

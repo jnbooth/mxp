@@ -5,8 +5,6 @@ pub struct Tag {
     pub name: String,
     /// Was it secure mode at the time?
     pub secure: bool,
-    /// Protected from reset?
-    pub no_reset: bool,
     /// Index in a style's span list.
     pub span_index: usize,
 }
@@ -18,14 +16,12 @@ impl Tag {
         span_index: usize,
     ) -> mxp::Result<Self> {
         let name = component.name().to_owned();
-        let flags = component.flags();
-        if !flags.contains(mxp::TagFlag::Open) && !secure {
+        if !component.is_open() && !secure {
             return Err(mxp::Error::new(name, mxp::ErrorKind::ElementWhenNotSecure));
         }
         Ok(Self {
             name,
             secure,
-            no_reset: flags.contains(mxp::TagFlag::NoReset),
             span_index,
         })
     }
@@ -73,13 +69,6 @@ impl TagList {
 
     pub fn push(&mut self, tag: Tag) {
         self.inner.push(tag);
-    }
-
-    pub fn last_resettable_index(&self) -> usize {
-        match self.inner.iter().rposition(|x| x.no_reset) {
-            None => 0,
-            Some(i) => i + 1,
-        }
     }
 
     pub fn last_unsecure_index(&self) -> usize {

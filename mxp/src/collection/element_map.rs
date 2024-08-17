@@ -1,13 +1,12 @@
 use std::ops::{Deref, DerefMut};
 
 use casefold::ascii::CaseFoldMap;
-use enumeration::EnumSet;
 
 use crate::lookup::Lookup;
 
 use crate::argument::Arguments;
 use crate::color::RgbColor;
-use crate::element::{Atom, Element, TagFlag};
+use crate::element::{Atom, Element};
 use crate::parser::{validate, Error, ErrorKind};
 
 #[derive(Copy, Clone, Debug)]
@@ -24,10 +23,17 @@ impl<'a> ElementComponent<'a> {
         }
     }
 
-    pub const fn flags(&self) -> EnumSet<TagFlag> {
+    pub const fn is_command(&self) -> bool {
         match self {
-            Self::Atom(atom) => atom.flags,
-            Self::Custom(el) => el.flags(),
+            Self::Atom(atom) => atom.command,
+            Self::Custom(el) => el.command,
+        }
+    }
+
+    pub const fn is_open(&self) -> bool {
+        match self {
+            Self::Atom(atom) => atom.open,
+            Self::Custom(el) => el.open,
         }
     }
 

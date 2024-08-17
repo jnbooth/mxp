@@ -172,8 +172,7 @@ impl Transformer {
             return;
         }
 
-        let closed = self.mxp_active_tags.last_resettable_index();
-        self.mxp_close_tags_from(closed);
+        self.mxp_close_tags_from(0);
 
         if !completely {
             return;
@@ -247,8 +246,10 @@ impl Transformer {
         let mut words = mxp::Words::new(tag);
         let name = words.validate_next_or(mxp::ErrorKind::InvalidElementName)?;
         let component = mxp_state.get_component(name)?;
-        let tag = Tag::new(component, secure, self.output.span_len())?;
-        self.mxp_active_tags.push(tag);
+        if !component.is_command() {
+            let tag = Tag::new(component, secure, self.output.span_len())?;
+            self.mxp_active_tags.push(tag);
+        }
 
         let mut args = mxp::Arguments::parse(words)?;
 

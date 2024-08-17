@@ -1,9 +1,9 @@
 use std::num::NonZeroU8;
 use std::str::FromStr;
 
-use enumeration::{Enum, EnumSet};
+use enumeration::Enum;
 
-use super::atom::{Atom, TagFlag};
+use super::atom::Atom;
 use super::mode::Mode;
 use crate::argument::{Arguments, Decoder, Scan};
 use crate::color::RgbColor;
@@ -123,18 +123,6 @@ pub struct Element {
 }
 
 impl Element {
-    pub const fn flags(&self) -> EnumSet<TagFlag> {
-        if self.open && self.command {
-            enums![TagFlag::Open, TagFlag::Command]
-        } else if self.open {
-            enums![TagFlag::Open]
-        } else if self.command {
-            enums![TagFlag::Command]
-        } else {
-            enums![]
-        }
-    }
-
     pub fn collect(text: &str) -> crate::Result<CollectedElement> {
         CollectedElement::from_str(text)
     }
