@@ -104,12 +104,12 @@ impl<S: AsRef<str>> SoundOrMusic<S> {
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Sound<S = String> {
-    fname: S,
-    volume: u8,
-    repeats: AudioRepetition,
-    class: Option<S>,
-    url: Option<S>,
-    priority: u8,
+    pub fname: S,
+    pub volume: u8,
+    pub repeats: AudioRepetition,
+    pub class: Option<S>,
+    pub url: Option<S>,
+    pub priority: u8,
 }
 
 impl<S: AsRef<str>> Sound<S> {
@@ -162,12 +162,12 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Sound<D::Output<'a>> {
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Music<S = String> {
-    fname: S,
-    volume: u8,
-    repeats: AudioRepetition,
-    class: Option<S>,
-    url: Option<S>,
-    continuation: AudioContinuation,
+    pub fname: S,
+    pub volume: u8,
+    pub repeats: AudioRepetition,
+    pub class: Option<S>,
+    pub url: Option<S>,
+    pub continuation: AudioContinuation,
 }
 
 impl<S: AsRef<str>> Music<S> {

@@ -3,7 +3,7 @@ resolver = "2"
 members = ["mxp", "mud-bin-examples", "mud-stream", "mud-transformer"]
 
 [workspace.package]
-version = "0.7.0"
+version = "0.7.1"
 
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
