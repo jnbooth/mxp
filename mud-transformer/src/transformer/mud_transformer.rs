@@ -6,8 +6,10 @@ use super::config::{TransformerConfig, UseMxp};
 use super::input::{BufferedInput, Drain as InputDrain};
 use super::phase::Phase;
 use super::tag::{Tag, TagList};
-use crate::output::{BufferedOutput, InList, OutputDrain, TermColor, TextStyle};
-use crate::output::{EffectFragment, OutputFragment, TelnetFragment};
+use crate::output::{
+    BufferedOutput, EffectFragment, EntitySetter, InList, OutputDrain, OutputFragment,
+    TelnetFragment, TermColor, TextStyle,
+};
 use crate::receive::{Decompress, ReceiveCursor};
 use enumeration::EnumSet;
 use mxp::escape::{ansi, telnet};
@@ -243,10 +245,6 @@ impl Transformer {
         let tag = Tag::new(component, secure, self.output.span_len())?;
         self.mxp_active_tags.push(tag);
 
-        if let Some(variable) = component.variable() {
-            self.output.set_mxp_variable(variable, EnumSet::new());
-        }
-
         let mut args = mxp::Arguments::parse(words)?;
 
         match component {
@@ -254,7 +252,16 @@ impl Transformer {
                 let scanner = mxp_state.decode_args(&mut args);
                 self.mxp_open_atom(mxp::Action::new(atom.action, scanner)?);
             }
-            mxp::ElementComponent::Custom(el) => self.mxp_open_element(el, &args, mxp_state)?,
+            mxp::ElementComponent::Custom(el) => {
+                if let Some(variable) = &el.variable {
+                    self.output.set_mxp_entity(EntitySetter {
+                        name: variable.clone(),
+                        flags: EnumSet::new(),
+                        is_variable: true,
+                    });
+                }
+                self.mxp_open_element(el, &args, mxp_state)?;
+            }
         }
 
         Ok(())
@@ -329,9 +336,11 @@ impl Transformer {
             Action::Ol => self.output.set_mxp_list(InList::Ordered(0)),
             Action::Li => self.output.advance_list(),
             Action::Image(image) => self.output.append(image.into_owned()),
-            Action::Var { keywords, variable } => self
-                .output
-                .set_mxp_variable(variable.into_owned(), keywords),
+            Action::Var { keywords, variable } => self.output.set_mxp_entity(EntitySetter {
+                name: variable.into_owned(),
+                flags: keywords,
+                is_variable: false,
+            }),
             Action::Music(music) => self.output.append(music.into_owned()),
             Action::MusicOff => self.output.append(EffectFragment::MusicOff),
             Action::Sound(sound) => self.output.append(sound.into_owned()),
@@ -377,7 +386,8 @@ impl Transformer {
 
     fn mxp_close_tags_from(&mut self, pos: usize) {
         if let Some(span_index) = self.mxp_active_tags.truncate(pos) {
-            self.output.truncate_spans(span_index);
+            self.output
+                .truncate_spans(span_index, self.mxp_state.entities_mut());
         }
     }
 

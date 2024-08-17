@@ -50,6 +50,13 @@ pub enum InList {
     Unordered,
 }
 
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct EntitySetter {
+    pub name: String,
+    pub flags: EnumSet<mxp::EntityKeyword>,
+    pub is_variable: bool,
+}
+
 /// eg. <send "command1|command2|command3" hint="click to see menu|Item 1|Item
 /// 2|Item 2">this is a menu link</SEND>
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -65,9 +72,7 @@ pub struct Span {
     pub(super) heading: Option<Heading>,
     pub(super) gag: bool,
     pub(super) window: Option<String>,
-    /// Which variable to set (FLAG in MXP).
-    pub(super) variable: Option<String>,
-    pub(super) variable_flags: EnumSet<mxp::EntityKeyword>,
+    pub(super) entity: Option<EntitySetter>,
 }
 
 impl Default for Span {
@@ -88,8 +93,7 @@ impl Span {
             action: None,
             list: None,
             heading: None,
-            variable: None,
-            variable_flags: EnumSet::new(),
+            entity: None,
             gag: false,
             window: None,
         }
@@ -186,8 +190,13 @@ impl SpanList {
         self.spans.last_mut()
     }
 
-    pub fn truncate(&mut self, i: usize) {
+    pub fn truncate(&mut self, i: usize) -> Option<EntitySetter> {
+        if i >= self.spans.len() {
+            return None;
+        }
+        let entity = self.spans.pop().and_then(|span| span.entity);
         self.spans.truncate(i);
+        entity
     }
 
     pub fn clear(&mut self) {
@@ -246,12 +255,8 @@ impl SpanList {
         set_prop!(self, heading);
     }
 
-    pub fn set_variable(&mut self, variable: String) -> bool {
-        set_prop!(self, variable);
-    }
-
-    pub fn set_variable_flags(&mut self, variable_flags: EnumSet<mxp::EntityKeyword>) -> bool {
-        set_prop!(self, variable_flags, variable_flags);
+    pub fn set_entity(&mut self, entity: EntitySetter) -> bool {
+        set_prop!(self, entity);
     }
 
     pub fn set_gag(&mut self) -> bool {

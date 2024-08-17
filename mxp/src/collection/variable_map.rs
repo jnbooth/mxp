@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::iter::FusedIterator;
 use std::ops::{Deref, DerefMut};
 use std::slice;
@@ -5,17 +6,16 @@ use std::slice;
 use crate::keyword::EntityKeyword;
 
 use super::published_entities::{PublishedEntities, PublishedEntity};
-use casefold::ascii::CaseFoldMap;
 use enumeration::EnumSet;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct VariableMap {
-    inner: CaseFoldMap<String, String>,
+    inner: HashMap<String, String>,
     published: PublishedEntities,
 }
 
 impl Deref for VariableMap {
-    type Target = CaseFoldMap<String, String>;
+    type Target = HashMap<String, String>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
@@ -58,8 +58,7 @@ impl VariableMap {
         keywords: EnumSet<EntityKeyword>,
     ) -> bool {
         if keywords.contains(EntityKeyword::Delete) {
-            self.inner.remove(key);
-            self.published.remove(key);
+            self.remove(key);
             return false;
         }
         if keywords.contains(EntityKeyword::Private) {
@@ -112,7 +111,7 @@ pub struct EntityInfo<'a> {
 #[derive(Clone, Debug)]
 pub struct PublishedIter<'a> {
     inner: slice::Iter<'a, PublishedEntity>,
-    map: &'a CaseFoldMap<String, String>,
+    map: &'a HashMap<String, String>,
 }
 
 impl<'a> PublishedIter<'a> {

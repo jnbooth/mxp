@@ -4,10 +4,16 @@ use bytes::BytesMut;
 use enumeration::EnumSet;
 
 use super::color::TermColor;
-use super::fragment::{Output, OutputDrain, OutputFragment, TelnetFragment, TextFragment};
+use super::fragment::{
+    EntityUpdate, Output, OutputDrain, OutputFragment, TelnetFragment, TextFragment,
+};
 use super::shared_string::SharedString;
-use super::span::{InList, SpanList, TextStyle};
+use super::span::{EntitySetter, InList, SpanList, TextStyle};
 use mxp::RgbColor;
+
+macro_rules! debug_assert_utf8 {
+    ($e:expr) => (debug_assert!(str::from_utf8(&$e).is_ok(), "`MudTransformer::receive_byte` failed to validate UTF8. This should NEVER happen.\nBytes: {:?}\nString: {}", &*$e, String::from_utf8_lossy(&$e)))
+}
 
 fn get_color(
     span_color: Option<TermColor>,
@@ -33,6 +39,8 @@ pub struct BufferedOutput {
     last_linebreak: Option<usize>,
     colors: Vec<RgbColor>,
     variables: mxp::VariableMap,
+    in_variable: bool,
+    variable: Vec<u8>,
 }
 
 impl Default for BufferedOutput {
@@ -54,6 +62,8 @@ impl BufferedOutput {
             last_linebreak: None,
             colors: Vec::new(),
             variables: mxp::VariableMap::new(),
+            in_variable: false,
+            variable: Vec::new(),
         }
     }
 
@@ -103,24 +113,25 @@ impl BufferedOutput {
                 self.last_linebreak = Some(self.fragments.len());
             }
         }
-        let output = match self.spans.get() {
-            Some(span) => Output {
-                fragment,
-                gag: span.gag,
-                window: span.window.clone(),
-            },
-            None => Output {
-                fragment,
-                gag: false,
-                window: None,
-            },
+        if !fragment.is_visual() {
+            self.fragments.push(Output::from(fragment));
+            return;
+        }
+        let Some(span) = self.spans.get() else {
+            self.fragments.push(Output::from(fragment));
+            return;
         };
-        self.fragments.push(output);
+        self.fragments.push(Output {
+            fragment,
+            gag: span.gag,
+            window: span.window.clone(),
+        });
     }
 
     fn take_buf(&mut self) -> SharedString {
         let bytes = self.buf.split().freeze();
-        debug_assert!(str::from_utf8(&bytes).is_ok(), "`MudTransformer::receive_byte` failed to validate UTF8. This should NEVER happen.\nBytes: {:?}\nString: {}", &*bytes, String::from_utf8_lossy(&bytes));
+        debug_assert_utf8!(bytes);
+        // SAFETY: MudTransformer::receive_byte sanitizes UTF8.
         unsafe { SharedString::from_utf8_unchecked(bytes) }
     }
 
@@ -144,19 +155,6 @@ impl BufferedOutput {
         }
         let span = &self.spans[self.spans.len() - i];
         let ignore_colors = self.ignore_mxp_colors;
-        if let Some(variable) = &span.variable {
-            self.variables
-                .set(variable, &text, None, span.variable_flags);
-            let fragment = OutputFragment::MxpVariable {
-                name: variable.clone(),
-                value: self.variables.get(variable).map(ToOwned::to_owned),
-            };
-            self.fragments.push(Output {
-                fragment,
-                gag: false,
-                window: None,
-            });
-        }
         self.append(TextFragment {
             flags: span.flags | self.ansi_flags,
             foreground: self.color(get_color(
@@ -194,16 +192,26 @@ impl BufferedOutput {
     pub fn push(&mut self, byte: u8) {
         self.buf.extend_from_slice(&[byte]);
         self.spans.set_populated();
+        if self.in_variable {
+            self.variable.push(byte);
+        }
     }
 
     pub fn append_text(&mut self, output: &str) {
-        self.buf.extend_from_slice(output.as_bytes());
+        let output = output.as_bytes();
+        self.buf.extend_from_slice(output);
         self.spans.set_populated();
+        if self.in_variable {
+            self.variable.extend_from_slice(output);
+        }
     }
 
     pub fn append_utf8_char(&mut self, utf8: &[u8]) {
         if str::from_utf8(utf8).is_ok() {
             self.buf.extend_from_slice(utf8);
+            if self.in_variable {
+                self.variable.extend_from_slice(utf8);
+            }
         } else {
             self.buf.extend_from_slice("�".as_bytes());
         }
@@ -288,9 +296,40 @@ impl BufferedOutput {
         self.spans.len()
     }
 
-    pub fn truncate_spans(&mut self, i: usize) {
+    pub fn truncate_spans(&mut self, i: usize, entities: &mut mxp::EntityMap) {
         self.flush();
-        self.spans.truncate(i);
+        let Some(entity) = self.spans.truncate(i) else {
+            return;
+        };
+        self.in_variable = false;
+        let variables = if entity.is_variable {
+            &mut self.variables
+        } else {
+            &mut *entities
+        };
+        if entity.flags.contains(mxp::EntityKeyword::Delete) {
+            self.variable.clear();
+            variables.remove(&entity.name);
+            self.fragments.push(Output::from(EntityUpdate::Unset {
+                name: entity.name,
+                is_variable: entity.is_variable,
+            }));
+            return;
+        }
+        debug_assert_utf8!(self.variable);
+        // SAFETY: MudTransformer::receive_byte sanitizes UTF8.
+        let text = unsafe { str::from_utf8_unchecked(&self.variable) };
+        variables.set(&entity.name, text, None, entity.flags);
+        self.variable.clear();
+        let Some(value) = variables.get(&entity.name) else {
+            return;
+        };
+        self.fragments.push(Output::from(EntityUpdate::Set {
+            name: entity.name,
+            is_variable: entity.is_variable,
+            value: value.clone(),
+            publish: None,
+        }));
     }
 
     pub fn set_mxp_flag(&mut self, flag: TextStyle) {
@@ -374,11 +413,11 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_mxp_variable(&mut self, variable: String, flags: EnumSet<mxp::EntityKeyword>) {
-        if self.spans.set_variable(variable) {
+    pub fn set_mxp_entity(&mut self, entity: EntitySetter) {
+        self.in_variable = true;
+        if self.spans.set_entity(entity) {
             self.flush_mxp();
         }
-        self.spans.set_variable_flags(flags);
     }
 
     pub fn set_mxp_gag(&mut self) {

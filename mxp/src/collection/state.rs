@@ -28,6 +28,10 @@ impl State {
         self.line_tags.clear();
     }
 
+    pub fn entities_mut(&mut self) -> &mut EntityMap {
+        &mut self.entities
+    }
+
     pub fn published_entities(&self) -> PublishedIter {
         self.entities.published()
     }

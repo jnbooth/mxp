@@ -18,6 +18,16 @@ pub struct Output {
     pub window: Option<String>,
 }
 
+impl<T: Into<OutputFragment>> From<T> for Output {
+    fn from(value: T) -> Self {
+        Self {
+            fragment: value.into(),
+            gag: false,
+            window: None,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum OutputFragment {
     Effect(EffectFragment),
@@ -26,20 +36,33 @@ pub enum OutputFragment {
     Image(mxp::Image),
     LineBreak,
     MxpError(mxp::Error),
-    MxpVariable { name: String, value: Option<String> },
+    MxpEntity(EntityUpdate),
     PageBreak,
     Telnet(TelnetFragment),
     Text(TextFragment),
 }
 
 impl OutputFragment {
-    pub(super) fn is_newline(&self) -> bool {
+    pub const fn is_visual(&self) -> bool {
+        match self {
+            Self::Effect(effect) => effect.is_visual(),
+            Self::Frame(_)
+            | Self::Hr
+            | Self::Image(_)
+            | Self::LineBreak
+            | Self::PageBreak
+            | Self::Text(_) => true,
+            _ => false,
+        }
+    }
+
+    pub const fn is_newline(&self) -> bool {
         matches!(self, Self::Hr | Self::LineBreak | Self::PageBreak)
     }
 
-    pub(super) fn should_flush(&self) -> bool {
+    pub(super) const fn should_flush(&self) -> bool {
         match self {
-            Self::Effect(effect) => effect.should_flush(),
+            Self::Effect(effect) => effect.is_visual(),
             Self::Frame(_)
             | Self::Hr
             | Self::Image(_)
@@ -48,6 +71,26 @@ impl OutputFragment {
             | Self::Telnet(_) => true,
             _ => false,
         }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum EntityUpdate {
+    Set {
+        name: String,
+        value: String,
+        publish: Option<bool>,
+        is_variable: bool,
+    },
+    Unset {
+        name: String,
+        is_variable: bool,
+    },
+}
+
+impl From<EntityUpdate> for OutputFragment {
+    fn from(value: EntityUpdate) -> Self {
+        Self::MxpEntity(value)
     }
 }
 
@@ -66,14 +109,10 @@ pub enum EffectFragment {
 }
 
 impl EffectFragment {
-    fn should_flush(&self) -> bool {
+    pub const fn is_visual(&self) -> bool {
         matches!(
             self,
-            Self::Backspace
-                | Self::CarriageReturn
-                | Self::EraseCharacter
-                | Self::EraseLine
-                | Self::ExpireLinks(_)
+            Self::Backspace | Self::CarriageReturn | Self::EraseCharacter | Self::EraseLine
         )
     }
 }
