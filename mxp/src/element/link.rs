@@ -94,7 +94,7 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for HyperlinkArgs<D::Output<'a>> {
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
-            href: scanner.next_or("href")?.expect_arg("href")?,
+            href: scanner.next_or("href")?.expect_some("href")?,
             hint: scanner.next_or("hint")?,
             expire: scanner.next_or("expire")?,
         })

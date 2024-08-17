@@ -1,5 +1,5 @@
 use super::screen::{Align, Dimension};
-use crate::argument::{Decoder, Scan};
+use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::keyword::ImageKeyword;
 use crate::parser::Error;
 use std::borrow::Cow;
@@ -58,10 +58,10 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Image<D::Output<'a>> {
             fname: scanner.next_or("fname")?,
             url: scanner.next_or("url")?,
             class: scanner.next_or("T")?,
-            height: scanner.next_number_or("H")?,
-            width: scanner.next_number_or("W")?,
-            hspace: scanner.next_number_or("HSPACE")?,
-            vspace: scanner.next_number_or("VSPACE")?,
+            height: scanner.next_or("H")?.expect_number()?,
+            width: scanner.next_or("W")?.expect_number()?,
+            hspace: scanner.next_or("HSPACE")?.expect_number()?,
+            vspace: scanner.next_or("VSPACE")?.expect_number()?,
             align: scanner
                 .next_or("ALIGN")?
                 .and_then(|align| align.as_ref().parse().ok()),

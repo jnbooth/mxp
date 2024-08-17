@@ -34,9 +34,9 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Filter<D::Output<'a>> {
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
-            src: scanner.next_or("src")?.expect_arg("src")?,
-            dest: scanner.next_or("dest")?.expect_arg("dest")?,
-            name: scanner.next_or("name")?.expect_arg("name")?,
+            src: scanner.next_or("src")?.expect_some("src")?,
+            dest: scanner.next_or("dest")?.expect_some("dest")?,
+            name: scanner.next_or("name")?.expect_some("name")?,
         })
     }
 }

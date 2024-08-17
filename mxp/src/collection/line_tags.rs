@@ -111,7 +111,7 @@ impl LineTagUpdate {
         let args = Arguments::parse(words)?;
         let mut scanner = args.scan(decoder).with_keywords();
 
-        let index_arg = scanner.next()?.expect_arg("tag")?;
+        let index_arg = scanner.next()?.expect_some("tag")?;
         let index_str = index_arg.as_ref();
         let index: u8 = index_str
             .parse()

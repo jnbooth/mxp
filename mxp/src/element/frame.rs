@@ -99,7 +99,7 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Frame<D::Output<'a>> {
 
     fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
-        let name = scanner.next_or("name")?.expect_arg("name")?;
+        let name = scanner.next_or("name")?.expect_some("name")?;
         let action = scanner
             .next_or("action")?
             .and_then(|action| action.as_ref().parse().ok())
@@ -109,10 +109,13 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Frame<D::Output<'a>> {
             .next_or("align")?
             .and_then(|align| align.as_ref().parse().ok())
             .unwrap_or_default();
-        let left = scanner.next_number_or("left")?.unwrap_or_default();
-        let top = scanner.next_number_or("top")?.unwrap_or_default();
-        let width = scanner.next_number_or("width")?;
-        let height = scanner.next_number_or("height")?;
+        let left = scanner
+            .next_or("left")?
+            .expect_number()?
+            .unwrap_or_default();
+        let top = scanner.next_or("top")?.expect_number()?.unwrap_or_default();
+        let width = scanner.next_or("width")?.expect_number()?;
+        let height = scanner.next_or("height")?.expect_number()?;
         let scrolling = scanner
             .next_or("scrolling")?
             .is_some_and(|scrolling| scrolling.as_ref().eq_ignore_ascii_case("YES"));
@@ -148,7 +151,7 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for DestArgs<D::Output<'a>> {
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
-            name: scanner.next()?.expect_arg("name")?,
+            name: scanner.next()?.expect_some("name")?,
         })
     }
 }

@@ -87,15 +87,15 @@ struct SoundOrMusic<S> {
     url: Option<S>,
 }
 
-impl<S> SoundOrMusic<S> {
+impl<S: AsRef<str>> SoundOrMusic<S> {
     fn parse<'a, D>(scanner: &mut Scan<'a, D>) -> crate::Result<Self>
     where
         D: Decoder<Output<'a> = S>,
     {
         Ok(Self {
-            fname: scanner.next()?.expect_arg("fname")?,
-            volume: scanner.next_number_or("V")?.unwrap_or(100),
-            repeats: scanner.next_number_or("L")?.unwrap_or_default(),
+            fname: scanner.next()?.expect_some("fname")?,
+            volume: scanner.next_or("V")?.expect_number()?.unwrap_or(100),
+            repeats: scanner.next_or("L")?.expect_number()?.unwrap_or_default(),
             class: scanner.next_or("C")?,
             url: scanner.next_or("U")?,
         })
@@ -155,7 +155,7 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Sound<D::Output<'a>> {
             repeats: args.repeats,
             class: args.class,
             url: args.url,
-            priority: scanner.next_number_or("P")?.unwrap_or(50),
+            priority: scanner.next_or("P")?.expect_number()?.unwrap_or(50),
         })
     }
 }

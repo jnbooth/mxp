@@ -79,22 +79,6 @@ impl<'a, D: Decoder, F: KeywordFilter> Scan<'a, D, F> {
         self.decode(self.named.get(name))
     }
 
-    pub fn next_number_or<T>(&mut self, name: &str) -> crate::Result<Option<T>>
-    where
-        T: FromStr<Err = ParseIntError>,
-    {
-        let output = match self.next_or(name) {
-            Ok(Some(output)) => output,
-            Ok(None) => return Ok(None),
-            Err(e) => return Err(e),
-        };
-        let output = output.as_ref();
-        match output.parse() {
-            Ok(parsed) => Ok(Some(parsed)),
-            Err(_) => Err(Error::new(output, ErrorKind::InvalidNumber)),
-        }
-    }
-
     pub fn next(&mut self) -> crate::Result<Option<D::Output<'a>>> {
         let next = self.inner.next();
         self.decode(next)
@@ -167,16 +151,34 @@ impl<'a, D: Decoder, K: Enum + FromStr> KeywordScan<'a, D, K> {
 pub trait ExpectArg {
     type Arg;
 
-    fn expect_arg(self, name: &str) -> crate::Result<Self::Arg>;
+    fn expect_some(self, name: &str) -> crate::Result<Self::Arg>;
+    fn expect_number<T>(self) -> crate::Result<Option<T>>
+    where
+        Self::Arg: AsRef<str>,
+        T: FromStr<Err = ParseIntError>;
 }
 
 impl<S> ExpectArg for Option<S> {
     type Arg = S;
 
-    fn expect_arg(self, name: &str) -> crate::Result<Self::Arg> {
+    fn expect_some(self, name: &str) -> crate::Result<Self::Arg> {
         match self {
             Some(arg) => Ok(arg),
             None => Err(Error::new(name, ErrorKind::IncompleteArguments)),
+        }
+    }
+
+    fn expect_number<T>(self) -> crate::Result<Option<T>>
+    where
+        Self::Arg: AsRef<str>,
+        T: FromStr<Err = ParseIntError>,
+    {
+        let Some(arg) = self else {
+            return Ok(None);
+        };
+        match arg.as_ref().parse() {
+            Ok(parsed) => Ok(Some(parsed)),
+            Err(_) => Err(Error::new(arg.as_ref(), ErrorKind::InvalidNumber)),
         }
     }
 }

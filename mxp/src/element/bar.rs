@@ -39,7 +39,7 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Gauge<D::Output<'a>> {
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
-            entity: scanner.next()?.expect_arg("EntityName")?,
+            entity: scanner.next()?.expect_some("EntityName")?,
             max: scanner.next_or("max")?,
             caption: scanner.next_or("caption")?,
             color: scanner
@@ -81,7 +81,7 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Stat<D::Output<'a>> {
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
-            entity: scanner.next()?.expect_arg("EntityName")?,
+            entity: scanner.next()?.expect_some("EntityName")?,
             max: scanner.next_or("max")?,
             caption: scanner.next_or("caption")?,
         })
