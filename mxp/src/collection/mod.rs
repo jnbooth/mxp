@@ -12,4 +12,4 @@ mod state;
 pub use state::State;
 
 mod variable_map;
-pub use variable_map::{PublishedIter, VariableMap};
+pub use variable_map::{EntityEntry, PublishedIter, VariableMap};

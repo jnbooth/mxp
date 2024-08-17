@@ -5,7 +5,7 @@ use enumeration::EnumSet;
 
 use super::color::TermColor;
 use super::fragment::{
-    EntityUpdate, Output, OutputDrain, OutputFragment, TelnetFragment, TextFragment,
+    EntityFragment, Output, OutputDrain, OutputFragment, TelnetFragment, TextFragment,
 };
 use super::shared_string::SharedString;
 use super::span::{EntitySetter, InList, SpanList, TextStyle};
@@ -310,7 +310,7 @@ impl BufferedOutput {
         if entity.flags.contains(mxp::EntityKeyword::Delete) {
             self.variable.clear();
             variables.remove(&entity.name);
-            self.fragments.push(Output::from(EntityUpdate::Unset {
+            self.fragments.push(Output::from(EntityFragment::Unset {
                 name: entity.name,
                 is_variable: entity.is_variable,
             }));
@@ -319,17 +319,11 @@ impl BufferedOutput {
         debug_assert_utf8!(self.variable);
         // SAFETY: MudTransformer::receive_byte sanitizes UTF8.
         let text = unsafe { str::from_utf8_unchecked(&self.variable) };
-        variables.set(&entity.name, text, None, entity.flags);
+        if let Some(entity) = variables.set(&entity.name, text, None, entity.flags) {
+            self.fragments
+                .push(Output::from(EntityFragment::variable(&entity)));
+        }
         self.variable.clear();
-        let Some(value) = variables.get(&entity.name) else {
-            return;
-        };
-        self.fragments.push(Output::from(EntityUpdate::Set {
-            name: entity.name,
-            is_variable: entity.is_variable,
-            value: value.clone(),
-            publish: None,
-        }));
     }
 
     pub fn set_mxp_flag(&mut self, flag: TextStyle) {

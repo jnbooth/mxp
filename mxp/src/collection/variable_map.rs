@@ -4,6 +4,7 @@ use std::ops::{Deref, DerefMut};
 use std::slice;
 
 use crate::keyword::EntityKeyword;
+use std::collections::hash_map::Entry;
 
 use super::published_entities::{PublishedEntities, PublishedEntity};
 use enumeration::EnumSet;
@@ -28,6 +29,11 @@ impl DerefMut for VariableMap {
     }
 }
 
+pub struct EntityEntry<'a> {
+    pub name: &'a str,
+    pub value: Option<&'a str>,
+}
+
 impl VariableMap {
     pub fn new() -> Self {
         Self::default()
@@ -50,53 +56,63 @@ impl VariableMap {
         self.inner.remove(key)
     }
 
-    pub fn set(
-        &mut self,
-        key: &str,
+    pub fn set<'a>(
+        &'a mut self,
+        key: &'a str,
         value: &str,
         desc: Option<String>,
         keywords: EnumSet<EntityKeyword>,
-    ) -> bool {
+    ) -> Option<EntityEntry<'a>> {
         if keywords.contains(EntityKeyword::Delete) {
-            self.remove(key);
-            return false;
+            return self.remove(key).map(|_| EntityEntry {
+                name: key,
+                value: None,
+            });
         }
         if keywords.contains(EntityKeyword::Private) {
             self.published.remove(key);
         } else if keywords.contains(EntityKeyword::Publish) {
             self.published.insert(key.to_owned(), desc);
         }
-        if keywords.contains(EntityKeyword::Remove) {
-            return self.remove_list_item(key, value);
-        }
-        if keywords.contains(EntityKeyword::Add) {
-            self.add_list_item(key, value);
-            return true;
-        }
-        self.inner.insert(key.to_owned(), value.to_owned());
-        true
-    }
-
-    pub fn add_list_item(&mut self, key: &str, value: &str) {
-        let Some(entity) = self.inner.get_mut(key) else {
-            self.inner.insert(key.to_owned(), value.to_owned());
-            return;
+        let entity = match self.inner.entry(key.to_owned()) {
+            Entry::Vacant(_) if keywords.contains(EntityKeyword::Remove) => return None,
+            Entry::Vacant(entry) => entry.insert(value.to_owned()),
+            Entry::Occupied(entry) if keywords.contains(EntityKeyword::Remove) => {
+                if entry.get() == value {
+                    entry.remove();
+                    return Some(EntityEntry {
+                        name: key,
+                        value: None,
+                    });
+                }
+                let entity = entry.into_mut();
+                *entity = entity
+                    .split('|')
+                    .filter(|item| *item != value)
+                    .collect::<Vec<_>>()
+                    .join("|");
+                entity
+            }
+            Entry::Occupied(entry) if keywords.contains(EntityKeyword::Add) => {
+                let entity = entry.into_mut();
+                entity.reserve(value.len() + 1);
+                entity.push('|');
+                entity.push_str(value);
+                entity
+            }
+            Entry::Occupied(entry) => {
+                let entity = entry.into_mut();
+                if entity == value {
+                    return None;
+                }
+                *entity = value.to_owned();
+                entity
+            }
         };
-        entity.reserve(value.len() + 1);
-        entity.push('|');
-        entity.push_str(value);
-    }
-
-    pub fn remove_list_item(&mut self, key: &str, value: &str) -> bool {
-        let Some(entity) = self.inner.get_mut(key) else {
-            return false;
-        };
-        *entity = entity
-            .split('|')
-            .filter(|item| *item != value)
-            .collect::<Vec<_>>()
-            .join("|");
-        true
+        Some(EntityEntry {
+            name: key,
+            value: Some(entity),
+        })
     }
 }
 

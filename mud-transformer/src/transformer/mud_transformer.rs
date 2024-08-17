@@ -7,8 +7,8 @@ use super::input::{BufferedInput, Drain as InputDrain};
 use super::phase::Phase;
 use super::tag::{Tag, TagList};
 use crate::output::{
-    BufferedOutput, EffectFragment, EntitySetter, InList, OutputDrain, OutputFragment,
-    TelnetFragment, TermColor, TextStyle,
+    BufferedOutput, EffectFragment, EntityFragment, EntitySetter, InList, OutputDrain,
+    OutputFragment, TelnetFragment, TermColor, TextStyle,
 };
 use crate::receive::{Decompress, ReceiveCursor};
 use enumeration::EnumSet;
@@ -220,7 +220,11 @@ impl Transformer {
                 mxp::ErrorKind::DefinitionWhenNotSecure,
             ));
         }
-        self.mxp_state.define(tag)
+        let Some(entity) = self.mxp_state.define(tag)? else {
+            return Ok(());
+        };
+        self.output.append(EntityFragment::entity(&entity));
+        Ok(())
     }
 
     fn mxp_collected_element(&mut self) -> mxp::Result<()> {

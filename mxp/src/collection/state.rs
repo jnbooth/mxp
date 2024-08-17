@@ -4,7 +4,7 @@ use std::slice;
 use super::element_map::{ElementComponent, ElementMap};
 use super::entity_map::{ElementDecoder, EntityMap};
 use super::line_tags::{LineTagUpdate, LineTags};
-use super::variable_map::PublishedIter;
+use super::variable_map::{EntityEntry, PublishedIter};
 use crate::argument::scan::{Decoder, Scan};
 use crate::argument::Arguments;
 use crate::entity::{Action, Element, ElementItem, Mode};
@@ -64,20 +64,22 @@ impl State {
         }
     }
 
-    pub fn define(&mut self, tag: &str) -> crate::Result<()> {
+    pub fn define<'a>(&'a mut self, tag: &'a str) -> crate::Result<Option<EntityEntry<'a>>> {
         let mut words = Words::new(tag);
 
         let definition = words.validate_next_or(ErrorKind::InvalidDefinition)?;
         if definition.eq_ignore_ascii_case("tag") {
-            return self.define_line_tag(words);
+            self.define_line_tag(words)?;
+            return Ok(None);
         }
         let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
         match_ci! {definition,
-            "ELEMENT" | "EL" => self.define_element(name, words),
-            "ENTITY" | "EN" => self.define_entity(name, words),
             "ATTLIST" | "ATT" => self.define_attributes(name, words),
+            "ELEMENT" | "EL" => self.define_element(name, words),
+            "ENTITY" | "EN" => return self.define_entity(name, words),
             _ => Err(Error::new(definition, ErrorKind::InvalidDefinition))
-        }
+        }?;
+        Ok(None)
     }
 
     fn define_element(&mut self, name: &str, words: Words) -> crate::Result<()> {
@@ -99,7 +101,11 @@ impl State {
         Ok(())
     }
 
-    fn define_entity(&mut self, key: &str, words: Words) -> crate::Result<()> {
+    fn define_entity<'a>(
+        &'a mut self,
+        key: &'a str,
+        words: Words,
+    ) -> crate::Result<Option<EntityEntry<'a>>> {
         if EntityMap::global(key).is_some() {
             return Err(Error::new(key, ErrorKind::CannotRedefineEntity));
         }
@@ -111,9 +117,10 @@ impl State {
         };
         let desc = scanner.next_or("desc")?;
         let keywords = scanner.into_keywords();
-        self.entities
+        let entity = self
+            .entities
             .set(key, &value, desc.map(Cow::into_owned), keywords);
-        Ok(())
+        Ok(entity)
     }
 
     fn define_attributes(&mut self, key: &str, words: Words) -> crate::Result<()> {

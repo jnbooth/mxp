@@ -42,7 +42,9 @@ mod argument;
 pub use argument::Arguments;
 
 mod collection;
-pub use collection::{ElementComponent, ElementMap, EntityMap, PublishedIter, State, VariableMap};
+pub use collection::{
+    ElementComponent, ElementMap, EntityEntry, EntityMap, PublishedIter, State, VariableMap,
+};
 
 mod color;
 pub use color::{HexOutOfRangeError, ParseHexColorError, RgbColor};

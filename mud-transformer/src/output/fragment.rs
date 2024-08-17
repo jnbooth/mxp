@@ -36,7 +36,7 @@ pub enum OutputFragment {
     Image(mxp::Image),
     LineBreak,
     MxpError(mxp::Error),
-    MxpEntity(EntityUpdate),
+    MxpEntity(EntityFragment),
     PageBreak,
     Telnet(TelnetFragment),
     Text(TextFragment),
@@ -75,7 +75,7 @@ impl OutputFragment {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum EntityUpdate {
+pub enum EntityFragment {
     Set {
         name: String,
         value: String,
@@ -88,8 +88,33 @@ pub enum EntityUpdate {
     },
 }
 
-impl From<EntityUpdate> for OutputFragment {
-    fn from(value: EntityUpdate) -> Self {
+impl EntityFragment {
+    pub fn entity(entry: &mxp::EntityEntry) -> Self {
+        Self::new(entry, false)
+    }
+
+    pub fn variable(entry: &mxp::EntityEntry) -> Self {
+        Self::new(entry, true)
+    }
+
+    fn new(entry: &mxp::EntityEntry, is_variable: bool) -> Self {
+        match entry.value {
+            Some(value) => Self::Set {
+                name: entry.name.to_owned(),
+                value: value.to_owned(),
+                publish: None,
+                is_variable,
+            },
+            None => Self::Unset {
+                name: entry.name.to_owned(),
+                is_variable,
+            },
+        }
+    }
+}
+
+impl From<EntityFragment> for OutputFragment {
+    fn from(value: EntityFragment) -> Self {
         Self::MxpEntity(value)
     }
 }
