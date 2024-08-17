@@ -10,6 +10,9 @@ pub use bar::{Gauge, Stat};
 mod element;
 pub use element::{CollectedElement, Element, ElementItem, ParseAs};
 
+mod filter;
+pub use filter::Filter;
+
 mod font;
 pub use font::{FgColor, Font, FontEffect, FontStyle};
 

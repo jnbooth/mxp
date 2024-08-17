@@ -1,4 +1,5 @@
 use super::bar::{Gauge, Stat};
+use super::filter::Filter;
 use super::font::Font;
 use super::frame::{DestArgs, Frame};
 use super::image::Image;
@@ -118,7 +119,7 @@ pub enum Action<S> {
     /// expire
     Expire { name: Option<S> },
     /// sound/image filter
-    Filter,
+    Filter(Filter<S>),
     /// font appearance
     Font(Font<S>),
     /// frame
@@ -202,7 +203,7 @@ impl<S: AsRef<str>> Action<S> {
                 let ExpireArgs { name } = scanner.try_into()?;
                 Self::Expire { name }
             }
-            ActionKind::Filter => Self::Filter,
+            ActionKind::Filter => Self::Filter(scanner.try_into()?),
             ActionKind::Font => Self::Font(scanner.try_into()?),
             ActionKind::Frame => Self::Frame(scanner.try_into()?),
             ActionKind::Gauge => Self::Gauge(scanner.try_into()?),

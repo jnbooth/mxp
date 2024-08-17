@@ -334,6 +334,7 @@ impl Transformer {
             Action::Expire { name } => self
                 .output
                 .append(EffectFragment::ExpireLinks(name.map(Cow::into_owned))),
+            Action::Filter(filter) => self.output.append(filter.into_owned()),
             Action::Font(font) => self.output.set_mxp_font(font.into_owned()),
             Action::Frame(frame) => self.output.append(frame.into_owned()),
             Action::Gauge(gauge) => self.output.append(gauge.into_owned()),
@@ -375,7 +376,7 @@ impl Transformer {
                 write!(self.input, "{response}").unwrap();
             }
 
-            Action::Relocate | Action::Filter => (),
+            Action::Relocate => (),
         }
     }
 

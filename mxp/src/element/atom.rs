@@ -128,7 +128,7 @@ static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
         atom("destination", enums![], Dest, &[]),
         atom("em", enums![Open], Italic, &[]),
         atom("expire", enums![Command], Expire, &[]),
-        atom("filter", enums![NotImp], Filter, &[]),
+        atom("filter", enums![Command], Filter, &[]),
         atom("gauge", enums![Command], Gauge, &[]),
         atom("h", enums![Open], Highlight, &[]),
         atom("h1", enums![], H1, &[]),

@@ -127,6 +127,7 @@ pub enum EffectFragment {
     EraseCharacter,
     EraseLine,
     ExpireLinks(Option<String>),
+    FileFilter(mxp::Filter),
     Gauge(mxp::Gauge),
     Music(mxp::Music),
     MusicOff,
@@ -153,6 +154,12 @@ impl From<EffectFragment> for OutputFragment {
 impl From<mxp::Error> for OutputFragment {
     fn from(value: mxp::Error) -> Self {
         Self::MxpError(value)
+    }
+}
+
+impl From<mxp::Filter> for OutputFragment {
+    fn from(value: mxp::Filter) -> Self {
+        Self::Effect(EffectFragment::FileFilter(value))
     }
 }
 
