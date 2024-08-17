@@ -127,10 +127,12 @@ pub enum EffectFragment {
     EraseCharacter,
     EraseLine,
     ExpireLinks(Option<String>),
+    Gauge(mxp::Gauge),
     Music(mxp::Music),
     MusicOff,
     Sound(mxp::Sound),
     SoundOff,
+    StatusBar(mxp::Stat),
 }
 
 impl EffectFragment {
@@ -160,6 +162,12 @@ impl From<mxp::Frame> for OutputFragment {
     }
 }
 
+impl From<mxp::Gauge> for OutputFragment {
+    fn from(value: mxp::Gauge) -> Self {
+        Self::Effect(EffectFragment::Gauge(value))
+    }
+}
+
 impl From<mxp::Image> for OutputFragment {
     fn from(value: mxp::Image) -> Self {
         Self::Image(value)
@@ -175,6 +183,12 @@ impl From<mxp::Music> for OutputFragment {
 impl From<mxp::Sound> for OutputFragment {
     fn from(value: mxp::Sound) -> Self {
         Self::Effect(EffectFragment::Sound(value))
+    }
+}
+
+impl From<mxp::Stat> for OutputFragment {
+    fn from(value: mxp::Stat) -> Self {
+        Self::Effect(EffectFragment::StatusBar(value))
     }
 }
 

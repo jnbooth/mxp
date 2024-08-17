@@ -1,3 +1,4 @@
+use super::bar::{Gauge, Stat};
 use super::font::Font;
 use super::frame::{DestArgs, Frame};
 use super::image::Image;
@@ -208,11 +209,10 @@ pub enum Action<S> {
         challenge: Option<S>,
     },
 
-    // recent
     /// gauge
-    Gauge,
+    Gauge(Gauge<S>),
     /// status
-    Stat,
+    Stat(Stat<S>),
     /// expire
     Expire {
         name: Option<S>,
@@ -263,7 +263,7 @@ impl<S: AsRef<str>> Action<S> {
             ActionKind::Filter => Self::Filter,
             ActionKind::Font => Self::Font(scanner.try_into()?),
             ActionKind::Frame => Self::Frame(scanner.try_into()?),
-            ActionKind::Gauge => Self::Gauge,
+            ActionKind::Gauge => Self::Gauge(scanner.try_into()?),
             ActionKind::H1 => Self::Heading(Heading::H1),
             ActionKind::H2 => Self::Heading(Heading::H2),
             ActionKind::H3 => Self::Heading(Heading::H3),
@@ -309,7 +309,7 @@ impl<S: AsRef<str>> Action<S> {
                     Self::Sound(sound)
                 }
             }
-            ActionKind::Stat => Self::Stat,
+            ActionKind::Stat => Self::Stat(scanner.try_into()?),
             ActionKind::Strikeout => Self::Strikeout,
             ActionKind::Support => {
                 let SupportArgs { questions } = scanner.try_into()?;

@@ -379,6 +379,8 @@ impl Transformer {
             Action::Expire { name } => self
                 .output
                 .append(EffectFragment::ExpireLinks(name.map(Cow::into_owned))),
+            Action::Gauge(gauge) => self.output.append(gauge.into_owned()),
+            Action::Stat(stat) => self.output.append(stat.into_owned()),
 
             Action::Relocate
             | Action::Filter
@@ -386,8 +388,6 @@ impl Transformer {
             | Action::Tt
             | Action::Samp
             | Action::Center
-            | Action::Gauge
-            | Action::Stat
             | Action::SetOption
             | Action::RecommendOption => (),
         }

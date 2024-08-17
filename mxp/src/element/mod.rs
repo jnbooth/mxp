@@ -4,6 +4,9 @@ pub use action::{Action, ActionKind, Heading};
 mod atom;
 pub use atom::{Atom, TagFlag};
 
+mod bar;
+pub use bar::{Gauge, Stat};
+
 mod element;
 pub use element::{CollectedElement, Element, ElementItem, ParseAs};
 
