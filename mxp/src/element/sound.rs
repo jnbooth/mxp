@@ -1,5 +1,5 @@
-use crate::argument::{Decoder, Scan};
-use crate::parser::{Error, ErrorKind, UnrecognizedVariant};
+use crate::argument::{Decoder, ExpectArg, Scan};
+use crate::parser::{Error, UnrecognizedVariant};
 use enumeration::Enum;
 use std::borrow::Cow;
 use std::fmt::{self, Debug, Display, Formatter};
@@ -93,9 +93,7 @@ impl<S> SoundOrMusic<S> {
         D: Decoder<Output<'a> = S>,
     {
         Ok(Self {
-            fname: scanner
-                .next()?
-                .ok_or_else(|| Error::new("fname", ErrorKind::IncompleteArguments))?,
+            fname: scanner.next()?.expect_arg("fname")?,
             volume: scanner.next_number_or("V")?.unwrap_or(100),
             repeats: scanner.next_number_or("L")?.unwrap_or_default(),
             class: scanner.next_or("C")?,

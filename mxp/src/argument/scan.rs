@@ -163,3 +163,20 @@ impl<'a, D: Decoder, K: Enum + FromStr> KeywordScan<'a, D, K> {
         keywords
     }
 }
+
+pub trait ExpectArg {
+    type Arg;
+
+    fn expect_arg(self, name: &str) -> crate::Result<Self::Arg>;
+}
+
+impl<S> ExpectArg for Option<S> {
+    type Arg = S;
+
+    fn expect_arg(self, name: &str) -> crate::Result<Self::Arg> {
+        match self {
+            Some(arg) => Ok(arg),
+            None => Err(Error::new(name, ErrorKind::IncompleteArguments)),
+        }
+    }
+}

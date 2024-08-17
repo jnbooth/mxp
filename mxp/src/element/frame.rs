@@ -4,9 +4,9 @@ use std::str::FromStr;
 use enumeration::Enum;
 
 use super::screen::Align;
-use crate::argument::{Decoder, Scan};
+use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::keyword::FrameKeyword;
-use crate::parser::{Error, ErrorKind, UnrecognizedVariant};
+use crate::parser::{Error, UnrecognizedVariant};
 use crate::Dimension;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
@@ -99,9 +99,7 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Frame<D::Output<'a>> {
 
     fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
-        let name = scanner
-            .next_or("name")?
-            .ok_or_else(|| Error::new("name", ErrorKind::IncompleteArguments))?;
+        let name = scanner.next_or("name")?.expect_arg("name")?;
         let action = scanner
             .next_or("action")?
             .and_then(|action| action.as_ref().parse().ok())
@@ -150,9 +148,7 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for DestArgs<D::Output<'a>> {
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
-            name: scanner
-                .next()?
-                .ok_or_else(|| Error::new("name", ErrorKind::IncompleteArguments))?,
+            name: scanner.next()?.expect_arg("name")?,
         })
     }
 }

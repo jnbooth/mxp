@@ -9,4 +9,4 @@ pub use decode::ElementDecoder;
 mod keyword_filter;
 
 mod scan;
-pub use scan::{Decoder, Scan};
+pub use scan::{Decoder, ExpectArg, Scan};

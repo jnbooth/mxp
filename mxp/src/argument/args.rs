@@ -1,7 +1,7 @@
-use super::scan::{Decoder, Scan};
+use super::scan::{Decoder, ExpectArg, Scan};
 use crate::color::RgbColor;
 use crate::keyword::{EntityKeyword, MxpKeyword};
-use crate::parser::{Error, ErrorKind};
+use crate::parser::Error;
 use enumeration::EnumSet;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -85,9 +85,7 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for VarArgs<D::Output<'a>> {
     fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         Ok(Self {
-            variable: scanner
-                .next()?
-                .ok_or_else(|| Error::new("variable", ErrorKind::IncompleteArguments))?,
+            variable: scanner.next()?.expect_arg("variable")?,
             keywords: scanner.into_keywords(),
         })
     }
