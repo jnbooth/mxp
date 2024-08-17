@@ -28,6 +28,14 @@ impl State {
         self.line_tags.clear();
     }
 
+    pub fn add_globals(&mut self) {
+        self.entities.add_globals();
+    }
+
+    pub fn is_global_entity(&self, key: &str) -> bool {
+        self.entities.is_global(key)
+    }
+
     pub fn entities_mut(&mut self) -> &mut EntityMap {
         &mut self.entities
     }
@@ -41,7 +49,7 @@ impl State {
     }
 
     pub fn get_entity(&self, name: &str) -> crate::Result<Option<&str>> {
-        self.entities.get(name)
+        self.entities.decode_entity(name)
     }
 
     pub fn get_line_tag(&self, mode: Mode) -> Option<&Element> {
@@ -106,7 +114,7 @@ impl State {
         key: &'a str,
         words: Words,
     ) -> crate::Result<Option<EntityEntry<'a>>> {
-        if EntityMap::global(key).is_some() {
+        if self.entities.is_global(key) {
             return Err(Error::new(key, ErrorKind::CannotRedefineEntity));
         }
         let s = words.as_str();

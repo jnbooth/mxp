@@ -1,7 +1,8 @@
-use std::collections::{hash_map, HashMap};
+use std::collections::{hash_map, HashMap, HashSet};
 use std::iter::FusedIterator;
 use std::ops::{Deref, DerefMut};
 
+use super::global_entities::GLOBAL_ENTITIES;
 use crate::keyword::EntityKeyword;
 use std::collections::hash_map::Entry;
 
@@ -47,9 +48,15 @@ impl Entity {
     }
 }
 
+pub struct EntityEntry<'a> {
+    pub name: &'a str,
+    pub value: Option<&'a Entity>,
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct VariableMap {
     inner: HashMap<String, Entity>,
+    globals: HashSet<String>,
 }
 
 impl Deref for VariableMap {
@@ -66,11 +73,6 @@ impl DerefMut for VariableMap {
     }
 }
 
-pub struct EntityEntry<'a> {
-    pub name: &'a str,
-    pub value: Option<&'a Entity>,
-}
-
 impl VariableMap {
     pub fn new() -> Self {
         Self::default()
@@ -78,6 +80,7 @@ impl VariableMap {
 
     pub fn clear(&mut self) {
         self.inner.clear();
+        self.globals.clear();
     }
 
     pub fn remove(&mut self, key: &str) -> Option<Entity> {
@@ -87,6 +90,27 @@ impl VariableMap {
     pub fn published(&self) -> PublishedIter {
         PublishedIter {
             inner: self.inner.iter(),
+        }
+    }
+
+    pub fn is_global(&self, key: &str) -> bool {
+        key.starts_with('#') || self.globals.contains(key)
+    }
+
+    pub fn add_globals(&mut self) {
+        if !self.globals.is_empty() {
+            return;
+        }
+        for (key, val) in GLOBAL_ENTITIES {
+            self.inner.insert(
+                (*key).to_owned(),
+                Entity {
+                    value: (*val).to_owned(),
+                    published: false,
+                    description: String::new(),
+                },
+            );
+            self.globals.insert((*key).to_owned());
         }
     }
 

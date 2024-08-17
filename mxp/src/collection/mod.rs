@@ -1,8 +1,12 @@
+mod decode;
+
 mod element_map;
 pub use element_map::{ElementComponent, ElementMap};
 
 mod entity_map;
 pub use entity_map::EntityMap;
+
+mod global_entities;
 
 mod line_tags;
 

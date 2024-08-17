@@ -72,6 +72,10 @@ impl Transformer {
         if config.ignore_mxp_colors {
             output.disable_mxp_colors();
         }
+        let mut mxp_state = mxp::State::new();
+        if config.use_mxp == UseMxp::Always {
+            mxp_state.add_globals();
+        }
         Self {
             phase: Phase::Normal,
             decompressing: false,
@@ -90,7 +94,7 @@ impl Transformer {
             mxp_quote_terminator: None,
             mxp_string: Vec::new(),
             mxp_active_tags: TagList::new(),
-            mxp_state: mxp::State::new(),
+            mxp_state,
 
             subnegotiation_type: 0,
             subnegotiation_data: Vec::new(),
@@ -200,6 +204,7 @@ impl Transformer {
         self.mxp_mode = mxp::Mode::OPEN;
         self.mxp_active_tags.clear();
         self.mxp_state.clear();
+        self.mxp_state.add_globals();
     }
 
     fn mxp_endtag(&mut self, tag_body: &str) -> mxp::Result<()> {
@@ -254,7 +259,7 @@ impl Transformer {
         match component {
             mxp::ElementComponent::Atom(atom) => {
                 let scanner = mxp_state.decode_args(&mut args);
-                self.mxp_open_atom(mxp::Action::new(atom.action, scanner)?);
+                self.mxp_open_atom(mxp::Action::new(atom.action, scanner)?, mxp_state);
             }
             mxp::ElementComponent::Custom(el) => {
                 if let Some(variable) = &el.variable {
@@ -271,6 +276,26 @@ impl Transformer {
         Ok(())
     }
 
+    fn mxp_set_entity(
+        &mut self,
+        variable: String,
+        keywords: EnumSet<mxp::EntityKeyword>,
+        mxp_state: &mxp::State,
+    ) {
+        if mxp_state.is_global_entity(&variable) {
+            self.handle_mxp_error(mxp::Error::new(
+                variable,
+                mxp::ErrorKind::CannotRedefineEntity,
+            ));
+            return;
+        }
+        self.output.set_mxp_entity(EntitySetter {
+            name: variable,
+            flags: keywords,
+            is_variable: false,
+        });
+    }
+
     fn mxp_open_element(
         &mut self,
         el: &mxp::Element,
@@ -284,7 +309,7 @@ impl Transformer {
             self.output.set_mxp_window(window.clone());
         }
         for action in mxp_state.decode_element(el, args) {
-            self.mxp_open_atom(action?);
+            self.mxp_open_atom(action?, mxp_state);
         }
         if let Some(fore) = el.fore {
             self.output.set_mxp_foreground(fore);
@@ -295,7 +320,7 @@ impl Transformer {
         Ok(())
     }
 
-    fn mxp_open_atom(&mut self, action: mxp::Action<Cow<str>>) {
+    fn mxp_open_atom(&mut self, action: mxp::Action<Cow<str>>, mxp_state: &mxp::State) {
         use mxp::Action;
 
         match action {
@@ -340,11 +365,9 @@ impl Transformer {
             Action::Ol => self.output.set_mxp_list(InList::Ordered(0)),
             Action::Li => self.output.advance_list(),
             Action::Image(image) => self.output.append(image.into_owned()),
-            Action::Var { keywords, variable } => self.output.set_mxp_entity(EntitySetter {
-                name: variable.into_owned(),
-                flags: keywords,
-                is_variable: false,
-            }),
+            Action::Var { variable, keywords } => {
+                self.mxp_set_entity(variable.into_owned(), keywords, mxp_state);
+            }
             Action::Music(music) => self.output.append(music.into_owned()),
             Action::MusicOff => self.output.append(EffectFragment::MusicOff),
             Action::Sound(sound) => self.output.append(sound.into_owned()),
