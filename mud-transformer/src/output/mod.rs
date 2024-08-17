@@ -14,4 +14,4 @@ mod shared_string;
 pub use shared_string::SharedString;
 
 mod span;
-pub use span::{EntitySetter, InList, TextStyle};
+pub use span::{EntitySetter, TextStyle};

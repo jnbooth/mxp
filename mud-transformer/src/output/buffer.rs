@@ -8,7 +8,7 @@ use super::fragment::{
     EntityFragment, Output, OutputDrain, OutputFragment, TelnetFragment, TextFragment,
 };
 use super::shared_string::SharedString;
-use super::span::{EntitySetter, InList, SpanList, TextStyle};
+use super::span::{EntitySetter, SpanList, TextStyle};
 use mxp::RgbColor;
 
 macro_rules! debug_assert_utf8 {
@@ -218,17 +218,6 @@ impl BufferedOutput {
         self.spans.set_populated();
     }
 
-    pub fn append_afk(&mut self, challenge: Option<&str>) {
-        let challenge = match challenge {
-            Some(challenge) => {
-                self.buf.extend_from_slice(challenge.as_bytes());
-                self.take_buf()
-            }
-            None => SharedString::new(),
-        };
-        self.append(TelnetFragment::Afk { challenge });
-    }
-
     pub fn append_subnegotiation(&mut self, code: u8, data: &[u8]) {
         self.flush();
         self.buf.extend_from_slice(data);
@@ -378,27 +367,6 @@ impl BufferedOutput {
         if self.spans.set_action(action) {
             self.flush_mxp();
         }
-    }
-
-    pub fn set_mxp_list(&mut self, list: InList) {
-        if self.spans.set_list(list) {
-            self.flush_mxp();
-        }
-    }
-
-    pub fn advance_list(&mut self) {
-        match self.spans.next_list_item() {
-            Some(0) => {
-                self.start_line();
-                self.append_text("• ");
-            }
-            Some(i) => {
-                self.start_line();
-                self.append_text(i.to_string().as_str());
-                self.append_text(". ");
-            }
-            None => (),
-        };
     }
 
     pub fn set_mxp_heading(&mut self, heading: mxp::Heading) {

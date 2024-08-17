@@ -5,21 +5,6 @@ use crate::parser::Error;
 use enumeration::EnumSet;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct AfkArgs<S> {
-    pub challenge: Option<S>,
-}
-
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for AfkArgs<D::Output<'a>> {
-    type Error = Error;
-
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
-        Ok(Self {
-            challenge: scanner.next_or("challenge")?,
-        })
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ColorArgs {
     pub fore: Option<RgbColor>,
     pub back: Option<RgbColor>,

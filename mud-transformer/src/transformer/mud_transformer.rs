@@ -8,8 +8,8 @@ use super::input::{BufferedInput, Drain as InputDrain};
 use super::phase::Phase;
 use super::tag::{Tag, TagList};
 use crate::output::{
-    BufferedOutput, EffectFragment, EntityFragment, EntitySetter, InList, OutputDrain,
-    OutputFragment, TelnetFragment, TermColor, TextStyle,
+    BufferedOutput, EffectFragment, EntityFragment, EntitySetter, OutputDrain, OutputFragment,
+    TelnetFragment, TermColor, TextStyle,
 };
 use crate::receive::{Decompress, ReceiveCursor};
 use enumeration::EnumSet;
@@ -35,7 +35,6 @@ pub struct Transformer {
     supports_mccp_2: bool,
     no_echo: bool,
 
-    mxp_script: bool,
     in_paragraph: bool,
     ignore_next_newline: bool,
     mxp_mode_default: mxp::Mode,
@@ -85,7 +84,6 @@ impl Transformer {
             supports_mccp_2: false,
             no_echo: false,
 
-            mxp_script: false,
             in_paragraph: false,
             ignore_next_newline: false,
             mxp_mode_default: mxp::Mode::OPEN,
@@ -176,7 +174,6 @@ impl Transformer {
 
         let closed = self.mxp_active_tags.last_resettable_index();
         self.mxp_close_tags_from(closed);
-        self.mxp_script = false;
 
         if !completely {
             return;
@@ -194,7 +191,6 @@ impl Transformer {
         }
 
         self.mxp_active = true;
-        self.mxp_script = false;
 
         if manual {
             return;
@@ -324,7 +320,6 @@ impl Transformer {
         use mxp::Action;
 
         match action {
-            Action::Afk { challenge } => self.output.append_afk(challenge.as_deref()),
             Action::Bold => self.output.set_mxp_flag(TextStyle::Bold),
             Action::Br => self.output.start_line(),
             Action::Color { fore, back } => {
@@ -343,22 +338,20 @@ impl Transformer {
             Action::Frame(frame) => self.output.append(frame.into_owned()),
             Action::Gauge(gauge) => self.output.append(gauge.into_owned()),
             Action::Heading(heading) => self.output.set_mxp_heading(heading),
-            Action::High => self.output.set_mxp_flag(TextStyle::Highlight),
+            Action::Highlight => self.output.set_mxp_flag(TextStyle::Highlight),
             Action::Hr => self.output.append(OutputFragment::Hr),
             Action::Image(image) => self.output.append(image.into_owned()),
             Action::Italic => self.output.set_mxp_flag(TextStyle::Italic),
-            Action::Li => self.output.advance_list(),
             Action::Link(link) => self.output.set_mxp_action(link.clone()),
             Action::Music(music) => self.output.append(music.into_owned()),
             Action::MusicOff => self.output.append(EffectFragment::MusicOff),
             Action::Mxp { keywords } => self.mxp_set_keywords(keywords),
             Action::NoBr => self.ignore_next_newline = true,
-            Action::Ol => self.output.set_mxp_list(InList::Ordered(0)),
             Action::P => self.in_paragraph = true,
             Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
             Action::Reset => self.mxp_off(false),
             Action::SBr => self.output.push(b' '),
-            Action::Script => self.mxp_script = true,
+            Action::Small => self.output.set_mxp_flag(TextStyle::Small),
             Action::Sound(sound) => self.output.append(sound.into_owned()),
             Action::SoundOff => self.output.append(EffectFragment::SoundOff),
             Action::Stat(stat) => self.output.append(stat.into_owned()),
@@ -368,7 +361,7 @@ impl Transformer {
                 questions,
                 self.config.unsupported_actions,
             ),
-            Action::Ul => self.output.set_mxp_list(InList::Unordered),
+            Action::Tt => self.output.set_mxp_flag(TextStyle::NonProportional),
             Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
             Action::User => input_mxp_auth(&mut self.input, &self.config.player),
             Action::Var { variable, keywords } => {
@@ -382,14 +375,7 @@ impl Transformer {
                 write!(self.input, "{response}").unwrap();
             }
 
-            Action::Relocate
-            | Action::Filter
-            | Action::Small
-            | Action::Tt
-            | Action::Samp
-            | Action::Center
-            | Action::SetOption
-            | Action::RecommendOption => (),
+            Action::Relocate | Action::Filter => (),
         }
     }
 
@@ -999,7 +985,6 @@ impl Transformer {
                         self.mxp_mode = self.mxp_mode_previous;
                     }
                 }
-                _ if self.mxp_script => (),
                 b'&' => {
                     self.mxp_string.clear();
                     self.phase = Phase::MxpEntity;

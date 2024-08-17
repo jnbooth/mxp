@@ -4,7 +4,7 @@ use super::frame::{DestArgs, Frame};
 use super::image::Image;
 use super::link::{ExpireArgs, HyperlinkArgs, Link, SendArgs};
 use super::sound::{Music, Sound};
-use crate::argument::args::{AfkArgs, ColorArgs, MxpArgs, SupportArgs, VarArgs};
+use crate::argument::args::{ColorArgs, MxpArgs, SupportArgs, VarArgs};
 use crate::argument::{Decoder, Scan};
 use crate::color::RgbColor;
 use crate::keyword::{EntityKeyword, MxpKeyword};
@@ -12,14 +12,10 @@ use enumeration::{Enum, EnumSet};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum ActionKind {
-    /// AFK - away from keyboard time
-    Afk,
     /// bold
     Bold,
     /// Hard Line break (secure)
     Br,
-    /// Centre text
-    Center,
     /// eg. <color fore=red back=blue>
     Color,
     /// destination frame
@@ -47,7 +43,7 @@ pub enum ActionKind {
     /// Level 6 heading (secure)
     H6,
     /// Highlight text
-    High,
+    Highlight,
     /// Horizontal rule (secure)
     Hr,
     /// Hyperlink (secure)
@@ -56,36 +52,24 @@ pub enum ActionKind {
     Image,
     /// italic
     Italic,
-    /// List item
-    Li,
     /// play music
     Music,
     /// MXP command (eg. MXP OFF)
     Mxp,
     /// ignore next newline
     NoBr,
-    /// Ordered list
-    Ol,
     /// Paragraph break (secure)
     P,
     /// send password
     Password,
-    /// server sets option
-    RecommendOption,
     /// causes a new connect to open
     Relocate,
     /// close all open tags
     Reset,
-    /// Sample text
-    Samp,
     /// Soft line break
     SBr,
-    /// Client script (secure)
-    Script,
     /// eg. <send href="go west"> west
     Send,
-    /// client options set
-    SetOption,
     /// Small text
     Small,
     /// play sound
@@ -98,8 +82,6 @@ pub enum ActionKind {
     Support,
     /// Non-proportional font
     Tt,
-    /// Unordered list
-    Ul,
     /// underline
     Underline,
     /// send username
@@ -122,14 +104,10 @@ pub enum Heading {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Action<S> {
-    /// AFK - away from keyboard time
-    Afk { challenge: Option<S> },
     /// bold
     Bold,
     /// Hard Line break (secure)
     Br,
-    /// Centre text
-    Center,
     /// eg. <color fore=red back=blue>
     Color {
         fore: Option<RgbColor>,
@@ -150,15 +128,13 @@ pub enum Action<S> {
     /// heading (secure)
     Heading(Heading),
     /// Highlight text
-    High,
+    Highlight,
     /// Horizontal rule (secure)
     Hr,
     /// show image
     Image(Image<S>),
     /// italic
     Italic,
-    /// List item
-    Li,
     /// Hyperlink or send prompt (secure)
     Link(Link),
     /// play music
@@ -169,26 +145,16 @@ pub enum Action<S> {
     Mxp { keywords: EnumSet<MxpKeyword> },
     /// ignore next newline
     NoBr,
-    /// Ordered list
-    Ol,
     /// Paragraph break (secure)
     P,
     /// send password
     Password,
-    /// server sets option
-    RecommendOption,
     /// causes a new connect to open
     Relocate,
     /// close all open tags
     Reset,
-    /// Sample text
-    Samp,
     /// Soft linebreak
     SBr,
-    /// Client script (secure)
-    Script,
-    /// client options set
-    SetOption,
     /// Small text
     Small,
     /// play sound
@@ -203,8 +169,6 @@ pub enum Action<S> {
     Support { questions: Vec<S> },
     /// Non-proportional font
     Tt,
-    /// Unordered list
-    Ul,
     /// underline
     Underline,
     /// send username
@@ -224,13 +188,8 @@ impl<S: AsRef<str>> Action<S> {
         D: Decoder<Output<'a> = S>,
     {
         Ok(match action {
-            ActionKind::Afk => {
-                let AfkArgs { challenge } = scanner.try_into()?;
-                Self::Afk { challenge }
-            }
             ActionKind::Bold => Self::Bold,
             ActionKind::Br => Self::Br,
-            ActionKind::Center => Self::Center,
             ActionKind::Color => {
                 let ColorArgs { fore, back } = scanner.try_into()?;
                 Self::Color { fore, back }
@@ -253,12 +212,11 @@ impl<S: AsRef<str>> Action<S> {
             ActionKind::H4 => Self::Heading(Heading::H4),
             ActionKind::H5 => Self::Heading(Heading::H5),
             ActionKind::H6 => Self::Heading(Heading::H6),
-            ActionKind::High => Self::High,
+            ActionKind::Highlight => Self::Highlight,
             ActionKind::Hr => Self::Hr,
             ActionKind::Hyperlink => Self::Link(HyperlinkArgs::try_from(scanner)?.into()),
             ActionKind::Image => Self::Image(Image::try_from(scanner)?),
             ActionKind::Italic => Self::Italic,
-            ActionKind::Li => Self::Li,
             ActionKind::Mxp => {
                 let MxpArgs { keywords } = scanner.try_into()?;
                 Self::Mxp { keywords }
@@ -272,17 +230,12 @@ impl<S: AsRef<str>> Action<S> {
                 }
             }
             ActionKind::NoBr => Self::NoBr,
-            ActionKind::Ol => Self::Ol,
             ActionKind::P => Self::P,
             ActionKind::Password => Self::Password,
-            ActionKind::RecommendOption => Self::RecommendOption,
             ActionKind::Relocate => Self::Relocate,
             ActionKind::Reset => Self::Reset,
-            ActionKind::Samp => Self::Samp,
             ActionKind::SBr => Self::SBr,
-            ActionKind::Script => Self::Script,
             ActionKind::Send => Self::Link(SendArgs::try_from(scanner)?.into()),
-            ActionKind::SetOption => Self::SetOption,
             ActionKind::Small => Self::Small,
             ActionKind::Sound => {
                 let sound = Sound::try_from(scanner)?;
@@ -299,7 +252,6 @@ impl<S: AsRef<str>> Action<S> {
                 Self::Support { questions }
             }
             ActionKind::Tt => Self::Tt,
-            ActionKind::Ul => Self::Ul,
             ActionKind::Underline => Self::Underline,
             ActionKind::User => Self::User,
             ActionKind::Var => {

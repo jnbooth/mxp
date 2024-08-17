@@ -14,6 +14,8 @@ pub enum TextStyle {
     Highlight,
     Inverse,
     Italic,
+    NonProportional,
+    Small,
     Strikeout,
     Underline,
 }
@@ -23,11 +25,11 @@ impl TextStyle {
         match self {
             Self::Blink => Some(ansi::BLINK),
             Self::Bold => Some(ansi::BOLD),
-            Self::Highlight => None,
             Self::Inverse => Some(ansi::INVERSE),
             Self::Italic => Some(ansi::SLOW_BLINK),
             Self::Strikeout => Some(ansi::STRIKEOUT),
             Self::Underline => Some(ansi::UNDERLINE),
+            Self::Highlight | Self::NonProportional | Self::Small => None,
         }
     }
 }
@@ -42,12 +44,6 @@ impl From<mxp::FontStyle> for TextStyle {
             mxp::FontStyle::Underline => Self::Underline,
         }
     }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum InList {
-    Ordered(u32),
-    Unordered,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -68,7 +64,6 @@ pub struct Span {
     pub(super) font: Option<String>,
     pub(super) size: Option<NonZeroU8>,
     pub(super) action: Option<mxp::Link>,
-    pub(super) list: Option<InList>,
     pub(super) heading: Option<Heading>,
     pub(super) gag: bool,
     pub(super) window: Option<String>,
@@ -91,7 +86,6 @@ impl Span {
             font: None,
             size: None,
             action: None,
-            list: None,
             heading: None,
             entity: None,
             gag: false,
@@ -213,16 +207,6 @@ impl SpanList {
         }
     }
 
-    pub fn next_list_item(&mut self) -> Option<u32> {
-        match self.get_mut()?.list.as_mut()? {
-            InList::Unordered => Some(0),
-            InList::Ordered(i) => {
-                *i += 1;
-                Some(*i)
-            }
-        }
-    }
-
     pub fn set_flag(&mut self, flag: TextStyle) -> bool {
         set_flag!(self, flags, flag);
     }
@@ -245,10 +229,6 @@ impl SpanList {
 
     pub fn set_action(&mut self, action: mxp::Link) -> bool {
         set_prop!(self, action);
-    }
-
-    pub fn set_list(&mut self, list: InList) -> bool {
-        set_prop!(self, list);
     }
 
     pub fn set_heading(&mut self, heading: Heading) -> bool {

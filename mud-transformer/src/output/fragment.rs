@@ -194,7 +194,6 @@ impl From<mxp::Stat> for OutputFragment {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TelnetFragment {
-    Afk { challenge: SharedString },
     Do { code: u8 },
     IacGa,
     Naws,

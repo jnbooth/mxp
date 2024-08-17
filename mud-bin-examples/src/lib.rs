@@ -10,7 +10,6 @@ pub fn get_config() -> TransformerConfig {
     TransformerConfig {
         terminal_identification: "mushclient".to_owned(),
         unsupported_actions: enums![
-            ActionKind::Center,
             ActionKind::Sound,
             ActionKind::Music,
             ActionKind::Image,
@@ -28,10 +27,8 @@ pub fn get_config() -> TransformerConfig {
             ActionKind::H6,
             ActionKind::Hr,
             ActionKind::Strikeout,
-            ActionKind::Script,
             ActionKind::Small,
             ActionKind::Tt,
-            ActionKind::Samp,
             ActionKind::Var,
             ActionKind::Gauge,
             ActionKind::Stat,
