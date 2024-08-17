@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt::Write;
 use std::num::NonZeroU8;
 use std::{io, mem};
 
@@ -19,8 +20,7 @@ fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
     if auth.is_empty() {
         return;
     }
-    input.append(auth.as_bytes());
-    input.append(b"\r\n");
+    write!(input, "{auth}\r\n").unwrap();
 }
 
 #[derive(Debug)]
@@ -341,9 +341,11 @@ impl Transformer {
             Action::Link(link) => self.output.set_mxp_action(link.clone()),
             Action::Font(font) => self.output.set_mxp_font(font.into_owned()),
             Action::Version => {
-                let response =
-                    mxp::responses::identify(&self.config.app_name, &self.config.version);
-                self.input.append(response.as_bytes());
+                let response = mxp::responses::IdentifyResponse {
+                    name: &self.config.app_name,
+                    version: &self.config.version,
+                };
+                write!(self.input, "{response}").unwrap();
             }
             Action::Afk { challenge } => self.output.append_afk(challenge.as_deref()),
             Action::Support { questions } => mxp::Atom::fmt_supported(

@@ -1,3 +1,4 @@
+use std::fmt;
 use std::io::{self, BufRead, IoSliceMut, Read, Write};
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -45,6 +46,13 @@ impl AsRef<Vec<u8>> for BufferedInput {
 impl AsMut<Vec<u8>> for BufferedInput {
     fn as_mut(&mut self) -> &mut Vec<u8> {
         &mut self.buf
+    }
+}
+
+impl fmt::Write for BufferedInput {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.append(s.as_bytes());
+        Ok(())
     }
 }
 
