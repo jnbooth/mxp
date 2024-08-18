@@ -50,8 +50,8 @@ impl Default for DimensionUnit {
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Dimension<T = u32> {
-    amount: T,
-    unit: DimensionUnit,
+    pub amount: T,
+    pub unit: DimensionUnit,
 }
 
 impl<T> Dimension<T> {
