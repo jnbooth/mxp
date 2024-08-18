@@ -27,7 +27,7 @@ impl Atom {
         ALL_ATOMS.get(name)
     }
 
-    pub fn fmt_supported<I>(buf: &mut Vec<u8>, iter: I, unsupported: EnumSet<ActionKind>)
+    pub fn fmt_supported<I>(buf: &mut Vec<u8>, iter: I, supported: EnumSet<ActionKind>)
     where
         I: IntoIterator,
         I::Item: AsRef<str>,
@@ -40,7 +40,7 @@ impl Atom {
             let tag = questions.next().unwrap();
             match Atom::get(tag) {
                 None => write_cant(buf, tag),
-                Some(atom) if unsupported.contains(atom.action) => {
+                Some(atom) if !supported.contains(atom.action) => {
                     write_cant(buf, tag);
                 }
                 Some(atom) => match questions.next() {
@@ -55,11 +55,19 @@ impl Atom {
         }
         if !has_args {
             for atom in ALL_ATOMS.values() {
-                if !unsupported.contains(atom.action) {
+                if supported.contains(atom.action) {
                     write_can(buf, &atom.name);
                     write_can_args(buf, atom);
                 }
             }
+        }
+        if !supported.contains(ActionKind::Font) && supported.contains(ActionKind::Color) {
+            let simple_font = Atom {
+                args: vec![CaseFold::borrow("color"), CaseFold::borrow("back")],
+                ..ALL_ATOMS.get("font").unwrap().clone()
+            };
+            write_can(buf, &simple_font.name);
+            write_can_args(buf, &simple_font);
         }
         buf.extend_from_slice(b">\n");
     }

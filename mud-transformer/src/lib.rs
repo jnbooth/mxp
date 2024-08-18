@@ -22,4 +22,4 @@ pub use output::{
 };
 
 mod transformer;
-pub use transformer::{InputDrain, Transformer, TransformerConfig, UseMxp};
+pub use transformer::{InputDrain, Tag, Transformer, TransformerConfig, UseMxp};

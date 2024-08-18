@@ -14,6 +14,71 @@ pub enum UseMxp {
     Never,
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+pub enum Tag {
+    Bold,
+    Color,
+    Dest,
+    Expire,
+    Filter,
+    Font,
+    Frame,
+    Gauge,
+    H1,
+    H2,
+    H3,
+    H4,
+    H5,
+    H6,
+    Highlight,
+    Hr,
+    Hyperlink,
+    Image,
+    Italic,
+    Music,
+    Relocate,
+    Send,
+    Small,
+    Stat,
+    Strikeout,
+    Tt,
+    Underline,
+}
+
+impl From<Tag> for mxp::ActionKind {
+    fn from(value: Tag) -> Self {
+        match value {
+            Tag::Bold => Self::Bold,
+            Tag::Color => Self::Color,
+            Tag::Dest => Self::Dest,
+            Tag::Expire => Self::Expire,
+            Tag::Filter => Self::Filter,
+            Tag::Font => Self::Font,
+            Tag::Frame => Self::Frame,
+            Tag::Gauge => Self::Gauge,
+            Tag::H1 => Self::H1,
+            Tag::H2 => Self::H2,
+            Tag::H3 => Self::H3,
+            Tag::H4 => Self::H4,
+            Tag::H5 => Self::H5,
+            Tag::H6 => Self::H6,
+            Tag::Highlight => Self::Highlight,
+            Tag::Hr => Self::Hr,
+            Tag::Hyperlink => Self::Hyperlink,
+            Tag::Image => Self::Image,
+            Tag::Italic => Self::Italic,
+            Tag::Music => Self::Music,
+            Tag::Relocate => Self::Relocate,
+            Tag::Send => Self::Send,
+            Tag::Small => Self::Small,
+            Tag::Stat => Self::Stat,
+            Tag::Strikeout => Self::Strikeout,
+            Tag::Tt => Self::Tt,
+            Tag::Underline => Self::Underline,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TransformerConfig {
     pub app_name: String,
@@ -27,7 +92,7 @@ pub struct TransformerConfig {
     pub password: String,
     pub player: String,
     pub terminal_identification: String,
-    pub unsupported_actions: EnumSet<mxp::ActionKind>,
+    pub supports: EnumSet<Tag>,
     pub use_mxp: UseMxp,
     pub version: String,
     pub will: HashSet<u8>,
@@ -53,10 +118,19 @@ impl TransformerConfig {
             password: String::new(),
             player: String::new(),
             terminal_identification: String::new(),
-            unsupported_actions: EnumSet::new(),
+            supports: EnumSet::all(),
             use_mxp: UseMxp::Command,
             version: String::new(),
             will: HashSet::new(),
         }
+    }
+
+    pub(crate) fn supported_actions(&self) -> EnumSet<mxp::ActionKind> {
+        self.supports
+            .inverse()
+            .into_iter()
+            .map(mxp::ActionKind::from)
+            .collect::<EnumSet<_>>()
+            .inverse()
     }
 }

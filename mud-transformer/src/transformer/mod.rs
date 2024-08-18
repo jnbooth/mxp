@@ -1,5 +1,5 @@
 mod config;
-pub use config::{TransformerConfig, UseMxp};
+pub use config::{Tag, TransformerConfig, UseMxp};
 
 mod input;
 pub use input::Drain as InputDrain;

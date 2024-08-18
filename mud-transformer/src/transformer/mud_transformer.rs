@@ -357,11 +357,10 @@ impl Transformer {
             Action::SoundOff => self.output.append(EffectFragment::SoundOff),
             Action::Stat(stat) => self.output.append(stat.into_owned()),
             Action::Strikeout => self.output.set_mxp_flag(TextStyle::Strikeout),
-            Action::Support { questions } => mxp::Atom::fmt_supported(
-                self.input.as_mut(),
-                questions,
-                self.config.unsupported_actions,
-            ),
+            Action::Support { questions } => {
+                let supported_actions = self.config.supported_actions();
+                mxp::Atom::fmt_supported(self.input.as_mut(), questions, supported_actions);
+            }
             Action::Tt => self.output.set_mxp_flag(TextStyle::NonProportional),
             Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
             Action::User => input_mxp_auth(&mut self.input, &self.config.player),

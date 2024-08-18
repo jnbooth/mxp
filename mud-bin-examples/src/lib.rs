@@ -3,37 +3,17 @@ extern crate enumeration;
 
 use std::io::{self, Write};
 
-use mud_transformer::mxp::ActionKind;
-use mud_transformer::{Output, OutputFragment, TransformerConfig};
+use mud_transformer::{Output, OutputFragment, Tag, TransformerConfig};
 
 pub fn get_config() -> TransformerConfig {
     TransformerConfig {
         terminal_identification: "mushclient".to_owned(),
-        unsupported_actions: enums![
-            ActionKind::Sound,
-            ActionKind::Music,
-            ActionKind::Image,
-            ActionKind::Send,
-            ActionKind::Relocate,
-            ActionKind::Frame,
-            ActionKind::Dest,
-            ActionKind::Filter,
-            ActionKind::Hyperlink,
-            ActionKind::H1,
-            ActionKind::H2,
-            ActionKind::H3,
-            ActionKind::H4,
-            ActionKind::H5,
-            ActionKind::H6,
-            ActionKind::Hr,
-            ActionKind::Strikeout,
-            ActionKind::Small,
-            ActionKind::Tt,
-            ActionKind::Var,
-            ActionKind::Gauge,
-            ActionKind::Stat,
-            ActionKind::Expire,
-            ActionKind::Reset
+        supports: enums![
+            Tag::Bold,
+            Tag::Color,
+            Tag::Italic,
+            Tag::Strikeout,
+            Tag::Underline,
         ],
         ..Default::default()
     }
