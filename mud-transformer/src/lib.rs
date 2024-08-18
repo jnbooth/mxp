@@ -17,7 +17,7 @@ mod receive;
 
 mod output;
 pub use output::{
-    EffectFragment, Output, OutputDrain, OutputFragment, SharedString, TelnetFragment,
+    EffectFragment, EntityFragment, Output, OutputDrain, OutputFragment, SharedString, TelnetFragment,
     TextFragment, TextStyle,
 };
 
