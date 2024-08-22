@@ -26,6 +26,9 @@ where
 {
     for output in iter {
         match output.fragment {
+            OutputFragment::MxpError(e) => {
+                writeln!(writer, "\nMXP error: {e}")?;
+            }
             OutputFragment::Text(fragment) => {
                 write!(writer, "{fragment}")?;
             }

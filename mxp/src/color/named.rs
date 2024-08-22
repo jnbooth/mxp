@@ -7,10 +7,11 @@ impl RgbColor {
     ///
     /// [148 CSS colors]: https://www.w3.org/wiki/CSS/Properties/color/keywords
     pub fn named(name: &str) -> Option<RgbColor> {
-        if let Ok(color) = name.parse() {
-            return Some(color);
+        if name.starts_with('#') {
+            name.parse().ok()
+        } else {
+            NAMED_COLORS.get(name).copied()
         }
-        NAMED_COLORS.get(name).copied()
     }
 }
 

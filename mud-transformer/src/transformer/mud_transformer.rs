@@ -981,9 +981,6 @@ impl Transformer {
                 b'<' => {
                     self.mxp_entity_string.clear();
                     self.phase = Phase::MxpElement;
-                    if self.mxp_mode == mxp::Mode::SECURE_ONCE {
-                        self.mxp_mode = self.mxp_mode_previous;
-                    }
                 }
                 b'&' => {
                     self.mxp_entity_string.clear();
