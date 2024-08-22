@@ -20,6 +20,7 @@ impl Decompress {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation)]
     pub fn decompress<R: BufRead>(&mut self, reader: &mut R, buf: &mut [u8]) -> io::Result<usize> {
         let total_in = self.inner.total_in();
         let total_out = self.inner.total_out();

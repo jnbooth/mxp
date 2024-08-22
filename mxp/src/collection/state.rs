@@ -51,7 +51,7 @@ impl State {
     }
 
     pub fn get_line_tag(&self, mode: Mode) -> Option<&Element> {
-        self.line_tags.get(mode.0 as usize, &self.elements)
+        self.line_tags.get(usize::from(mode.0), &self.elements)
     }
 
     pub fn decode_args<'a>(&self, args: &'a mut Arguments) -> Scan<'a, &EntityMap> {
@@ -98,7 +98,7 @@ impl State {
             return Ok(());
         };
         if let Some(tag) = el.tag {
-            self.line_tags.set(tag.get() as usize, el.name.clone());
+            self.line_tags.set(usize::from(tag.get()), el.name.clone());
         }
         self.elements.insert(name.to_owned(), el);
         Ok(())

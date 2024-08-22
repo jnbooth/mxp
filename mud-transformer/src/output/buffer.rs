@@ -76,7 +76,7 @@ impl BufferedOutput {
 
     fn color(&self, color: TermColor) -> RgbColor {
         match color {
-            TermColor::Ansi(i) => match self.colors.get(i as usize) {
+            TermColor::Ansi(i) => match self.colors.get(usize::from(i)) {
                 Some(color) => *color,
                 None => RgbColor::xterm(i),
             },

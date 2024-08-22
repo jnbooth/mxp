@@ -74,7 +74,7 @@ impl LineTags {
         update: LineTagUpdate,
         elements: &'a mut ElementMap,
     ) -> Option<&'a mut Element> {
-        let i = (update.index as usize).checked_sub(OFFSET)?;
+        let i = usize::from(update.index).checked_sub(OFFSET)?;
         let tag = self.inner.get_mut(i)?;
         if let Some(enable) = update.enable {
             tag.enabled = enable;

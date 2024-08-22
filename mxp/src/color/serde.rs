@@ -24,7 +24,7 @@ impl<'de> Deserialize<'de> for RgbColor {
                 Ok(Self::hex(code))
             } else {
                 Err(D::Error::invalid_value(
-                    Unexpected::Unsigned(code as u64),
+                    Unexpected::Unsigned(u64::from(code)),
                     &"integer between 0x000000 and 0xFFFFFF",
                 ))
             }
