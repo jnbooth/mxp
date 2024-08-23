@@ -12,6 +12,7 @@ pub fn get_config() -> TransformerConfig {
             Tag::Bold,
             Tag::Color,
             Tag::Italic,
+            Tag::Send,
             Tag::Strikeout,
             Tag::Underline,
         ],

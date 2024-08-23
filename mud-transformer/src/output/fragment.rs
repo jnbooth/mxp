@@ -249,7 +249,11 @@ impl Display for TextFragment {
         if bg != RgbColor::BLACK {
             write!(f, ";48;2;{};{};{}", bg.r, bg.g, bg.b)?;
         }
-        for flag in self.flags {
+        let mut flags = self.flags;
+        if self.action.is_some() {
+            flags.insert(TextStyle::Underline);
+        }
+        for flag in flags {
             if let Some(ansi) = flag.ansi() {
                 write!(f, ";{ansi}")?;
             }
