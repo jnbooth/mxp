@@ -6,9 +6,9 @@ use crate::parser::Error;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum SendTo {
+    Internet,
     World,
     Input,
-    Internet,
 }
 
 impl Default for SendTo {
