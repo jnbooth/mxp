@@ -864,12 +864,12 @@ impl Transformer {
                     self.phase = Phase::Normal;
                 }
                 b'<' => {
-                    self.mxp_entity_string.push(c);
                     self.handle_mxp_error(mxp::Error::new(
                         &self.mxp_entity_string,
                         mxp::ErrorKind::UnterminatedElement,
                     ));
                     self.mxp_entity_string.clear();
+                    self.mxp_entity_string.push(c);
                 }
                 b'\'' => {
                     const_non_zero!(NON_ZERO_APOSTROPHE, NonZeroU8, b'\'');
