@@ -12,9 +12,9 @@ use std::str::FromStr;
 pub enum FontStyle {
     Blink,
     Bold,
-    Inverse,
     Italic,
     Underline,
+    Inverse,
 }
 
 impl FromStr for FontStyle {
@@ -24,9 +24,9 @@ impl FromStr for FontStyle {
         Ok(match_ci! {s,
             "blink" => Self::Blink,
             "bold" => Self::Bold,
-            "inverse" => Self::Inverse,
             "italic" => Self::Italic,
             "underline" => Self::Underline,
+            "inverse" => Self::Inverse,
             _ => return Err(Self::Err::new(s)),
         })
     }

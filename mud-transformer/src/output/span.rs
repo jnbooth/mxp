@@ -12,12 +12,12 @@ pub enum TextStyle {
     Blink,
     Bold,
     Highlight,
-    Inverse,
     Italic,
     NonProportional,
     Small,
     Strikeout,
     Underline,
+    Inverse,
 }
 
 impl TextStyle {
@@ -25,10 +25,10 @@ impl TextStyle {
         match self {
             Self::Blink => Some(ansi::BLINK),
             Self::Bold => Some(ansi::BOLD),
-            Self::Inverse => Some(ansi::INVERSE),
             Self::Italic => Some(ansi::SLOW_BLINK),
             Self::Strikeout => Some(ansi::STRIKEOUT),
             Self::Underline => Some(ansi::UNDERLINE),
+            Self::Inverse => Some(ansi::INVERSE),
             Self::Highlight | Self::NonProportional | Self::Small => None,
         }
     }
@@ -39,9 +39,9 @@ impl From<mxp::FontStyle> for TextStyle {
         match value {
             mxp::FontStyle::Blink => Self::Blink,
             mxp::FontStyle::Bold => Self::Bold,
-            mxp::FontStyle::Inverse => Self::Inverse,
             mxp::FontStyle::Italic => Self::Italic,
             mxp::FontStyle::Underline => Self::Underline,
+            mxp::FontStyle::Inverse => Self::Inverse,
         }
     }
 }
