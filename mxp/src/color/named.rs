@@ -13,6 +13,13 @@ impl RgbColor {
             NAMED_COLORS.get(name).copied()
         }
     }
+
+    /// Iterates through colors in the standard list of [148 CSS colors].
+    ///
+    /// [148 CSS colors]: https://www.w3.org/wiki/CSS/Properties/color/keywords
+    pub fn iter_named() -> impl Iterator<Item = (&'static str, RgbColor)> {
+        NAMED_COLORS.entries().map(|(k, v)| (k.as_str(), *v))
+    }
 }
 
 static NAMED_COLORS: Lookup<RgbColor> = Lookup::new(|| {

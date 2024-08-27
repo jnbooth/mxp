@@ -19,6 +19,10 @@ impl<T> Lookup<T> {
         self.get_or_init().get(name)
     }
 
+    pub fn entries(&self) -> hash_map::Iter<CaseFold<&'static str>, T> {
+        self.get_or_init().iter()
+    }
+
     pub fn values(&self) -> hash_map::Values<CaseFold<&'static str>, T> {
         self.get_or_init().values()
     }
