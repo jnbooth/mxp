@@ -1,6 +1,16 @@
+use std::collections::hash_map;
+use std::iter;
+
+use casefold::ascii::CaseFold;
+
 use crate::lookup::Lookup;
 
 use super::rgb::RgbColor;
+
+pub type NamedColorIter = iter::Map<
+    hash_map::Iter<'static, CaseFold<&'static str>, RgbColor>,
+    fn((&CaseFold<&'static str>, &'static RgbColor)) -> (&'static str, RgbColor),
+>;
 
 impl RgbColor {
     /// Finds a color by its name in the standard list of [148 CSS colors]. Case-insensitive.
@@ -17,8 +27,8 @@ impl RgbColor {
     /// Iterates through colors in the standard list of [148 CSS colors].
     ///
     /// [148 CSS colors]: https://www.w3.org/wiki/CSS/Properties/color/keywords
-    pub fn iter_named() -> impl Iterator<Item = (&'static str, RgbColor)> {
-        NAMED_COLORS.entries().map(|(k, v)| (k.as_str(), *v))
+    pub fn iter_named() -> NamedColorIter {
+        NAMED_COLORS.entries().map(|(k, v)| (k.unfold(), *v))
     }
 }
 

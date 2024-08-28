@@ -45,7 +45,7 @@ mod collection;
 pub use collection::{ElementComponent, State};
 
 mod color;
-pub use color::{HexOutOfRangeError, ParseHexColorError, RgbColor};
+pub use color::{HexOutOfRangeError, NamedColorIter, ParseHexColorError, RgbColor};
 
 mod element;
 pub use element::*;

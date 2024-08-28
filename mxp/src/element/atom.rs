@@ -46,7 +46,7 @@ impl Atom {
                 Some(atom) => match questions.next() {
                     None => write_can(buf, tag),
                     Some("*") => write_can_args(buf, atom),
-                    Some(subtag) if atom.args.contains(&CaseFold::borrow(subtag)) => {
+                    Some(subtag) if atom.args.contains(&subtag.into()) => {
                         write_can(buf, subtag);
                     }
                     Some(subtag) => write_cant(buf, subtag),
@@ -63,7 +63,7 @@ impl Atom {
         }
         if !supported.contains(ActionKind::Font) && supported.contains(ActionKind::Color) {
             let simple_font = Atom {
-                args: vec![CaseFold::borrow("color"), CaseFold::borrow("back")],
+                args: vec!["color".into(), "back".into()],
                 ..ALL_ATOMS.get("font").unwrap().clone()
             };
             write_can(buf, &simple_font.name);
