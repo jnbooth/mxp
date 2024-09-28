@@ -118,7 +118,7 @@ impl Transformer {
             self.output.set_colors(config.colors.clone());
         }
         match config.use_mxp {
-            UseMxp::Always => self.mxp_on(false),
+            UseMxp::Always => self.mxp_on(),
             UseMxp::Never => self.mxp_off(true),
             UseMxp::Command | UseMxp::Query => (),
         }
@@ -165,12 +165,11 @@ impl Transformer {
 
     fn mxp_off(&mut self, completely: bool) {
         self.output.reset();
-
         if !self.mxp_active {
             return;
         }
-
         self.mxp_close_tags_from(0);
+        self.output.append(TelnetFragment::Mxp { enabled: false });
 
         if !completely {
             return;
@@ -182,17 +181,12 @@ impl Transformer {
         self.mxp_active = false;
     }
 
-    fn mxp_on(&mut self, manual: bool) {
+    fn mxp_on(&mut self) {
         if self.mxp_active {
             return;
         }
-
+        self.output.append(TelnetFragment::Mxp { enabled: true });
         self.mxp_active = true;
-
-        if manual {
-            return;
-        }
-
         self.mxp_mode_default = mxp::Mode::OPEN;
         self.mxp_mode = mxp::Mode::OPEN;
         self.mxp_tags.clear();
@@ -720,7 +714,7 @@ impl Transformer {
                         UseMxp::Never => false,
                         UseMxp::Always | UseMxp::Command => true,
                         UseMxp::Query => {
-                            self.mxp_on(false);
+                            self.mxp_on();
                             true
                         }
                     },
@@ -761,7 +755,7 @@ impl Transformer {
                         UseMxp::Never => false,
                         UseMxp::Always | UseMxp::Command => true,
                         UseMxp::Query => {
-                            self.mxp_on(false);
+                            self.mxp_on();
                             true
                         }
                     },
@@ -814,7 +808,7 @@ impl Transformer {
                     }
                     telnet::MXP => {
                         if self.config.use_mxp == UseMxp::Command {
-                            self.mxp_on(false);
+                            self.mxp_on();
                         }
                     }
                     telnet::TERMINAL_TYPE if !self.config.terminal_identification.is_empty() => {
