@@ -694,8 +694,7 @@ impl Transformer {
 
             Phase::Will => {
                 self.phase = Phase::Normal;
-                self.output.append(TelnetFragment::Do { code: c });
-                let will = match c {
+                let supported = match c {
                     telnet::COMPRESS | telnet::COMPRESS2 if self.config.disable_compression => {
                         false
                     }
@@ -723,10 +722,9 @@ impl Transformer {
                     _ if self.config.will.contains(&c) => true,
                     _ => false,
                 };
-                self.input.append(&telnet::supports_do(c, will));
-                if will {
-                    self.output.append(TelnetFragment::Will { code: c });
-                }
+                self.input.append(&telnet::supports_do(c, supported));
+                self.output
+                    .append(TelnetFragment::Will { code: c, supported });
             }
 
             Phase::Wont => {
@@ -736,12 +734,13 @@ impl Transformer {
                         .append(TelnetFragment::SetEcho { should_echo: true });
                 }
                 self.input.append(&telnet::supports_do(c, false));
+                self.output.append(TelnetFragment::Wont { code: c });
             }
 
             Phase::Do => {
                 self.phase = Phase::Normal;
 
-                let will = match c {
+                let supported = match c {
                     telnet::SGA | telnet::MUD_SPECIFIC | telnet::ECHO | telnet::CHARSET => true,
                     telnet::TERMINAL_TYPE => {
                         self.ttype_sequence = 0;
@@ -763,7 +762,9 @@ impl Transformer {
                     _ if self.config.will.contains(&c) => true,
                     _ => false,
                 };
-                self.input.append(&telnet::supports_will(c, will));
+                self.input.append(&telnet::supports_will(c, supported));
+                self.output
+                    .append(TelnetFragment::Do { code: c, supported });
             }
 
             Phase::Dont => {
@@ -774,6 +775,7 @@ impl Transformer {
                     _ => (),
                 }
                 self.input.append(&telnet::supports_will(c, false));
+                self.output.append(TelnetFragment::Dont { code: c });
             }
 
             Phase::Sb if c == telnet::COMPRESS => self.phase = Phase::Compress,
