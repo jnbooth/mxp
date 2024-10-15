@@ -694,6 +694,7 @@ impl Transformer {
 
             Phase::Will => {
                 self.phase = Phase::Normal;
+                self.output.append(TelnetFragment::Do { code: c });
                 let will = match c {
                     telnet::COMPRESS | telnet::COMPRESS2 if self.config.disable_compression => {
                         false
@@ -719,13 +720,13 @@ impl Transformer {
                         }
                     },
                     telnet::WILL_EOR => self.config.convert_ga_to_newline,
-                    _ if self.config.will.contains(&c) => {
-                        self.output.append(TelnetFragment::Will { code: c });
-                        true
-                    }
+                    _ if self.config.will.contains(&c) => true,
                     _ => false,
                 };
                 self.input.append(&telnet::supports_do(c, will));
+                if will {
+                    self.output.append(TelnetFragment::Will { code: c });
+                }
             }
 
             Phase::Wont => {
@@ -759,10 +760,7 @@ impl Transformer {
                             true
                         }
                     },
-                    _ if self.config.will.contains(&c) => {
-                        self.output.append(TelnetFragment::Do { code: c });
-                        true
-                    }
+                    _ if self.config.will.contains(&c) => true,
                     _ => false,
                 };
                 self.input.append(&telnet::supports_will(c, will));
