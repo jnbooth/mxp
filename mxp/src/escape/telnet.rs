@@ -174,6 +174,22 @@ pub fn find_charset(data: &[u8], utf8: bool) -> &'static [u8] {
     }
 }
 
+pub const fn naws(width: u16, height: u16) -> [u8; 9] {
+    let [width_high, width_low] = width.to_be_bytes();
+    let [height_high, height_low] = height.to_be_bytes();
+    [
+        IAC,
+        SB,
+        NAWS,
+        width_high,
+        width_low,
+        height_high,
+        height_low,
+        IAC,
+        SE,
+    ]
+}
+
 pub const fn supports_do(code: u8, supports: bool) -> [u8; 3] {
     [IAC, if supports { DO } else { DONT }, code]
 }
