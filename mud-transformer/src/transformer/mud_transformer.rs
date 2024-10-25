@@ -9,7 +9,7 @@ use super::phase::Phase;
 use super::tag::{Tag, TagList};
 use crate::output::{
     BufferedOutput, EffectFragment, EntityFragment, EntitySetter, OutputDrain, OutputFragment,
-    TelnetFragment, TermColor, TextStyle,
+    TelnetFragment, TelnetSource, TelnetVerb, TermColor, TextStyle,
 };
 use crate::receive::{Decompress, ReceiveCursor};
 use enumeration::EnumSet;
@@ -694,6 +694,11 @@ impl Transformer {
 
             Phase::Will => {
                 self.phase = Phase::Normal;
+                self.output.append(TelnetFragment::Negotiation {
+                    source: TelnetSource::Server,
+                    verb: TelnetVerb::Will,
+                    code: c,
+                });
                 let supported = match c {
                     telnet::COMPRESS | telnet::COMPRESS2 if self.config.disable_compression => {
                         false
@@ -723,23 +728,43 @@ impl Transformer {
                     _ => false,
                 };
                 self.input.append(&telnet::supports_do(c, supported));
-                self.output
-                    .append(TelnetFragment::Will { code: c, supported });
+                self.output.append(TelnetFragment::Negotiation {
+                    source: TelnetSource::Client,
+                    verb: if supported {
+                        TelnetVerb::Do
+                    } else {
+                        TelnetVerb::Dont
+                    },
+                    code: c,
+                });
             }
 
             Phase::Wont => {
                 self.phase = Phase::Normal;
+                self.output.append(TelnetFragment::Negotiation {
+                    source: TelnetSource::Server,
+                    verb: TelnetVerb::Wont,
+                    code: c,
+                });
                 if c == telnet::ECHO && !self.config.no_echo_off {
                     self.output
                         .append(TelnetFragment::SetEcho { should_echo: true });
                 }
                 self.input.append(&telnet::supports_do(c, false));
-                self.output.append(TelnetFragment::Wont { code: c });
+                self.output.append(TelnetFragment::Negotiation {
+                    source: TelnetSource::Client,
+                    code: c,
+                    verb: TelnetVerb::Dont,
+                });
             }
 
             Phase::Do => {
                 self.phase = Phase::Normal;
-
+                self.output.append(TelnetFragment::Negotiation {
+                    source: TelnetSource::Server,
+                    verb: TelnetVerb::Do,
+                    code: c,
+                });
                 let supported = match c {
                     telnet::SGA | telnet::MUD_SPECIFIC | telnet::ECHO | telnet::CHARSET => true,
                     telnet::TERMINAL_TYPE => {
@@ -763,11 +788,23 @@ impl Transformer {
                     _ => false,
                 };
                 self.input.append(&telnet::supports_will(c, supported));
-                self.output
-                    .append(TelnetFragment::Do { code: c, supported });
+                self.output.append(TelnetFragment::Negotiation {
+                    source: TelnetSource::Client,
+                    verb: if supported {
+                        TelnetVerb::Will
+                    } else {
+                        TelnetVerb::Wont
+                    },
+                    code: c,
+                });
             }
 
             Phase::Dont => {
+                self.output.append(TelnetFragment::Negotiation {
+                    source: TelnetSource::Server,
+                    verb: TelnetVerb::Dont,
+                    code: c,
+                });
                 self.phase = Phase::Normal;
                 match c {
                     telnet::MXP if self.mxp_active => self.mxp_off(true),
@@ -775,7 +812,11 @@ impl Transformer {
                     _ => (),
                 }
                 self.input.append(&telnet::supports_will(c, false));
-                self.output.append(TelnetFragment::Dont { code: c });
+                self.output.append(TelnetFragment::Negotiation {
+                    source: TelnetSource::Client,
+                    verb: TelnetVerb::Wont,
+                    code: c,
+                });
             }
 
             Phase::Sb if c == telnet::COMPRESS => self.phase = Phase::Compress,

@@ -7,7 +7,7 @@ pub use color::TermColor;
 mod fragment;
 pub use fragment::{
     EffectFragment, EntityFragment, Output, OutputDrain, OutputFragment, TelnetFragment,
-    TextFragment,
+    TelnetSource, TelnetVerb, TextFragment,
 };
 
 mod shared_string;

@@ -3,7 +3,7 @@ use std::num::NonZeroU8;
 use std::vec;
 
 use bytes::Bytes;
-use enumeration::EnumSet;
+use enumeration::{Enum, EnumSet};
 
 use super::shared_string::SharedString;
 use super::span::TextStyle;
@@ -206,17 +206,39 @@ impl From<mxp::Stat> for OutputFragment {
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+pub enum TelnetSource {
+    Client,
+    Server,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+pub enum TelnetVerb {
+    Do,
+    Dont,
+    Will,
+    Wont,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TelnetFragment {
-    Do { code: u8, supported: bool },
-    Dont { code: u8 },
     IacGa,
-    Mxp { enabled: bool },
+    Mxp {
+        enabled: bool,
+    },
     Naws,
-    SetEcho { should_echo: bool },
-    Subnegotiation { code: u8, data: Bytes },
-    Will { code: u8, supported: bool },
-    Wont { code: u8 },
+    Negotiation {
+        source: TelnetSource,
+        verb: TelnetVerb,
+        code: u8,
+    },
+    SetEcho {
+        should_echo: bool,
+    },
+    Subnegotiation {
+        code: u8,
+        data: Bytes,
+    },
 }
 
 impl From<TelnetFragment> for OutputFragment {
