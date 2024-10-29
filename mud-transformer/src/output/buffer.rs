@@ -34,6 +34,8 @@ pub struct BufferedOutput {
     spans: SpanList,
     variables: mxp::EntityMap,
 
+    in_line: bool,
+    last_line_start: usize,
     last_linebreak: Option<usize>,
 
     ansi_flags: EnumSet<TextStyle>,
@@ -62,6 +64,8 @@ impl BufferedOutput {
             buf: BytesMut::new(),
             fragments: Vec::new(),
             ignore_mxp_colors: false,
+            in_line: false,
+            last_line_start: 0,
             last_linebreak: None,
             colors: Vec::new(),
             variables: mxp::EntityMap::new(),
@@ -106,9 +110,10 @@ impl BufferedOutput {
     }
 
     pub fn drain_complete(&mut self) -> OutputDrain {
-        match self.last_linebreak.take() {
-            Some(i) => self.fragments.drain(..=i),
-            None => self.fragments.drain(self.fragments.len()..),
+        if self.in_line {
+            self.fragments.drain(..self.last_line_start)
+        } else {
+            self.fragments.drain(..)
         }
     }
 
@@ -117,19 +122,16 @@ impl BufferedOutput {
         if fragment.should_flush() {
             self.flush();
             if fragment.is_newline() {
-                self.last_linebreak = Some(self.fragments.len());
+                self.in_line = false;
             }
         }
         if !fragment.is_visual() {
-            let len = self.fragments.len();
-            if match self.last_linebreak {
-                None => true,
-                Some(i) => i + 1 == len,
-            } {
-                self.last_linebreak = Some(len);
-            }
             self.fragments.push(Output::from(fragment));
             return;
+        }
+        if !self.in_line && !fragment.is_newline() {
+            self.in_line = true;
+            self.last_line_start = self.fragments.len();
         }
         let Some(span) = self.spans.get() else {
             self.fragments.push(Output::from(fragment));
