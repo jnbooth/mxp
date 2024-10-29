@@ -122,7 +122,10 @@ impl BufferedOutput {
         }
         if !fragment.is_visual() {
             let len = self.fragments.len();
-            if self.last_linebreak == Some(len - 1) {
+            if match self.last_linebreak {
+                None => true,
+                Some(i) => i + 1 == len,
+            } {
                 self.last_linebreak = Some(len);
             }
             self.fragments.push(Output::from(fragment));
