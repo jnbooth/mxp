@@ -70,6 +70,10 @@ impl BufferedOutput {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.fragments.is_empty() && self.buf.is_empty()
+    }
+
     pub fn set_colors(&mut self, colors: Vec<RgbColor>) {
         self.colors = colors;
     }

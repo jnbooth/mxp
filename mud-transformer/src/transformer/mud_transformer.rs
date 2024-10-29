@@ -125,6 +125,10 @@ impl Transformer {
         self.config = config;
     }
 
+    pub fn has_output(&self) -> bool {
+        !self.output.is_empty()
+    }
+
     pub fn drain_output(&mut self) -> OutputDrain {
         self.output.drain_complete()
     }
