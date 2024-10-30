@@ -111,7 +111,9 @@ impl BufferedOutput {
 
     pub fn drain_complete(&mut self) -> OutputDrain {
         if self.in_line {
-            self.fragments.drain(..self.last_line_start)
+            let last_line_start = self.last_line_start;
+            self.last_line_start = 0;
+            self.fragments.drain(..last_line_start)
         } else {
             self.fragments.drain(..)
         }
