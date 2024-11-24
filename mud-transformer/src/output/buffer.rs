@@ -246,10 +246,10 @@ impl BufferedOutput {
     pub fn append_server_status(&mut self, key: &[u8], value: &[u8]) {
         self.flush();
         self.buf.extend_from_slice(key);
-        let key = self.buf.split().freeze();
+        let variable = self.buf.split().freeze();
         self.buf.extend_from_slice(value);
         let value = self.buf.split().freeze();
-        self.append(TelnetFragment::ServerStatus { key, value });
+        self.append(TelnetFragment::ServerStatus { variable, value });
     }
 
     pub fn set_ansi_flag(&mut self, flag: TextStyle) {

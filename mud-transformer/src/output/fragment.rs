@@ -233,7 +233,7 @@ pub enum TelnetFragment {
         code: u8,
     },
     ServerStatus {
-        key: Bytes,
+        variable: Bytes,
         value: Bytes,
     },
     SetEcho {
