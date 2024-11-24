@@ -1,6 +1,8 @@
 mod config;
 pub use config::{Tag, TransformerConfig, UseMxp};
 
+mod cursor;
+
 mod input;
 pub use input::Drain as InputDrain;
 

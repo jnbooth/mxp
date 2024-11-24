@@ -4,6 +4,7 @@ use std::num::NonZeroU8;
 use std::{io, mem};
 
 use super::config::{TransformerConfig, UseMxp};
+use super::cursor::ReceiveCursor;
 use super::input::{BufferedInput, Drain as InputDrain};
 use super::phase::Phase;
 use super::tag::{Tag, TagList};
@@ -12,7 +13,6 @@ use crate::output::{
     TelnetFragment, TelnetSource, TelnetVerb, TextStyle,
 };
 use crate::protocol::{self, ansi, charset, mccp, mnes, mssp, mtts, Negotiate};
-use crate::receive::ReceiveCursor;
 use enumeration::EnumSet;
 use mxp::escape::telnet;
 
