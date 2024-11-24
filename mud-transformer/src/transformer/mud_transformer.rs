@@ -570,7 +570,11 @@ impl Transformer {
                     protocol::MCCP1 | protocol::MCCP2 => {
                         !self.config.disable_compression && self.decompress.will(c)
                     }
-                    protocol::SGA | protocol::MUD_SPECIFIC | protocol::CHARSET => true,
+                    protocol::SGA
+                    | protocol::MUD_SPECIFIC
+                    | protocol::CHARSET
+                    | protocol::MNES
+                    | protocol::MSSP => true,
                     protocol::ECHO if self.config.no_echo_off => false,
                     protocol::ECHO => {
                         self.output
