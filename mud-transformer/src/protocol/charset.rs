@@ -1,7 +1,8 @@
 use enumeration::{Enum, EnumSet};
 use std::fmt::{self, Display, Formatter};
 
-use crate::TransformerConfig;
+use super::Negotiate;
+use crate::transformer::TransformerConfig;
 
 /// Negotiate About Character Set
 pub const CODE: u8 = 42;
@@ -48,13 +49,6 @@ impl Charsets {
             inner: EnumSet::new(),
         }
     }
-
-    pub fn subnegotiation(self, config: &TransformerConfig) -> Subnegotiation {
-        Subnegotiation {
-            charsets: self.inner,
-            utf8: !config.disable_utf8,
-        }
-    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -73,5 +67,18 @@ impl Display for Subnegotiation {
             "\x03"
         };
         f.write_str(sequence)
+    }
+}
+
+impl Negotiate for Charsets {
+    const CODE: u8 = CODE;
+
+    type Output<'a> = Subnegotiation;
+
+    fn negotiate(self, config: &TransformerConfig) -> Subnegotiation {
+        Subnegotiation {
+            charsets: self.inner,
+            utf8: !config.disable_utf8,
+        }
     }
 }

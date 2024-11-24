@@ -19,6 +19,9 @@ pub use mtts::CODE as MTTS;
 pub(crate) mod naws;
 pub use naws::CODE as NAWS;
 
+mod negotiate;
+pub(crate) use negotiate::Negotiate;
+
 /// Aardwolf Protocol
 ///
 /// https://www.aardwolf.com/blog/2008/07/10/telnet-negotiation-control-mud-client-interaction/

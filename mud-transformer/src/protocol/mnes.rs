@@ -1,7 +1,7 @@
 use enumeration::{Enum, EnumSet};
 use std::fmt::{self, Display, Formatter};
 
-use super::mtts;
+use super::{mtts, Negotiate};
 use crate::transformer::TransformerConfig;
 
 /// MUD New-Environ Standard
@@ -115,14 +115,6 @@ impl Variables {
             prefix: "\x02",
         }
     }
-
-    pub fn subnegotiation(self, config: &TransformerConfig) -> Subnegotiation {
-        Subnegotiation {
-            config,
-            prefix: self.prefix,
-            variables: self.inner,
-        }
-    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -139,5 +131,19 @@ impl<'a> Display for Subnegotiation<'a> {
             variable.fmt(f, self.config)?;
         }
         Ok(())
+    }
+}
+
+impl Negotiate for Variables {
+    const CODE: u8 = CODE;
+
+    type Output<'a> = Subnegotiation<'a>;
+
+    fn negotiate(self, config: &TransformerConfig) -> Subnegotiation {
+        Subnegotiation {
+            config,
+            prefix: self.prefix,
+            variables: self.inner,
+        }
     }
 }

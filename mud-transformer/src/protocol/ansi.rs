@@ -2,8 +2,7 @@ use enumeration::Enum;
 use mxp::escape::ansi;
 use mxp::RgbColor;
 
-use crate::output::{BufferedOutput, TermColor};
-use crate::TextStyle;
+use crate::output::{BufferedOutput, TermColor, TextStyle};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
 pub enum Palette {

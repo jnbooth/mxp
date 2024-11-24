@@ -11,7 +11,7 @@ use crate::output::{
     BufferedOutput, EffectFragment, EntityFragment, EntitySetter, OutputDrain, OutputFragment,
     TelnetFragment, TelnetSource, TelnetVerb, TextStyle,
 };
-use crate::protocol::{self, ansi, charset, mccp, mnes, mssp, mtts};
+use crate::protocol::{self, ansi, charset, mccp, mnes, mssp, mtts, Negotiate};
 use crate::receive::ReceiveCursor;
 use enumeration::EnumSet;
 use mxp::escape::telnet;
@@ -103,6 +103,13 @@ impl Transformer {
         }
     }
 
+    pub fn subnegotiate<T: Negotiate>(&mut self, negotiator: T) {
+        self.input.append([telnet::IAC, telnet::SB, T::CODE]);
+        let subnegotiation = negotiator.negotiate(&self.config);
+        write!(self.input, "{subnegotiation}").unwrap();
+        self.input.append([telnet::IAC, telnet::SE]);
+    }
+
     pub fn set_config(&mut self, mut config: TransformerConfig) {
         mem::swap(&mut self.config, &mut config);
         if self.config.ignore_mxp_colors {
@@ -122,8 +129,7 @@ impl Transformer {
         if mnes_updates.is_empty() {
             return;
         }
-        self.input
-            .subnegotiate(mnes::CODE, &mnes_updates.subnegotiation(&self.config));
+        self.subnegotiate(mnes_updates);
     }
 
     pub fn has_output(&self) -> bool {
@@ -715,18 +721,13 @@ impl Transformer {
                     }
                     protocol::MTTS if !self.config.terminal_identification.is_empty() => {
                         if self.subnegotiation_data.first() == Some(&mtts::SEND) {
-                            self.input.subnegotiate(
-                                protocol::MTTS,
-                                &self.ttype_negotiator.subnegotiation(&self.config),
-                            );
+                            self.subnegotiate(self.ttype_negotiator);
+                            self.ttype_negotiator.advance();
                         }
                     }
                     protocol::CHARSET => {
                         self.charsets = charset::Charsets::from(&self.subnegotiation_data);
-                        self.input.subnegotiate(
-                            protocol::CHARSET,
-                            &self.charsets.subnegotiation(&self.config),
-                        );
+                        self.subnegotiate(self.charsets);
                     }
                     protocol::MSSP => {
                         for (variable, value) in mssp::iter(&self.subnegotiation_data) {
@@ -735,10 +736,7 @@ impl Transformer {
                     }
                     protocol::MNES => {
                         self.mnes_variables = mnes::Variables::from(&self.subnegotiation_data);
-                        self.input.subnegotiate(
-                            protocol::MNES,
-                            &self.mnes_variables.subnegotiation(&self.config),
-                        );
+                        self.subnegotiate(self.mnes_variables);
                     }
                     code => {
                         self.output

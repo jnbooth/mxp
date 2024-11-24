@@ -1,7 +1,5 @@
-use std::fmt::{self, Display};
+use std::fmt;
 use std::io::{self, BufRead, IoSliceMut, Read, Write};
-
-use mxp::escape::telnet;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BufferedInput {
@@ -36,12 +34,6 @@ impl BufferedInput {
             external_cursor: &mut self.cursor,
             buf: &mut self.buf,
         })
-    }
-
-    pub fn subnegotiate<T: Display>(&mut self, code: u8, subnegotiation: &T) {
-        self.buf.extend_from_slice(&[telnet::IAC, telnet::SB, code]);
-        write!(self.buf, "{subnegotiation}").unwrap();
-        self.buf.extend_from_slice(&[telnet::IAC, telnet::SE]);
     }
 }
 

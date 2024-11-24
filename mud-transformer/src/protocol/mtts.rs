@@ -1,5 +1,7 @@
-use crate::TransformerConfig;
 use std::fmt::{self, Display, Formatter};
+
+use super::Negotiate;
+use crate::transformer::TransformerConfig;
 
 /// MUD Terminal Type Standard
 ///
@@ -47,14 +49,12 @@ impl Negotiator {
         self.sequence = 0;
     }
 
-    pub fn subnegotiation<'a>(&'a mut self, config: &'a TransformerConfig) -> Subnegotiation<'a> {
-        let sequence = self.sequence;
+    pub fn advance(&mut self) {
         self.sequence = if self.sequence == 2 {
             0
         } else {
             self.sequence + 1
         };
-        Subnegotiation { config, sequence }
     }
 }
 
@@ -71,6 +71,19 @@ impl<'a> Display for Subnegotiation<'a> {
             0 => f.write_str(&self.config.terminal_identification),
             1 => f.write_str("ANSI"),
             _ => bitmask(self.config).fmt(f),
+        }
+    }
+}
+
+impl Negotiate for Negotiator {
+    const CODE: u8 = CODE;
+
+    type Output<'a> = Subnegotiation<'a>;
+
+    fn negotiate(self, config: &TransformerConfig) -> Subnegotiation {
+        Subnegotiation {
+            config,
+            sequence: self.sequence,
         }
     }
 }
