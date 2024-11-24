@@ -5,6 +5,9 @@ pub(crate) mod mccp;
 pub use mccp::CODE_V1 as MCCP1;
 pub use mccp::CODE_V2 as MCCP2;
 
+pub(crate) mod mnes;
+pub use mnes::CODE as MNES;
+
 pub(crate) mod mssp;
 pub use mssp::CODE as MSSP;
 

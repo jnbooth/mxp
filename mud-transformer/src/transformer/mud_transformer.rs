@@ -11,7 +11,7 @@ use crate::output::{
     BufferedOutput, EffectFragment, EntityFragment, EntitySetter, OutputDrain, OutputFragment,
     TelnetFragment, TelnetSource, TelnetVerb, TermColor, TextStyle,
 };
-use crate::protocol::{self, charset, mccp, mssp, mtts};
+use crate::protocol::{self, charset, mccp, mnes, mssp, mtts};
 use crate::receive::ReceiveCursor;
 use enumeration::EnumSet;
 use mxp::escape::{ansi, telnet};
@@ -43,6 +43,7 @@ pub struct Transformer {
 
     charsets: charset::Charsets,
     decompress: mccp::Decompress,
+    mnes_variables: mnes::Variables,
     ttype_negotiator: mtts::Negotiator,
 
     ansi_color: RgbColor,
@@ -89,6 +90,7 @@ impl Transformer {
 
             charsets: charset::Charsets::new(),
             decompress: mccp::Decompress::new(),
+            mnes_variables: mnes::Variables::new(),
             ttype_negotiator: mtts::Negotiator::new(),
 
             subnegotiation_type: 0,
@@ -119,6 +121,12 @@ impl Transformer {
             UseMxp::Never => self.mxp_off(true),
             UseMxp::Command | UseMxp::Query => (),
         }
+        let mnes_updates = self.mnes_variables.changes(&config, &self.config);
+        if mnes_updates.is_empty() {
+            return;
+        }
+        self.input
+            .subnegotiate(mnes::CODE, &mnes_updates.subnegotiation(&self.config));
     }
 
     pub fn has_output(&self) -> bool {
@@ -757,7 +765,8 @@ impl Transformer {
                     | protocol::MUD_SPECIFIC
                     | protocol::ECHO
                     | protocol::CHARSET
-                    | protocol::MSSP => true,
+                    | protocol::MSSP
+                    | protocol::MNES => true,
                     protocol::MTTS => {
                         self.ttype_negotiator.reset();
                         true
@@ -799,6 +808,7 @@ impl Transformer {
                 match c {
                     protocol::MXP if self.mxp_active => self.mxp_off(true),
                     protocol::MTTS => self.ttype_negotiator.reset(),
+                    protocol::MNES => self.mnes_variables.clear(),
                     _ => (),
                 }
                 self.input.append(telnet::supports_will(c, false));
@@ -861,6 +871,13 @@ impl Transformer {
                         for (variable, value) in mssp::iter(&self.subnegotiation_data) {
                             self.output.append_server_status(variable, value);
                         }
+                    }
+                    protocol::MNES => {
+                        self.mnes_variables = mnes::Variables::from(&self.subnegotiation_data);
+                        self.input.subnegotiate(
+                            protocol::MNES,
+                            &self.mnes_variables.subnegotiation(&self.config),
+                        );
                     }
                     code => {
                         self.output
