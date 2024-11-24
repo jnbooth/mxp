@@ -2,9 +2,17 @@ use std::io::{self, BufRead};
 
 use flate2::FlushDecompress;
 
+/// MUD Client Compression Protocol v1
+pub const CODE_V1: u8 = 85;
+
+/// MUD Client Compression Protocol v2
+pub const CODE_V2: u8 = 86;
+
 #[derive(Debug)]
 pub struct Decompress {
     inner: flate2::Decompress,
+    active: bool,
+    supports_mccp_2: bool,
 }
 
 impl Default for Decompress {
@@ -17,6 +25,27 @@ impl Decompress {
     pub fn new() -> Self {
         Self {
             inner: flate2::Decompress::new(true),
+            active: false,
+            supports_mccp_2: false,
+        }
+    }
+
+    pub const fn active(&self) -> bool {
+        self.active
+    }
+
+    pub fn set_active(&mut self, active: bool) {
+        self.active = active;
+    }
+
+    pub fn will(&mut self, code: u8) -> bool {
+        match code {
+            CODE_V1 => !self.supports_mccp_2,
+            CODE_V2 => {
+                self.supports_mccp_2 = true;
+                true
+            }
+            _ => false,
         }
     }
 

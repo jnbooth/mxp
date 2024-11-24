@@ -185,7 +185,7 @@ pub enum Action<S> {
 }
 
 impl<S: AsRef<str>> Action<S> {
-    pub fn new<'a, D: Decoder>(action: ActionKind, scanner: Scan<'a, D>) -> crate::Result<Self>
+    pub fn new<'a, D>(action: ActionKind, scanner: Scan<'a, D>) -> crate::Result<Self>
     where
         D: Decoder<Output<'a> = S>,
     {

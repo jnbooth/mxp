@@ -13,6 +13,9 @@ macro_rules! const_non_zero {
     };
 }
 
+pub mod protocol;
+pub use protocol::naws::subnegotiate as naws;
+
 mod receive;
 
 mod output;

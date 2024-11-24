@@ -132,7 +132,8 @@ impl EntityMap {
                         return None;
                     }
                 } else {
-                    entity.value = value.to_owned();
+                    entity.value.clear();
+                    entity.value.push_str(value);
                     entity.apply_keywords(keywords);
                 }
                 entity
