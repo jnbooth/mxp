@@ -9,13 +9,12 @@ use super::phase::Phase;
 use super::tag::{Tag, TagList};
 use crate::output::{
     BufferedOutput, EffectFragment, EntityFragment, EntitySetter, OutputDrain, OutputFragment,
-    TelnetFragment, TelnetSource, TelnetVerb, TermColor, TextStyle,
+    TelnetFragment, TelnetSource, TelnetVerb, TextStyle,
 };
-use crate::protocol::{self, charset, mccp, mnes, mssp, mtts};
+use crate::protocol::{self, ansi, charset, mccp, mnes, mssp, mtts};
 use crate::receive::ReceiveCursor;
 use enumeration::EnumSet;
-use mxp::escape::{ansi, telnet};
-use mxp::RgbColor;
+use mxp::escape::telnet;
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
     if auth.is_empty() {
@@ -46,8 +45,7 @@ pub struct Transformer {
     mnes_variables: mnes::Variables,
     ttype_negotiator: mtts::Negotiator,
 
-    ansi_color: RgbColor,
-    ansi_code: u8,
+    ansi: ansi::Interpreter,
     subnegotiation_data: Vec<u8>,
     subnegotiation_type: u8,
     utf8_sequence: Vec<u8>,
@@ -88,6 +86,7 @@ impl Transformer {
             mxp_tags: TagList::new(),
             mxp_state,
 
+            ansi: ansi::Interpreter::new(),
             charsets: charset::Charsets::new(),
             decompress: mccp::Decompress::new(),
             mnes_variables: mnes::Variables::new(),
@@ -95,8 +94,6 @@ impl Transformer {
 
             subnegotiation_type: 0,
             subnegotiation_data: Vec::new(),
-            ansi_code: 0,
-            ansi_color: RgbColor::rgb(0, 0, 0),
 
             utf8_sequence: Vec::with_capacity(4),
             output,
@@ -449,119 +446,6 @@ impl Transformer {
         self.mxp_state = mxp_state;
     }
 
-    fn interpret_ansi(&mut self, code: u8) {
-        match code {
-            ansi::RESET => self.output.reset_ansi(),
-
-            ansi::BOLD => self.output.set_ansi_flag(TextStyle::Bold),
-            ansi::BLINK | ansi::SLOW_BLINK | ansi::FAST_BLINK => {
-                self.output.set_ansi_flag(TextStyle::Italic);
-            }
-            ansi::UNDERLINE => self.output.set_ansi_flag(TextStyle::Underline),
-            ansi::INVERSE => self.output.set_ansi_flag(TextStyle::Inverse),
-            ansi::STRIKEOUT => self.output.set_ansi_flag(TextStyle::Strikeout),
-
-            ansi::CANCEL_BOLD => self.output.unset_ansi_flag(TextStyle::Bold),
-            ansi::CANCEL_BLINK | ansi::CANCEL_SLOW_BLINK | ansi::CANCEL_FAST_BLINK => {
-                self.output.unset_ansi_flag(TextStyle::Italic);
-            }
-            ansi::CANCEL_UNDERLINE => self.output.unset_ansi_flag(TextStyle::Underline),
-            ansi::CANCEL_INVERSE => self.output.unset_ansi_flag(TextStyle::Inverse),
-            ansi::CANCEL_STRIKEOUT => self.output.unset_ansi_flag(TextStyle::Strikeout),
-
-            ansi::FG_256_COLOR => self.phase = Phase::Foreground256Start,
-            ansi::BG_256_COLOR => self.phase = Phase::Background256Start,
-            ansi::FG_DEFAULT => self.output.set_ansi_foreground(TermColor::WHITE),
-            ansi::BG_DEFAULT => self.output.set_ansi_background(TermColor::BLACK),
-            ansi::FG_BLACK..=ansi::FG_WHITE => self
-                .output
-                .set_ansi_foreground(TermColor::Ansi(code - ansi::FG_BLACK)),
-            ansi::BG_BLACK..=ansi::BG_WHITE => self
-                .output
-                .set_ansi_background(TermColor::Ansi(code - ansi::BG_BLACK)),
-            _ => (),
-        }
-    }
-
-    // See: https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
-    fn interpret_256_ansi(&mut self, code: u8) {
-        match self.phase {
-            Phase::Foreground256Start => match code {
-                5 => {
-                    self.ansi_code = 0;
-                    self.phase = Phase::Foreground256Finish;
-                }
-                2 => {
-                    self.ansi_code = 0;
-                    self.phase = Phase::Foreground24bFinish;
-                }
-                _ => self.phase = Phase::Normal,
-            },
-            Phase::Background256Start => match code {
-                5 => {
-                    self.ansi_code = 0;
-                    self.phase = Phase::Background256Finish;
-                }
-                2 => {
-                    self.ansi_code = 0;
-                    self.phase = Phase::Background24bFinish;
-                }
-                _ => self.phase = Phase::Normal,
-            },
-            Phase::Foreground256Finish => {
-                self.output
-                    .set_ansi_foreground(RgbColor::xterm(self.ansi_code));
-                self.phase = Phase::Normal;
-            }
-            Phase::Background256Finish => {
-                self.output
-                    .set_ansi_background(RgbColor::xterm(self.ansi_code));
-                self.phase = Phase::Normal;
-            }
-            Phase::Foreground24bFinish => {
-                self.ansi_color.r = code;
-                self.phase = Phase::Foreground24brFinish;
-            }
-            Phase::Background24bFinish => {
-                self.ansi_color.r = code;
-                self.phase = Phase::Background24brFinish;
-            }
-            Phase::Foreground24brFinish => {
-                self.ansi_color.g = code;
-                self.phase = Phase::Foreground24bgFinish;
-            }
-            Phase::Background24brFinish => {
-                self.ansi_color.g = code;
-                self.phase = Phase::Background24bgFinish;
-            }
-            Phase::Foreground24bgFinish => {
-                self.ansi_color.b = code;
-                self.phase = Phase::Foreground24bbFinish;
-            }
-            Phase::Background24bgFinish => {
-                self.ansi_color.b = code;
-                self.phase = Phase::Background24bbFinish;
-            }
-            Phase::Foreground24bbFinish => {
-                self.output.set_ansi_foreground(self.ansi_color);
-                self.phase = Phase::Normal;
-            }
-            Phase::Background24bbFinish => {
-                self.output.set_ansi_background(self.ansi_color);
-                self.phase = Phase::Normal;
-            }
-            _ => (),
-        }
-    }
-
-    fn interpret_code(&mut self) {
-        if self.phase == Phase::DoingCode {
-            self.interpret_ansi(self.ansi_code);
-        } else {
-            self.interpret_256_ansi(self.ansi_code);
-        }
-    }
-
     #[inline]
     pub fn receive(&mut self, bytes: &[u8], buf: &mut [u8]) -> io::Result<()> {
         if bytes.is_empty() {
@@ -616,47 +500,24 @@ impl Transformer {
 
         match self.phase {
             Phase::Esc if c == b'[' => {
-                self.phase = Phase::DoingCode;
-                self.ansi_code = 0;
+                self.phase = Phase::Ansi;
+                self.ansi.reset();
             }
             Phase::Esc => self.phase = Phase::Normal,
 
             Phase::Utf8Character => self.utf8_sequence.push(c),
 
-            Phase::DoingCode
-            | Phase::Foreground256Start
-            | Phase::Foreground256Finish
-            | Phase::Background256Start
-            | Phase::Background256Finish
-            | Phase::Foreground24bFinish
-            | Phase::Foreground24brFinish
-            | Phase::Foreground24bgFinish
-            | Phase::Foreground24bbFinish
-            | Phase::Background24bFinish
-            | Phase::Background24brFinish
-            | Phase::Background24bgFinish
-            | Phase::Background24bbFinish => match c {
-                b'm' => {
-                    self.interpret_code();
+            Phase::Ansi => match self.ansi.interpret(c, &mut self.output) {
+                ansi::Outcome::Continue => (),
+                ansi::Outcome::Done => self.phase = Phase::Normal,
+                ansi::Outcome::Mxp(mxp::Mode::RESET) => {
+                    self.mxp_off(false);
                     self.phase = Phase::Normal;
                 }
-                b';' | b':' => {
-                    self.interpret_code();
-                    self.ansi_code = 0;
-                }
-                b'z' => {
-                    let mode = mxp::Mode(self.ansi_code);
-                    if mode == mxp::Mode::RESET {
-                        self.mxp_off(false);
-                    } else {
-                        self.mxp_mode_change(Some(mode));
-                    }
+                ansi::Outcome::Mxp(mode) => {
+                    self.mxp_mode_change(Some(mode));
                     self.phase = Phase::Normal;
                 }
-                b'0'..=b'9' => {
-                    self.ansi_code = ansi::append_digit_to_code(self.ansi_code, c);
-                }
-                _ => self.phase = Phase::Normal,
             },
 
             Phase::Iac if c == telnet::IAC => (),

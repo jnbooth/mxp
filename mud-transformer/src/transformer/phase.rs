@@ -13,7 +13,7 @@ pub enum Phase {
     /// Received an escape
     Esc,
     /// Processing an ANSI escape sequence
-    DoingCode,
+    Ansi,
     /// Received TELNET IAC (interpret as command)
     Iac,
     /// Received TELNET WILL
@@ -34,34 +34,6 @@ pub enum Phase {
     Compress,
     /// Received TELNET IAC COMPRESS WILL
     CompressWill,
-
-    // see: https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
-    /// Received ESC[38;
-    Foreground256Start,
-    /// Received ESC[38;5;
-    Foreground256Finish,
-    /// Received ESC[48;
-    Background256Start,
-    /// Received ESC[48;5;
-    Background256Finish,
-
-    // see: https://en.wikipedia.org/wiki/ANSI_escape_code#24-bit
-    /// Received ESC[38;2;
-    Foreground24bFinish,
-    /// Received ESC[38;2;r;
-    Foreground24brFinish,
-    /// Received ESC[38;2;r;g;
-    Foreground24bgFinish,
-    /// Received ESC[38;2;r;g;b;
-    Foreground24bbFinish,
-    /// Received ESC[48;2;
-    Background24bFinish,
-    /// Received ESC[48;2;r;
-    Background24brFinish,
-    /// Received ESC[48;2;r;g;
-    Background24bgFinish,
-    /// Received ESC[48;2;r;g;b
-    Background24bbFinish,
 
     /// Received 110 xxxxx, 1110 xxxx, or 11110 xxx
     Utf8Character,

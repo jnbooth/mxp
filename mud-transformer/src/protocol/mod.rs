@@ -1,3 +1,5 @@
+pub(crate) mod ansi;
+
 pub(crate) mod charset;
 pub use charset::CODE as CHARSET;
 
