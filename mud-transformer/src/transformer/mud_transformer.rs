@@ -11,7 +11,7 @@ use crate::output::{
     BufferedOutput, EffectFragment, EntityFragment, EntitySetter, OutputDrain, OutputFragment,
     TelnetFragment, TelnetSource, TelnetVerb, TermColor, TextStyle,
 };
-use crate::protocol::{self, charset, mccp, mtts};
+use crate::protocol::{self, charset, mccp, mssp, mtts};
 use crate::receive::ReceiveCursor;
 use enumeration::EnumSet;
 use mxp::escape::{ansi, telnet};
@@ -45,10 +45,8 @@ pub struct Transformer {
     decompress: mccp::Decompress,
     ttype_negotiator: mtts::Negotiator,
 
-    ansi_blue: u8,
+    ansi_color: RgbColor,
     ansi_code: u8,
-    ansi_green: u8,
-    ansi_red: u8,
     subnegotiation_data: Vec<u8>,
     subnegotiation_type: u8,
     utf8_sequence: Vec<u8>,
@@ -96,9 +94,7 @@ impl Transformer {
             subnegotiation_type: 0,
             subnegotiation_data: Vec::new(),
             ansi_code: 0,
-            ansi_red: 0,
-            ansi_green: 0,
-            ansi_blue: 0,
+            ansi_color: RgbColor::rgb(0, 0, 0),
 
             utf8_sequence: Vec::with_capacity(4),
             output,
@@ -479,14 +475,6 @@ impl Transformer {
         }
     }
 
-    fn build_ansi_color(&self) -> RgbColor {
-        RgbColor {
-            r: self.ansi_red,
-            g: self.ansi_green,
-            b: self.ansi_blue,
-        }
-    }
-
     // See: https://en.wikipedia.org/wiki/ANSI_escape_code#8-bit
     fn interpret_256_ansi(&mut self, code: u8) {
         match self.phase {
@@ -523,35 +511,35 @@ impl Transformer {
                 self.phase = Phase::Normal;
             }
             Phase::Foreground24bFinish => {
-                self.ansi_red = code;
+                self.ansi_color.r = code;
                 self.phase = Phase::Foreground24brFinish;
             }
             Phase::Background24bFinish => {
-                self.ansi_red = code;
+                self.ansi_color.r = code;
                 self.phase = Phase::Background24brFinish;
             }
             Phase::Foreground24brFinish => {
-                self.ansi_green = code;
+                self.ansi_color.g = code;
                 self.phase = Phase::Foreground24bgFinish;
             }
             Phase::Background24brFinish => {
-                self.ansi_green = code;
+                self.ansi_color.g = code;
                 self.phase = Phase::Background24bgFinish;
             }
             Phase::Foreground24bgFinish => {
-                self.ansi_blue = code;
+                self.ansi_color.b = code;
                 self.phase = Phase::Foreground24bbFinish;
             }
             Phase::Background24bgFinish => {
-                self.ansi_blue = code;
+                self.ansi_color.b = code;
                 self.phase = Phase::Background24bbFinish;
             }
             Phase::Foreground24bbFinish => {
-                self.output.set_ansi_foreground(self.build_ansi_color());
+                self.output.set_ansi_foreground(self.ansi_color);
                 self.phase = Phase::Normal;
             }
             Phase::Background24bbFinish => {
-                self.output.set_ansi_background(self.build_ansi_color());
+                self.output.set_ansi_background(self.ansi_color);
                 self.phase = Phase::Normal;
             }
             _ => (),
@@ -765,9 +753,11 @@ impl Transformer {
                     code: c,
                 });
                 let supported = match c {
-                    protocol::SGA | protocol::MUD_SPECIFIC | protocol::ECHO | protocol::CHARSET => {
-                        true
-                    }
+                    protocol::SGA
+                    | protocol::MUD_SPECIFIC
+                    | protocol::ECHO
+                    | protocol::CHARSET
+                    | protocol::MSSP => true,
                     protocol::MTTS => {
                         self.ttype_negotiator.reset();
                         true
@@ -866,6 +856,11 @@ impl Transformer {
                             protocol::CHARSET,
                             &self.charsets.subnegotiation(&self.config),
                         );
+                    }
+                    protocol::MSSP => {
+                        for (variable, value) in mssp::iter(&self.subnegotiation_data) {
+                            self.output.append_server_status(variable, value);
+                        }
                     }
                     code => {
                         self.output

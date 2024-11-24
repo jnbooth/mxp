@@ -232,6 +232,10 @@ pub enum TelnetFragment {
         verb: TelnetVerb,
         code: u8,
     },
+    ServerStatus {
+        key: Bytes,
+        value: Bytes,
+    },
     SetEcho {
         should_echo: bool,
     },
