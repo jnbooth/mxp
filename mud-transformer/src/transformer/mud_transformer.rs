@@ -738,12 +738,11 @@ impl Transformer {
                         self.mnes_variables = mnes::Variables::from(&self.subnegotiation_data);
                         self.subnegotiate(self.mnes_variables);
                     }
-                    code => {
-                        self.output
-                            .append_subnegotiation(code, &self.subnegotiation_data);
-                        self.subnegotiation_data.clear();
-                    }
+                    _ => (),
                 }
+                self.output
+                    .append_subnegotiation(self.subnegotiation_type, &self.subnegotiation_data);
+                self.subnegotiation_data.clear();
             }
 
             Phase::MxpElement => match c {
