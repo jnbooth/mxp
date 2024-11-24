@@ -22,7 +22,9 @@ impl<'a> Iterator for Iter<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         let slice = self.inner.as_slice();
         let before = self.inner.position(|&c| c == 2)?;
-        let after = self.inner.position(|&c| c == 1).unwrap_or(slice.len());
-        Some((&slice[..before], &slice[before + 1..after]))
+        match self.inner.position(|&c| c == 1) {
+            Some(len) => Some((&slice[..before], &slice[before + 1..before + 1 + len])),
+            None => Some((&slice[..before], &slice[before + 1..])),
+        }
     }
 }
