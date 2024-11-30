@@ -533,8 +533,8 @@ impl Transformer {
                 match c {
                     telnet::EOR | telnet::GA => {
                         self.phase = Phase::Normal;
-                        self.output.append(TelnetFragment::IacGa);
-                        if self.config.convert_ga_to_newline {
+                        self.output.append(TelnetFragment::GoAhead);
+                        if c == telnet::GA && self.config.convert_ga_to_newline {
                             self.output.start_line();
                         }
                     }
@@ -589,7 +589,7 @@ impl Transformer {
                             true
                         }
                     },
-                    telnet::WILL_EOR => self.config.convert_ga_to_newline,
+                    telnet::WILL_EOR => true,
                     _ if self.config.will.contains(&c) => true,
                     _ => false,
                 };

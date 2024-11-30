@@ -222,7 +222,7 @@ pub enum TelnetVerb {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TelnetFragment {
-    IacGa,
+    GoAhead,
     Mxp {
         enabled: bool,
     },
