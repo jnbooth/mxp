@@ -35,7 +35,7 @@ pub struct BufferedOutput {
     variables: mxp::EntityMap,
 
     in_line: bool,
-    last_line_start: usize,
+    last_break: usize,
     last_linebreak: Option<usize>,
 
     ansi_flags: EnumSet<TextStyle>,
@@ -65,7 +65,7 @@ impl BufferedOutput {
             fragments: Vec::new(),
             ignore_mxp_colors: false,
             in_line: false,
-            last_line_start: 0,
+            last_break: 0,
             last_linebreak: None,
             colors: Vec::new(),
             variables: mxp::EntityMap::new(),
@@ -111,9 +111,9 @@ impl BufferedOutput {
 
     pub fn drain_complete(&mut self) -> OutputDrain {
         if self.in_line {
-            let last_line_start = self.last_line_start;
-            self.last_line_start = 0;
-            self.fragments.drain(..last_line_start)
+            let last_break = self.last_break;
+            self.last_break = 0;
+            self.fragments.drain(..last_break)
         } else {
             self.fragments.drain(..)
         }
@@ -128,12 +128,15 @@ impl BufferedOutput {
             }
         }
         if !fragment.is_visual() {
+            if fragment == OutputFragment::Telnet(TelnetFragment::GoAhead) {
+                self.last_break = self.fragments.len() + 1;
+            }
             self.fragments.push(Output::from(fragment));
             return;
         }
         if !self.in_line && !fragment.is_newline() {
             self.in_line = true;
-            self.last_line_start = self.fragments.len();
+            self.last_break = self.fragments.len();
         }
         let Some(span) = self.spans.get() else {
             self.fragments.push(Output::from(fragment));
