@@ -166,3 +166,40 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ExpireArgs<D::Output<'a>> {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn strings(strs: &[&str]) -> Vec<String> {
+        strs.iter().map(|s| (*s).to_owned()).collect()
+    }
+
+    #[test]
+    fn link_embedding() {
+        let link = Link::new("do &text;|(&text;)|&text;|other", None, SendTo::World, None)
+            .with_text("input");
+        assert_eq!(
+            (link.action.as_str(), link.prompts),
+            ("do input", strings(&["(input)", "input", "other"]))
+        );
+    }
+
+    #[test]
+    fn multi_action_link() {
+        let link = Link::new("a|b|c|d", Some("e"), SendTo::World, None);
+        assert_eq!(
+            (link.action.as_str(), link.prompts),
+            ("a", strings(&["b", "c", "d"]))
+        );
+    }
+
+    #[test]
+    fn multi_hint_link() {
+        let link = Link::new("a|b|c|d", Some("e|f|g"), SendTo::World, None);
+        assert_eq!(
+            (link.hint, link.prompts),
+            (Some("e".to_owned()), strings(&["f", "g"]))
+        );
+    }
+}

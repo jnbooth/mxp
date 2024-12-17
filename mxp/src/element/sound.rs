@@ -220,3 +220,37 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Music<D::Output<'a>> {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::{format_from_pairs, parse_from_pairs, StringPairs};
+
+    const COUNT_TEN: AudioRepetition = AudioRepetition::Count(match NonZeroU32::new(10) {
+        Some(n) => n,
+        None => unreachable!(),
+    });
+
+    const AUDIO_REPETITION_PAIRS: &StringPairs<AudioRepetition, 2> =
+        &[(AudioRepetition::Forever, "-1"), (COUNT_TEN, "10")];
+
+    #[test]
+    fn fmt_audio_repetition() {
+        let (actual, expected) = format_from_pairs(AUDIO_REPETITION_PAIRS);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parse_audio_repetition() {
+        let (actual, expected) = parse_from_pairs(AUDIO_REPETITION_PAIRS);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parse_audio_repetition_invalid() {
+        assert_eq!(
+            "0".parse::<AudioRepetition>(),
+            Err("0".parse::<NonZeroU32>().unwrap_err())
+        );
+    }
+}

@@ -101,3 +101,27 @@ impl<T: FromStr> FromStr for Dimension<T> {
         Ok(Self { amount, unit })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_utils::{format_from_pairs, parse_from_pairs, StringPairs};
+
+    const DIMENSION_PAIRS: &StringPairs<Dimension, 3> = &[
+        (Dimension::pixels(10), "10"),
+        (Dimension::character_height(20), "20c"),
+        (Dimension::percentage(30), "30%"),
+    ];
+
+    #[test]
+    fn fmt_dimension() {
+        let (actual, expected) = format_from_pairs(DIMENSION_PAIRS);
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn parse_dimension() {
+        let (actual, expected) = parse_from_pairs(DIMENSION_PAIRS);
+        assert_eq!(actual, expected);
+    }
+}

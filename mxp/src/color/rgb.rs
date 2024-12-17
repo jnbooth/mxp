@@ -92,3 +92,28 @@ impl FromStr for RgbColor {
         Ok(RgbColor::hex(code))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rgb_from_triple() {
+        assert_eq!(RgbColor::rgb(1, 2, 3), RgbColor { r: 1, g: 2, b: 3 });
+    }
+
+    #[test]
+    fn rgb_from_hex() {
+        assert_eq!(RgbColor::hex(0x123456), RgbColor::rgb(0x12, 0x34, 0x56));
+    }
+
+    #[test]
+    fn rgb_from_str() {
+        assert_eq!("#123456".parse(), Ok(RgbColor::rgb(0x12, 0x34, 0x56)));
+    }
+
+    #[test]
+    fn rgb_code() {
+        assert_eq!(RgbColor::rgb(0x12, 0x34, 0x56).code(), 0x123456);
+    }
+}

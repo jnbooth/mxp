@@ -17,3 +17,28 @@ pub fn validate(target: &str, error: ErrorKind) -> crate::Result<()> {
         Err(Error::new(target, error))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn empty_string_is_invalid() {
+        assert!(!is_valid(""));
+    }
+
+    #[test]
+    fn non_alphabetic_first_char_is_invalid() {
+        assert!(!is_valid("_test"));
+    }
+
+    #[test]
+    fn special_characters_are_invalid() {
+        assert!(!is_valid("abc!"));
+    }
+
+    #[test]
+    fn valid_string_is_valid() {
+        assert!(is_valid("aBc_-."));
+    }
+}

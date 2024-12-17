@@ -25,3 +25,22 @@ impl<K: FromStr> KeywordFilter for K {
         args.iter().filter(|arg| K::from_str(arg).is_err())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::keyword::ElementKeyword;
+
+    use super::*;
+
+    #[test]
+    fn filter_keywords() {
+        let args = ["thing1", "open", "thing2", "empty", "empty", "thing3"]
+            .into_iter()
+            .map(ToOwned::to_owned)
+            .collect::<Vec<String>>();
+        let non_keywords = <ElementKeyword as KeywordFilter>::iter(&args)
+            .map(String::as_str)
+            .collect::<Vec<&str>>();
+        assert_eq!(non_keywords, vec!["thing1", "thing2", "thing3"]);
+    }
+}

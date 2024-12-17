@@ -41,3 +41,43 @@ impl<'a> Iterator for PublishedIter<'a> {
 }
 
 impl<'a> FusedIterator for PublishedIter<'a> {}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::entity::EntityMap;
+    use crate::keyword::EntityKeyword;
+    use enumeration::EnumSet;
+
+    #[test]
+    fn published_iter() {
+        let mut map = EntityMap::new();
+        let published = enums![EntityKeyword::Publish];
+        let unpublished = EnumSet::new();
+        map.set("key1", "val1", Some("desc1".to_owned()), unpublished);
+        map.set("key2", "val2", Some("desc2".to_owned()), published);
+        map.set("key3", "val3", Some("desc3".to_owned()), published);
+        map.set("key4", "val4", Some("desc4".to_owned()), unpublished);
+        map.set("key5", "val5", None, published);
+        let mut published = map.published().collect::<Vec<_>>();
+        published.sort();
+        let expected = vec![
+            EntityInfo {
+                name: "key2",
+                value: "val2",
+                description: "desc2",
+            },
+            EntityInfo {
+                name: "key3",
+                value: "val3",
+                description: "desc3",
+            },
+            EntityInfo {
+                name: "key5",
+                value: "val5",
+                description: "",
+            },
+        ];
+        assert_eq!(published, expected);
+    }
+}

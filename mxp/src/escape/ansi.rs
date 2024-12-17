@@ -41,3 +41,16 @@ pub const BG_DEFAULT: u8 = 49;
 pub const fn append_digit_to_code(code: u8, digit: u8) -> u8 {
     code * 10 + (digit - b'0')
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn appends_digits_to_code() {
+        let mut code = 1;
+        code = append_digit_to_code(code, b'0');
+        code = append_digit_to_code(code, b'9');
+        assert_eq!(code, 109);
+    }
+}

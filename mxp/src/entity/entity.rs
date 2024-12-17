@@ -41,3 +41,38 @@ impl Entity {
             .join("|");
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn apply_publish() {
+        let mut entity = Entity::new(String::new());
+        entity.apply_keywords(enums![EntityKeyword::Publish]);
+        entity.apply_keywords(EnumSet::new());
+        assert!(entity.published);
+    }
+
+    #[test]
+    fn apply_private() {
+        let mut entity = Entity::new(String::new());
+        entity.apply_keywords(enums![EntityKeyword::Publish]);
+        entity.apply_keywords(EnumSet::new());
+        entity.apply_keywords(enums![EntityKeyword::Private]);
+        entity.apply_keywords(EnumSet::new());
+        assert!(!entity.published);
+    }
+
+    #[test]
+    fn add_and_remove() {
+        let mut entity = Entity::new("1".to_owned());
+        entity.add("2");
+        entity.add("3");
+        entity.add("");
+        entity.add("2");
+        entity.add("3");
+        entity.remove("2");
+        assert_eq!(entity.value, "1|3||3");
+    }
+}

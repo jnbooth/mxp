@@ -69,3 +69,20 @@ pub use parser::{validate, Error, ErrorKind, Words};
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub const VERSION: &str = "0.5";
+
+#[cfg(test)]
+mod test_utils;
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn match_ci_is_case_insensitive() {
+        let result = match_ci! {"teSt",
+            " TEST" => " TEST",
+            "TEst" => "TEst",
+            "teSt " => "teSt ",
+            _ => "unmatched"
+        };
+        assert_eq!(result, "TEst");
+    }
+}

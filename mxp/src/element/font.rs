@@ -110,3 +110,22 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Font<D::Output<'a>> {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn parse_fg_color() {
+        let fg = FgColor {
+            inner: "a,bold,b,black,c",
+        };
+        assert_eq!(
+            fg.iter().collect::<Vec<_>>(),
+            vec![
+                FontEffect::Style(FontStyle::Bold),
+                FontEffect::Color(RgbColor::BLACK)
+            ]
+        );
+    }
+}

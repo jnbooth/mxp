@@ -160,3 +160,125 @@ impl EntityMap {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn get_value<'a>(map: &'a EntityMap, key: &str) -> Option<&'a str> {
+        let entity = map.get(key)?;
+        Some(entity.value.as_str())
+    }
+
+    #[test]
+    fn hash_entities_are_global() {
+        assert!(EntityMap::new().is_global("#e"));
+    }
+
+    #[test]
+    fn globals_are_not_added_by_default() {
+        assert!(!EntityMap::new().is_global("lt"));
+    }
+
+    #[test]
+    fn globals_are_added_by_method() {
+        let mut map = EntityMap::new();
+        map.add_globals();
+        assert!(map.is_global("lt"));
+    }
+
+    #[test]
+    fn set_new() {
+        let mut map = EntityMap::new();
+        map.set("key", "value", None, EnumSet::new());
+        assert_eq!(get_value(&map, "key"), Some("value"));
+    }
+
+    #[test]
+    fn set_delete() {
+        let mut map = EntityMap::new();
+        map.set("key", "value", None, EnumSet::new());
+        map.set("key", "", None, enums![EntityKeyword::Delete]);
+        assert_eq!(get_value(&map, "key"), None);
+    }
+
+    #[test]
+    fn set_replace() {
+        let mut map = EntityMap::new();
+        map.set("key", "value", Some("desc1".to_owned()), EnumSet::new());
+        map.set(
+            "key",
+            "",
+            Some("desc2".to_owned()),
+            enums![EntityKeyword::Publish],
+        );
+        assert_eq!(
+            map.get("key"),
+            Some(&Entity {
+                value: String::new(),
+                published: true,
+                description: "desc2".to_owned()
+            })
+        );
+    }
+
+    #[test]
+    fn set_add_and_remove() {
+        let mut map = EntityMap::new();
+        map.set("key", "value1", None, enums![EntityKeyword::Add]);
+        map.set("key", "value2", None, enums![EntityKeyword::Add]);
+        map.set("key", "value3", None, enums![EntityKeyword::Add]);
+        map.set("key", "value2", None, enums![EntityKeyword::Remove]);
+        map.set("key", "x", None, enums![EntityKeyword::Remove]);
+        assert_eq!(get_value(&map, "key"), Some("value1|value3"));
+    }
+
+    #[test]
+    fn decode_entity_matched() {
+        let mut map = EntityMap::new();
+        map.set("key1", "value1", None, EnumSet::new());
+        map.set("key2", "value2", None, EnumSet::new());
+        assert_eq!(map.decode_entity("key1"), Ok(Some("value1")));
+    }
+
+    #[test]
+    fn decode_entity_unmatched() {
+        let mut map = EntityMap::new();
+        map.set("key2", "value2", None, EnumSet::new());
+        assert_eq!(map.decode_entity("key1"), Ok(None));
+    }
+
+    #[test]
+    fn decode_decimal() {
+        assert_eq!(EntityMap::new().decode_entity("#32"), Ok(Some("\x20")));
+    }
+
+    #[test]
+    fn decode_hex() {
+        assert_eq!(EntityMap::new().decode_entity("#x7F"), Ok(Some("\x7f")));
+    }
+
+    #[test]
+    fn decode_invalid_number() {
+        assert_eq!(
+            EntityMap::new().decode_entity("#x7z"),
+            Err(Error::new("#x7z", ErrorKind::InvalidEntityNumber))
+        );
+    }
+
+    #[test]
+    fn decode_below_range() {
+        assert_eq!(
+            EntityMap::new().decode_entity("#10"),
+            Err(Error::new("#10", ErrorKind::DisallowedEntityNumber))
+        );
+    }
+
+    #[test]
+    fn decode_above_range() {
+        assert_eq!(
+            EntityMap::new().decode_entity("#x90"),
+            Err(Error::new("#x90", ErrorKind::DisallowedEntityNumber))
+        );
+    }
+}

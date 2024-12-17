@@ -152,18 +152,3 @@ impl LineTagUpdate {
         })
     }
 }
-
-/*
-INDEX is the tag number (20-99) to change.
-
-WINDOWNAME specifies the name of a window to redirect the text to.
-
-GAG indicates that the text should be gagged from the main MUD window.
-
-FORE is the text color.
-
-BACK is the background color of the text.
-
-ENABLE and DISABLE can be used to turn this tag on or off.
-
- */

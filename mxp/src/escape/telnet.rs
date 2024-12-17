@@ -54,3 +54,29 @@ pub const fn supports_do(code: u8, supports: bool) -> [u8; 3] {
 pub const fn supports_will(code: u8, supports: bool) -> [u8; 3] {
     [IAC, if supports { WILL } else { WONT }, code]
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    const CODE: u8 = 10;
+
+    #[test]
+    fn formats_do() {
+        assert_eq!(supports_do(CODE, true), [IAC, DO, CODE]);
+    }
+
+    #[test]
+    fn formats_dont() {
+        assert_eq!(supports_do(CODE, false), [IAC, DONT, CODE]);
+    }
+
+    #[test]
+    fn formats_will() {
+        assert_eq!(supports_will(CODE, true), [IAC, WILL, CODE]);
+    }
+
+    #[test]
+    fn formats_wont() {
+        assert_eq!(supports_will(CODE, false), [IAC, WONT, CODE]);
+    }
+}
