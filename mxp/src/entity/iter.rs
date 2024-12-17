@@ -4,9 +4,9 @@ use std::iter::FusedIterator;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EntityInfo<'a> {
-    name: &'a str,
-    description: &'a str,
-    value: &'a str,
+    pub name: &'a str,
+    pub description: &'a str,
+    pub value: &'a str,
 }
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
