@@ -95,7 +95,7 @@ impl EntityMap {
             Entry::Vacant(entry) => entry.insert(Entity {
                 value: value.to_owned(),
                 published: keywords.contains(EntityKeyword::Publish),
-                description: String::new(),
+                description: description.unwrap_or_default(),
             }),
             Entry::Occupied(entry) if keywords.contains(EntityKeyword::Remove) => {
                 if entry.get().value == value {
