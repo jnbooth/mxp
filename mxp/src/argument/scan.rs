@@ -2,7 +2,7 @@ use super::keyword_filter::{KeywordFilter, NoKeywords};
 use crate::parser::{Error, ErrorKind};
 use casefold::ascii::CaseFoldMap;
 use enumeration::{Enum, EnumSet};
-use std::borrow::Borrow;
+use std::borrow::Cow;
 use std::marker::PhantomData;
 use std::num::ParseIntError;
 use std::ops::{Deref, DerefMut};
@@ -10,33 +10,25 @@ use std::str::FromStr;
 use std::{slice, str};
 
 pub trait Decoder {
-    type Output<'a>: AsRef<str>;
-
-    fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Self::Output<'a>>;
+    fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Cow<'a, str>>;
 }
 
 impl<D: Decoder> Decoder for &D {
-    type Output<'a> = D::Output<'a>;
-
-    fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Self::Output<'a>> {
+    fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Cow<'a, str>> {
         D::decode::<F>(self, s)
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct Scan<'a, D, F = NoKeywords> {
+pub struct Scan<'a, D, S, F = NoKeywords> {
     decoder: D,
-    inner: slice::Iter<'a, String>,
-    named: &'a CaseFoldMap<String, String>,
+    inner: slice::Iter<'a, S>,
+    named: &'a CaseFoldMap<String, S>,
     __marker: PhantomData<F>,
 }
 
-impl<'a, D: Decoder, F: KeywordFilter> Scan<'a, D, F> {
-    pub(crate) fn new(
-        decoder: D,
-        positional: &'a [String],
-        named: &'a CaseFoldMap<String, String>,
-    ) -> Self {
+impl<'a, D: Decoder, S: AsRef<str>, F: KeywordFilter> Scan<'a, D, S, F> {
+    pub(crate) fn new(decoder: D, positional: &'a [S], named: &'a CaseFoldMap<String, S>) -> Self {
         Self {
             decoder,
             inner: positional.iter(),
@@ -45,7 +37,7 @@ impl<'a, D: Decoder, F: KeywordFilter> Scan<'a, D, F> {
         }
     }
 
-    pub fn with_filter<FNew>(self) -> Scan<'a, D, FNew> {
+    pub fn with_filter<FNew>(self) -> Scan<'a, D, S, FNew> {
         Scan {
             decoder: self.decoder,
             inner: self.inner,
@@ -54,19 +46,19 @@ impl<'a, D: Decoder, F: KeywordFilter> Scan<'a, D, F> {
         }
     }
 
-    pub fn with_keywords<E: Enum + FromStr>(self) -> KeywordScan<'a, D, E> {
+    pub fn with_keywords<E: Enum + FromStr>(self) -> KeywordScan<'a, D, S, E> {
         KeywordScan {
             inner: self.with_filter(),
             keywords: EnumSet::new(),
         }
     }
 
-    fn decode<S>(&self, s: Option<&'a S>) -> crate::Result<Option<D::Output<'a>>>
+    fn decode<SD>(&self, s: Option<&'a SD>) -> crate::Result<Option<Cow<'a, str>>>
     where
-        S: Borrow<str> + ?Sized,
+        SD: AsRef<str> + ?Sized,
     {
         match s {
-            Some(s) => self.decoder.decode::<F>(s.borrow()).map(Option::Some),
+            Some(s) => self.decoder.decode::<F>(s.as_ref()).map(Option::Some),
             None => Ok(None),
         }
     }
@@ -75,16 +67,16 @@ impl<'a, D: Decoder, F: KeywordFilter> Scan<'a, D, F> {
         self.inner.len()
     }
 
-    fn get(&self, name: &str) -> crate::Result<Option<D::Output<'a>>> {
-        self.decode(self.named.get(name))
+    fn get(&self, name: &str) -> crate::Result<Option<Cow<'a, str>>> {
+        self.decode(self.named.get(name).map(AsRef::as_ref))
     }
 
-    pub fn next(&mut self) -> crate::Result<Option<D::Output<'a>>> {
+    pub fn next(&mut self) -> crate::Result<Option<Cow<'a, str>>> {
         let next = self.inner.next();
         self.decode(next)
     }
 
-    pub fn next_or(&mut self, name: &str) -> crate::Result<Option<D::Output<'a>>> {
+    pub fn next_or(&mut self, name: &str) -> crate::Result<Option<Cow<'a, str>>> {
         match self.get(name)? {
             Some(value) => Ok(Some(value)),
             None => self.next(),
@@ -92,32 +84,33 @@ impl<'a, D: Decoder, F: KeywordFilter> Scan<'a, D, F> {
     }
 }
 
-pub struct KeywordScan<'a, D, K: Enum> {
-    inner: Scan<'a, D, K>,
+pub struct KeywordScan<'a, D, S, K: Enum> {
+    inner: Scan<'a, D, S, K>,
     keywords: EnumSet<K>,
 }
 
-impl<'a, D, K: Enum> Deref for KeywordScan<'a, D, K> {
-    type Target = Scan<'a, D, K>;
+impl<'a, D, S: AsRef<str>, K: Enum> Deref for KeywordScan<'a, D, S, K> {
+    type Target = Scan<'a, D, S, K>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
-impl<'a, D, K: Enum> DerefMut for KeywordScan<'a, D, K> {
+impl<'a, D, S: AsRef<str>, K: Enum> DerefMut for KeywordScan<'a, D, S, K> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
 }
 
-impl<'a, D: Decoder, K: Enum + FromStr> KeywordScan<'a, D, K> {
+impl<'a, D: Decoder, S: AsRef<str>, K: Enum + FromStr> KeywordScan<'a, D, S, K> {
     pub fn keywords(&self) -> EnumSet<K> {
         self.keywords
     }
 
     fn next_non_keyword(&mut self) -> Option<&'a str> {
         for arg in &mut self.inner.inner {
+            let arg = arg.as_ref();
             if let Ok(keyword) = arg.parse() {
                 self.keywords.insert(keyword);
             } else {
@@ -127,12 +120,12 @@ impl<'a, D: Decoder, K: Enum + FromStr> KeywordScan<'a, D, K> {
         None
     }
 
-    pub fn next(&mut self) -> crate::Result<Option<D::Output<'a>>> {
+    pub fn next(&mut self) -> crate::Result<Option<Cow<'a, str>>> {
         let next = self.next_non_keyword();
         self.decode(next)
     }
 
-    pub fn next_or(&mut self, name: &str) -> crate::Result<Option<D::Output<'a>>> {
+    pub fn next_or(&mut self, name: &str) -> crate::Result<Option<Cow<'a, str>>> {
         match self.get(name)? {
             Some(value) => Ok(Some(value)),
             None => self.next(),
@@ -141,7 +134,7 @@ impl<'a, D: Decoder, K: Enum + FromStr> KeywordScan<'a, D, K> {
 
     pub fn into_keywords(self) -> EnumSet<K> {
         let mut keywords = self.keywords;
-        for keyword in self.inner.inner.filter_map(|arg| arg.parse().ok()) {
+        for keyword in self.inner.inner.filter_map(|arg| arg.as_ref().parse().ok()) {
             keywords.insert(keyword);
         }
         keywords

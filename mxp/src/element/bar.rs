@@ -34,10 +34,10 @@ impl<'a> Gauge<Cow<'a, str>> {
     }
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Gauge<D::Output<'a>> {
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Gauge<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         Ok(Self {
             entity: scanner.next()?.expect_some("EntityName")?,
             max: scanner.next_or("max")?,
@@ -76,10 +76,10 @@ impl<'a> Stat<Cow<'a, str>> {
     }
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Stat<D::Output<'a>> {
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Stat<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         Ok(Self {
             entity: scanner.next()?.expect_some("EntityName")?,
             max: scanner.next_or("max")?,

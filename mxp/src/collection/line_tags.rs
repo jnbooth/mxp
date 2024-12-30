@@ -1,5 +1,5 @@
 use super::element_map::ElementMap;
-use crate::argument::{Arguments, Decoder, ExpectArg};
+use crate::argument::{Decoder, ExpectArg};
 use crate::color::RgbColor;
 use crate::element::{Element, Mode};
 use crate::keyword::TagKeyword;
@@ -108,7 +108,7 @@ pub struct LineTagUpdate {
 
 impl LineTagUpdate {
     pub fn parse<D: Decoder>(words: Words, decoder: D) -> crate::Result<Self> {
-        let args = Arguments::parse(words)?;
+        let args = words.parse_args::<&str>()?;
         let mut scanner = args.scan(decoder).with_keywords();
 
         let index_arg = scanner.next()?.expect_some("tag")?;

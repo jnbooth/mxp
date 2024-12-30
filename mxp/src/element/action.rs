@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use super::bar::{Gauge, Stat};
 use super::filter::Filter;
 use super::font::Font;
@@ -184,10 +186,10 @@ pub enum Action<S> {
     Version,
 }
 
-impl<S: AsRef<str>> Action<S> {
-    pub fn new<'a, D>(action: ActionKind, scanner: Scan<'a, D>) -> crate::Result<Self>
+impl<'a> Action<Cow<'a, str>> {
+    pub fn new<D, S: AsRef<str>>(action: ActionKind, scanner: Scan<'a, D, S>) -> crate::Result<Self>
     where
-        D: Decoder<Output<'a> = S>,
+        D: Decoder,
     {
         Ok(match action {
             ActionKind::Bold => Self::Bold,

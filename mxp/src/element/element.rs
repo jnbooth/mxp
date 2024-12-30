@@ -12,13 +12,16 @@ use crate::parser::{Error, ErrorKind, UnrecognizedVariant, Words};
 
 /// List of arguments to an MXP tag.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ElementItem {
+pub struct ElementItem<S> {
     pub atom: &'static Atom,
-    pub arguments: Arguments,
+    pub arguments: Arguments<S>,
 }
 
-impl ElementItem {
-    pub fn parse(tag: &str) -> crate::Result<Self> {
+impl<S: AsRef<str>> ElementItem<S> {
+    pub fn parse<'a>(tag: &'a str) -> crate::Result<Self>
+    where
+        S: From<&'a str>,
+    {
         let mut words = Words::new(tag);
         let atom_name = words
             .next()
@@ -35,7 +38,7 @@ impl ElementItem {
             .ok_or_else(|| Error::new(atom_name, ErrorKind::NoInbuiltDefinitionTag))?;
         Ok(Self {
             atom,
-            arguments: Arguments::parse(words)?,
+            arguments: words.parse_args()?,
         })
     }
 }
@@ -99,9 +102,9 @@ pub struct Element {
     /// Tag name
     pub name: String,
     /// What atomic elements it defines (arg 1)
-    pub items: Vec<ElementItem>,
+    pub items: Vec<ElementItem<String>>,
     /// List of attributes to this element (ATT="xx")
-    pub attributes: Arguments,
+    pub attributes: Arguments<String>,
     /// Line tag number (20 - 99) (TAG=n)
     pub tag: Option<NonZeroU8>,
     /// Parsing flag
@@ -127,7 +130,7 @@ impl Element {
         CollectedElement::from_str(text)
     }
 
-    fn parse_items<S: AsRef<str>>(argument: Option<S>) -> crate::Result<Vec<ElementItem>> {
+    fn parse_items<S: AsRef<str>>(argument: Option<S>) -> crate::Result<Vec<ElementItem<String>>> {
         let Some(argument) = argument else {
             return Ok(Vec::new());
         };
@@ -158,7 +161,10 @@ impl Element {
         Ok(items)
     }
 
-    pub fn parse<D: Decoder>(name: String, scanner: Scan<D>) -> crate::Result<Option<Self>> {
+    pub fn parse<D: Decoder, S: AsRef<str>>(
+        name: String,
+        scanner: Scan<D, S>,
+    ) -> crate::Result<Option<Self>> {
         const_non_zero!(MIN_TAG, NonZeroU8, Mode::USER_DEFINED_MIN.0);
         const_non_zero!(MAX_TAG, NonZeroU8, Mode::USER_DEFINED_MAX.0);
 
@@ -166,7 +172,7 @@ impl Element {
         let items = Self::parse_items(scanner.next()?)?;
 
         let attributes = match scanner.next_or("att")? {
-            Some(atts) => Arguments::parse(Words::new(atts.as_ref()))?,
+            Some(atts) => Words::new(atts.as_ref()).parse_args()?,
             None => Arguments::default(),
         };
 

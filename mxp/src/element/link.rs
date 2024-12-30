@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use enumeration::Enum;
 
 use crate::argument::{Decoder, ExpectArg, Scan};
@@ -89,10 +91,10 @@ pub struct HyperlinkArgs<S> {
     pub expire: Option<S>,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for HyperlinkArgs<D::Output<'a>> {
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for HyperlinkArgs<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         Ok(Self {
             href: scanner.next_or("href")?.expect_some("href")?,
             hint: scanner.next_or("hint")?,
@@ -120,10 +122,10 @@ pub struct SendArgs<S> {
     pub expire: Option<S>,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for SendArgs<D::Output<'a>> {
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for SendArgs<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         Ok(Self {
             href: scanner.next_or("href")?,
@@ -157,10 +159,10 @@ pub struct ExpireArgs<S> {
     pub name: Option<S>,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ExpireArgs<D::Output<'a>> {
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for ExpireArgs<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         Ok(Self {
             name: scanner.next()?,
         })

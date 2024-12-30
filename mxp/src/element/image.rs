@@ -49,10 +49,10 @@ impl<'a> Image<Cow<'a, str>> {
     }
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Image<D::Output<'a>> {
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Image<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         Ok(Self {
             fname: scanner.next_or("fname")?,

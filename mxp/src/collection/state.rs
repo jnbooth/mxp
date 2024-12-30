@@ -54,15 +54,18 @@ impl State {
         self.line_tags.get(usize::from(mode.0), &self.elements)
     }
 
-    pub fn decode_args<'a>(&self, args: &'a mut Arguments) -> Scan<'a, &EntityMap> {
+    pub fn decode_args<'a, S: AsRef<str>>(
+        &self,
+        args: &'a mut Arguments<S>,
+    ) -> Scan<'a, &EntityMap, S> {
         args.scan(&self.entities)
     }
 
-    pub fn decode_element<'a>(
+    pub fn decode_element<'a, S: AsRef<str>>(
         &'a self,
         element: &'a Element,
-        args: &'a Arguments,
-    ) -> DecodeElement<'a, ElementDecoder<'a>> {
+        args: &'a Arguments<S>,
+    ) -> DecodeElement<'a, ElementDecoder<'a, S>> {
         DecodeElement {
             items: element.items.iter(),
             decoder: ElementDecoder {
@@ -92,7 +95,7 @@ impl State {
     }
 
     fn define_element(&mut self, name: &str, words: Words) -> crate::Result<()> {
-        let args = Arguments::parse(words)?;
+        let args = words.parse_args::<String>()?;
         let Some(el) = Element::parse(name.to_owned(), args.scan(&self.entities))? else {
             self.elements.remove(&name);
             return Ok(());
@@ -119,7 +122,7 @@ impl State {
             return Err(Error::new(key, ErrorKind::CannotRedefineEntity));
         }
         let s = words.as_str();
-        let args = Arguments::parse(words)?;
+        let args = words.parse_args::<&str>()?;
         let mut scanner = args.scan(&self.entities).with_keywords();
         let Some(value) = scanner.next()? else {
             return Err(Error::new(s, ErrorKind::NoDefinitionTag));
@@ -144,14 +147,14 @@ impl State {
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct DecodeElement<'a, D> {
     decoder: D,
-    items: slice::Iter<'a, ElementItem>,
+    items: slice::Iter<'a, ElementItem<String>>,
 }
 
 impl<'a, D: Decoder + Copy> Iterator for DecodeElement<'a, D> {
-    type Item = crate::Result<Action<D::Output<'a>>>;
+    type Item = crate::Result<Action<Cow<'a, str>>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let item: &'a ElementItem = self.items.next()?;
+        let item = self.items.next()?;
         let scanner = item.arguments.scan(self.decoder);
         Some(Action::new(item.atom.action, scanner))
     }

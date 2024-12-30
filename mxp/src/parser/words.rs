@@ -3,6 +3,7 @@ use std::str::{self, CharIndices};
 
 use super::error::{Error, ErrorKind};
 use super::validation::validate;
+use crate::argument::Arguments;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
@@ -38,6 +39,15 @@ impl<'a> Words<'a> {
                 Ok(next)
             }
         }
+    }
+
+    pub fn parse_args<S>(self) -> crate::Result<Arguments<S>>
+    where
+        S: AsRef<str> + From<&'a str>,
+    {
+        let mut args = Arguments::<S>::new();
+        args.append(self)?;
+        Ok(args)
     }
 }
 

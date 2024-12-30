@@ -254,10 +254,9 @@ impl Transformer {
             self.mxp_tags.push(tag);
         }
 
-        let mut args = mxp::Arguments::parse(words)?;
-
         match component {
             mxp::ElementComponent::Atom(atom) => {
+                let mut args = words.parse_args::<&str>()?;
                 let scanner = mxp_state.decode_args(&mut args);
                 self.mxp_open_atom(mxp::Action::new(atom.action, scanner)?, mxp_state);
             }
@@ -269,6 +268,7 @@ impl Transformer {
                         is_variable: true,
                     });
                 }
+                let args = words.parse_args::<&str>()?;
                 self.mxp_open_element(el, &args, mxp_state)?;
             }
         }
@@ -296,10 +296,10 @@ impl Transformer {
         });
     }
 
-    fn mxp_open_element(
+    fn mxp_open_element<S: AsRef<str>>(
         &mut self,
         el: &mxp::Element,
-        args: &mxp::Arguments,
+        args: &mxp::Arguments<S>,
         mxp_state: &mxp::State,
     ) -> mxp::Result<()> {
         if el.gag {
@@ -445,7 +445,9 @@ impl Transformer {
         }
         let mxp_state = mem::take(&mut self.mxp_state);
         if let Some(element) = mxp_state.get_line_tag(newmode) {
-            if let Err(e) = self.mxp_open_element(element, &mxp::Arguments::new(), &mxp_state) {
+            if let Err(e) =
+                self.mxp_open_element(element, &mxp::Arguments::<&str>::new(), &mxp_state)
+            {
                 self.handle_mxp_error(e);
             }
         }

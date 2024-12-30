@@ -94,10 +94,10 @@ impl<'a> Frame<Cow<'a, str>> {
     }
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for Frame<D::Output<'a>> {
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Frame<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         let name = scanner.next_or("name")?.expect_some("name")?;
         let action = scanner
@@ -146,10 +146,10 @@ pub struct DestArgs<S> {
     pub name: S,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for DestArgs<D::Output<'a>> {
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for DestArgs<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         Ok(Self {
             name: scanner.next()?.expect_some("name")?,
         })

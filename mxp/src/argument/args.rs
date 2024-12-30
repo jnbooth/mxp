@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use super::scan::{Decoder, ExpectArg, Scan};
 use crate::color::RgbColor;
 use crate::keyword::{EntityKeyword, MxpKeyword};
@@ -10,10 +12,10 @@ pub struct ColorArgs {
     pub back: Option<RgbColor>,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for ColorArgs {
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for ColorArgs {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         Ok(Self {
             fore: scanner
                 .next_or("fore")?
@@ -30,10 +32,10 @@ pub struct MxpArgs {
     pub keywords: EnumSet<MxpKeyword>,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for MxpArgs {
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for MxpArgs {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let scanner = scanner.with_keywords();
         Ok(Self {
             keywords: scanner.into_keywords(),
@@ -46,10 +48,10 @@ pub struct SupportArgs<S> {
     pub questions: Vec<S>,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for SupportArgs<D::Output<'a>> {
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for SupportArgs<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, Self::Error> {
+    fn try_from(mut scanner: Scan<'a, D, S>) -> Result<Self, Self::Error> {
         let mut questions = Vec::with_capacity(scanner.len());
         while let Some(question) = scanner.next()? {
             questions.push(question);
@@ -64,10 +66,10 @@ pub struct VarArgs<S> {
     pub keywords: EnumSet<EntityKeyword>,
 }
 
-impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for VarArgs<D::Output<'a>> {
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for VarArgs<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         Ok(Self {
             variable: scanner.next()?.expect_some("variable")?,

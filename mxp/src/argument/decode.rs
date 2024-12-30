@@ -34,24 +34,28 @@ where
 }
 
 impl Decoder for EntityMap {
-    type Output<'a> = Cow<'a, str>;
-
-    fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Self::Output<'a>> {
+    fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Cow<'a, str>> {
         decode_amps(s, |entity| self.decode_entity(entity))
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct ElementDecoder<'a> {
+#[derive(Debug, PartialEq, Eq)]
+pub struct ElementDecoder<'a, S> {
     pub(crate) element: &'a Element,
     pub(crate) entities: &'a EntityMap,
-    pub(crate) args: &'a Arguments,
+    pub(crate) args: &'a Arguments<S>,
 }
 
-impl<'d> Decoder for ElementDecoder<'d> {
-    type Output<'a> = Cow<'a, str>;
+impl<'a, S> Copy for ElementDecoder<'a, S> {}
 
-    fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Self::Output<'a>> {
+impl<'a, S> Clone for ElementDecoder<'a, S> {
+    fn clone(&self) -> Self {
+        *self
+    }
+}
+
+impl<'d, S: AsRef<str>> Decoder for ElementDecoder<'d, S> {
+    fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Cow<'a, str>> {
         decode_amps(s, |entity| {
             if entity == "text" {
                 return Ok(None);
@@ -59,7 +63,7 @@ impl<'d> Decoder for ElementDecoder<'d> {
             match self
                 .element
                 .attributes
-                .find_attribute::<F>(entity, self.args)
+                .find_attribute::<F, S>(entity, self.args)
             {
                 Some(attr) => Ok(Some(attr)),
                 None => self.entities.decode_entity(entity),
