@@ -9,7 +9,7 @@ use std::collections::hash_map::Entry;
 use super::iter::PublishedIter;
 
 use super::entity::Entity;
-use enumeration::EnumSet;
+use flagset::FlagSet;
 
 pub struct EntityEntry<'a> {
     pub name: &'a str,
@@ -77,13 +77,14 @@ impl EntityMap {
         }
     }
 
-    pub fn set<'a>(
+    pub fn set<'a, T: Into<FlagSet<EntityKeyword>>>(
         &'a mut self,
         key: &'a str,
         value: &str,
         description: Option<String>,
-        keywords: EnumSet<EntityKeyword>,
+        keywords: T,
     ) -> Option<EntityEntry<'a>> {
+        let keywords = keywords.into();
         if keywords.contains(EntityKeyword::Delete) {
             return self.remove(key).map(|_| EntityEntry {
                 name: key,
@@ -190,28 +191,23 @@ mod tests {
     #[test]
     fn set_new() {
         let mut map = EntityMap::new();
-        map.set("key", "value", None, EnumSet::new());
+        map.set("key", "value", None, None);
         assert_eq!(get_value(&map, "key"), Some("value"));
     }
 
     #[test]
     fn set_delete() {
         let mut map = EntityMap::new();
-        map.set("key", "value", None, EnumSet::new());
-        map.set("key", "", None, enums![EntityKeyword::Delete]);
+        map.set("key", "value", None, None);
+        map.set("key", "", None, EntityKeyword::Delete);
         assert_eq!(get_value(&map, "key"), None);
     }
 
     #[test]
     fn set_replace() {
         let mut map = EntityMap::new();
-        map.set("key", "value", Some("desc1".to_owned()), EnumSet::new());
-        map.set(
-            "key",
-            "",
-            Some("desc2".to_owned()),
-            enums![EntityKeyword::Publish],
-        );
+        map.set("key", "value", Some("desc1".to_owned()), None);
+        map.set("key", "", Some("desc2".to_owned()), EntityKeyword::Publish);
         assert_eq!(
             map.get("key"),
             Some(&Entity {
@@ -225,26 +221,26 @@ mod tests {
     #[test]
     fn set_add_and_remove() {
         let mut map = EntityMap::new();
-        map.set("key", "value1", None, enums![EntityKeyword::Add]);
-        map.set("key", "value2", None, enums![EntityKeyword::Add]);
-        map.set("key", "value3", None, enums![EntityKeyword::Add]);
-        map.set("key", "value2", None, enums![EntityKeyword::Remove]);
-        map.set("key", "x", None, enums![EntityKeyword::Remove]);
+        map.set("key", "value1", None, EntityKeyword::Add);
+        map.set("key", "value2", None, EntityKeyword::Add);
+        map.set("key", "value3", None, EntityKeyword::Add);
+        map.set("key", "value2", None, EntityKeyword::Remove);
+        map.set("key", "x", None, EntityKeyword::Remove);
         assert_eq!(get_value(&map, "key"), Some("value1|value3"));
     }
 
     #[test]
     fn decode_entity_matched() {
         let mut map = EntityMap::new();
-        map.set("key1", "value1", None, EnumSet::new());
-        map.set("key2", "value2", None, EnumSet::new());
+        map.set("key1", "value1", None, None);
+        map.set("key2", "value2", None, None);
         assert_eq!(map.decode_entity("key1"), Ok(Some("value1")));
     }
 
     #[test]
     fn decode_entity_unmatched() {
         let mut map = EntityMap::new();
-        map.set("key2", "value2", None, EnumSet::new());
+        map.set("key2", "value2", None, None);
         assert_eq!(map.decode_entity("key1"), Ok(None));
     }
 

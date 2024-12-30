@@ -1,12 +1,10 @@
-use enumeration::Enum;
-
 use mxp::escape::telnet;
 
 const fn is_phase_reset_character(c: u8) -> bool {
     matches!(c, b'\r' | b'\n' | telnet::ESC | telnet::IAC)
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Phase {
     /// Normal text
     Normal,
@@ -47,8 +45,6 @@ pub enum Phase {
     MxpQuote,
     /// Collecting entity, eg. &gt; . Starts on &, stops on ;
     MxpEntity,
-    /// Text sent from the server at the beginning of a session.
-    MxpWelcome,
 }
 
 impl Default for Phase {
@@ -61,16 +57,8 @@ impl Phase {
     pub const fn is_mxp(self) -> bool {
         matches!(
             self,
-            Self::MxpElement
-                | Self::MxpComment
-                | Self::MxpQuote
-                | Self::MxpEntity
-                | Self::MxpWelcome
+            Self::MxpElement | Self::MxpComment | Self::MxpQuote | Self::MxpEntity
         )
-    }
-
-    pub const fn is_mxp_mode_change(self) -> bool {
-        matches!(self, Self::MxpWelcome)
     }
 
     pub const fn is_phase_reset(self, c: u8) -> bool {

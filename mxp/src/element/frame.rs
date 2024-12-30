@@ -1,15 +1,13 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
-use enumeration::Enum;
-
 use super::screen::Align;
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::keyword::FrameKeyword;
 use crate::parser::{Error, UnrecognizedVariant};
 use crate::Dimension;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum FrameAction {
     Open,
     Close,

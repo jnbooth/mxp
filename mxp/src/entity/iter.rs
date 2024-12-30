@@ -47,13 +47,13 @@ mod tests {
     use super::*;
     use crate::entity::EntityMap;
     use crate::keyword::EntityKeyword;
-    use enumeration::EnumSet;
+    use flagset::FlagSet;
 
     #[test]
     fn published_iter() {
         let mut map = EntityMap::new();
-        let published = enums![EntityKeyword::Publish];
-        let unpublished = EnumSet::new();
+        let published = FlagSet::from(EntityKeyword::Publish);
+        let unpublished = FlagSet::default();
         map.set("key1", "val1", Some("desc1".to_owned()), unpublished);
         map.set("key2", "val2", Some("desc2".to_owned()), published);
         map.set("key3", "val3", Some("desc3".to_owned()), published);

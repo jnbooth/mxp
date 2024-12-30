@@ -1,6 +1,5 @@
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::parser::{Error, UnrecognizedVariant};
-use enumeration::Enum;
 use std::borrow::Cow;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::num::NonZeroU32;
@@ -39,7 +38,7 @@ impl FromStr for AudioRepetition {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum AudioContinuation {
     Restart,
     Continue,

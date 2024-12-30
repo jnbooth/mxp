@@ -1,11 +1,9 @@
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
-use enumeration::Enum;
-
 use crate::parser::UnrecognizedVariant;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Align {
     Left,
     Right,
@@ -35,7 +33,7 @@ impl FromStr for Align {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum DimensionUnit {
     Pixel,
     CharacterHeight,

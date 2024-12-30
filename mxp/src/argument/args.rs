@@ -4,7 +4,7 @@ use super::scan::{Decoder, ExpectArg, Scan};
 use crate::color::RgbColor;
 use crate::keyword::{EntityKeyword, MxpKeyword};
 use crate::parser::Error;
-use enumeration::EnumSet;
+use flagset::FlagSet;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ColorArgs {
@@ -27,9 +27,9 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for ColorArgs {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct MxpArgs {
-    pub keywords: EnumSet<MxpKeyword>,
+    pub keywords: FlagSet<MxpKeyword>,
 }
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for MxpArgs {
@@ -60,10 +60,10 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for SupportArgs<Cow<
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct VarArgs<S> {
     pub variable: S,
-    pub keywords: EnumSet<EntityKeyword>,
+    pub keywords: FlagSet<EntityKeyword>,
 }
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for VarArgs<Cow<'a, str>> {

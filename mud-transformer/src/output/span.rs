@@ -3,21 +3,23 @@ use std::num::NonZeroU8;
 use std::ops::Index;
 
 use super::color::TermColor;
-use enumeration::{Enum, EnumSet};
+use flagset::{flags, FlagSet};
 use mxp::escape::ansi;
 use mxp::Heading;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum TextStyle {
-    Blink,
-    Bold,
-    Highlight,
-    Italic,
-    NonProportional,
-    Small,
-    Strikeout,
-    Underline,
-    Inverse,
+flags! {
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum TextStyle: u16 {
+        Blink,
+        Bold,
+        Highlight,
+        Italic,
+        NonProportional,
+        Small,
+        Strikeout,
+        Underline,
+        Inverse,
+    }
 }
 
 impl TextStyle {
@@ -46,19 +48,19 @@ impl From<mxp::FontStyle> for TextStyle {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct EntitySetter {
     pub name: String,
-    pub flags: EnumSet<mxp::EntityKeyword>,
+    pub flags: FlagSet<mxp::EntityKeyword>,
     pub is_variable: bool,
 }
 
 /// eg. <send "command1|command2|command3" hint="click to see menu|Item 1|Item
 /// 2|Item 2">this is a menu link</SEND>
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Span {
     populated: bool,
-    pub(super) flags: EnumSet<TextStyle>,
+    pub(super) flags: FlagSet<TextStyle>,
     pub(super) foreground: Option<TermColor>,
     pub(super) background: Option<TermColor>,
     pub(super) font: Option<String>,
@@ -70,30 +72,6 @@ pub struct Span {
     pub(super) entity: Option<EntitySetter>,
 }
 
-impl Default for Span {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl Span {
-    pub const fn new() -> Self {
-        Self {
-            populated: false,
-            flags: EnumSet::new(),
-            foreground: None,
-            background: None,
-            font: None,
-            size: None,
-            action: None,
-            heading: None,
-            entity: None,
-            gag: false,
-            window: None,
-        }
-    }
-}
-
 macro_rules! set_flag {
     ($self:ident, $p:ident, $val:ident) => {
         let span = match $self.get_mut() {
@@ -101,7 +79,7 @@ macro_rules! set_flag {
                 return false;
             }
             Some(span) if !span.populated => {
-                span.$p.insert($val);
+                span.$p |= $val;
                 return false;
             }
             Some(span) => Span {
@@ -110,7 +88,7 @@ macro_rules! set_flag {
                 ..span.clone()
             },
             None => Span {
-                $p: enums![$val],
+                $p: $val.into(),
                 ..Default::default()
             },
         };
@@ -149,7 +127,7 @@ macro_rules! set_prop {
     };
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SpanList {
     spans: Vec<Span>,
 }

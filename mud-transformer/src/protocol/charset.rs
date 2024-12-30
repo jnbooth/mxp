@@ -1,4 +1,4 @@
-use enumeration::{Enum, EnumSet};
+use flagset::{flags, FlagSet};
 use std::fmt::{self, Display, Formatter};
 
 use super::Negotiate;
@@ -7,26 +7,22 @@ use crate::transformer::TransformerConfig;
 /// Negotiate About Character Set
 pub const CODE: u8 = 42;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-enum Charset {
-    Ascii,
-    Utf8,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Charsets {
-    inner: EnumSet<Charset>,
-}
-
-impl Default for Charsets {
-    fn default() -> Self {
-        Self::new()
+flags! {
+    #[derive(PartialOrd, Ord, Hash)]
+    enum Charset: u8 {
+        Ascii,
+        Utf8
     }
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct Charsets {
+    inner: FlagSet<Charset>,
 }
 
 impl<T: AsRef<[u8]>> From<T> for Charsets {
     fn from(value: T) -> Self {
-        let mut inner = EnumSet::new();
+        let mut inner = FlagSet::default();
         let data = value.as_ref();
         if data.len() < 3 || data[0] != 1 {
             return Self { inner };
@@ -34,9 +30,9 @@ impl<T: AsRef<[u8]>> From<T> for Charsets {
         let delim = data[1];
         for fragment in data[2..].split(|&c| c == delim) {
             if fragment == b"UTF-8" {
-                inner.insert(Charset::Utf8);
+                inner |= Charset::Utf8;
             } else if fragment == b"US-ASCII" {
-                inner.insert(Charset::Ascii);
+                inner |= Charset::Ascii;
             }
         }
         Self { inner }
@@ -44,16 +40,14 @@ impl<T: AsRef<[u8]>> From<T> for Charsets {
 }
 
 impl Charsets {
-    pub const fn new() -> Self {
-        Self {
-            inner: EnumSet::new(),
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Subnegotiation {
-    charsets: EnumSet<Charset>,
+    charsets: FlagSet<Charset>,
     utf8: bool,
 }
 

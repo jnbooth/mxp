@@ -1,7 +1,7 @@
 use std::str;
 
 use bytes::BytesMut;
-use enumeration::EnumSet;
+use flagset::FlagSet;
 
 use super::color::TermColor;
 use super::fragment::{
@@ -38,7 +38,7 @@ pub struct BufferedOutput {
     last_break: usize,
     last_linebreak: Option<usize>,
 
-    ansi_flags: EnumSet<TextStyle>,
+    ansi_flags: FlagSet<TextStyle>,
     ansi_foreground: TermColor,
     ansi_background: TermColor,
     colors: Vec<RgbColor>,
@@ -58,7 +58,7 @@ impl BufferedOutput {
     pub fn new() -> Self {
         Self {
             spans: SpanList::new(),
-            ansi_flags: EnumSet::new(),
+            ansi_flags: FlagSet::default(),
             ansi_foreground: TermColor::WHITE,
             ansi_background: TermColor::BLACK,
             buf: BytesMut::new(),
@@ -256,11 +256,11 @@ impl BufferedOutput {
     }
 
     pub fn set_ansi_flag(&mut self, flag: TextStyle) {
-        self.ansi_flags.insert(flag);
+        self.ansi_flags |= flag;
     }
 
     pub fn unset_ansi_flag(&mut self, flag: TextStyle) {
-        self.ansi_flags.remove(flag);
+        self.ansi_flags -= flag;
     }
 
     pub fn set_ansi_foreground<C: Into<TermColor>>(&mut self, foreground: C) {

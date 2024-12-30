@@ -1,10 +1,9 @@
+use flagset::Flags;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::marker::PhantomData;
 use std::str;
 
-use enumeration::Enum;
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ErrorKind {
     ///  eg. < ... \n
     UnterminatedElement,
@@ -170,9 +169,9 @@ impl<T> UnrecognizedVariant<T> {
     }
 }
 
-impl<T: Debug + Enum> Display for UnrecognizedVariant<T> {
+impl<T: Debug + Flags> Display for UnrecognizedVariant<T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let mut range = T::enumerate(..);
+        let mut range = T::LIST.iter();
         write!(f, "got {}, expected one of: {:?}", self.input, range.next())?;
         for variant in range {
             write!(f, ", {variant:?}")?;
@@ -181,4 +180,4 @@ impl<T: Debug + Enum> Display for UnrecognizedVariant<T> {
     }
 }
 
-impl<T: Debug + Enum> std::error::Error for UnrecognizedVariant<T> {}
+impl<T: Debug + Flags> std::error::Error for UnrecognizedVariant<T> {}

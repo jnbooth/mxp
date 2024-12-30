@@ -1,12 +1,10 @@
 use std::borrow::Cow;
 
-use enumeration::Enum;
-
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::keyword::SendKeyword;
 use crate::parser::Error;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum SendTo {
     Internet,
     World,

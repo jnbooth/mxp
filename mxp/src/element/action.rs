@@ -12,101 +12,103 @@ use crate::argument::args::{ColorArgs, MxpArgs, SupportArgs, VarArgs};
 use crate::argument::{Decoder, Scan};
 use crate::color::RgbColor;
 use crate::keyword::{EntityKeyword, MxpKeyword};
-use enumeration::{Enum, EnumSet};
+use flagset::{flags, FlagSet};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum ActionKind {
-    /// bold
-    Bold,
-    /// Hard Line break (secure)
-    Br,
-    /// eg. <color fore=red back=blue>
-    Color,
-    /// destination frame
-    Dest,
-    /// expire
-    Expire,
-    /// sound/image filter
-    Filter,
-    /// Font appearance
-    Font,
-    /// frame
-    Frame,
-    /// gauge
-    Gauge,
-    /// Level 1 heading (secure)
-    H1,
-    /// Level 2 heading (secure)
-    H2,
-    /// Level 3 heading (secure)
-    H3,
-    /// Level 4 heading (secure)
-    H4,
-    /// Level 5 heading (secure)
-    H5,
-    /// Level 6 heading (secure)
-    H6,
-    /// Highlight text
-    Highlight,
-    /// Horizontal rule (secure)
-    Hr,
-    /// Hyperlink (secure)
-    Hyperlink,
-    /// show image
-    Image,
-    /// italic
-    Italic,
-    /// play music
-    Music,
-    /// MXP command (eg. MXP OFF)
-    Mxp,
-    /// ignore next newline
-    NoBr,
-    /// Paragraph break (secure)
-    P,
-    /// send password
-    Password,
-    /// causes a new connect to open
-    Relocate,
-    /// close all open tags
-    Reset,
-    /// Soft line break
-    SBr,
-    /// eg. <send href="go west"> west
-    Send,
-    /// Small text
-    Small,
-    /// play sound
-    Sound,
-    /// status
-    Stat,
-    /// Strikethrough
-    Strikeout,
-    /// what commands we support
-    Support,
-    /// Non-proportional font
-    Tt,
-    /// underline
-    Underline,
-    /// send username
-    User,
-    /// Set variable
-    Var,
-    /// version request
-    Version,
+flags! {
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum ActionKind: u64 {
+        /// bold
+        Bold,
+        /// Hard Line break (secure)
+        Br,
+        /// eg. <color fore=red back=blue>
+        Color,
+        /// destination frame
+        Dest,
+        /// expire
+        Expire,
+        /// sound/image filter
+        Filter,
+        /// Font appearance
+        Font,
+        /// frame
+        Frame,
+        /// gauge
+        Gauge,
+        /// Level 1 heading (secure)
+        H1,
+        /// Level 2 heading (secure)
+        H2,
+        /// Level 3 heading (secure)
+        H3,
+        /// Level 4 heading (secure)
+        H4,
+        /// Level 5 heading (secure)
+        H5,
+        /// Level 6 heading (secure)
+        H6,
+        /// Highlight text
+        Highlight,
+        /// Horizontal rule (secure)
+        Hr,
+        /// Hyperlink (secure)
+        Hyperlink,
+        /// show image
+        Image,
+        /// italic
+        Italic,
+        /// play music
+        Music,
+        /// MXP command (eg. MXP OFF)
+        Mxp,
+        /// ignore next newline
+        NoBr,
+        /// Paragraph break (secure)
+        P,
+        /// send password
+        Password,
+        /// causes a new connect to open
+        Relocate,
+        /// close all open tags
+        Reset,
+        /// Soft line break
+        SBr,
+        /// eg. <send href="go west"> west
+        Send,
+        /// Small text
+        Small,
+        /// play sound
+        Sound,
+        /// status
+        Stat,
+        /// Strikethrough
+        Strikeout,
+        /// what commands we support
+        Support,
+        /// Non-proportional font
+        Tt,
+        /// underline
+        Underline,
+        /// send username
+        User,
+        /// Set variable
+        Var,
+        /// version request
+        Version,
+    }
+
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum Heading: u8 {
+        H1,
+        H2,
+        H3,
+        H4,
+        H5,
+        H6,
+    }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum Heading {
-    H1,
-    H2,
-    H3,
-    H4,
-    H5,
-    H6,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Action<S> {
     /// bold
     Bold,
@@ -146,7 +148,7 @@ pub enum Action<S> {
     /// stop all music
     MusicOff,
     /// MXP command (eg. MXP OFF)
-    Mxp { keywords: EnumSet<MxpKeyword> },
+    Mxp { keywords: FlagSet<MxpKeyword> },
     /// ignore next newline
     NoBr,
     /// Paragraph break (secure)
@@ -180,7 +182,7 @@ pub enum Action<S> {
     /// Set variable
     Var {
         variable: S,
-        keywords: EnumSet<EntityKeyword>,
+        keywords: FlagSet<EntityKeyword>,
     },
     /// version request
     Version,

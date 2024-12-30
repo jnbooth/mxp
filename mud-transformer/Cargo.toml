@@ -8,10 +8,10 @@ workspace = true
 
 [dependencies]
 bytes = "1.6.0"
+flagset = "0.4.6"
 flate2 = "1.0.28"
-enumeration = { git = "https://github.com/jnbooth/enumeration", version = "0.8.0" }
 mxp = { path = "../mxp" }
 serde = { version = "1.0.204", features = ["derive"], optional = true }
 
 [features]
-serde = ["dep:serde", "mxp/serde"]
+serde = ["dep:serde", "mxp/serde", "flagset/serde"]

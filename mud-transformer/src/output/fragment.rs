@@ -3,7 +3,7 @@ use std::num::NonZeroU8;
 use std::vec;
 
 use bytes::Bytes;
-use enumeration::{Enum, EnumSet};
+use flagset::{flags, FlagSet};
 
 use super::shared_string::SharedString;
 use super::span::TextStyle;
@@ -11,7 +11,7 @@ use mxp::RgbColor;
 
 pub type OutputDrain<'a> = vec::Drain<'a, Output>;
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Output {
     pub fragment: OutputFragment,
     pub gag: bool,
@@ -28,7 +28,7 @@ impl<T: Into<OutputFragment>> From<T> for Output {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum OutputFragment {
     Effect(EffectFragment),
     Frame(mxp::Frame),
@@ -206,18 +206,20 @@ impl From<mxp::Stat> for OutputFragment {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum TelnetSource {
-    Client,
-    Server,
-}
+flags! {
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum TelnetSource: u8 {
+        Client,
+        Server,
+    }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum TelnetVerb {
-    Do,
-    Dont,
-    Will,
-    Wont,
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum TelnetVerb: u8 {
+        Do,
+        Dont,
+        Will,
+        Wont,
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -251,10 +253,10 @@ impl From<TelnetFragment> for OutputFragment {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct TextFragment {
     pub text: SharedString,
-    pub flags: EnumSet<TextStyle>,
+    pub flags: FlagSet<TextStyle>,
     pub foreground: RgbColor,
     pub background: RgbColor,
     pub font: Option<String>,
@@ -280,7 +282,7 @@ impl Display for TextFragment {
         }
         let mut flags = self.flags;
         if self.action.is_some() {
-            flags.insert(TextStyle::Underline);
+            flags |= TextStyle::Underline;
         }
         for flag in flags {
             if let Some(ansi) = flag.ansi() {

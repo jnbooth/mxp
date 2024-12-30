@@ -1,4 +1,4 @@
-use enumeration::{Enum, EnumSet};
+use flagset::{flags, FlagSet};
 use std::fmt::{self, Display, Formatter};
 
 use super::{mtts, Negotiate};
@@ -8,13 +8,15 @@ use crate::transformer::TransformerConfig;
 /// https://tintin.mudhalla.net/protocols/mnes/
 pub const CODE: u8 = 39;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-enum Variable {
-    Mtts,
-    Charset,
-    ClientName,
-    ClientVersion,
-    TerminalType,
+flags! {
+    #[derive(PartialOrd, Ord, Hash)]
+    enum Variable: u8 {
+        Mtts,
+        Charset,
+        ClientName,
+        ClientVersion,
+        TerminalType,
+    }
 }
 
 impl Variable {
@@ -50,9 +52,9 @@ impl Variable {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Variables {
-    inner: EnumSet<Variable>,
+    inner: FlagSet<Variable>,
     prefix: &'static str,
 }
 
@@ -64,11 +66,13 @@ impl Default for Variables {
 
 impl<T: AsRef<[u8]>> From<T> for Variables {
     fn from(value: T) -> Self {
-        let inner = value
-            .as_ref()
-            .split(|&c| c == 0)
-            .filter_map(Variable::parse)
-            .collect();
+        let mut inner = FlagSet::default();
+        inner.extend(
+            value
+                .as_ref()
+                .split(|&c| c == 0)
+                .filter_map(Variable::parse),
+        );
         Self {
             inner,
             prefix: "\x00",
@@ -77,9 +81,9 @@ impl<T: AsRef<[u8]>> From<T> for Variables {
 }
 
 impl Variables {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
-            inner: EnumSet::new(),
+            inner: FlagSet::default(),
             prefix: "\x00",
         }
     }
@@ -93,21 +97,21 @@ impl Variables {
     }
 
     pub fn changes(self, a: &TransformerConfig, b: &TransformerConfig) -> Self {
-        let mut changes = EnumSet::new();
+        let mut changes = FlagSet::default();
 
         if self.inner.contains(Variable::Mtts) && mtts::bitmask(a) != mtts::bitmask(b) {
-            changes.insert(Variable::Mtts);
+            changes |= Variable::Mtts;
         }
         if self.inner.contains(Variable::Charset) && a.disable_utf8 != b.disable_utf8 {
-            changes.insert(Variable::Charset);
+            changes |= Variable::Charset;
         }
         if self.inner.contains(Variable::ClientName)
             && a.terminal_identification != b.terminal_identification
         {
-            changes.insert(Variable::ClientName);
+            changes |= Variable::ClientName;
         }
         if self.inner.contains(Variable::ClientVersion) && a.version != b.version {
-            changes.insert(Variable::ClientVersion);
+            changes |= Variable::ClientVersion;
         }
 
         Self {
@@ -121,7 +125,7 @@ impl Variables {
 pub struct Subnegotiation<'a> {
     config: &'a TransformerConfig,
     prefix: &'a str,
-    variables: EnumSet<Variable>,
+    variables: FlagSet<Variable>,
 }
 
 impl<'a> Display for Subnegotiation<'a> {

@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate enumeration;
-
 pub use mxp;
 pub use mxp::escape;
 

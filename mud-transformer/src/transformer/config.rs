@@ -1,48 +1,46 @@
+use flagset::{flags, FlagSet};
 use mxp::RgbColor;
 use std::collections::HashSet;
 
-use enumeration::{Enum, EnumSet};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
+flags! {
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum UseMxp: u8 {
+        Command,
+        Query,
+        Always,
+        Never,
+    }
 
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum UseMxp {
-    Command,
-    Query,
-    Always,
-    Never,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum Tag {
-    Bold,
-    Color,
-    Dest,
-    Expire,
-    Filter,
-    Font,
-    Frame,
-    Gauge,
-    H1,
-    H2,
-    H3,
-    H4,
-    H5,
-    H6,
-    Highlight,
-    Hr,
-    Hyperlink,
-    Image,
-    Italic,
-    Music,
-    Relocate,
-    Send,
-    Small,
-    Stat,
-    Strikeout,
-    Tt,
-    Underline,
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum Tag: u32 {
+        Bold,
+        Color,
+        Dest,
+        Expire,
+        Filter,
+        Font,
+        Frame,
+        Gauge,
+        H1,
+        H2,
+        H3,
+        H4,
+        H5,
+        H6,
+        Highlight,
+        Hr,
+        Hyperlink,
+        Image,
+        Italic,
+        Music,
+        Relocate,
+        Send,
+        Small,
+        Stat,
+        Strikeout,
+        Tt,
+        Underline,
+    }
 }
 
 impl From<Tag> for mxp::ActionKind {
@@ -93,7 +91,7 @@ pub struct TransformerConfig {
     pub player: String,
     pub screen_reader: bool,
     pub ssl: bool,
-    pub supports: EnumSet<Tag>,
+    pub supports: FlagSet<Tag>,
     pub terminal_identification: String,
     pub use_mxp: UseMxp,
     pub version: String,
@@ -121,7 +119,7 @@ impl TransformerConfig {
             player: String::new(),
             screen_reader: false,
             ssl: false,
-            supports: EnumSet::all(),
+            supports: FlagSet::full(),
             terminal_identification: String::new(),
             use_mxp: UseMxp::Command,
             version: String::new(),
@@ -129,12 +127,11 @@ impl TransformerConfig {
         }
     }
 
-    pub(crate) fn supported_actions(&self) -> EnumSet<mxp::ActionKind> {
-        self.supports
-            .inverse()
-            .into_iter()
-            .map(mxp::ActionKind::from)
-            .collect::<EnumSet<_>>()
-            .inverse()
+    pub(crate) fn supported_actions(&self) -> FlagSet<mxp::ActionKind> {
+        let mut actions = FlagSet::full();
+        for action in (!self.supports).into_iter().map(mxp::ActionKind::from) {
+            actions -= action;
+        }
+        actions
     }
 }

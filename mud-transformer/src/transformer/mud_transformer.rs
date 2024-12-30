@@ -13,7 +13,7 @@ use crate::output::{
     TelnetFragment, TelnetSource, TelnetVerb, TextStyle,
 };
 use crate::protocol::{self, ansi, charset, mccp, mnes, mssp, mtts, Negotiate};
-use enumeration::EnumSet;
+use flagset::FlagSet;
 use mxp::escape::telnet;
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
@@ -264,7 +264,7 @@ impl Transformer {
                 if let Some(variable) = &el.variable {
                     self.output.set_mxp_entity(EntitySetter {
                         name: variable.clone(),
-                        flags: EnumSet::new(),
+                        flags: FlagSet::default(),
                         is_variable: true,
                     });
                 }
@@ -279,7 +279,7 @@ impl Transformer {
     fn mxp_set_entity(
         &mut self,
         variable: String,
-        keywords: EnumSet<mxp::EntityKeyword>,
+        keywords: FlagSet<mxp::EntityKeyword>,
         mxp_state: &mxp::State,
     ) {
         if mxp_state.is_global_entity(&variable) {
@@ -382,7 +382,7 @@ impl Transformer {
         }
     }
 
-    fn mxp_set_keywords(&mut self, keywords: EnumSet<mxp::MxpKeyword>) {
+    fn mxp_set_keywords(&mut self, keywords: FlagSet<mxp::MxpKeyword>) {
         use mxp::{Mode, MxpKeyword};
         if keywords.contains(MxpKeyword::Off) {
             self.mxp_off(true);
@@ -500,9 +500,6 @@ impl Transformer {
         }
 
         if self.phase.is_phase_reset(c) {
-            if self.phase.is_mxp_mode_change() {
-                self.mxp_mode_change(None);
-            }
             self.phase = Phase::Normal;
         }
 
@@ -829,8 +826,6 @@ impl Transformer {
                 }
                 _ => self.mxp_entity_string.push(c),
             },
-
-            Phase::MxpWelcome => (),
 
             Phase::Normal => match c {
                 telnet::ESC => self.phase = Phase::Esc,

@@ -1,10 +1,9 @@
-use enumeration::Enum;
 use mxp::escape::ansi;
 use mxp::RgbColor;
 
 use crate::output::{BufferedOutput, TermColor, TextStyle};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Palette {
     Foreground,
     Background,
@@ -33,7 +32,7 @@ impl Palette {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum Phase {
     Code,
     Start,

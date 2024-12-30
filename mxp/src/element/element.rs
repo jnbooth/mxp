@@ -1,8 +1,6 @@
 use std::num::NonZeroU8;
 use std::str::FromStr;
 
-use enumeration::Enum;
-
 use super::atom::Atom;
 use super::mode::Mode;
 use crate::argument::{Arguments, Decoder, Scan};
@@ -66,7 +64,7 @@ impl<'a> CollectedElement<'a> {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ParseAs {
     /// The text for the element is parsed by the automapper as the name of a room
     RoomName,

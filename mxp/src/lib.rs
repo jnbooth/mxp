@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate enumeration;
-
 macro_rules! const_non_zero {
     ($i:ident, $t:ident, $n:expr) => {
         const $i: std::num::$t = match std::num::$t::new($n) {

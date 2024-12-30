@@ -1,7 +1,7 @@
 use super::keyword_filter::{KeywordFilter, NoKeywords};
 use crate::parser::{Error, ErrorKind};
 use casefold::ascii::CaseFoldMap;
-use enumeration::{Enum, EnumSet};
+use flagset::{FlagSet, Flags};
 use std::borrow::Cow;
 use std::marker::PhantomData;
 use std::num::ParseIntError;
@@ -46,10 +46,10 @@ impl<'a, D: Decoder, S: AsRef<str>, F: KeywordFilter> Scan<'a, D, S, F> {
         }
     }
 
-    pub fn with_keywords<E: Enum + FromStr>(self) -> KeywordScan<'a, D, S, E> {
+    pub fn with_keywords<E: Flags + FromStr>(self) -> KeywordScan<'a, D, S, E> {
         KeywordScan {
             inner: self.with_filter(),
-            keywords: EnumSet::new(),
+            keywords: FlagSet::default(),
         }
     }
 
@@ -84,12 +84,12 @@ impl<'a, D: Decoder, S: AsRef<str>, F: KeywordFilter> Scan<'a, D, S, F> {
     }
 }
 
-pub struct KeywordScan<'a, D, S, K: Enum> {
+pub struct KeywordScan<'a, D, S, K: Flags> {
     inner: Scan<'a, D, S, K>,
-    keywords: EnumSet<K>,
+    keywords: FlagSet<K>,
 }
 
-impl<'a, D, S: AsRef<str>, K: Enum> Deref for KeywordScan<'a, D, S, K> {
+impl<'a, D, S: AsRef<str>, K: Flags> Deref for KeywordScan<'a, D, S, K> {
     type Target = Scan<'a, D, S, K>;
 
     fn deref(&self) -> &Self::Target {
@@ -97,22 +97,22 @@ impl<'a, D, S: AsRef<str>, K: Enum> Deref for KeywordScan<'a, D, S, K> {
     }
 }
 
-impl<'a, D, S: AsRef<str>, K: Enum> DerefMut for KeywordScan<'a, D, S, K> {
+impl<'a, D, S: AsRef<str>, K: Flags> DerefMut for KeywordScan<'a, D, S, K> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>, K: Enum + FromStr> KeywordScan<'a, D, S, K> {
-    pub fn keywords(&self) -> EnumSet<K> {
+impl<'a, D: Decoder, S: AsRef<str>, K: Flags + FromStr> KeywordScan<'a, D, S, K> {
+    pub fn keywords(&self) -> FlagSet<K> {
         self.keywords
     }
 
     fn next_non_keyword(&mut self) -> Option<&'a str> {
         for arg in &mut self.inner.inner {
             let arg = arg.as_ref();
-            if let Ok(keyword) = arg.parse() {
-                self.keywords.insert(keyword);
+            if let Ok(keyword) = arg.parse::<K>() {
+                self.keywords |= keyword;
             } else {
                 return Some(arg);
             }
@@ -132,11 +132,13 @@ impl<'a, D: Decoder, S: AsRef<str>, K: Enum + FromStr> KeywordScan<'a, D, S, K> 
         }
     }
 
-    pub fn into_keywords(self) -> EnumSet<K> {
+    pub fn into_keywords(self) -> FlagSet<K> {
         let mut keywords = self.keywords;
-        for keyword in self.inner.inner.filter_map(|arg| arg.as_ref().parse().ok()) {
-            keywords.insert(keyword);
-        }
+        keywords.extend(
+            self.inner
+                .inner
+                .filter_map(|arg| arg.as_ref().parse::<K>().ok()),
+        );
         keywords
     }
 }

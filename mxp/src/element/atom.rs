@@ -1,7 +1,7 @@
 use std::str;
 
 use casefold::ascii::CaseFold;
-use enumeration::EnumSet;
+use flagset::FlagSet;
 
 use crate::lookup::Lookup;
 
@@ -27,7 +27,7 @@ impl Atom {
         ALL_ATOMS.get(name)
     }
 
-    pub fn fmt_supported<I>(buf: &mut Vec<u8>, iter: I, supported: EnumSet<ActionKind>)
+    pub fn fmt_supported<I>(buf: &mut Vec<u8>, iter: I, supported: FlagSet<ActionKind>)
     where
         I: IntoIterator,
         I::Item: AsRef<str>,
@@ -100,13 +100,29 @@ fn write_can_args(buf: &mut Vec<u8>, atom: &Atom) {
 static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
     use ActionKind::*;
 
-    const COMMAND: EnumSet<ActionKind> = enums![
-        Br, Expire, Filter, Gauge, Hr, Music, Mxp, NoBr, Password, Relocate, Reset, SBr, Stat,
-        Support, User, Version, Frame, Image, Music, Sound
-    ];
+    let command: FlagSet<ActionKind> = Br
+        | Expire
+        | Filter
+        | Gauge
+        | Hr
+        | Music
+        | Mxp
+        | NoBr
+        | Password
+        | Relocate
+        | Reset
+        | SBr
+        | Stat
+        | Support
+        | User
+        | Version
+        | Frame
+        | Image
+        | Music
+        | Sound;
 
-    const OPEN: EnumSet<ActionKind> =
-        enums![Bold, Color, Italic, Highlight, Strikeout, Small, Tt, Underline, Font];
+    let open: FlagSet<ActionKind> =
+        Bold | Color | Italic | Highlight | Strikeout | Small | Tt | Underline | Font;
 
     [
         ("a", Hyperlink, "href hint expire"),
@@ -176,8 +192,8 @@ static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
         };
         let atom = Atom {
             name: name.to_owned(),
-            command: COMMAND.contains(action),
-            open: OPEN.contains(action),
+            command: command.contains(action),
+            open: open.contains(action),
             action,
             args,
         };

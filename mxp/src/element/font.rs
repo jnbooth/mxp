@@ -2,19 +2,21 @@ use crate::argument::{Decoder, Scan};
 use crate::color::RgbColor;
 use crate::parser::Error;
 use crate::parser::UnrecognizedVariant;
-use enumeration::Enum;
+use flagset::flags;
 use std::borrow::Cow;
 use std::num::NonZeroU8;
 use std::str;
 use std::str::FromStr;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum FontStyle {
-    Blink,
-    Bold,
-    Italic,
-    Underline,
-    Inverse,
+flags! {
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum FontStyle: u8 {
+        Blink,
+        Bold,
+        Italic,
+        Underline,
+        Inverse,
+    }
 }
 
 impl FromStr for FontStyle {

@@ -1,4 +1,4 @@
-use enumeration::EnumSet;
+use flagset::FlagSet;
 
 use crate::EntityKeyword;
 
@@ -18,7 +18,8 @@ impl Entity {
         }
     }
 
-    pub fn apply_keywords(&mut self, keywords: EnumSet<EntityKeyword>) {
+    pub fn apply_keywords<T: Into<FlagSet<EntityKeyword>>>(&mut self, keywords: T) {
+        let keywords = keywords.into();
         if keywords.contains(EntityKeyword::Private) {
             self.published = false;
         } else if keywords.contains(EntityKeyword::Publish) {
@@ -49,18 +50,18 @@ mod tests {
     #[test]
     fn apply_publish() {
         let mut entity = Entity::new(String::new());
-        entity.apply_keywords(enums![EntityKeyword::Publish]);
-        entity.apply_keywords(EnumSet::new());
+        entity.apply_keywords(EntityKeyword::Publish);
+        entity.apply_keywords(None);
         assert!(entity.published);
     }
 
     #[test]
     fn apply_private() {
         let mut entity = Entity::new(String::new());
-        entity.apply_keywords(enums![EntityKeyword::Publish]);
-        entity.apply_keywords(EnumSet::new());
-        entity.apply_keywords(enums![EntityKeyword::Private]);
-        entity.apply_keywords(EnumSet::new());
+        entity.apply_keywords(EntityKeyword::Publish);
+        entity.apply_keywords(None);
+        entity.apply_keywords(EntityKeyword::Private);
+        entity.apply_keywords(None);
         assert!(!entity.published);
     }
 

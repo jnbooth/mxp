@@ -8,5 +8,8 @@ workspace = true
 
 [dependencies]
 casefold = { git = "https://github.com/jnbooth/casefold", version = "0.2.0" }
-enumeration = { git = "https://github.com/jnbooth/enumeration", version = "0.8.0" }
+flagset = "0.4.6"
 serde = { version = "1.0.204", optional = true }
+
+[features]
+serde = ["dep:serde", "flagset/serde"]

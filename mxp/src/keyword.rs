@@ -1,14 +1,57 @@
+use flagset::flags;
 use std::str::FromStr;
-
-use enumeration::Enum;
 
 use crate::parser::UnrecognizedVariant;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum ElementKeyword {
-    Open,
-    Empty,
-    Delete,
+flags! {
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum ElementKeyword: u8 {
+        Open,
+        Empty,
+        Delete,
+    }
+
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum EntityKeyword: u8 {
+        Private,
+        Publish,
+        Delete,
+        Add,
+        Remove,
+    }
+
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum FrameKeyword: u8 {
+        Floating,
+        Internal,
+    }
+
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum ImageKeyword: u8 {
+        IsMap,
+    }
+
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum MxpKeyword: u8 {
+        Off,
+        DefaultLocked,
+        DefaultSecure,
+        DefaultOpen,
+        IgnoreNewlines,
+        UseNewlines,
+    }
+
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum SendKeyword: u8 {
+        Prompt
+    }
+
+    #[derive(PartialOrd, Ord, Hash)]
+    pub enum TagKeyword: u8 {
+        Gag,
+        Enable,
+        Disable,
+    }
 }
 
 impl FromStr for ElementKeyword {
@@ -22,15 +65,6 @@ impl FromStr for ElementKeyword {
             _ => return Err(Self::Err::new(s)),
         })
     }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum EntityKeyword {
-    Private,
-    Publish,
-    Delete,
-    Add,
-    Remove,
 }
 
 impl FromStr for EntityKeyword {
@@ -48,12 +82,6 @@ impl FromStr for EntityKeyword {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum FrameKeyword {
-    Floating,
-    Internal,
-}
-
 impl FromStr for FrameKeyword {
     type Err = UnrecognizedVariant<Self>;
 
@@ -66,11 +94,6 @@ impl FromStr for FrameKeyword {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum ImageKeyword {
-    IsMap,
-}
-
 impl FromStr for ImageKeyword {
     type Err = UnrecognizedVariant<Self>;
 
@@ -80,16 +103,6 @@ impl FromStr for ImageKeyword {
             _ => return Err(Self::Err::new(s))
         })
     }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum MxpKeyword {
-    Off,
-    DefaultLocked,
-    DefaultSecure,
-    DefaultOpen,
-    IgnoreNewlines,
-    UseNewlines,
 }
 
 impl FromStr for MxpKeyword {
@@ -108,11 +121,6 @@ impl FromStr for MxpKeyword {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum SendKeyword {
-    Prompt,
-}
-
 impl FromStr for SendKeyword {
     type Err = UnrecognizedVariant<Self>;
 
@@ -122,13 +130,6 @@ impl FromStr for SendKeyword {
             _ => return Err(Self::Err::new(s))
         })
     }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Enum)]
-pub enum TagKeyword {
-    Gag,
-    Enable,
-    Disable,
 }
 
 impl FromStr for TagKeyword {
