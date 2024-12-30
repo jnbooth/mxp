@@ -13,8 +13,11 @@ use crate::argument::{Decoder, Scan};
 use crate::color::RgbColor;
 use crate::keyword::{EntityKeyword, MxpKeyword};
 use flagset::{flags, FlagSet};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 flags! {
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum ActionKind: u64 {
         /// bold
@@ -97,6 +100,7 @@ flags! {
         Version,
     }
 
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum Heading: u8 {
         H1,

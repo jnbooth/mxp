@@ -4,6 +4,8 @@ use std::vec;
 
 use bytes::Bytes;
 use flagset::{flags, FlagSet};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 use super::shared_string::SharedString;
 use super::span::TextStyle;
@@ -207,12 +209,14 @@ impl From<mxp::Stat> for OutputFragment {
 }
 
 flags! {
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum TelnetSource: u8 {
         Client,
         Server,
     }
 
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum TelnetVerb: u8 {
         Do,

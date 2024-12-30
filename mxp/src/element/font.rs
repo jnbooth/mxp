@@ -3,12 +3,15 @@ use crate::color::RgbColor;
 use crate::parser::Error;
 use crate::parser::UnrecognizedVariant;
 use flagset::flags;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::num::NonZeroU8;
 use std::str;
 use std::str::FromStr;
 
 flags! {
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum FontStyle: u8 {
         Blink,

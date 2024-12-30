@@ -1,9 +1,12 @@
 use flagset::flags;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 use crate::parser::UnrecognizedVariant;
 
 flags! {
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum ElementKeyword: u8 {
         Open,
@@ -11,6 +14,7 @@ flags! {
         Delete,
     }
 
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum EntityKeyword: u8 {
         Private,
@@ -20,17 +24,20 @@ flags! {
         Remove,
     }
 
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum FrameKeyword: u8 {
         Floating,
         Internal,
     }
 
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum ImageKeyword: u8 {
         IsMap,
     }
 
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum MxpKeyword: u8 {
         Off,
@@ -41,11 +48,13 @@ flags! {
         UseNewlines,
     }
 
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum SendKeyword: u8 {
         Prompt
     }
 
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum TagKeyword: u8 {
         Gag,

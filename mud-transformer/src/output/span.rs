@@ -6,8 +6,11 @@ use super::color::TermColor;
 use flagset::{flags, FlagSet};
 use mxp::escape::ansi;
 use mxp::Heading;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 flags! {
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum TextStyle: u16 {
         Blink,

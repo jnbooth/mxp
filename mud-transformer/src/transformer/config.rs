@@ -1,8 +1,11 @@
 use flagset::{flags, FlagSet};
 use mxp::RgbColor;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 use std::collections::HashSet;
 
 flags! {
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum UseMxp: u8 {
         Command,
@@ -11,6 +14,7 @@ flags! {
         Never,
     }
 
+    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum Tag: u32 {
         Bold,
