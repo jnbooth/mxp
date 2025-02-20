@@ -16,3 +16,7 @@ must_use_candidate = "allow"
 struct_excessive_bools = "allow"
 too_many_lines = "allow"
 unreadable_literal = "allow"
+
+[workspace.dependencies]
+flagset = "0.4.6"
+serde = "1.0.204"

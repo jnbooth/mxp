@@ -8,10 +8,10 @@ workspace = true
 
 [dependencies]
 bytes = "1.6.0"
-flagset = "0.4.6"
+flagset = { workspace = true }
 flate2 = "1.0.28"
 mxp = { path = "../mxp" }
-serde = { version = "1.0.204", features = ["derive"], optional = true }
+serde = { workspace = true, features = ["derive"], optional = true }
 
 [features]
 serde = ["dep:serde", "mxp/serde", "flagset/serde"]
