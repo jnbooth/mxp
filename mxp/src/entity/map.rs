@@ -84,66 +84,75 @@ impl EntityMap {
         description: Option<String>,
         keywords: T,
     ) -> Option<EntityEntry<'a>> {
-        let keywords = keywords.into();
-        if keywords.contains(EntityKeyword::Delete) {
-            return self.remove(key).map(|_| EntityEntry {
+        // Reduce monomorphization
+        fn inner<'a>(
+            map: &'a mut HashMap<String, Entity>,
+            key: &'a str,
+            value: &str,
+            description: Option<String>,
+            keywords: FlagSet<EntityKeyword>,
+        ) -> Option<EntityEntry<'a>> {
+            if keywords.contains(EntityKeyword::Delete) {
+                return map.remove(key).map(|_| EntityEntry {
+                    name: key,
+                    value: None,
+                });
+            }
+            let entity = match map.entry(key.to_owned()) {
+                Entry::Vacant(_) if keywords.contains(EntityKeyword::Remove) => return None,
+                Entry::Vacant(entry) => entry.insert(Entity {
+                    value: value.to_owned(),
+                    published: keywords.contains(EntityKeyword::Publish),
+                    description: description.unwrap_or_default(),
+                }),
+                Entry::Occupied(entry) if keywords.contains(EntityKeyword::Remove) => {
+                    if entry.get().value == value {
+                        entry.remove();
+                        return Some(EntityEntry {
+                            name: key,
+                            value: None,
+                        });
+                    }
+                    let entity = entry.into_mut();
+                    entity.remove(value);
+                    entity.apply_keywords(keywords);
+                    entity
+                }
+                Entry::Occupied(entry) if keywords.contains(EntityKeyword::Add) => {
+                    let entity = entry.into_mut();
+                    entity.add(value);
+                    entity.apply_keywords(keywords);
+                    entity
+                }
+                Entry::Occupied(entry) => {
+                    let entity = entry.into_mut();
+                    let description_unchanged = match description {
+                        Some(description) if entity.description != description => {
+                            entity.description = description;
+                            false
+                        }
+                        _ => true,
+                    };
+                    if description_unchanged && entity.value == value {
+                        let old_published = entity.published;
+                        entity.apply_keywords(keywords);
+                        if entity.published == old_published {
+                            return None;
+                        }
+                    } else {
+                        entity.value.clear();
+                        entity.value.push_str(value);
+                        entity.apply_keywords(keywords);
+                    }
+                    entity
+                }
+            };
+            Some(EntityEntry {
                 name: key,
-                value: None,
-            });
+                value: Some(entity),
+            })
         }
-        let entity = match self.inner.entry(key.to_owned()) {
-            Entry::Vacant(_) if keywords.contains(EntityKeyword::Remove) => return None,
-            Entry::Vacant(entry) => entry.insert(Entity {
-                value: value.to_owned(),
-                published: keywords.contains(EntityKeyword::Publish),
-                description: description.unwrap_or_default(),
-            }),
-            Entry::Occupied(entry) if keywords.contains(EntityKeyword::Remove) => {
-                if entry.get().value == value {
-                    entry.remove();
-                    return Some(EntityEntry {
-                        name: key,
-                        value: None,
-                    });
-                }
-                let entity = entry.into_mut();
-                entity.remove(value);
-                entity.apply_keywords(keywords);
-                entity
-            }
-            Entry::Occupied(entry) if keywords.contains(EntityKeyword::Add) => {
-                let entity = entry.into_mut();
-                entity.add(value);
-                entity.apply_keywords(keywords);
-                entity
-            }
-            Entry::Occupied(entry) => {
-                let entity = entry.into_mut();
-                let description_unchanged = match description {
-                    Some(description) if entity.description != description => {
-                        entity.description = description;
-                        false
-                    }
-                    _ => true,
-                };
-                if description_unchanged && entity.value == value {
-                    let old_published = entity.published;
-                    entity.apply_keywords(keywords);
-                    if entity.published == old_published {
-                        return None;
-                    }
-                } else {
-                    entity.value.clear();
-                    entity.value.push_str(value);
-                    entity.apply_keywords(keywords);
-                }
-                entity
-            }
-        };
-        Some(EntityEntry {
-            name: key,
-            value: Some(entity),
-        })
+        inner(&mut self.inner, key, value, description, keywords.into())
     }
 
     pub fn decode_entity(&self, key: &str) -> crate::Result<Option<&str>> {

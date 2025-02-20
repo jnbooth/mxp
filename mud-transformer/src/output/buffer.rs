@@ -120,33 +120,36 @@ impl BufferedOutput {
     }
 
     pub fn append<T: Into<OutputFragment>>(&mut self, fragment: T) {
-        let fragment = fragment.into();
-        if fragment.should_flush() {
-            self.flush();
-            if fragment.is_newline() {
-                self.in_line = false;
+        // Reduce monomorphization
+        fn inner(buffer: &mut BufferedOutput, fragment: OutputFragment) {
+            if fragment.should_flush() {
+                buffer.flush();
+                if fragment.is_newline() {
+                    buffer.in_line = false;
+                }
             }
-        }
-        if !fragment.is_visual() {
-            if fragment == OutputFragment::Telnet(TelnetFragment::GoAhead) {
-                self.last_break = self.fragments.len() + 1;
+            if !fragment.is_visual() {
+                if fragment == OutputFragment::Telnet(TelnetFragment::GoAhead) {
+                    buffer.last_break = buffer.fragments.len() + 1;
+                }
+                buffer.fragments.push(Output::from(fragment));
+                return;
             }
-            self.fragments.push(Output::from(fragment));
-            return;
+            if !buffer.in_line && !fragment.is_newline() {
+                buffer.in_line = true;
+                buffer.last_break = buffer.fragments.len();
+            }
+            let Some(span) = buffer.spans.get() else {
+                buffer.fragments.push(Output::from(fragment));
+                return;
+            };
+            buffer.fragments.push(Output {
+                fragment,
+                gag: span.gag,
+                window: span.window.clone(),
+            });
         }
-        if !self.in_line && !fragment.is_newline() {
-            self.in_line = true;
-            self.last_break = self.fragments.len();
-        }
-        let Some(span) = self.spans.get() else {
-            self.fragments.push(Output::from(fragment));
-            return;
-        };
-        self.fragments.push(Output {
-            fragment,
-            gag: span.gag,
-            window: span.window.clone(),
-        });
+        inner(self, fragment.into());
     }
 
     fn take_buf(&mut self) -> SharedString {

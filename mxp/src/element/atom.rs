@@ -36,41 +36,49 @@ impl Atom {
         let mut has_args = false;
         for arg in iter {
             has_args = true;
-            let mut questions = arg.as_ref().split('.');
-            let tag = questions.next().unwrap();
-            match Atom::get(tag) {
-                None => write_cant(buf, tag),
-                Some(atom) if !supported.contains(atom.action) => {
-                    write_cant(buf, tag);
-                }
-                Some(atom) => match questions.next() {
-                    None => write_can(buf, tag),
-                    Some("*") => write_can_args(buf, atom),
-                    Some(subtag) if atom.args.contains(&subtag.into()) => {
-                        write_can(buf, subtag);
-                    }
-                    Some(subtag) => write_cant(buf, subtag),
-                },
-            }
+            write_supported(buf, supported, arg.as_ref());
         }
-        if !has_args {
-            for atom in ALL_ATOMS.values() {
-                if supported.contains(atom.action) {
-                    write_can(buf, &atom.name);
-                    write_can_args(buf, atom);
-                }
-            }
-        }
-        if !supported.contains(ActionKind::Font) && supported.contains(ActionKind::Color) {
-            let simple_font = Atom {
-                args: vec!["color".into(), "back".into()],
-                ..ALL_ATOMS.get("font").unwrap().clone()
-            };
-            write_can(buf, &simple_font.name);
-            write_can_args(buf, &simple_font);
-        }
-        buf.extend_from_slice(b">\n");
+        write_supported_suffix(buf, supported, has_args);
     }
+}
+
+fn write_supported(buf: &mut Vec<u8>, supported: FlagSet<ActionKind>, arg: &str) {
+    let mut questions = arg.split('.');
+    let tag = questions.next().unwrap();
+    match Atom::get(tag) {
+        None => write_cant(buf, tag),
+        Some(atom) if !supported.contains(atom.action) => {
+            write_cant(buf, tag);
+        }
+        Some(atom) => match questions.next() {
+            None => write_can(buf, tag),
+            Some("*") => write_can_args(buf, atom),
+            Some(subtag) if atom.args.contains(&subtag.into()) => {
+                write_can(buf, subtag);
+            }
+            Some(subtag) => write_cant(buf, subtag),
+        },
+    }
+}
+
+fn write_supported_suffix(buf: &mut Vec<u8>, supported: FlagSet<ActionKind>, has_args: bool) {
+    if !has_args {
+        for atom in ALL_ATOMS.values() {
+            if supported.contains(atom.action) {
+                write_can(buf, &atom.name);
+                write_can_args(buf, atom);
+            }
+        }
+    }
+    if !supported.contains(ActionKind::Font) && supported.contains(ActionKind::Color) {
+        let simple_font = Atom {
+            args: vec!["color".into(), "back".into()],
+            ..ALL_ATOMS.get("font").unwrap().clone()
+        };
+        write_can(buf, &simple_font.name);
+        write_can_args(buf, &simple_font);
+    }
+    buf.extend_from_slice(b">\n");
 }
 
 fn write_cant(buf: &mut Vec<u8>, tag: &str) {

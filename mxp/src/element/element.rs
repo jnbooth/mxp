@@ -129,34 +129,37 @@ impl Element {
     }
 
     fn parse_items<S: AsRef<str>>(argument: Option<S>) -> crate::Result<Vec<ElementItem<String>>> {
+        // Reduce monomorphization
+        fn inner(argument: &str) -> crate::Result<Vec<ElementItem<String>>> {
+            let size_guess = argument.bytes().filter(|&c| c == b'<').count();
+            let mut items = Vec::with_capacity(size_guess);
+
+            let mut iter = argument.char_indices();
+            while let Some((start, startc)) = iter.next() {
+                if startc != '<' {
+                    return Err(Error::new(argument, ErrorKind::NoTagInDefinition));
+                }
+                loop {
+                    let (end, endc) = iter
+                        .next()
+                        .ok_or_else(|| Error::new(argument, ErrorKind::NoClosingDefinitionQuote))?;
+                    if endc == '>' {
+                        let definition = &argument[start + 1..end];
+                        items.push(ElementItem::parse(definition)?);
+                        break;
+                    }
+                    if (endc == '\'' || endc == '"') && !iter.any(|(_, c)| c == endc) {
+                        return Err(Error::new(argument, ErrorKind::NoClosingDefinitionQuote));
+                    }
+                }
+            }
+
+            Ok(items)
+        }
         let Some(argument) = argument else {
             return Ok(Vec::new());
         };
-        let definitions = argument.as_ref();
-        let size_guess = definitions.bytes().filter(|&c| c == b'<').count();
-        let mut items = Vec::with_capacity(size_guess);
-
-        let mut iter = definitions.char_indices();
-        while let Some((start, startc)) = iter.next() {
-            if startc != '<' {
-                return Err(Error::new(definitions, ErrorKind::NoTagInDefinition));
-            }
-            loop {
-                let (end, endc) = iter
-                    .next()
-                    .ok_or_else(|| Error::new(definitions, ErrorKind::NoClosingDefinitionQuote))?;
-                if endc == '>' {
-                    let definition = &definitions[start + 1..end];
-                    items.push(ElementItem::parse(definition)?);
-                    break;
-                }
-                if (endc == '\'' || endc == '"') && !iter.any(|(_, c)| c == endc) {
-                    return Err(Error::new(definitions, ErrorKind::NoClosingDefinitionQuote));
-                }
-            }
-        }
-
-        Ok(items)
+        inner(argument.as_ref())
     }
 
     pub fn parse<D: Decoder, S: AsRef<str>>(

@@ -22,20 +22,23 @@ pub struct Charsets {
 
 impl<T: AsRef<[u8]>> From<T> for Charsets {
     fn from(value: T) -> Self {
-        let mut inner = FlagSet::default();
-        let data = value.as_ref();
-        if data.len() < 3 || data[0] != 1 {
-            return Self { inner };
-        }
-        let delim = data[1];
-        for fragment in data[2..].split(|&c| c == delim) {
-            if fragment == b"UTF-8" {
-                inner |= Charset::Utf8;
-            } else if fragment == b"US-ASCII" {
-                inner |= Charset::Ascii;
+        // Reduce monomorphization
+        fn inner(data: &[u8]) -> Charsets {
+            if data.len() < 3 || data[0] != 1 {
+                return Charsets::default();
             }
+            let mut flags = FlagSet::default();
+            let delim = data[1];
+            for fragment in data[2..].split(|&c| c == delim) {
+                if fragment == b"UTF-8" {
+                    flags |= Charset::Utf8;
+                } else if fragment == b"US-ASCII" {
+                    flags |= Charset::Ascii;
+                }
+            }
+            Charsets { inner: flags }
         }
-        Self { inner }
+        inner(value.as_ref())
     }
 }
 
