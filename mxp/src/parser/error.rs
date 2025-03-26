@@ -1,100 +1,103 @@
 use flagset::Flags;
+use std::borrow::Cow;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::marker::PhantomData;
 use std::str;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ErrorKind {
-    ///  eg. < ... \n
+    /// eg. < ... \n
     UnterminatedElement,
-    ///  eg. <!-- ... \n
+    /// eg. <!-- ... \n
     UnterminatedComment,
-    ///  eg. & ... \n
+    /// eg. & ... \n
     UnterminatedEntity,
-    ///  eg. < ' ... \n
+    /// eg. < ' ... \n
     UnterminatedQuote,
-    ///  eg. <>
+    /// eg. <>
     EmptyElement,
-    ///  eg. <!>
+    /// eg. <!>
     ElementTooShort,
-    ///  eg. &*;
+    /// eg. &*;
     InvalidEntityName,
-    ///  eg. <!ELEMENT ... > in open mode
+    /// eg. <!ELEMENT ... > in open mode
     DefinitionWhenNotSecure,
-    ///  eg. < 2345 >  or </ 2345 >
+    /// eg. < 2345 >  or </ 2345 >
     InvalidElementName,
-    ///  ie. not <!ELEMENT ...> or <!ENTITY ...>
+    /// ie. not <!ELEMENT ...> or <!ENTITY ...>
     InvalidDefinition,
-    ///  cannot redefine inbuilt element
+    /// cannot redefine inbuilt element
     CannotRedefineElement,
-    ///  no < in element definition, eg. <!ELEMENT foo 'bold' >  (should be '<bold>')
+    /// no < in element definition, eg. <!ELEMENT foo 'bold' >  (should be '<bold>')
     NoTagInDefinition,
-    ///  eg. <!ELEMENT foo '<<bold>' >
+    /// eg. <!ELEMENT foo '<<bold>' >
     UnexpectedDefinitionSymbol,
-    ///  eg. <!ELEMENT foo '<send "west>' >
+    /// eg. <!ELEMENT foo '<send "west>' >
     NoClosingDefinitionQuote,
-    ///  eg. <!ELEMENT foo '<bold' >
+    /// eg. <!ELEMENT foo '<bold' >
     NoClosingDefinitionTag,
-    ///  defining unknown tag, eg. <!ELEMENT foo '<bar>' >
+    /// defining unknown tag, eg. <!ELEMENT foo '<bar>' >
     NoInbuiltDefinitionTag,
-    ///  eg. <!ELEMENT foo '<>' >
+    /// eg. <!ELEMENT foo '<>' >
     NoDefinitionTag,
-    ///  variable name in FLAG does not meet MUSHclient rules
+    /// variable name in FLAG does not meet MUSHclient rules
     BadVariableName,
-    ///  ATTLIST for undefined element name
+    /// ATTLIST for undefined element name
     UnknownElementInAttlist,
-    ///  cannot redefine inbuilt entity
+    /// cannot redefine inbuilt entity
     CannotRedefineEntity,
-    ///  eg. <!ENTITY foo &quot >
+    /// eg. <!ENTITY foo &quot >
     NoClosingSemicolon,
-    ///  eg. <!ENTITY foo 'bar' xxxx >
+    /// eg. <!ENTITY foo 'bar' xxxx >
     UnexpectedEntityArguments,
-    ///  eg. <blah>
+    /// eg. <blah>
     UnknownElement,
-    ///  eg. <send> in open mode
+    /// eg. <send> in open mode
     ElementWhenNotSecure,
-    ///  eg. <!ELEMENT foo '<send &bar>'>
+    /// eg. <!ELEMENT foo '<send &bar>'>
     NoClosingSemicolonInArgument,
-    ///  closing tag we don't recognise
+    /// closing tag we don't recognise
     ClosingUnknownTag,
-    ///  argument to COLOR or FONT not recognised color
+    /// argument to COLOR or FONT not recognised color
     UnknownColor,
     /// eg. 12d4
     InvalidNumber,
-    ///  eg. &#xxx;
+    /// eg. &#xxx;
     InvalidEntityNumber,
-    ///  eg. &#5000;
+    /// eg. &#5000;
     DisallowedEntityNumber,
-    ///  eg. &foo;
+    /// eg. &foo;
     UnknownEntity,
-    ///  eg. <color 123=blue>  (123 is invalid)
+    /// eg. <color 123=blue>  (123 is invalid)
     InvalidArgumentName,
-    ///  eg. <font color=>
+    /// eg. <font color=>
     NoArgument,
     /// eg. <a>
     IncompleteArguments,
-    ///  invalid argument to <support> tag
+    /// invalid argument to <support> tag
     InvalidSupportArgument,
-    ///  invalid argument to <option> tag
+    /// invalid argument to <option> tag
     InvalidOptionArgument,
-    ///  eg. <!ELEMENT foo '</bold>' >
+    /// eg. <!ELEMENT foo '</bold>' >
     DefinitionCannotCloseElement,
-    ///  eg. <!ELEMENT foo '<!ELEMENT>' >
+    /// eg. <!ELEMENT foo '<!ELEMENT>' >
     DefinitionCannotDefineElement,
-    ///  cannot change option with <recommend_option>
+    /// cannot change option with <recommend_option>
     CannotChangeOption,
-    ///  option not in acceptable range
+    /// option not in acceptable range
     OptionOutOfRange,
     /// cannot convert bytes into UTF-8
     MalformedBytes,
-    ///  eg. </send bar >
+    /// eg. </send bar >
     ArgumentsToClosingTag,
-    ///  when closing an open tag secure tag blocks it
+    /// when closing an open tag secure tag blocks it
     OpenTagBlockedBySecureTag,
-    ///  eg. </bold> when no opening tag
+    /// eg. </bold> when no opening tag
     OpenTagNotThere,
-    ///  cannot close tag - it was opened in secure mode
+    /// cannot close tag - it was opened in secure mode
     TagOpenedInSecureMode,
+    /// eg. <!ELEMENT TAG=0>`
+    InvalidLineTag,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -127,6 +130,12 @@ pub trait ParseErrorTarget {
 impl ParseErrorTarget for String {
     fn into_target(self) -> String {
         self
+    }
+}
+
+impl ParseErrorTarget for Cow<'_, str> {
+    fn into_target(self) -> String {
+        self.into_owned()
     }
 }
 

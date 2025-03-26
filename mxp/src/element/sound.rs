@@ -2,19 +2,18 @@ use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::parser::{Error, UnrecognizedVariant};
 use std::borrow::Cow;
 use std::fmt::{self, Debug, Display, Formatter};
-use std::num::NonZeroU32;
+use std::num::NonZero;
 use std::str::FromStr;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum AudioRepetition {
     Forever,
-    Count(NonZeroU32),
+    Count(NonZero<u32>),
 }
 
 impl Default for AudioRepetition {
     fn default() -> Self {
-        const_non_zero!(NON_ZERO_ONE, NonZeroU32, 1);
-        Self::Count(NON_ZERO_ONE)
+        Self::Count(NonZero::new(1).unwrap())
     }
 }
 
@@ -28,7 +27,7 @@ impl Display for AudioRepetition {
 }
 
 impl FromStr for AudioRepetition {
-    type Err = <NonZeroU32 as FromStr>::Err;
+    type Err = <NonZero<u32> as FromStr>::Err;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s == "-1" {
@@ -223,15 +222,12 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Music<Cow<'a, st
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{format_from_pairs, parse_from_pairs, StringPairs};
+    use crate::test_utils::{const_nonzero, format_from_pairs, parse_from_pairs, StringPair};
 
-    const COUNT_TEN: AudioRepetition = AudioRepetition::Count(match NonZeroU32::new(10) {
-        Some(n) => n,
-        None => unreachable!(),
-    });
-
-    const AUDIO_REPETITION_PAIRS: &StringPairs<AudioRepetition, 2> =
-        &[(AudioRepetition::Forever, "-1"), (COUNT_TEN, "10")];
+    const AUDIO_REPETITION_PAIRS: &[StringPair<AudioRepetition>] = &[
+        (AudioRepetition::Forever, "-1"),
+        (AudioRepetition::Count(const_nonzero!(10)), "10"),
+    ];
 
     #[test]
     fn fmt_audio_repetition() {
@@ -249,7 +245,7 @@ mod tests {
     fn parse_audio_repetition_invalid() {
         assert_eq!(
             "0".parse::<AudioRepetition>(),
-            Err("0".parse::<NonZeroU32>().unwrap_err())
+            Err("0".parse::<NonZero<u32>>().unwrap_err())
         );
     }
 }

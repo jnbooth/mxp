@@ -20,6 +20,12 @@ pub enum ParseHexColorError {
     OutOfRange(u32),
 }
 
+impl From<HexOutOfRangeError> for ParseHexColorError {
+    fn from(value: HexOutOfRangeError) -> Self {
+        Self::OutOfRange(value.0)
+    }
+}
+
 impl From<ParseIntError> for ParseHexColorError {
     fn from(value: ParseIntError) -> Self {
         Self::NotU32(value)

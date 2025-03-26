@@ -1,4 +1,5 @@
-use std::num::NonZeroU8;
+use std::borrow::Cow;
+use std::num::NonZero;
 use std::str::FromStr;
 
 use super::atom::Atom;
@@ -104,7 +105,7 @@ pub struct Element {
     /// List of attributes to this element (ATT="xx")
     pub attributes: Arguments<String>,
     /// Line tag number (20 - 99) (TAG=n)
-    pub tag: Option<NonZeroU8>,
+    pub tag: Option<NonZero<u8>>,
     /// Parsing flag
     pub parse_as: Option<ParseAs>,
     /// Which variable to set (SET x)
@@ -162,13 +163,20 @@ impl Element {
         inner(argument.as_ref())
     }
 
+    fn parse_tag(tag: Option<Cow<str>>) -> crate::Result<Option<NonZero<u8>>> {
+        let Some(tag) = tag else {
+            return Ok(None);
+        };
+        match tag.as_ref().parse::<NonZero<u8>>() {
+            Ok(tag) if Mode(tag.get()).is_user_defined() => Ok(Some(tag)),
+            _ => Err(crate::Error::new(tag, crate::ErrorKind::InvalidLineTag)),
+        }
+    }
+
     pub fn parse<D: Decoder, S: AsRef<str>>(
         name: String,
         scanner: Scan<D, S>,
     ) -> crate::Result<Option<Self>> {
-        const_non_zero!(MIN_TAG, NonZeroU8, Mode::USER_DEFINED_MIN.0);
-        const_non_zero!(MAX_TAG, NonZeroU8, Mode::USER_DEFINED_MAX.0);
-
         let mut scanner = scanner.with_keywords();
         let items = Self::parse_items(scanner.next()?)?;
 
@@ -177,13 +185,7 @@ impl Element {
             None => Arguments::default(),
         };
 
-        let tag = match scanner
-            .next_or("tag")?
-            .and_then(|s| s.as_ref().parse().ok())
-        {
-            Some(i) if !(MIN_TAG..=MAX_TAG).contains(&i) => None,
-            tag => tag,
-        };
+        let tag = Self::parse_tag(scanner.next_or("tag")?)?;
 
         let (parse_as, variable) = match scanner.next_or("flag")? {
             None => (None, None),

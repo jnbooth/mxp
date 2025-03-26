@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::fmt::Write;
-use std::num::NonZeroU8;
+use std::num::NonZero;
 use std::{io, mem};
 
 use super::config::{TransformerConfig, UseMxp};
@@ -36,7 +36,7 @@ pub struct Transformer {
     mxp_mode_default: mxp::Mode,
     mxp_mode_previous: mxp::Mode,
     mxp_mode: mxp::Mode,
-    mxp_quote_terminator: Option<NonZeroU8>,
+    mxp_quote_terminator: Option<NonZero<u8>>,
     mxp_state: mxp::State,
     mxp_tags: TagList,
 
@@ -764,15 +764,13 @@ impl Transformer {
                     self.mxp_entity_string.push(c);
                 }
                 b'\'' => {
-                    const_non_zero!(NON_ZERO_APOSTROPHE, NonZeroU8, b'\'');
                     self.mxp_entity_string.push(c);
-                    self.mxp_quote_terminator = Some(NON_ZERO_APOSTROPHE);
+                    self.mxp_quote_terminator = NonZero::new(b'\'');
                     self.phase = Phase::MxpQuote;
                 }
                 b'"' => {
-                    const_non_zero!(NON_ZERO_QUOTE, NonZeroU8, b'"');
                     self.mxp_entity_string.push(c);
-                    self.mxp_quote_terminator = Some(NON_ZERO_QUOTE);
+                    self.mxp_quote_terminator = NonZero::new(b'"');
                     self.phase = Phase::MxpQuote;
                 }
                 b'-' => {

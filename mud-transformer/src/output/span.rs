@@ -1,5 +1,5 @@
 #![allow(clippy::redundant_field_names)]
-use std::num::NonZeroU8;
+use std::num::NonZero;
 use std::ops::Index;
 
 use super::color::TermColor;
@@ -67,7 +67,7 @@ pub struct Span {
     pub(super) foreground: Option<TermColor>,
     pub(super) background: Option<TermColor>,
     pub(super) font: Option<String>,
-    pub(super) size: Option<NonZeroU8>,
+    pub(super) size: Option<NonZero<u8>>,
     pub(super) action: Option<mxp::Link>,
     pub(super) heading: Option<Heading>,
     pub(super) gag: bool,
@@ -204,7 +204,7 @@ impl SpanList {
         set_prop!(self, font);
     }
 
-    pub fn set_size(&mut self, size: NonZeroU8) -> bool {
+    pub fn set_size(&mut self, size: NonZero<u8>) -> bool {
         set_prop!(self, size);
     }
 

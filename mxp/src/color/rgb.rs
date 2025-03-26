@@ -86,10 +86,7 @@ impl FromStr for RgbColor {
             return Err(ParseHexColorError::NotHex(s.to_owned()));
         }
         let code = u32::from_str_radix(&s[1..], 16)?;
-        if code > 0xFFFFFF {
-            return Err(ParseHexColorError::OutOfRange(code));
-        }
-        Ok(RgbColor::hex(code))
+        Ok(RgbColor::try_from(code)?)
     }
 }
 

@@ -6,7 +6,7 @@ use flagset::flags;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
-use std::num::NonZeroU8;
+use std::num::NonZero;
 use std::str;
 use std::str::FromStr;
 
@@ -66,7 +66,7 @@ impl<S: AsRef<str>> FgColor<S> {
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Font<S = String> {
     pub face: Option<S>,
-    pub size: Option<NonZeroU8>,
+    pub size: Option<NonZero<u8>>,
     pub color: Option<FgColor<S>>,
     pub back: Option<RgbColor>,
 }
