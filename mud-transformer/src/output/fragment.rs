@@ -277,9 +277,8 @@ impl From<TextFragment> for OutputFragment {
 
 impl Display for TextFragment {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        f.write_str("\x1B[")?;
         let fg = self.foreground;
-        write!(f, "\x1B[38;2;{};{};{}", fg.r, fg.g, fg.b)?;
+        write!(f, "\x1B[\x1B[38;2;{};{};{}", fg.r, fg.g, fg.b)?;
         let bg = self.background;
         if bg != RgbColor::BLACK {
             write!(f, ";48;2;{};{};{}", bg.r, bg.g, bg.b)?;
@@ -293,8 +292,6 @@ impl Display for TextFragment {
                 write!(f, ";{ansi}")?;
             }
         }
-        f.write_str("m")?;
-        self.text.fmt(f)?;
-        f.write_str("\x1B[0m")
+        write!(f, "m{}\x1B[0m", self.text)
     }
 }
