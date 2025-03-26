@@ -11,7 +11,7 @@ use crate::parser::{Error, ErrorKind, UnrecognizedVariant, Words};
 
 /// List of arguments to an MXP tag.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ElementItem<S> {
+pub struct ElementItem<S: AsRef<str>> {
     pub tag: &'static Tag,
     pub arguments: Arguments<S>,
 }

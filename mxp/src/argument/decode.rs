@@ -39,16 +39,20 @@ impl Decoder for EntityMap {
     }
 }
 
+/// A [`Decoder`] that uses entity definitions provided by an [`Element`].
+///
+/// This `struct` is created by [`State::decode_element`](crate::State::decode_element).
+/// See its documentation for more.
 #[derive(Debug, PartialEq, Eq)]
-pub struct ElementDecoder<'a, S> {
+pub struct ElementDecoder<'a, S: AsRef<str>> {
     pub(crate) element: &'a Element,
     pub(crate) entities: &'a EntityMap,
     pub(crate) args: &'a Arguments<S>,
 }
 
-impl<'a, S> Copy for ElementDecoder<'a, S> {}
+impl<'a, S: AsRef<str>> Copy for ElementDecoder<'a, S> {}
 
-impl<'a, S> Clone for ElementDecoder<'a, S> {
+impl<'a, S: AsRef<str>> Clone for ElementDecoder<'a, S> {
     fn clone(&self) -> Self {
         *self
     }

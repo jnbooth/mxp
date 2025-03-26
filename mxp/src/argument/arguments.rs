@@ -4,13 +4,21 @@ use super::keyword_filter::KeywordFilter;
 use super::scan::{Decoder, Scan};
 use crate::parser::{validate, Error, ErrorKind, Words};
 
+/// Parsed arguments of an MXP command.
+///
+/// Arguments may be positional or named. For example, in the MXP command
+/// `<SOUND "ouch.wav" 50 T="combat" 2 P=80>`, `"ouch.wav"`, `50`, and `2` are positional arguments,
+/// and `T="combat"` and `P=80` are named arguments.
+///
+/// See [MXP specification: Attributes](https://www.zuggsoft.com/zmud/mxp.htm#ATTLIST).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Arguments<S> {
+pub struct Arguments<S: AsRef<str>> {
     positional: Vec<S>,
     named: CaseFoldMap<String, S>,
 }
 
 impl<S: AsRef<str>> Arguments<S> {
+    /// Constructs a new, empty `Arguments<S>`.
     pub fn new() -> Self {
         Self {
             positional: Vec::new(),
@@ -18,6 +26,7 @@ impl<S: AsRef<str>> Arguments<S> {
         }
     }
 
+    /// Returns `true` if there are no parsed arguments.
     pub fn is_empty(&self) -> bool {
         self.positional.is_empty() && self.named.is_empty()
     }
