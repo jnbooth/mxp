@@ -20,7 +20,7 @@ fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
     if auth.is_empty() {
         return;
     }
-    write!(input, "{auth}\r\n").unwrap();
+    writeln!(input, "{auth}\r").unwrap();
 }
 
 #[derive(Debug)]
@@ -358,7 +358,8 @@ impl Transformer {
             Action::Strikeout => self.output.set_mxp_flag(TextStyle::Strikeout),
             Action::Support { questions } => {
                 let supported_actions = self.config.supported_actions();
-                mxp_state.write_supported_tags(self.input.as_mut(), questions, supported_actions);
+                let supported_tags = mxp_state.supported_tags(&questions, supported_actions);
+                writeln!(self.input, "{supported_tags}\r").unwrap();
             }
             Action::Tt => self.output.set_mxp_flag(TextStyle::NonProportional),
             Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
@@ -371,7 +372,7 @@ impl Transformer {
                     name: &self.config.app_name,
                     version: &self.config.version,
                 };
-                write!(self.input, "{response}").unwrap();
+                writeln!(self.input, "{response}\r").unwrap();
             }
         }
     }

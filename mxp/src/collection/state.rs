@@ -6,7 +6,7 @@ use flagset::FlagSet;
 use super::element_map::{ElementComponent, ElementMap};
 use super::line_tags::{LineTagUpdate, LineTags};
 use crate::argument::{Arguments, Decoder, ElementDecoder};
-use crate::element::{Action, ActionKind, Element, ElementItem, Mode, Tag, Tags};
+use crate::element::{Action, ActionKind, Element, ElementItem, Mode, SupportedTags, Tag, Tags};
 use crate::entity::{EntityEntry, EntityMap, PublishedIter};
 use crate::parser::{Error, ErrorKind, Words};
 
@@ -65,16 +65,12 @@ impl State {
         self.line_tags.get(usize::from(mode.0), &self.elements)
     }
 
-    pub fn write_supported_tags<I>(
-        &self,
-        buf: &mut Vec<u8>,
-        iter: I,
-        supported: FlagSet<ActionKind>,
-    ) where
-        I: IntoIterator,
+    pub fn supported_tags<I>(&self, iter: I, supported: FlagSet<ActionKind>) -> SupportedTags<I>
+    where
+        I: IntoIterator + Copy,
         I::Item: AsRef<str>,
     {
-        self.tags.fmt_supported(buf, iter, supported);
+        self.tags.supported(iter, supported)
     }
 
     pub fn decode_element<'a, S: AsRef<str>>(

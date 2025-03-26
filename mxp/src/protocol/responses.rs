@@ -8,9 +8,9 @@ pub struct IdentifyResponse<'a> {
 
 impl<'a> Display for IdentifyResponse<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(
+        write!(
             f,
-            "\x1B[1z<VERSION MXP=\"{VERSION}\" CLIENT={} VERSION=\"{}\" REGISTERED=yes",
+            "\x1B[1z<VERSION MXP=\"{VERSION}\" CLIENT={} VERSION=\"{}\" REGISTERED=yes>",
             self.name, self.version
         )
     }

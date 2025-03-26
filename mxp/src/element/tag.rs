@@ -1,3 +1,4 @@
+use std::fmt::{self, Display, Formatter};
 use std::str;
 
 use casefold::ascii::{CaseFold, CaseFoldMap};
@@ -42,81 +43,95 @@ impl Tags {
         self.inner.get(tag).copied()
     }
 
-    pub fn fmt_supported<I>(&self, buf: &mut Vec<u8>, iter: I, supported: FlagSet<ActionKind>)
+    pub fn supported<I>(&self, iter: I, supported: FlagSet<ActionKind>) -> SupportedTags<I>
     where
         I: IntoIterator,
         I::Item: AsRef<str>,
     {
-        buf.extend_from_slice(b"\x1B[1z<SUPPORTS ");
-        let mut has_args = false;
-        for arg in iter {
-            has_args = true;
-            self.write_supported(buf, supported, arg.as_ref());
+        SupportedTags {
+            supported,
+            iter,
+            tags: self,
         }
-        self.write_supported_suffix(buf, supported, has_args);
     }
 
-    fn write_supported(&self, buf: &mut Vec<u8>, supported: FlagSet<ActionKind>, arg: &str) {
+    fn write_supported(
+        &self,
+        f: &mut Formatter,
+        supported: FlagSet<ActionKind>,
+        arg: &str,
+    ) -> fmt::Result {
         let mut questions = arg.split('.');
         let tag_name = questions.next().unwrap();
         match self.get(tag_name) {
-            None => Self::write_cant(buf, tag_name),
-            Some(tag) if !supported.contains(tag.action) => {
-                Self::write_cant(buf, tag_name);
-            }
+            None => Self::write_cant(f, tag_name),
+            Some(tag) if !supported.contains(tag.action) => Self::write_cant(f, tag_name),
             Some(tag) => match questions.next() {
-                None => Self::write_can(buf, tag_name),
-                Some("*") => Self::write_can_args(buf, tag),
-                Some(subtag) if tag.args.contains(&subtag.into()) => {
-                    Self::write_can(buf, subtag);
-                }
-                Some(subtag) => Self::write_cant(buf, subtag),
+                None => Self::write_can(f, tag_name),
+                Some("*") => Self::write_can_args(f, tag),
+                Some(subtag) if tag.args.contains(&subtag.into()) => Self::write_can(f, subtag),
+                Some(subtag) => Self::write_cant(f, subtag),
             },
         }
     }
 
     fn write_supported_suffix(
         &self,
-        buf: &mut Vec<u8>,
+        f: &mut Formatter,
         supported: FlagSet<ActionKind>,
-        has_args: bool,
-    ) {
-        if !has_args {
-            for tag in self.inner.values() {
-                if supported.contains(tag.action) {
-                    Self::write_can(buf, tag.name);
-                    Self::write_can_args(buf, tag);
-                }
+    ) -> fmt::Result {
+        for tag in self.inner.values() {
+            if supported.contains(tag.action) {
+                Self::write_can(f, tag.name)?;
+                Self::write_can_args(f, tag)?;
             }
         }
         if !supported.contains(ActionKind::Font) && supported.contains(ActionKind::Color) {
-            Self::write_can(buf, SIMPLE_FONT_TAG.name);
-            Self::write_can_args(buf, SIMPLE_FONT_TAG);
+            Self::write_can(f, SIMPLE_FONT_TAG.name)?;
+            Self::write_can_args(f, SIMPLE_FONT_TAG)?;
         }
-        buf.extend_from_slice(b">\n");
+        Ok(())
     }
 
-    fn write_cant(buf: &mut Vec<u8>, tag: &str) {
-        buf.push(b'-');
-        buf.extend_from_slice(tag.as_bytes());
-        buf.push(b' ');
+    fn write_cant(f: &mut Formatter, tag: &str) -> fmt::Result {
+        write!(f, "-{tag} ")
     }
 
-    fn write_can(buf: &mut Vec<u8>, tag: &str) {
-        buf.push(b'+');
-        buf.extend_from_slice(tag.as_bytes());
-        buf.push(b' ');
+    fn write_can(f: &mut Formatter, tag: &str) -> fmt::Result {
+        write!(f, "+{tag} ")
     }
 
-    fn write_can_args(buf: &mut Vec<u8>, tag: &Tag) {
-        let name = tag.name.as_bytes();
+    fn write_can_args(f: &mut Formatter, tag: &Tag) -> fmt::Result {
+        let name = tag.name;
         for arg in tag.args {
-            buf.push(b'+');
-            buf.extend_from_slice(name);
-            buf.push(b'.');
-            buf.extend_from_slice(arg.as_str().as_bytes());
-            buf.push(b' ');
+            write!(f, "+{name}.{arg} ")?;
         }
+        Ok(())
+    }
+}
+
+pub struct SupportedTags<'a, I> {
+    supported: FlagSet<ActionKind>,
+    iter: I,
+    tags: &'a Tags,
+}
+
+impl<'a, I> Display for SupportedTags<'a, I>
+where
+    I: IntoIterator + Copy,
+    I::Item: AsRef<str>,
+{
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "\x1B[1z<SUPPORTS ")?;
+        let mut has_args = false;
+        for arg in self.iter {
+            has_args = true;
+            self.tags.write_supported(f, self.supported, arg.as_ref())?;
+        }
+        if !has_args {
+            self.tags.write_supported_suffix(f, self.supported)?;
+        }
+        write!(f, ">")
     }
 }
 
