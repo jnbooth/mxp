@@ -9,13 +9,19 @@ use crate::color::RgbColor;
 use crate::element::{Element, Tag};
 use crate::parser::{validate, Error, ErrorKind};
 
+/// A component in an [element definition](https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT).
 #[derive(Copy, Clone, Debug)]
 pub enum ElementComponent<'a> {
+    /// A user-defined custom tag element.
     Element(&'a Element),
+    /// A built-in MXP tag.
     Tag(&'static Tag),
 }
 
 impl<'a> ElementComponent<'a> {
+    /// Returns the name of the component.
+    ///
+    /// For example, the name of `<SOUND "ouch.wav">` is `"SOUND"`.
     pub fn name(&self) -> &str {
         match self {
             Self::Element(el) => &el.name,
