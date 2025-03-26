@@ -41,7 +41,7 @@ impl<S: AsRef<str>> Arguments<S> {
         }
     }
 
-    pub fn scan<D: Decoder>(&self, decoder: D) -> Scan<D, S> {
+    pub(crate) fn scan<D: Decoder>(&self, decoder: D) -> Scan<D, S> {
         Scan::new(decoder, &self.positional, &self.named)
     }
 

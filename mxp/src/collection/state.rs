@@ -3,8 +3,8 @@ use std::slice;
 
 use super::element_map::{ElementComponent, ElementMap};
 use super::line_tags::{LineTagUpdate, LineTags};
-use crate::argument::{Arguments, Decoder, ElementDecoder, Scan};
-use crate::element::{Action, Element, ElementItem, Mode};
+use crate::argument::{Arguments, Decoder, ElementDecoder};
+use crate::element::{Action, Element, ElementItem, Mode, Tag};
 use crate::entity::{EntityEntry, EntityMap, PublishedIter};
 use crate::parser::{Error, ErrorKind, Words};
 
@@ -54,13 +54,6 @@ impl State {
         self.line_tags.get(usize::from(mode.0), &self.elements)
     }
 
-    pub fn decode_args<'a, S: AsRef<str>>(
-        &self,
-        args: &'a mut Arguments<S>,
-    ) -> Scan<'a, &EntityMap, S> {
-        args.scan(&self.entities)
-    }
-
     pub fn decode_element<'a, S: AsRef<str>>(
         &'a self,
         element: &'a Element,
@@ -74,6 +67,14 @@ impl State {
                 entities: &self.entities,
             },
         }
+    }
+
+    pub fn decode_tag<'a, S: AsRef<str>>(
+        &self,
+        tag: &Tag,
+        args: &'a Arguments<S>,
+    ) -> crate::Result<Action<Cow<'a, str>>> {
+        Action::parse(tag.action, args.scan(&self.entities))
     }
 
     pub fn define<'a>(&'a mut self, tag: &'a str) -> crate::Result<Option<EntityEntry<'a>>> {
@@ -156,6 +157,6 @@ impl<'a, D: Decoder + Copy> Iterator for DecodeElement<'a, D> {
     fn next(&mut self) -> Option<Self::Item> {
         let item = self.items.next()?;
         let scanner = item.arguments.scan(self.decoder);
-        Some(Action::new(item.tag.action, scanner))
+        Some(Action::parse(item.tag.action, scanner))
     }
 }

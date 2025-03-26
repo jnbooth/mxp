@@ -20,7 +20,7 @@ impl<D: Decoder> Decoder for &D {
 }
 
 #[derive(Clone, Debug)]
-pub struct Scan<'a, D, S, F = NoKeywords> {
+pub(crate) struct Scan<'a, D, S, F = NoKeywords> {
     decoder: D,
     inner: slice::Iter<'a, S>,
     named: &'a CaseFoldMap<String, S>,
@@ -28,7 +28,7 @@ pub struct Scan<'a, D, S, F = NoKeywords> {
 }
 
 impl<'a, D: Decoder, S: AsRef<str>, F: KeywordFilter> Scan<'a, D, S, F> {
-    pub(crate) fn new(decoder: D, positional: &'a [S], named: &'a CaseFoldMap<String, S>) -> Self {
+    pub fn new(decoder: D, positional: &'a [S], named: &'a CaseFoldMap<String, S>) -> Self {
         Self {
             decoder,
             inner: positional.iter(),
@@ -37,7 +37,7 @@ impl<'a, D: Decoder, S: AsRef<str>, F: KeywordFilter> Scan<'a, D, S, F> {
         }
     }
 
-    pub fn with_filter<FNew>(self) -> Scan<'a, D, S, FNew> {
+    fn with_filter<FNew>(self) -> Scan<'a, D, S, FNew> {
         Scan {
             decoder: self.decoder,
             inner: self.inner,
@@ -84,7 +84,7 @@ impl<'a, D: Decoder, S: AsRef<str>, F: KeywordFilter> Scan<'a, D, S, F> {
     }
 }
 
-pub struct KeywordScan<'a, D, S, K: Flags> {
+pub(crate) struct KeywordScan<'a, D, S, K: Flags> {
     inner: Scan<'a, D, S, K>,
     keywords: FlagSet<K>,
 }
@@ -104,10 +104,6 @@ impl<'a, D, S: AsRef<str>, K: Flags> DerefMut for KeywordScan<'a, D, S, K> {
 }
 
 impl<'a, D: Decoder, S: AsRef<str>, K: Flags + FromStr> KeywordScan<'a, D, S, K> {
-    pub fn keywords(&self) -> FlagSet<K> {
-        self.keywords
-    }
-
     fn next_non_keyword(&mut self) -> Option<&'a str> {
         for arg in &mut self.inner.inner {
             let arg = arg.as_ref();

@@ -173,7 +173,7 @@ impl Element {
         }
     }
 
-    pub fn parse<D: Decoder, S: AsRef<str>>(
+    pub(crate) fn parse<D: Decoder, S: AsRef<str>>(
         name: String,
         scanner: Scan<D, S>,
     ) -> crate::Result<Option<Self>> {

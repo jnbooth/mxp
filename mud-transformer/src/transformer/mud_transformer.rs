@@ -256,9 +256,8 @@ impl Transformer {
 
         match component {
             mxp::ElementComponent::Tag(tag) => {
-                let mut args = words.parse_args::<&str>()?;
-                let scanner = mxp_state.decode_args(&mut args);
-                self.mxp_open_tag(mxp::Action::new(tag.action, scanner)?, mxp_state);
+                let args = words.parse_args::<&str>()?;
+                self.mxp_open_tag(mxp_state.decode_tag(tag, &args)?, mxp_state);
             }
             mxp::ElementComponent::Element(el) => {
                 if let Some(variable) = &el.variable {
