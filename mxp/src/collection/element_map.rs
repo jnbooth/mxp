@@ -18,28 +18,31 @@ pub enum ElementComponent<'a> {
 impl<'a> ElementComponent<'a> {
     pub fn name(&self) -> &str {
         match self {
-            Self::Element(el) => el.name.as_str(),
-            Self::Tag(tag) => tag.name.as_str(),
+            Self::Element(el) => &el.name,
+            Self::Tag(tag) => &tag.name,
         }
     }
 
-    pub const fn is_command(&self) -> bool {
+    /// Returns `true` if the element has no closing tag, e.g. `<BR>`.
+    pub fn is_command(&self) -> bool {
         match self {
             Self::Element(el) => el.command,
             Self::Tag(tag) => tag.command,
         }
     }
 
-    pub const fn is_open(&self) -> bool {
+    /// Returns `true` if the element is in Open mode, meaning users can override it.
+    pub fn is_open(&self) -> bool {
         match self {
             Self::Element(el) => el.open,
             Self::Tag(tag) => tag.open,
         }
     }
 
-    pub fn variable(&self) -> Option<String> {
+    /// Returns the element's variable name, if it has one.
+    pub fn variable(&self) -> Option<&str> {
         match self {
-            Self::Element(el) => el.variable.clone(),
+            Self::Element(el) => el.variable.as_deref(),
             Self::Tag(_) => None,
         }
     }
