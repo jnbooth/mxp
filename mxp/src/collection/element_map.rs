@@ -1,12 +1,9 @@
 use std::ops::{Deref, DerefMut};
 
-use casefold::ascii::CaseFoldMap;
+use casefold::ascii::{CaseFold, CaseFoldMap};
 
-use crate::lookup::Lookup;
-
-use crate::argument::Arguments;
 use crate::color::RgbColor;
-use crate::element::{Element, Tag};
+use crate::element::{Element, Tag, Tags};
 use crate::parser::{validate, Error, ErrorKind};
 
 /// A component in an [element definition](https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT).
@@ -25,7 +22,7 @@ impl<'a> ElementComponent<'a> {
     pub fn name(&self) -> &str {
         match self {
             Self::Element(el) => &el.name,
-            Self::Tag(tag) => &tag.name,
+            Self::Tag(tag) => tag.name,
         }
     }
 
@@ -33,7 +30,7 @@ impl<'a> ElementComponent<'a> {
     pub fn is_command(&self) -> bool {
         match self {
             Self::Element(el) => el.command,
-            Self::Tag(tag) => tag.command,
+            Self::Tag(tag) => tag.action.is_command(),
         }
     }
 
@@ -41,7 +38,7 @@ impl<'a> ElementComponent<'a> {
     pub fn is_open(&self) -> bool {
         match self {
             Self::Element(el) => el.open,
-            Self::Tag(tag) => tag.open,
+            Self::Tag(tag) => tag.action.is_open(),
         }
     }
 
@@ -55,31 +52,37 @@ impl<'a> ElementComponent<'a> {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct ElementMap(CaseFoldMap<String, Element>);
+pub(crate) struct ElementMap {
+    inner: CaseFoldMap<String, Element>,
+}
 
 impl Deref for ElementMap {
     type Target = CaseFoldMap<String, Element>;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.inner
     }
 }
 
 impl DerefMut for ElementMap {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        &mut self.inner
     }
 }
 
 impl ElementMap {
-    pub fn get_component(&self, key: &str) -> crate::Result<ElementComponent> {
+    pub fn well_known() -> Self {
+        Self {
+            inner: well_known_elements(),
+        }
+    }
+
+    pub fn get_component(&self, key: &str, tags: &Tags) -> crate::Result<ElementComponent> {
         validate(key, ErrorKind::InvalidElementName)?;
 
-        if let Some(tag) = Tag::get(key) {
+        if let Some(tag) = tags.get(key) {
             Ok(ElementComponent::Tag(tag))
         } else if let Some(custom) = self.get(key) {
-            Ok(ElementComponent::Element(custom))
-        } else if let Some(custom) = WELL_KNOWN_ELEMENTS.get(key) {
             Ok(ElementComponent::Element(custom))
         } else {
             Err(Error::new(key, ErrorKind::UnknownElement))
@@ -87,25 +90,20 @@ impl ElementMap {
     }
 }
 
-static WELL_KNOWN_ELEMENTS: Lookup<Element> = Lookup::new(|| {
-    let color_el = |name: &'static str, hex: u32| {
-        let el = Element {
-            name: name.to_owned(),
-            attributes: Arguments::new(),
-            items: Vec::new(),
-            tag: None,
-            parse_as: None,
-            variable: None,
-            open: true,
-            command: false,
-            fore: Some(RgbColor::hex(hex)),
-            back: None,
-            gag: false,
-            window: None,
-        };
-        (name, el)
-    };
-    vec![
+fn well_known_elements() -> CaseFoldMap<String, Element> {
+    fn color_el(name: &'static str, hex: u32) -> (CaseFold<String>, Element) {
+        (
+            name.to_owned().into(),
+            Element {
+                name: name.to_owned(),
+                open: true,
+                fore: Some(RgbColor::hex(hex)),
+                ..Default::default()
+            },
+        )
+    }
+
+    [
         color_el("BlackMXP", 0x000000),
         color_el("RedMXP", 0xFF0000),
         color_el("GreenMXP", 0x008000),
@@ -115,4 +113,6 @@ static WELL_KNOWN_ELEMENTS: Lookup<Element> = Lookup::new(|| {
         color_el("CyanMXP", 0x00FFFF),
         color_el("WhiteMXP", 0xFFFFFF),
     ]
-});
+    .into_iter()
+    .collect()
+}

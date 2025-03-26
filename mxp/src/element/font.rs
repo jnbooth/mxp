@@ -44,7 +44,7 @@ pub enum FontEffect {
 }
 
 impl FontEffect {
-    pub fn parse(s: &str) -> Option<Self> {
+    pub(crate) fn parse(s: &str) -> Option<Self> {
         match s.parse() {
             Ok(style) => Some(Self::Style(style)),
             Err(_) => RgbColor::named(s).map(Self::Color),

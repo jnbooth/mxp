@@ -67,10 +67,6 @@ impl Transformer {
         if config.ignore_mxp_colors {
             output.disable_mxp_colors();
         }
-        let mut mxp_state = mxp::State::new();
-        if config.use_mxp == UseMxp::Always {
-            mxp_state.add_globals();
-        }
         Self {
             phase: Phase::Normal,
 
@@ -84,7 +80,7 @@ impl Transformer {
             mxp_quote_terminator: None,
             mxp_entity_string: Vec::new(),
             mxp_tags: TagList::new(),
-            mxp_state,
+            mxp_state: mxp::State::with_globals(),
 
             ansi: ansi::Interpreter::new(),
             charsets: charset::Charsets::new(),
@@ -202,7 +198,6 @@ impl Transformer {
         self.mxp_mode = mxp::Mode::OPEN;
         self.mxp_tags.clear();
         self.mxp_state.clear();
-        self.mxp_state.add_globals();
     }
 
     fn mxp_endtag(&mut self, tag_body: &str) -> mxp::Result<()> {
@@ -363,7 +358,7 @@ impl Transformer {
             Action::Strikeout => self.output.set_mxp_flag(TextStyle::Strikeout),
             Action::Support { questions } => {
                 let supported_actions = self.config.supported_actions();
-                mxp::Tag::fmt_supported(self.input.as_mut(), questions, supported_actions);
+                mxp_state.write_supported_tags(self.input.as_mut(), questions, supported_actions);
             }
             Action::Tt => self.output.set_mxp_flag(TextStyle::NonProportional),
             Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),

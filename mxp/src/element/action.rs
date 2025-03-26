@@ -112,6 +112,48 @@ flags! {
     }
 }
 
+impl ActionKind {
+    pub const fn is_command(self) -> bool {
+        matches!(
+            self,
+            Self::Br
+                | Self::Expire
+                | Self::Filter
+                | Self::Gauge
+                | Self::Hr
+                | Self::Music
+                | Self::Mxp
+                | Self::NoBr
+                | Self::Password
+                | Self::Relocate
+                | Self::Reset
+                | Self::SBr
+                | Self::Stat
+                | Self::Support
+                | Self::User
+                | Self::Version
+                | Self::Frame
+                | Self::Image
+                | Self::Sound
+        )
+    }
+
+    pub const fn is_open(self) -> bool {
+        matches!(
+            self,
+            Self::Bold
+                | Self::Color
+                | Self::Italic
+                | Self::Highlight
+                | Self::Strikeout
+                | Self::Small
+                | Self::Tt
+                | Self::Underline
+                | Self::Font
+        )
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Action<S> {
     /// bold

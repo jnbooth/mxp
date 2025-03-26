@@ -21,8 +21,6 @@ pub mod escape;
 mod keyword;
 pub use keyword::{EntityKeyword, MxpKeyword};
 
-mod lookup;
-
 mod protocol;
 pub use protocol::responses;
 

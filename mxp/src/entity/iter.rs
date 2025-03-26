@@ -23,8 +23,8 @@ impl<'a> Iterator for PublishedIter<'a> {
             if entity.published {
                 return Some(EntityInfo {
                     name,
-                    description: entity.description.as_str(),
-                    value: entity.value.as_str(),
+                    description: &entity.description,
+                    value: &entity.value,
                 });
             }
         }
@@ -54,11 +54,15 @@ mod tests {
         let mut map = EntityMap::new();
         let published = FlagSet::from(EntityKeyword::Publish);
         let unpublished = FlagSet::default();
-        map.set("key1", "val1", Some("desc1".to_owned()), unpublished);
-        map.set("key2", "val2", Some("desc2".to_owned()), published);
-        map.set("key3", "val3", Some("desc3".to_owned()), published);
-        map.set("key4", "val4", Some("desc4".to_owned()), unpublished);
-        map.set("key5", "val5", None, published);
+        map.set("key1", "val1", Some("desc1".to_owned()), unpublished)
+            .ok();
+        map.set("key2", "val2", Some("desc2".to_owned()), published)
+            .ok();
+        map.set("key3", "val3", Some("desc3".to_owned()), published)
+            .ok();
+        map.set("key4", "val4", Some("desc4".to_owned()), unpublished)
+            .ok();
+        map.set("key5", "val5", None, published).ok();
         let mut published = map.published().collect::<Vec<_>>();
         published.sort();
         let expected = vec![

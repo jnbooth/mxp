@@ -97,8 +97,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use casefold::ascii::CaseFold;
-
     use super::*;
 
     #[test]
@@ -112,7 +110,7 @@ mod tests {
                 .collect(),
             named: [("flag", "RoomName")]
                 .iter()
-                .map(|&(k, v)| (CaseFold::new(k.to_owned()), v.to_owned()))
+                .map(|&(k, v)| (k.to_owned().into(), v.to_owned()))
                 .collect(),
         };
         assert_eq!(args, expected);

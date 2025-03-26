@@ -331,7 +331,7 @@ impl BufferedOutput {
         };
         if entity.flags.contains(mxp::EntityKeyword::Delete) {
             self.variable.clear();
-            variables.remove(&entity.name);
+            variables.remove(&entity.name).ok();
             self.fragments.push(Output::from(EntityFragment::Unset {
                 name: entity.name,
                 is_variable: entity.is_variable,
@@ -341,7 +341,7 @@ impl BufferedOutput {
         debug_assert_utf8!(self.variable);
         // SAFETY: MudTransformer::receive_byte sanitizes UTF8.
         let text = unsafe { str::from_utf8_unchecked(&self.variable) };
-        if let Some(entity) = variables.set(&entity.name, text, None, entity.flags) {
+        if let Ok(Some(entity)) = variables.set(&entity.name, text, None, entity.flags) {
             self.fragments
                 .push(Output::from(EntityFragment::variable(&entity)));
         }

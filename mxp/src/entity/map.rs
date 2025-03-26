@@ -1,5 +1,4 @@
-use std::collections::{HashMap, HashSet};
-use std::ops::{Deref, DerefMut};
+use std::collections::HashMap;
 
 use super::global::{CHARS, GLOBAL_ENTITIES, MIN_CHAR};
 use crate::keyword::EntityKeyword;
@@ -19,21 +18,7 @@ pub struct EntityEntry<'a> {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct EntityMap {
     inner: HashMap<String, Entity>,
-    globals: HashSet<String>,
-}
-
-impl Deref for EntityMap {
-    type Target = HashMap<String, Entity>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
-}
-
-impl DerefMut for EntityMap {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
-    }
+    globals: HashMap<&'static str, &'static str>,
 }
 
 impl EntityMap {
@@ -41,39 +26,39 @@ impl EntityMap {
         Self::default()
     }
 
-    pub fn clear(&mut self) {
-        self.inner.clear();
-        self.globals.clear();
+    pub fn with_globals() -> Self {
+        Self {
+            inner: HashMap::new(),
+            globals: GLOBAL_ENTITIES.iter().copied().collect(),
+        }
     }
 
-    pub fn remove(&mut self, key: &str) -> Option<Entity> {
-        self.inner.remove(key)
+    pub fn clear(&mut self) {
+        self.inner.clear();
+    }
+
+    fn guard_global(&self, key: &str) -> crate::Result<()> {
+        if self.is_global(key) {
+            return Err(crate::Error::new(
+                key,
+                crate::ErrorKind::CannotRedefineEntity,
+            ));
+        }
+        Ok(())
+    }
+
+    pub fn remove(&mut self, key: &str) -> crate::Result<Option<Entity>> {
+        self.guard_global(key)?;
+        Ok(self.inner.remove(key))
+    }
+
+    pub fn is_global(&self, key: &str) -> bool {
+        key.starts_with('#') || self.globals.contains_key(key)
     }
 
     pub fn published(&self) -> PublishedIter {
         PublishedIter {
             inner: self.inner.iter(),
-        }
-    }
-
-    pub fn is_global(&self, key: &str) -> bool {
-        key.starts_with('#') || self.globals.contains(key)
-    }
-
-    pub fn add_globals(&mut self) {
-        if !self.globals.is_empty() {
-            return;
-        }
-        for (key, val) in GLOBAL_ENTITIES {
-            self.inner.insert(
-                (*key).to_owned(),
-                Entity {
-                    value: (*val).to_owned(),
-                    published: false,
-                    description: String::new(),
-                },
-            );
-            self.globals.insert((*key).to_owned());
         }
     }
 
@@ -83,23 +68,24 @@ impl EntityMap {
         value: &str,
         description: Option<String>,
         keywords: T,
-    ) -> Option<EntityEntry<'a>> {
+    ) -> crate::Result<Option<EntityEntry<'a>>> {
         // Reduce monomorphization
         fn inner<'a>(
-            map: &'a mut HashMap<String, Entity>,
+            map: &'a mut EntityMap,
             key: &'a str,
             value: &str,
             description: Option<String>,
             keywords: FlagSet<EntityKeyword>,
-        ) -> Option<EntityEntry<'a>> {
+        ) -> crate::Result<Option<EntityEntry<'a>>> {
+            map.guard_global(key)?;
             if keywords.contains(EntityKeyword::Delete) {
-                return map.remove(key).map(|_| EntityEntry {
+                return Ok(map.inner.remove(key).map(|_| EntityEntry {
                     name: key,
                     value: None,
-                });
+                }));
             }
-            let entity = match map.entry(key.to_owned()) {
-                Entry::Vacant(_) if keywords.contains(EntityKeyword::Remove) => return None,
+            let entity = match map.inner.entry(key.to_owned()) {
+                Entry::Vacant(_) if keywords.contains(EntityKeyword::Remove) => return Ok(None),
                 Entry::Vacant(entry) => entry.insert(Entity {
                     value: value.to_owned(),
                     published: keywords.contains(EntityKeyword::Publish),
@@ -108,10 +94,10 @@ impl EntityMap {
                 Entry::Occupied(entry) if keywords.contains(EntityKeyword::Remove) => {
                     if entry.get().value == value {
                         entry.remove();
-                        return Some(EntityEntry {
+                        return Ok(Some(EntityEntry {
                             name: key,
                             value: None,
-                        });
+                        }));
                     }
                     let entity = entry.into_mut();
                     entity.remove(value);
@@ -137,7 +123,7 @@ impl EntityMap {
                         let old_published = entity.published;
                         entity.apply_keywords(keywords);
                         if entity.published == old_published {
-                            return None;
+                            return Ok(None);
                         }
                     } else {
                         entity.value.clear();
@@ -147,17 +133,24 @@ impl EntityMap {
                     entity
                 }
             };
-            Some(EntityEntry {
+            Ok(Some(EntityEntry {
                 name: key,
                 value: Some(entity),
-            })
+            }))
         }
-        inner(&mut self.inner, key, value, description, keywords.into())
+        inner(self, key, value, description, keywords.into())
     }
 
-    pub fn decode_entity(&self, key: &str) -> crate::Result<Option<&str>> {
+    fn get(&self, key: &str) -> Option<&str> {
+        if let Some(global) = self.globals.get(key) {
+            return Some(global);
+        }
+        Some(&self.inner.get(key)?.value)
+    }
+
+    pub(crate) fn decode_entity(&self, key: &str) -> crate::Result<Option<&str>> {
         let Some(code) = key.strip_prefix('#') else {
-            return Ok(self.inner.get(key).map(|entity| entity.value.as_ref()));
+            return Ok(self.get(key));
         };
         let id = match code.strip_prefix('x') {
             Some(hex) => usize::from_str_radix(hex, 16),
@@ -175,50 +168,29 @@ impl EntityMap {
 mod tests {
     use super::*;
 
-    fn get_value<'a>(map: &'a EntityMap, key: &str) -> Option<&'a str> {
-        let entity = map.get(key)?;
-        Some(entity.value.as_str())
-    }
-
-    #[test]
-    fn hash_entities_are_global() {
-        assert!(EntityMap::new().is_global("#e"));
-    }
-
-    #[test]
-    fn globals_are_not_added_by_default() {
-        assert!(!EntityMap::new().is_global("lt"));
-    }
-
-    #[test]
-    fn globals_are_added_by_method() {
-        let mut map = EntityMap::new();
-        map.add_globals();
-        assert!(map.is_global("lt"));
-    }
-
     #[test]
     fn set_new() {
         let mut map = EntityMap::new();
-        map.set("key", "value", None, None);
-        assert_eq!(get_value(&map, "key"), Some("value"));
+        map.set("key", "value", None, None).ok();
+        assert_eq!(map.get("key"), Some("value"));
     }
 
     #[test]
     fn set_delete() {
         let mut map = EntityMap::new();
-        map.set("key", "value", None, None);
-        map.set("key", "", None, EntityKeyword::Delete);
-        assert_eq!(get_value(&map, "key"), None);
+        map.set("key", "value", None, None).ok();
+        map.set("key", "", None, EntityKeyword::Delete).ok();
+        assert_eq!(map.get("key"), None);
     }
 
     #[test]
     fn set_replace() {
         let mut map = EntityMap::new();
-        map.set("key", "value", Some("desc1".to_owned()), None);
-        map.set("key", "", Some("desc2".to_owned()), EntityKeyword::Publish);
+        map.set("key", "value", Some("desc1".to_owned()), None).ok();
+        map.set("key", "", Some("desc2".to_owned()), EntityKeyword::Publish)
+            .ok();
         assert_eq!(
-            map.get("key"),
+            map.inner.get("key"),
             Some(&Entity {
                 value: String::new(),
                 published: true,
@@ -230,26 +202,39 @@ mod tests {
     #[test]
     fn set_add_and_remove() {
         let mut map = EntityMap::new();
-        map.set("key", "value1", None, EntityKeyword::Add);
-        map.set("key", "value2", None, EntityKeyword::Add);
-        map.set("key", "value3", None, EntityKeyword::Add);
-        map.set("key", "value2", None, EntityKeyword::Remove);
-        map.set("key", "x", None, EntityKeyword::Remove);
-        assert_eq!(get_value(&map, "key"), Some("value1|value3"));
+        map.set("key", "value1", None, EntityKeyword::Add).ok();
+        map.set("key", "value2", None, EntityKeyword::Add).ok();
+        map.set("key", "value3", None, EntityKeyword::Add).ok();
+        map.set("key", "value2", None, EntityKeyword::Remove).ok();
+        map.set("key", "x", None, EntityKeyword::Remove).ok();
+        assert_eq!(map.get("key"), Some("value1|value3"));
+    }
+
+    #[test]
+    fn protect_global() {
+        let mut map = EntityMap::with_globals();
+        let set_nonglobal = map.set("key", "value1", None, EntityKeyword::Add).is_ok();
+        let set_global = map.set("amp", "value1", None, EntityKeyword::Add).is_ok();
+        let remove_nonglobal = map.remove("key").is_ok();
+        let remove_global = map.remove("amp").is_ok();
+        assert_eq!(
+            (set_nonglobal, set_global, remove_nonglobal, remove_global),
+            (true, false, true, false)
+        );
     }
 
     #[test]
     fn decode_entity_matched() {
         let mut map = EntityMap::new();
-        map.set("key1", "value1", None, None);
-        map.set("key2", "value2", None, None);
+        map.set("key1", "value1", None, None).ok();
+        map.set("key2", "value2", None, None).ok();
         assert_eq!(map.decode_entity("key1"), Ok(Some("value1")));
     }
 
     #[test]
     fn decode_entity_unmatched() {
         let mut map = EntityMap::new();
-        map.set("key2", "value2", None, None);
+        map.set("key2", "value2", None, None).ok();
         assert_eq!(map.decode_entity("key1"), Ok(None));
     }
 
