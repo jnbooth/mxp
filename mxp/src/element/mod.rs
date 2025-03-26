@@ -1,9 +1,6 @@
 mod action;
 pub use action::{Action, ActionKind, Heading};
 
-mod atom;
-pub use atom::Atom;
-
 mod bar;
 pub use bar::{Gauge, Stat};
 
@@ -36,3 +33,6 @@ pub use screen::{Align, Dimension, DimensionUnit};
 
 mod sound;
 pub use sound::{AudioContinuation, AudioRepetition, Music, Sound};
+
+mod tag;
+pub use tag::Tag;

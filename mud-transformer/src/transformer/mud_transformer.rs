@@ -255,12 +255,12 @@ impl Transformer {
         }
 
         match component {
-            mxp::ElementComponent::Atom(atom) => {
+            mxp::ElementComponent::Tag(tag) => {
                 let mut args = words.parse_args::<&str>()?;
                 let scanner = mxp_state.decode_args(&mut args);
-                self.mxp_open_atom(mxp::Action::new(atom.action, scanner)?, mxp_state);
+                self.mxp_open_tag(mxp::Action::new(tag.action, scanner)?, mxp_state);
             }
-            mxp::ElementComponent::Custom(el) => {
+            mxp::ElementComponent::Element(el) => {
                 if let Some(variable) = &el.variable {
                     self.output.set_mxp_entity(EntitySetter {
                         name: variable.clone(),
@@ -309,7 +309,7 @@ impl Transformer {
             self.output.set_mxp_window(window.clone());
         }
         for action in mxp_state.decode_element(el, args) {
-            self.mxp_open_atom(action?, mxp_state);
+            self.mxp_open_tag(action?, mxp_state);
         }
         if let Some(fore) = el.fore {
             self.output.set_mxp_foreground(fore);
@@ -320,7 +320,7 @@ impl Transformer {
         Ok(())
     }
 
-    fn mxp_open_atom(&mut self, action: mxp::Action<Cow<str>>, mxp_state: &mxp::State) {
+    fn mxp_open_tag(&mut self, action: mxp::Action<Cow<str>>, mxp_state: &mxp::State) {
         use mxp::Action;
 
         match action {
@@ -364,7 +364,7 @@ impl Transformer {
             Action::Strikeout => self.output.set_mxp_flag(TextStyle::Strikeout),
             Action::Support { questions } => {
                 let supported_actions = self.config.supported_actions();
-                mxp::Atom::fmt_supported(self.input.as_mut(), questions, supported_actions);
+                mxp::Tag::fmt_supported(self.input.as_mut(), questions, supported_actions);
             }
             Action::Tt => self.output.set_mxp_flag(TextStyle::NonProportional),
             Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),

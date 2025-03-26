@@ -2,8 +2,8 @@ use std::borrow::Cow;
 use std::num::NonZero;
 use std::str::FromStr;
 
-use super::atom::Atom;
 use super::mode::Mode;
+use super::tag::Tag;
 use crate::argument::{Arguments, Decoder, Scan};
 use crate::color::RgbColor;
 use crate::keyword::ElementKeyword;
@@ -12,7 +12,7 @@ use crate::parser::{Error, ErrorKind, UnrecognizedVariant, Words};
 /// List of arguments to an MXP tag.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ElementItem<S> {
-    pub atom: &'static Atom,
+    pub tag: &'static Tag,
     pub arguments: Arguments<S>,
 }
 
@@ -22,10 +22,10 @@ impl<S: AsRef<str>> ElementItem<S> {
         S: From<&'a str>,
     {
         let mut words = Words::new(tag);
-        let atom_name = words
+        let tag_name = words
             .next()
             .ok_or_else(|| Error::new(tag, ErrorKind::NoDefinitionTag))?;
-        let invalid_name = match atom_name {
+        let invalid_name = match tag_name {
             "/" => Some(ErrorKind::DefinitionCannotCloseElement),
             "!" => Some(ErrorKind::DefinitionCannotDefineElement),
             _ => None,
@@ -33,10 +33,10 @@ impl<S: AsRef<str>> ElementItem<S> {
         if let Some(invalid) = invalid_name {
             return Err(Error::new(words.next().unwrap_or(""), invalid));
         }
-        let atom = Atom::get(atom_name)
-            .ok_or_else(|| Error::new(atom_name, ErrorKind::NoInbuiltDefinitionTag))?;
+        let tag = Tag::get(tag_name)
+            .ok_or_else(|| Error::new(tag_name, ErrorKind::NoInbuiltDefinitionTag))?;
         Ok(Self {
-            atom,
+            tag,
             arguments: words.parse_args()?,
         })
     }

@@ -9,12 +9,12 @@ use super::action::ActionKind;
 
 /// Atomic MXP tags that we recognise, e.g. <b>.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Atom {
+pub struct Tag {
     /// Tag name, e.g. bold
     pub name: String,
-    /// Whether the atom is open (OPEN)
+    /// Whether the tag is open (OPEN)
     pub open: bool,
-    /// Whether the atom has no closing tag (EMPTY)
+    /// Whether the tag has no closing tag (EMPTY)
     pub command: bool,
     /// Its action.
     pub action: ActionKind,
@@ -22,9 +22,9 @@ pub struct Atom {
     pub args: Vec<&'static CaseFold<str>>,
 }
 
-impl Atom {
+impl Tag {
     pub fn get(name: &str) -> Option<&'static Self> {
-        ALL_ATOMS.get(name)
+        ALL_TAGS.get(name)
     }
 
     pub fn fmt_supported<I>(buf: &mut Vec<u8>, iter: I, supported: FlagSet<ActionKind>)
@@ -44,16 +44,16 @@ impl Atom {
 
 fn write_supported(buf: &mut Vec<u8>, supported: FlagSet<ActionKind>, arg: &str) {
     let mut questions = arg.split('.');
-    let tag = questions.next().unwrap();
-    match Atom::get(tag) {
-        None => write_cant(buf, tag),
-        Some(atom) if !supported.contains(atom.action) => {
-            write_cant(buf, tag);
+    let tag_name = questions.next().unwrap();
+    match Tag::get(tag_name) {
+        None => write_cant(buf, tag_name),
+        Some(tag) if !supported.contains(tag.action) => {
+            write_cant(buf, tag_name);
         }
-        Some(atom) => match questions.next() {
-            None => write_can(buf, tag),
-            Some("*") => write_can_args(buf, atom),
-            Some(subtag) if atom.args.contains(&subtag.into()) => {
+        Some(tag) => match questions.next() {
+            None => write_can(buf, tag_name),
+            Some("*") => write_can_args(buf, tag),
+            Some(subtag) if tag.args.contains(&subtag.into()) => {
                 write_can(buf, subtag);
             }
             Some(subtag) => write_cant(buf, subtag),
@@ -63,17 +63,17 @@ fn write_supported(buf: &mut Vec<u8>, supported: FlagSet<ActionKind>, arg: &str)
 
 fn write_supported_suffix(buf: &mut Vec<u8>, supported: FlagSet<ActionKind>, has_args: bool) {
     if !has_args {
-        for atom in ALL_ATOMS.values() {
-            if supported.contains(atom.action) {
-                write_can(buf, &atom.name);
-                write_can_args(buf, atom);
+        for tag in ALL_TAGS.values() {
+            if supported.contains(tag.action) {
+                write_can(buf, &tag.name);
+                write_can_args(buf, tag);
             }
         }
     }
     if !supported.contains(ActionKind::Font) && supported.contains(ActionKind::Color) {
-        let simple_font = Atom {
+        let simple_font = Tag {
             args: vec!["color".into(), "back".into()],
-            ..ALL_ATOMS.get("font").unwrap().clone()
+            ..ALL_TAGS.get("font").unwrap().clone()
         };
         write_can(buf, &simple_font.name);
         write_can_args(buf, &simple_font);
@@ -93,9 +93,9 @@ fn write_can(buf: &mut Vec<u8>, tag: &str) {
     buf.push(b' ');
 }
 
-fn write_can_args(buf: &mut Vec<u8>, atom: &Atom) {
-    let name = atom.name.as_bytes();
-    for arg in &atom.args {
+fn write_can_args(buf: &mut Vec<u8>, tag: &Tag) {
+    let name = tag.name.as_bytes();
+    for arg in &tag.args {
         buf.push(b'+');
         buf.extend_from_slice(name);
         buf.push(b'.');
@@ -105,7 +105,7 @@ fn write_can_args(buf: &mut Vec<u8>, atom: &Atom) {
 }
 
 #[allow(clippy::enum_glob_use)]
-static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
+static ALL_TAGS: Lookup<Tag> = Lookup::new(|| {
     use ActionKind::*;
 
     let command: FlagSet<ActionKind> = Br
@@ -198,14 +198,14 @@ static ALL_ATOMS: Lookup<Atom> = Lookup::new(|| {
         } else {
             args.split(' ').map(CaseFold::borrow).collect()
         };
-        let atom = Atom {
+        let tag = Tag {
             name: name.to_owned(),
             command: command.contains(action),
             open: open.contains(action),
             action,
             args,
         };
-        (name, atom)
+        (name, tag)
     })
     .collect()
 });

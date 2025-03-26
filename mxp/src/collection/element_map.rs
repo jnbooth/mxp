@@ -6,41 +6,41 @@ use crate::lookup::Lookup;
 
 use crate::argument::Arguments;
 use crate::color::RgbColor;
-use crate::element::{Atom, Element};
+use crate::element::{Element, Tag};
 use crate::parser::{validate, Error, ErrorKind};
 
 #[derive(Copy, Clone, Debug)]
 pub enum ElementComponent<'a> {
-    Atom(&'static Atom),
-    Custom(&'a Element),
+    Element(&'a Element),
+    Tag(&'static Tag),
 }
 
 impl<'a> ElementComponent<'a> {
     pub fn name(&self) -> &str {
         match self {
-            Self::Atom(atom) => atom.name.as_str(),
-            Self::Custom(el) => el.name.as_str(),
+            Self::Element(el) => el.name.as_str(),
+            Self::Tag(tag) => tag.name.as_str(),
         }
     }
 
     pub const fn is_command(&self) -> bool {
         match self {
-            Self::Atom(atom) => atom.command,
-            Self::Custom(el) => el.command,
+            Self::Element(el) => el.command,
+            Self::Tag(tag) => tag.command,
         }
     }
 
     pub const fn is_open(&self) -> bool {
         match self {
-            Self::Atom(atom) => atom.open,
-            Self::Custom(el) => el.open,
+            Self::Element(el) => el.open,
+            Self::Tag(tag) => tag.open,
         }
     }
 
     pub fn variable(&self) -> Option<String> {
         match self {
-            Self::Atom(_) => None,
-            Self::Custom(el) => el.variable.clone(),
+            Self::Element(el) => el.variable.clone(),
+            Self::Tag(_) => None,
         }
     }
 }
@@ -66,12 +66,12 @@ impl ElementMap {
     pub fn get_component(&self, key: &str) -> crate::Result<ElementComponent> {
         validate(key, ErrorKind::InvalidElementName)?;
 
-        if let Some(atom) = Atom::get(key) {
-            Ok(ElementComponent::Atom(atom))
+        if let Some(tag) = Tag::get(key) {
+            Ok(ElementComponent::Tag(tag))
         } else if let Some(custom) = self.get(key) {
-            Ok(ElementComponent::Custom(custom))
+            Ok(ElementComponent::Element(custom))
         } else if let Some(custom) = WELL_KNOWN_ELEMENTS.get(key) {
-            Ok(ElementComponent::Custom(custom))
+            Ok(ElementComponent::Element(custom))
         } else {
             Err(Error::new(key, ErrorKind::UnknownElement))
         }

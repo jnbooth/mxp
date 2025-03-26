@@ -156,6 +156,6 @@ impl<'a, D: Decoder + Copy> Iterator for DecodeElement<'a, D> {
     fn next(&mut self) -> Option<Self::Item> {
         let item = self.items.next()?;
         let scanner = item.arguments.scan(self.decoder);
-        Some(Action::new(item.atom.action, scanner))
+        Some(Action::new(item.tag.action, scanner))
     }
 }
