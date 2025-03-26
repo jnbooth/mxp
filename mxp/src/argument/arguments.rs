@@ -22,20 +22,22 @@ impl<S: AsRef<str>> Arguments<S> {
         self.positional.is_empty() && self.named.is_empty()
     }
 
-    pub fn find_attribute<'a, F: KeywordFilter, S2: AsRef<str>>(
+    /// Finds the value of an entity, using an element's attribute list to identify arguments
+    /// and provide default values.
+    pub(crate) fn find_from_attributes<'a, F: KeywordFilter, S2: AsRef<str>>(
         &'a self,
         entity: &str,
-        other: &'a Arguments<S2>,
+        attributes: &'a Arguments<S2>,
     ) -> Option<&'a str> {
-        if let Some(named) = self.named.get(entity) {
-            return Some(match other.named.get(entity) {
+        if let Some(named) = attributes.named.get(entity) {
+            return Some(match self.named.get(entity) {
                 Some(entity) => entity.as_ref(),
                 None => named.as_ref(),
             });
         }
-        let position = F::iter(&self.positional)
+        let position = F::iter(&attributes.positional)
             .position(|attr| attr.as_ref().eq_ignore_ascii_case(entity))?;
-        match F::iter(&other.positional).nth(position) {
+        match F::iter(&self.positional).nth(position) {
             Some(attr) => Some(attr.as_ref()),
             None => Some(""),
         }

@@ -61,9 +61,8 @@ impl<'d, S: AsRef<str>> Decoder for ElementDecoder<'d, S> {
                 return Ok(None);
             }
             match self
-                .element
-                .attributes
-                .find_attribute::<F, S>(entity, self.args)
+                .args
+                .find_from_attributes::<F, _>(entity, &self.element.attributes)
             {
                 Some(attr) => Ok(Some(attr)),
                 None => self.entities.decode_entity(entity),
