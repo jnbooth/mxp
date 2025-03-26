@@ -1,5 +1,4 @@
 use mud_transformer::{OutputDrain, Transformer, TransformerConfig};
-use pin_project_lite::pin_project;
 use std::io;
 use std::io::IoSlice;
 use std::pin::Pin;
@@ -8,15 +7,12 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::config::DEFAULT_BUFFER_SIZE;
 
-pin_project! {
-    pub struct MudStream<T> {
-        done: bool,
-        #[pin]
-        stream: T,
-        transformer: Transformer,
-        buf: Vec<u8>,
-        midpoint: usize,
-    }
+pub struct MudStream<T> {
+    done: bool,
+    stream: T,
+    transformer: Transformer,
+    buf: Vec<u8>,
+    midpoint: usize,
 }
 
 impl<T: AsyncRead + AsyncWrite + Unpin> MudStream<T> {
@@ -80,27 +76,27 @@ impl<T: AsyncRead + AsyncWrite + Unpin> MudStream<T> {
 }
 
 impl<T: AsyncRead + AsyncWrite + Unpin> AsyncWrite for MudStream<T> {
-    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), io::Error>> {
-        self.project().stream.poll_flush(cx)
+    fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), io::Error>> {
+        Pin::new(&mut self.stream).poll_flush(cx)
     }
 
-    fn poll_shutdown(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), io::Error>> {
-        self.project().stream.poll_shutdown(cx)
+    fn poll_shutdown(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), io::Error>> {
+        Pin::new(&mut self.stream).poll_shutdown(cx)
     }
 
     fn poll_write(
-        self: Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         cx: &mut Context,
         buf: &[u8],
     ) -> Poll<Result<usize, io::Error>> {
-        self.project().stream.poll_write(cx, buf)
+        Pin::new(&mut self.stream).poll_write(cx, buf)
     }
 
     fn poll_write_vectored(
-        self: Pin<&mut Self>,
+        mut self: Pin<&mut Self>,
         cx: &mut Context,
         bufs: &[IoSlice],
     ) -> Poll<Result<usize, io::Error>> {
-        self.project().stream.poll_write_vectored(cx, bufs)
+        Pin::new(&mut self.stream).poll_write_vectored(cx, bufs)
     }
 }
