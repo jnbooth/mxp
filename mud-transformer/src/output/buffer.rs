@@ -28,7 +28,7 @@ fn get_color(
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct BufferedOutput {
+pub(crate) struct BufferedOutput {
     buf: BytesMut,
     fragments: Vec<Output>,
     spans: SpanList,

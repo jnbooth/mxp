@@ -30,7 +30,7 @@ pub const fn bitmask(config: &TransformerConfig) -> u16 {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Negotiator {
+pub(crate) struct Negotiator {
     sequence: u8,
 }
 
@@ -59,7 +59,7 @@ impl Negotiator {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-pub struct Subnegotiation<'a> {
+pub(crate) struct Subnegotiation<'a> {
     config: &'a TransformerConfig,
     sequence: u8,
 }

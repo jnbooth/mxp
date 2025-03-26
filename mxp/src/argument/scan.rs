@@ -143,7 +143,7 @@ impl<'a, D: Decoder, S: AsRef<str>, K: Flags + FromStr> KeywordScan<'a, D, S, K>
     }
 }
 
-pub trait ExpectArg {
+pub(crate) trait ExpectArg {
     type Arg;
 
     fn expect_some(self, name: &str) -> crate::Result<Self::Arg>;

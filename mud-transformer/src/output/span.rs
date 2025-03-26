@@ -52,7 +52,7 @@ impl From<mxp::FontStyle> for TextStyle {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct EntitySetter {
+pub(crate) struct EntitySetter {
     pub name: String,
     pub flags: FlagSet<mxp::EntityKeyword>,
     pub is_variable: bool,
@@ -61,7 +61,7 @@ pub struct EntitySetter {
 /// eg. <send "command1|command2|command3" hint="click to see menu|Item 1|Item
 /// 2|Item 2">this is a menu link</SEND>
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Span {
+pub(crate) struct Span {
     populated: bool,
     pub(super) flags: FlagSet<TextStyle>,
     pub(super) foreground: Option<TermColor>,
@@ -131,7 +131,7 @@ macro_rules! set_prop {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct SpanList {
+pub(crate) struct SpanList {
     spans: Vec<Span>,
 }
 

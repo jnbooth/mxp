@@ -53,7 +53,7 @@ impl Variable {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct Variables {
+pub(crate) struct Variables {
     inner: FlagSet<Variable>,
     prefix: &'static str,
 }
@@ -122,7 +122,7 @@ impl Variables {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct Subnegotiation<'a> {
+pub(crate) struct Subnegotiation<'a> {
     config: &'a TransformerConfig,
     prefix: &'a str,
     variables: FlagSet<Variable>,

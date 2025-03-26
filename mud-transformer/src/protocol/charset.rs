@@ -16,7 +16,7 @@ flags! {
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct Charsets {
+pub(crate) struct Charsets {
     inner: FlagSet<Charset>,
 }
 
@@ -49,7 +49,7 @@ impl Charsets {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct Subnegotiation {
+pub(crate) struct Subnegotiation {
     charsets: FlagSet<Charset>,
     utf8: bool,
 }

@@ -6,7 +6,7 @@ use std::slice;
 pub const CODE: u8 = 70;
 
 #[derive(Clone, Debug, Default)]
-pub struct Iter<'a> {
+pub(crate) struct Iter<'a> {
     inner: slice::Iter<'a, u8>,
 }
 

@@ -1,8 +1,8 @@
 mod buffer;
-pub use buffer::BufferedOutput;
+pub(crate) use buffer::BufferedOutput;
 
 mod color;
-pub use color::TermColor;
+pub(crate) use color::TermColor;
 
 mod fragment;
 pub use fragment::{
@@ -14,4 +14,5 @@ mod shared_string;
 pub use shared_string::SharedString;
 
 mod span;
-pub use span::{EntitySetter, TextStyle};
+pub(crate) use span::EntitySetter;
+pub use span::TextStyle;

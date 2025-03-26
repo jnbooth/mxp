@@ -9,7 +9,7 @@ pub const CODE_V1: u8 = 85;
 pub const CODE_V2: u8 = 86;
 
 #[derive(Debug)]
-pub struct Decompress {
+pub(crate) struct Decompress {
     inner: flate2::Decompress,
     active: bool,
     supports_mccp_2: bool,

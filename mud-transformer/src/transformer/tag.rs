@@ -1,6 +1,6 @@
 /// Outstanding (unclosed) tags.
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Tag {
+pub(crate) struct Tag {
     /// Name of tag we opened
     pub name: String,
     /// Was it secure mode at the time?
@@ -42,7 +42,7 @@ impl Tag {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct TagList {
+pub(crate) struct TagList {
     inner: Vec<Tag>,
 }
 

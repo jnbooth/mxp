@@ -140,7 +140,7 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Frame<Cow<'a, st
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct DestArgs<S> {
+pub(crate) struct DestArgs<S> {
     pub name: S,
 }
 

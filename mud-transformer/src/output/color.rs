@@ -4,7 +4,7 @@ use mxp::RgbColor;
 
 /// A color set by the terminal.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum TermColor {
+pub(crate) enum TermColor {
     /// 8-bit ANSI color code. Some clients allow users to customize the RGB output of the first
     /// 16 ANSI colors.
     Ansi(u8),

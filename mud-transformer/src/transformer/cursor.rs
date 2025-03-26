@@ -3,7 +3,7 @@ use std::iter::FusedIterator;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ReceiveCursor<'a> {
+pub(crate) struct ReceiveCursor<'a> {
     inner: &'a [u8],
 }
 

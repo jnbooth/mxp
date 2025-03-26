@@ -86,7 +86,7 @@ fn split_list(list: &str) -> (String, Vec<String>) {
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct HyperlinkArgs<S> {
+pub(crate) struct HyperlinkArgs<S> {
     pub href: S,
     pub hint: Option<S>,
     pub expire: Option<S>,
@@ -116,7 +116,7 @@ impl<S: AsRef<str>> From<HyperlinkArgs<S>> for Link {
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SendArgs<S> {
+pub(crate) struct SendArgs<S> {
     pub href: Option<S>,
     pub hint: Option<S>,
     pub sendto: SendTo,
@@ -156,7 +156,7 @@ impl<S: AsRef<str>> From<SendArgs<S>> for Link {
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ExpireArgs<S> {
+pub(crate) struct ExpireArgs<S> {
     pub name: Option<S>,
 }
 

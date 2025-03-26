@@ -5,7 +5,7 @@ const fn is_phase_reset_character(c: u8) -> bool {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Phase {
+pub(crate) enum Phase {
     /// Normal text
     Normal,
     /// Received an escape

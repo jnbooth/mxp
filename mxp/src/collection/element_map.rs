@@ -46,7 +46,7 @@ impl<'a> ElementComponent<'a> {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct ElementMap(CaseFoldMap<String, Element>);
+pub(crate) struct ElementMap(CaseFoldMap<String, Element>);
 
 impl Deref for ElementMap {
     type Target = CaseFoldMap<String, Element>;

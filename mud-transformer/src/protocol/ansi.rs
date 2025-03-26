@@ -4,7 +4,7 @@ use mxp::RgbColor;
 use crate::output::{BufferedOutput, TermColor, TextStyle};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Palette {
+pub(crate) enum Palette {
     Foreground,
     Background,
 }
@@ -44,14 +44,14 @@ enum Phase {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Outcome {
+pub(crate) enum Outcome {
     Continue,
     Done,
     Mxp(mxp::Mode),
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Interpreter {
+pub(crate) struct Interpreter {
     palette: Palette,
     phase: Phase,
     color: RgbColor,

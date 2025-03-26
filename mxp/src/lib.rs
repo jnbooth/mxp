@@ -5,7 +5,7 @@ mod argument;
 pub use argument::Arguments;
 
 mod collection;
-pub use collection::{ElementComponent, State};
+pub use collection::{DecodeElement, ElementComponent, State};
 
 mod color;
 pub use color::{HexOutOfRangeError, NamedColorIter, ParseHexColorError, RgbColor};
@@ -14,7 +14,7 @@ mod element;
 pub use element::*;
 
 mod entity;
-pub use entity::{Entity, EntityEntry, EntityMap, PublishedIter};
+pub use entity::{Entity, EntityEntry, EntityInfo, EntityMap, PublishedIter};
 
 pub mod escape;
 

@@ -2,7 +2,7 @@ use casefold::ascii::{CaseFold, CaseFoldMap};
 use std::collections::hash_map;
 use std::sync::OnceLock;
 
-pub struct Lookup<T> {
+pub(crate) struct Lookup<T> {
     inner: OnceLock<CaseFoldMap<&'static str, T>>,
     init: fn() -> Vec<(&'static str, T)>,
 }

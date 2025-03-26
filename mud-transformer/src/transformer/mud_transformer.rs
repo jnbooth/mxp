@@ -103,7 +103,7 @@ impl Transformer {
         }
     }
 
-    pub fn subnegotiate<T: Negotiate>(&mut self, negotiator: T) {
+    fn subnegotiate<T: Negotiate>(&mut self, negotiator: T) {
         self.input.append([telnet::IAC, telnet::SB, T::CODE]);
         let subnegotiation = negotiator.negotiate(&self.config);
         write!(self.input, "{subnegotiation}").unwrap();

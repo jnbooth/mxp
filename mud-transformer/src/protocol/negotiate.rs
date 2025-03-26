@@ -2,7 +2,7 @@ use std::fmt::Display;
 
 use crate::TransformerConfig;
 
-pub trait Negotiate {
+pub(crate) trait Negotiate {
     const CODE: u8;
 
     type Output<'a>: Display;

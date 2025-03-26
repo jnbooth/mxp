@@ -7,7 +7,7 @@ use crate::parser::Error;
 use flagset::FlagSet;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ColorArgs {
+pub(crate) struct ColorArgs {
     pub fore: Option<RgbColor>,
     pub back: Option<RgbColor>,
 }
@@ -28,7 +28,7 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for ColorArgs {
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct MxpArgs {
+pub(crate) struct MxpArgs {
     pub keywords: FlagSet<MxpKeyword>,
 }
 
@@ -44,7 +44,7 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for MxpArgs {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SupportArgs<S> {
+pub(crate) struct SupportArgs<S> {
     pub questions: Vec<S>,
 }
 
@@ -61,7 +61,7 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for SupportArgs<Cow<
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct VarArgs<S> {
+pub(crate) struct VarArgs<S> {
     pub variable: S,
     pub keywords: FlagSet<EntityKeyword>,
 }
