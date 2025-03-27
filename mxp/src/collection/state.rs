@@ -68,7 +68,9 @@ impl State {
         self.line_tags.get(usize::from(mode.0), &self.elements)
     }
 
-    /// Creates a formatting `struct` that outputs a [`<SUPPORT>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control) response.
+    /// Creates a formatting `struct` that outputs a [`<SUPPORT>`] response.
+    ///
+    /// [`<SUPPORT>`]: https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control
     pub fn supported_tags<I>(&self, iter: I, supported: FlagSet<ActionKind>) -> SupportResponse<I>
     where
         I: IntoIterator + Copy,
@@ -77,6 +79,7 @@ impl State {
         SupportResponse::new(iter, supported, &self.tags)
     }
 
+    /// Decodes the actions of an element, using the specified arguments.
     pub fn decode_element<'a, S: AsRef<str>>(
         &'a self,
         element: &'a Element,
@@ -92,11 +95,12 @@ impl State {
         }
     }
 
-    /// Decodes an entity.
+    /// Decodes the value of an entity.
     pub fn decode_entity(&self, name: &str) -> crate::Result<Option<&str>> {
         self.entities.decode_entity(name)
     }
 
+    /// Decodes the action of a predefined tag.
     pub fn decode_tag<'a, S: AsRef<str>>(
         &self,
         tag: &Tag,
@@ -105,6 +109,14 @@ impl State {
         Action::parse(tag.action, args.scan(&self.entities))
     }
 
+    /// Handles an MXP definition from the server, which may define an [attribute list], [element],
+    /// [entity], or [line tag]. The definition should begin with `"ATTLIST "`, `"ELEMENT "`,
+    /// `"ENTITY "`, or `"TAG "`, respectively.
+    ///
+    /// [attribute list]: https://www.zuggsoft.com/zmud/mxp.htm#ATTLIST
+    /// [element]: https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT
+    /// [entity]: https://www.zuggsoft.com/zmud/mxp.htm#ENTITY
+    /// [line tag]: https://www.zuggsoft.com/zmud/mxp.htm#User-defined%20Line%20Tags
     pub fn define<'a>(&'a mut self, tag: &'a str) -> crate::Result<Option<EntityEntry<'a>>> {
         let mut words = Words::new(tag);
 
@@ -137,7 +149,7 @@ impl State {
         Ok(())
     }
 
-    pub fn define_line_tag(&mut self, words: Words) -> crate::Result<()> {
+    fn define_line_tag(&mut self, words: Words) -> crate::Result<()> {
         let update = LineTagUpdate::parse(words, &self.entities)?;
         self.line_tags.update(update, &mut self.elements);
         Ok(())
@@ -169,6 +181,7 @@ impl State {
     }
 }
 
+/// This `struct` is created by [`State::decode_element`]. See its documentation for more.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct DecodeElement<'a, D> {
     decoder: D,
