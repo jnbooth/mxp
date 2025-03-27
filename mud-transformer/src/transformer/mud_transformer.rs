@@ -80,7 +80,7 @@ impl Transformer {
             mxp_quote_terminator: None,
             mxp_entity_string: Vec::new(),
             mxp_tags: TagList::new(),
-            mxp_state: mxp::State::with_globals(),
+            mxp_state: mxp::State::populated(),
 
             ansi: ansi::Interpreter::new(),
             charsets: charset::Charsets::new(),
@@ -368,7 +368,7 @@ impl Transformer {
                 self.mxp_set_entity(variable.into_owned(), keywords, mxp_state);
             }
             Action::Version => {
-                let response = mxp::responses::IdentifyResponse {
+                let response = mxp::responses::VersionResponse {
                     name: &self.config.app_name,
                     version: &self.config.version,
                 };
@@ -408,7 +408,7 @@ impl Transformer {
         let mxp_string = self.take_mxp_string()?;
         let name = mxp_string.trim();
         mxp::validate(name, mxp::ErrorKind::InvalidEntityName)?;
-        if let Some(entity) = self.mxp_state.get_entity(name)? {
+        if let Some(entity) = self.mxp_state.decode_entity(name)? {
             self.mxp_active = false;
             self.output.append_text(entity);
             self.mxp_active = true;

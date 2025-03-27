@@ -6,9 +6,10 @@ use flagset::FlagSet;
 use super::element_map::{ElementComponent, ElementMap};
 use super::line_tags::{LineTagUpdate, LineTags};
 use crate::argument::{Arguments, Decoder, ElementDecoder};
-use crate::element::{Action, ActionKind, Element, ElementItem, Mode, SupportedTags, Tag, Tags};
+use crate::element::{Action, ActionKind, Element, ElementItem, Mode, Tag, Tags};
 use crate::entity::{EntityEntry, EntityMap, PublishedIter};
 use crate::parser::{Error, ErrorKind, Words};
+use crate::responses::SupportResponse;
 
 /// A store of MXP state: elements, entities, and line tags.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -24,7 +25,7 @@ impl State {
     ///
     /// Unlike `State::default()`, this function populates the state with elements and entities
     /// defined by the MXP protocol specification, allocating memory in the process.
-    pub fn with_globals() -> Self {
+    pub fn populated() -> Self {
         Self {
             elements: ElementMap::well_known(),
             entities: EntityMap::with_globals(),
@@ -41,36 +42,39 @@ impl State {
         self.line_tags.clear();
     }
 
+    /// Returns `true` if the specified name belongs to a global entity as predefined by the MXP
+    /// protocol specifications.
     pub fn is_global_entity(&self, key: &str) -> bool {
         self.entities.is_global(key)
     }
 
+    /// Mutably borrows the map of defined MXP entities.
     pub fn entities_mut(&mut self) -> &mut EntityMap {
         &mut self.entities
     }
 
+    /// Iterates through published entities.
     pub fn published_entities(&self) -> PublishedIter {
         self.entities.published()
     }
 
+    /// Retrieves a tag or element by name.
     pub fn get_component(&self, name: &str) -> crate::Result<ElementComponent> {
         self.elements.get_component(name, &self.tags)
     }
 
-    pub fn get_entity(&self, name: &str) -> crate::Result<Option<&str>> {
-        self.entities.decode_entity(name)
-    }
-
+    /// Retrieves the element associated with a line tag for a specified mode, if one exists.
     pub fn get_line_tag(&self, mode: Mode) -> Option<&Element> {
         self.line_tags.get(usize::from(mode.0), &self.elements)
     }
 
-    pub fn supported_tags<I>(&self, iter: I, supported: FlagSet<ActionKind>) -> SupportedTags<I>
+    /// Creates a formatting `struct` that outputs a [`<SUPPORT>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control) response.
+    pub fn supported_tags<I>(&self, iter: I, supported: FlagSet<ActionKind>) -> SupportResponse<I>
     where
         I: IntoIterator + Copy,
         I::Item: AsRef<str>,
     {
-        self.tags.supported(iter, supported)
+        SupportResponse::new(iter, supported, &self.tags)
     }
 
     pub fn decode_element<'a, S: AsRef<str>>(
@@ -86,6 +90,11 @@ impl State {
                 entities: &self.entities,
             },
         }
+    }
+
+    /// Decodes an entity.
+    pub fn decode_entity(&self, name: &str) -> crate::Result<Option<&str>> {
+        self.entities.decode_entity(name)
     }
 
     pub fn decode_tag<'a, S: AsRef<str>>(
@@ -139,9 +148,6 @@ impl State {
         key: &'a str,
         words: Words,
     ) -> crate::Result<Option<EntityEntry<'a>>> {
-        if self.entities.is_global(key) {
-            return Err(Error::new(key, ErrorKind::CannotRedefineEntity));
-        }
         let s = words.as_str();
         let args = words.parse_args::<&str>()?;
         let mut scanner = args.scan(&self.entities).with_keywords();

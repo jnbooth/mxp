@@ -1,8 +1,7 @@
-use std::fmt::{self, Display, Formatter};
-use std::str;
+use std::collections::hash_map::Values;
+use std::{iter, str};
 
 use casefold::ascii::{CaseFold, CaseFoldMap};
-use flagset::FlagSet;
 
 use super::action::ActionKind;
 
@@ -18,7 +17,7 @@ pub struct Tag {
 }
 
 impl Tag {
-    const fn new(
+    pub(crate) const fn new(
         name: &'static str,
         action: ActionKind,
         args: &'static [&'static CaseFold<str>],
@@ -42,96 +41,15 @@ impl Tags {
     pub fn get(&self, tag: &str) -> Option<&'static Tag> {
         self.inner.get(tag).copied()
     }
-
-    pub fn supported<I>(&self, iter: I, supported: FlagSet<ActionKind>) -> SupportedTags<I>
-    where
-        I: IntoIterator,
-        I::Item: AsRef<str>,
-    {
-        SupportedTags {
-            supported,
-            iter,
-            tags: self,
-        }
-    }
-
-    fn write_supported(
-        &self,
-        f: &mut Formatter,
-        supported: FlagSet<ActionKind>,
-        arg: &str,
-    ) -> fmt::Result {
-        let mut questions = arg.split('.');
-        let tag_name = questions.next().unwrap();
-        match self.get(tag_name) {
-            None => Self::write_cant(f, tag_name),
-            Some(tag) if !supported.contains(tag.action) => Self::write_cant(f, tag_name),
-            Some(tag) => match questions.next() {
-                None => Self::write_can(f, tag_name),
-                Some("*") => Self::write_can_args(f, tag),
-                Some(subtag) if tag.args.contains(&subtag.into()) => Self::write_can(f, subtag),
-                Some(subtag) => Self::write_cant(f, subtag),
-            },
-        }
-    }
-
-    fn write_supported_suffix(
-        &self,
-        f: &mut Formatter,
-        supported: FlagSet<ActionKind>,
-    ) -> fmt::Result {
-        for tag in self.inner.values() {
-            if supported.contains(tag.action) {
-                Self::write_can(f, tag.name)?;
-                Self::write_can_args(f, tag)?;
-            }
-        }
-        if !supported.contains(ActionKind::Font) && supported.contains(ActionKind::Color) {
-            Self::write_can(f, SIMPLE_FONT_TAG.name)?;
-            Self::write_can_args(f, SIMPLE_FONT_TAG)?;
-        }
-        Ok(())
-    }
-
-    fn write_cant(f: &mut Formatter, tag: &str) -> fmt::Result {
-        write!(f, "-{tag} ")
-    }
-
-    fn write_can(f: &mut Formatter, tag: &str) -> fmt::Result {
-        write!(f, "+{tag} ")
-    }
-
-    fn write_can_args(f: &mut Formatter, tag: &Tag) -> fmt::Result {
-        let name = tag.name;
-        for arg in tag.args {
-            write!(f, "+{name}.{arg} ")?;
-        }
-        Ok(())
-    }
 }
 
-pub struct SupportedTags<'a, I> {
-    supported: FlagSet<ActionKind>,
-    iter: I,
-    tags: &'a Tags,
-}
+impl<'a> IntoIterator for &'a Tags {
+    type Item = &'static Tag;
 
-impl<'a, I> Display for SupportedTags<'a, I>
-where
-    I: IntoIterator + Copy,
-    I::Item: AsRef<str>,
-{
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(f, "\x1B[1z<SUPPORTS ")?;
-        let mut has_args = false;
-        for arg in self.iter {
-            has_args = true;
-            self.tags.write_supported(f, self.supported, arg.as_ref())?;
-        }
-        if !has_args {
-            self.tags.write_supported_suffix(f, self.supported)?;
-        }
-        write!(f, ">")
+    type IntoIter = iter::Copied<Values<'a, CaseFold<&'static str>, &'static Tag>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.inner.values().copied()
     }
 }
 
@@ -219,6 +137,3 @@ const ALL_TAGS: &[Tag] = {
         Tag::new("version", Version, &[]),
     ]
 };
-
-/// Alternative `<font>` definition that does not include the "face" and "size" arguments.
-const SIMPLE_FONT_TAG: &Tag = &Tag::new("font", ActionKind::Font, args!["color", "back"]);

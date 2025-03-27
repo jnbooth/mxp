@@ -35,5 +35,5 @@ mod sound;
 pub use sound::{AudioContinuation, AudioRepetition, Music, Sound};
 
 mod tag;
+pub use tag::Tag;
 pub(crate) use tag::Tags;
-pub use tag::{SupportedTags, Tag};
