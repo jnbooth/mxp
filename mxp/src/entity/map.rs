@@ -39,10 +39,7 @@ impl EntityMap {
 
     fn guard_global(&self, key: &str) -> crate::Result<()> {
         if self.is_global(key) {
-            return Err(crate::Error::new(
-                key,
-                crate::ErrorKind::CannotRedefineEntity,
-            ));
+            return Err(crate::Error::new(key, ErrorKind::CannotRedefineEntity));
         }
         Ok(())
     }

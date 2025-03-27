@@ -6,7 +6,9 @@ use flagset::FlagSet;
 use super::element_map::{ElementComponent, ElementMap};
 use super::line_tags::{LineTagUpdate, LineTags};
 use crate::argument::{Arguments, Decoder, ElementDecoder};
-use crate::element::{Action, ActionKind, Element, ElementItem, Mode, Tag, Tags};
+use crate::element::{
+    Action, ActionKind, CollectedDefinition, DefinitionKind, Element, ElementItem, Mode, Tag, Tags,
+};
 use crate::entity::{EntityEntry, EntityMap, PublishedIter};
 use crate::parser::{Error, ErrorKind, Words};
 use crate::responses::SupportResponse;
@@ -110,32 +112,28 @@ impl State {
     }
 
     /// Handles an MXP definition from the server, which may define an [attribute list], [element],
-    /// [entity], or [line tag]. The definition should begin with `"ATTLIST "`, `"ELEMENT "`,
-    /// `"ENTITY "`, or `"TAG "`, respectively.
+    /// [entity], or [line tag].
     ///
     /// [attribute list]: https://www.zuggsoft.com/zmud/mxp.htm#ATTLIST
     /// [element]: https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT
     /// [entity]: https://www.zuggsoft.com/zmud/mxp.htm#ENTITY
     /// [line tag]: https://www.zuggsoft.com/zmud/mxp.htm#User-defined%20Line%20Tags
-    pub fn define<'a>(&'a mut self, tag: &'a str) -> crate::Result<Option<EntityEntry<'a>>> {
-        let mut words = Words::new(tag);
-
-        let definition = words.validate_next_or(ErrorKind::InvalidDefinition)?;
-        if definition.eq_ignore_ascii_case("tag") {
-            self.define_line_tag(words)?;
-            return Ok(None);
-        }
-        let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
-        match_ci! {definition,
-            "ATTLIST" | "ATT" => self.define_attributes(name, words),
-            "ELEMENT" | "EL" => self.define_element(name, words),
-            "ENTITY" | "EN" => return self.define_entity(name, words),
-            _ => Err(Error::new(definition, ErrorKind::InvalidDefinition))
+    pub fn define<'a>(
+        &'a mut self,
+        definition: CollectedDefinition<'a>,
+    ) -> crate::Result<Option<EntityEntry<'a>>> {
+        match definition.kind {
+            DefinitionKind::AttributeList => self.define_attributes(definition.text),
+            DefinitionKind::Element => self.define_element(definition.text),
+            DefinitionKind::Entity => return self.define_entity(definition.text),
+            DefinitionKind::LineTag => self.define_line_tag(definition.text),
         }?;
         Ok(None)
     }
 
-    fn define_element(&mut self, name: &str, words: Words) -> crate::Result<()> {
+    fn define_element(&mut self, definition: &str) -> crate::Result<()> {
+        let mut words = Words::new(definition);
+        let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
         let args = words.parse_args::<String>()?;
         let Some(el) = Element::parse(name.to_owned(), args.scan(&self.entities), &self.tags)?
         else {
@@ -149,17 +147,18 @@ impl State {
         Ok(())
     }
 
-    fn define_line_tag(&mut self, words: Words) -> crate::Result<()> {
-        let update = LineTagUpdate::parse(words, &self.entities)?;
+    fn define_line_tag(&mut self, definition: &str) -> crate::Result<()> {
+        let update = LineTagUpdate::parse(Words::new(definition), &self.entities)?;
         self.line_tags.update(update, &mut self.elements);
         Ok(())
     }
 
     fn define_entity<'a>(
         &'a mut self,
-        key: &'a str,
-        words: Words,
+        definition: &'a str,
     ) -> crate::Result<Option<EntityEntry<'a>>> {
+        let mut words = Words::new(definition);
+        let key = words.validate_next_or(ErrorKind::InvalidElementName)?;
         let s = words.as_str();
         let args = words.parse_args::<&str>()?;
         let mut scanner = args.scan(&self.entities).with_keywords();
@@ -172,7 +171,9 @@ impl State {
             .set(key, &value, desc.map(Cow::into_owned), keywords)
     }
 
-    fn define_attributes(&mut self, key: &str, words: Words) -> crate::Result<()> {
+    fn define_attributes(&mut self, definition: &str) -> crate::Result<()> {
+        let mut words = Words::new(definition);
+        let key = words.validate_next_or(ErrorKind::InvalidElementName)?;
         self.elements
             .get_mut(key)
             .ok_or_else(|| Error::new(key, ErrorKind::UnknownElementInAttlist))?

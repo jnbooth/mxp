@@ -5,7 +5,9 @@ mod bar;
 pub use bar::{Gauge, Stat};
 
 mod element;
-pub use element::{CollectedElement, Element, ElementItem, ParseAs};
+pub use element::{
+    CollectedDefinition, CollectedElement, DefinitionKind, Element, ElementItem, ParseAs,
+};
 
 mod filter;
 pub use filter::Filter;

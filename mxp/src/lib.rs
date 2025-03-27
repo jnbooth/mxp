@@ -25,7 +25,7 @@ mod protocol;
 pub use protocol::responses;
 
 mod parser;
-pub use parser::{validate, Error, ErrorKind, Words};
+pub use parser::{validate, Error, ErrorKind, ParseErrorTarget, Words};
 
 pub type Result<T> = std::result::Result<T, Error>;
 

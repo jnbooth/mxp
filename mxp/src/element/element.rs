@@ -44,22 +44,70 @@ impl<S: AsRef<str>> ElementItem<S> {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum DefinitionKind {
+    AttributeList,
+    Element,
+    Entity,
+    LineTag,
+}
+
+impl FromStr for DefinitionKind {
+    type Err = UnrecognizedVariant<Self>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match_ci! {s,
+            "ATTLIST" | "ATT" => Self::AttributeList,
+            "ELEMENT" | "EL" => Self::Element,
+            "ENTITY" | "EN" => Self::Entity,
+            "TAG" => Self::LineTag,
+            _ => return Err(Self::Err::new(s))
+        })
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CollectedDefinition<'a> {
+    pub(crate) kind: DefinitionKind,
+    pub(crate) text: &'a str,
+}
+
+impl<'a> CollectedDefinition<'a> {
+    #[allow(clippy::should_implement_trait)]
+    fn from_str(text: &'a str) -> crate::Result<Self> {
+        fn fail_definition(text: &str) -> crate::Error {
+            crate::Error::new(text, ErrorKind::InvalidDefinition)
+        }
+
+        let Some((kind, definition)) = text.split_once(' ') else {
+            return Err(fail_definition(text));
+        };
+        let Ok(kind) = DefinitionKind::from_str(kind) else {
+            return Err(fail_definition(text));
+        };
+        Ok(Self {
+            kind,
+            text: definition,
+        })
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum CollectedElement<'a> {
-    Definition(&'a str),
+    Definition(CollectedDefinition<'a>),
     TagClose(&'a str),
     TagOpen(&'a str),
 }
 
 impl<'a> CollectedElement<'a> {
     #[allow(clippy::should_implement_trait)]
-    pub fn from_str(text: &'a str) -> crate::Result<Self> {
+    pub(crate) fn from_str(text: &'a str) -> crate::Result<Self> {
         let tag = *text
             .as_bytes()
             .first()
             .ok_or_else(|| Error::new("collected element", ErrorKind::EmptyElement))?;
 
         match tag {
-            b'!' => Ok(Self::Definition(&text[1..])),
+            b'!' => Ok(Self::Definition(CollectedDefinition::from_str(&text[1..])?)),
             b'/' => Ok(Self::TagClose(&text[1..])),
             _ => Ok(Self::TagOpen(text)),
         }
@@ -173,7 +221,7 @@ impl Element {
         };
         match tag.as_ref().parse::<NonZero<u8>>() {
             Ok(tag) if Mode(tag.get()).is_user_defined() => Ok(Some(tag)),
-            _ => Err(crate::Error::new(tag, crate::ErrorKind::InvalidLineTag)),
+            _ => Err(crate::Error::new(tag, ErrorKind::InvalidLineTag)),
         }
     }
 

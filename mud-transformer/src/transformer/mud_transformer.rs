@@ -209,16 +209,20 @@ impl Transformer {
         Ok(())
     }
 
-    fn mxp_definition(&mut self, tag: &str) -> mxp::Result<()> {
+    fn mxp_definition(
+        &mut self,
+        definition: mxp::CollectedDefinition,
+        text: &str,
+    ) -> mxp::Result<()> {
         let was_secure = self.mxp_mode.is_secure();
         self.mxp_restore_mode();
         if !was_secure {
             return Err(mxp::Error::new(
-                tag,
+                text,
                 mxp::ErrorKind::DefinitionWhenNotSecure,
             ));
         }
-        let Some(entity) = self.mxp_state.define(tag)? else {
+        let Some(entity) = self.mxp_state.define(definition)? else {
             return Ok(());
         };
         self.output.append(EntityFragment::entity(&entity));
@@ -226,8 +230,9 @@ impl Transformer {
     }
 
     fn mxp_collected_element(&mut self) -> mxp::Result<()> {
-        match mxp::Element::collect(&self.take_mxp_string()?)? {
-            mxp::CollectedElement::Definition(text) => self.mxp_definition(text),
+        let text = self.take_mxp_string()?;
+        match mxp::Element::collect(&text)? {
+            mxp::CollectedElement::Definition(definition) => self.mxp_definition(definition, &text),
             mxp::CollectedElement::TagClose(text) => self.mxp_endtag(text),
             mxp::CollectedElement::TagOpen(text) => {
                 let mxp_state = mem::take(&mut self.mxp_state);
