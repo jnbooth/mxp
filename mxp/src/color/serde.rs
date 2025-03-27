@@ -1,3 +1,4 @@
+use super::error::HexOutOfRangeError;
 use super::rgb::RgbColor;
 use serde::de::{Error as _, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -19,15 +20,14 @@ impl<'de> Deserialize<'de> for RgbColor {
             code.parse()
                 .map_err(|_| D::Error::invalid_value(Unexpected::Str(code), &"hex color code"))
         } else {
-            let code = u32::deserialize(deserializer)?;
-            if code <= 0xFFFFFF {
-                Ok(Self::hex(code))
-            } else {
-                Err(D::Error::invalid_value(
-                    Unexpected::Unsigned(u64::from(code)),
-                    &"integer between 0x000000 and 0xFFFFFF",
-                ))
-            }
+            u32::deserialize(deserializer)?
+                .try_into()
+                .map_err(|code: HexOutOfRangeError| {
+                    D::Error::invalid_value(
+                        Unexpected::Unsigned(u64::from(code.0)),
+                        &"integer between 0x000000 and 0xFFFFFF",
+                    )
+                })
         }
     }
 }

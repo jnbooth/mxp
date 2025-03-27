@@ -1,24 +1,10 @@
 use super::rgb::RgbColor;
 
-impl RgbColor {
-    /// Standard definitions for 3-bit color.
-    pub const XTERM_8: &'static [Self; 8] = first_xterm_colors();
-
-    /// Standard definitions for 4-bit color.
-    pub const XTERM_16: &'static [Self; 16] = first_xterm_colors();
-
-    /// Standard definitions for 8-bit color.
-    pub const XTERM_256: &'static [Self; 256] = &create_xterm_colors();
-
-    /// Translates an 8-bit integer into an 8-bit color.
-    pub const fn xterm(code: u8) -> Self {
-        RgbColor::XTERM_256[code as usize]
-    }
-}
+pub(super) const XTERM_COLORS: &[RgbColor; 256] = &create_xterm_colors();
 
 // Will be unnecessary once const Option::unwrap is stabilized.
-const fn first_xterm_colors<const N: usize>() -> &'static [RgbColor; N] {
-    match RgbColor::XTERM_256.first_chunk() {
+pub(super) const fn first_xterm_colors<const N: usize>() -> &'static [RgbColor; N] {
+    match XTERM_COLORS.first_chunk() {
         Some(chunk) => chunk,
         None => unreachable!(),
     }

@@ -2,7 +2,6 @@ use std::ops::{Deref, DerefMut};
 
 use casefold::ascii::{CaseFold, CaseFoldMap};
 
-use crate::color::RgbColor;
 use crate::element::{Element, Tag, Tags};
 use crate::parser::{validate, Error, ErrorKind};
 
@@ -97,7 +96,7 @@ fn well_known_elements() -> CaseFoldMap<String, Element> {
             Element {
                 name: name.to_owned(),
                 open: true,
-                fore: Some(RgbColor::hex(hex)),
+                fore: hex.try_into().ok(),
                 ..Default::default()
             },
         )

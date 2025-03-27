@@ -1,39 +1,10 @@
-use std::sync::LazyLock;
 use std::{iter, slice};
-
-use casefold::ascii::CaseFoldMap;
 
 use super::rgb::RgbColor;
 
 pub type NamedColorIter = iter::Copied<slice::Iter<'static, (&'static str, RgbColor)>>;
 
-impl RgbColor {
-    /// Finds a color by its name in the standard list of [148 CSS colors]. Case-insensitive.
-    ///
-    /// [148 CSS colors]: https://www.w3.org/wiki/CSS/Properties/color/keywords
-    pub fn named(name: &str) -> Option<RgbColor> {
-        static LOOKUP: LazyLock<CaseFoldMap<&str, RgbColor>> = LazyLock::new(|| {
-            NAMED_COLORS
-                .iter()
-                .map(|&(key, val)| (key.into(), val))
-                .collect()
-        });
-
-        if name.starts_with('#') {
-            return name.parse().ok();
-        }
-        LOOKUP.get(name).copied()
-    }
-
-    /// Iterates through colors in the standard list of [148 CSS colors].
-    ///
-    /// [148 CSS colors]: https://www.w3.org/wiki/CSS/Properties/color/keywords
-    pub fn iter_named() -> NamedColorIter {
-        NAMED_COLORS.iter().copied()
-    }
-}
-
-const NAMED_COLORS: &[(&str, RgbColor)] = &[
+pub(super) const NAMED_COLORS: &[(&str, RgbColor)] = &[
     ("aliceblue", RgbColor::hex(0xF0F8FF)),
     ("antiquewhite", RgbColor::hex(0xFAEBD7)),
     ("aqua", RgbColor::hex(0x00FFFF)),
