@@ -1,5 +1,5 @@
 use std::error::Error;
-use std::fmt::{self, Display, Formatter};
+use std::fmt;
 use std::num::ParseIntError;
 
 /// An error which is returned when attempting to create an [`RgbColor`](crate::RgbColor) from a
@@ -7,8 +7,8 @@ use std::num::ParseIntError;
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct HexOutOfRangeError(pub u32);
 
-impl Display for HexOutOfRangeError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for HexOutOfRangeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str("number exceeds maximum hex code value")
     }
 }
@@ -39,8 +39,8 @@ impl From<ParseIntError> for ParseHexColorError {
     }
 }
 
-impl Display for ParseHexColorError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for ParseHexColorError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::NotHex(_) => f.write_str("value is not formatted as a hex code"),
             Self::NotU32(error) => error.fmt(f),

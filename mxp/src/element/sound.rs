@@ -1,7 +1,7 @@
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::parser::{Error, UnrecognizedVariant};
 use std::borrow::Cow;
-use std::fmt::{self, Debug, Display, Formatter};
+use std::fmt;
 use std::num::NonZero;
 use std::str::FromStr;
 
@@ -17,11 +17,11 @@ impl Default for AudioRepetition {
     }
 }
 
-impl Display for AudioRepetition {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+impl fmt::Display for AudioRepetition {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Forever => Display::fmt(&-1, f),
-            Self::Count(amount) => Display::fmt(amount, f),
+            Self::Forever => (-1).fmt(f),
+            Self::Count(amount) => amount.fmt(f),
         }
     }
 }
@@ -49,18 +49,18 @@ impl Default for AudioContinuation {
     }
 }
 
-impl Display for AudioContinuation {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+impl fmt::Display for AudioContinuation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Restart => Display::fmt(&0, f),
-            Self::Continue => Display::fmt(&1, f),
+            Self::Restart => (0).fmt(f),
+            Self::Continue => (1).fmt(f),
         }
     }
 }
 
-impl Debug for AudioContinuation {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        Display::fmt(self, f)
+impl fmt::Debug for AudioContinuation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Display::fmt(self, f)
     }
 }
 

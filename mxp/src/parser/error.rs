@@ -1,6 +1,6 @@
 use flagset::Flags;
 use std::borrow::Cow;
-use std::fmt::{self, Debug, Display, Formatter};
+use std::fmt;
 use std::marker::PhantomData;
 use std::str;
 
@@ -106,8 +106,8 @@ pub struct Error {
     error: ErrorKind,
 }
 
-impl Display for Error {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}: \"{}\"", self.error, self.target)
     }
 }
@@ -178,8 +178,8 @@ impl<T> UnrecognizedVariant<T> {
     }
 }
 
-impl<T: Debug + Flags> Display for UnrecognizedVariant<T> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+impl<T: fmt::Debug + Flags> fmt::Display for UnrecognizedVariant<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut range = T::LIST.iter();
         let first_variant = range.next().expect("flags type has no variants");
         write!(f, "got {}, expected one of: {first_variant:?}", self.input)?;
@@ -190,4 +190,4 @@ impl<T: Debug + Flags> Display for UnrecognizedVariant<T> {
     }
 }
 
-impl<T: Debug + Flags> std::error::Error for UnrecognizedVariant<T> {}
+impl<T: fmt::Debug + Flags> std::error::Error for UnrecognizedVariant<T> {}

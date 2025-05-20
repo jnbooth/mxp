@@ -1,4 +1,4 @@
-use std::fmt::{self, Display, Formatter};
+use std::fmt;
 use std::str::FromStr;
 
 use crate::parser::UnrecognizedVariant;
@@ -75,8 +75,12 @@ impl<T> Dimension<T> {
     }
 }
 
-impl<T: Display> Display for Dimension<T> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+impl<T: fmt::Display> fmt::Display for Dimension<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if f.width().is_some() || f.precision().is_some() {
+            return f.pad(&self.to_string());
+        }
+
         match self.unit {
             DimensionUnit::Pixel => write!(f, "{}", self.amount),
             DimensionUnit::CharacterHeight => write!(f, "{}c", self.amount),

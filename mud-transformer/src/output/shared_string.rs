@@ -1,5 +1,5 @@
 use std::borrow::Borrow;
-use std::fmt::{self, Display, Formatter};
+use std::fmt;
 use std::ops::Deref;
 use std::str;
 
@@ -69,8 +69,8 @@ impl Deref for SharedString {
     }
 }
 
-impl Display for SharedString {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+impl fmt::Display for SharedString {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.pad(self.as_str())
     }
 }

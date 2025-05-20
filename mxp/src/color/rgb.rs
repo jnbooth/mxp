@@ -4,7 +4,7 @@ use super::error::{HexOutOfRangeError, ParseHexColorError};
 use super::fmt::RgbDigits;
 use super::named::{NamedColorIter, NAMED_COLORS};
 use super::xterm::{first_xterm_colors, XTERM_COLORS};
-use std::fmt::{self, Display, Formatter};
+use std::fmt;
 use std::str::{self, FromStr};
 use std::sync::LazyLock;
 
@@ -86,20 +86,20 @@ impl RgbColor {
     }
 }
 
-impl Display for RgbColor {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+impl fmt::Display for RgbColor {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.pad(RgbDigits::prefixed(*self).as_str())
     }
 }
 
 impl fmt::UpperHex for RgbColor {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.pad(RgbDigits::upper(*self).as_str())
     }
 }
 
 impl fmt::LowerHex for RgbColor {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.pad(RgbDigits::lower(*self).as_str())
     }
 }

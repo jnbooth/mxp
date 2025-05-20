@@ -1,4 +1,4 @@
-use std::fmt::{self, Display, Formatter};
+use std::fmt;
 use std::num::NonZero;
 use std::vec;
 
@@ -275,8 +275,8 @@ impl From<TextFragment> for OutputFragment {
     }
 }
 
-impl Display for TextFragment {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+impl fmt::Display for TextFragment {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let fg = self.foreground;
         write!(f, "\x1B[\x1B[38;2;{};{};{}", fg.r, fg.g, fg.b)?;
         let bg = self.background;

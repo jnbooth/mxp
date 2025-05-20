@@ -3,7 +3,7 @@ use flagset::FlagSet;
 
 use crate::element::{ActionKind, Tag, Tags};
 use crate::VERSION;
-use std::fmt::{self, Display, Formatter};
+use std::fmt;
 
 /// Formats a [`<SUPPORT>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control) response.
 pub struct SupportResponse<'a, I>
@@ -31,7 +31,7 @@ where
 
     fn write_supported(
         &self,
-        f: &mut Formatter,
+        f: &mut fmt::Formatter,
         supported: FlagSet<ActionKind>,
         arg: &str,
     ) -> fmt::Result {
@@ -51,7 +51,7 @@ where
 
     fn write_supported_suffix(
         &self,
-        f: &mut Formatter,
+        f: &mut fmt::Formatter,
         supported: FlagSet<ActionKind>,
     ) -> fmt::Result {
         /// Alternative `<font>` definition that does not include the "face" and "size" arguments.
@@ -74,15 +74,15 @@ where
         Ok(())
     }
 
-    fn write_cant(f: &mut Formatter, tag: &str) -> fmt::Result {
+    fn write_cant(f: &mut fmt::Formatter, tag: &str) -> fmt::Result {
         write!(f, "-{tag} ")
     }
 
-    fn write_can(f: &mut Formatter, tag: &str) -> fmt::Result {
+    fn write_can(f: &mut fmt::Formatter, tag: &str) -> fmt::Result {
         write!(f, "+{tag} ")
     }
 
-    fn write_can_args(f: &mut Formatter, tag: &Tag) -> fmt::Result {
+    fn write_can_args(f: &mut fmt::Formatter, tag: &Tag) -> fmt::Result {
         let name = tag.name;
         for arg in tag.args {
             write!(f, "+{name}.{arg} ")?;
@@ -91,12 +91,12 @@ where
     }
 }
 
-impl<'a, I> Display for SupportResponse<'a, I>
+impl<'a, I> fmt::Display for SupportResponse<'a, I>
 where
     I: IntoIterator + Copy,
     I::Item: AsRef<str>,
 {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "\x1B[1z<SUPPORTS ")?;
         let mut has_args = false;
         for arg in self.iter {
@@ -116,8 +116,8 @@ pub struct VersionResponse<'a> {
     pub version: &'a str,
 }
 
-impl<'a> Display for VersionResponse<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl<'a> fmt::Display for VersionResponse<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
             "\x1B[1z<VERSION MXP=\"{VERSION}\" CLIENT={} VERSION=\"{}\" REGISTERED=yes>",
