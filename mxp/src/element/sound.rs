@@ -18,9 +18,9 @@ impl Default for AudioRepetition {
 }
 
 impl Display for AudioRepetition {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            Self::Forever => f.write_str("-1"),
+            Self::Forever => Display::fmt(&-1, f),
             Self::Count(amount) => Display::fmt(amount, f),
         }
     }
@@ -50,16 +50,16 @@ impl Default for AudioContinuation {
 }
 
 impl Display for AudioContinuation {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            Self::Restart => f.write_str("0"),
-            Self::Continue => f.write_str("1"),
+            Self::Restart => Display::fmt(&0, f),
+            Self::Continue => Display::fmt(&1, f),
         }
     }
 }
 
 impl Debug for AudioContinuation {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         Display::fmt(self, f)
     }
 }

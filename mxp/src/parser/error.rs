@@ -179,7 +179,7 @@ impl<T> UnrecognizedVariant<T> {
 }
 
 impl<T: Debug + Flags> Display for UnrecognizedVariant<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         let mut range = T::LIST.iter();
         let first_variant = range.next().expect("flags type has no variants");
         write!(f, "got {}, expected one of: {first_variant:?}", self.input)?;

@@ -1,5 +1,5 @@
 use flagset::{flags, FlagSet};
-use std::fmt::{self, Display, Formatter};
+use std::io::Write;
 
 use super::{mtts, Negotiate};
 use crate::transformer::TransformerConfig;
@@ -31,23 +31,27 @@ impl Variable {
         }
     }
 
-    pub fn fmt(self, formatter: &mut Formatter, config: &TransformerConfig) -> fmt::Result {
+    fn negotiate(self, buf: &mut Vec<u8>, config: &TransformerConfig) {
         match self {
-            Self::Mtts => write!(formatter, "\x00MTTS\x01{}", mtts::bitmask(config)),
+            Self::Mtts => {
+                write!(buf, "\x00MTTS\x01{}", mtts::bitmask(config)).unwrap();
+            }
             Self::Charset => {
                 if config.disable_utf8 {
-                    formatter.write_str("\x00CHARSET\x01ASCII")
+                    buf.extend_from_slice(b"\x00CHARSET\x01ASCII");
                 } else {
-                    formatter.write_str("\x00CHARSET\x01UTF-8")
+                    buf.extend_from_slice(b"\x00CHARSET\x01UTF-8");
                 }
             }
-            Self::ClientName => write!(
-                formatter,
-                "\x00CLIENT_NAME\x01{}",
-                config.terminal_identification
-            ),
-            Self::ClientVersion => write!(formatter, "\x00CLIENT_VERSION\x01{}", config.version),
-            Self::TerminalType => formatter.write_str("\x00TERMINAL_TYPE\x01ANSI-TRUECOLOR"),
+            Self::ClientName => {
+                buf.extend_from_slice(b"\x00CLIENT_NAME\x01");
+                buf.extend_from_slice(config.terminal_identification.as_bytes());
+            }
+            Self::ClientVersion => {
+                buf.extend_from_slice(b"\x00CLIENT_VERSION\x01");
+                buf.extend_from_slice(config.version.as_bytes());
+            }
+            Self::TerminalType => buf.extend_from_slice(b"\x00TERMINAL_TYPE\x01ANSI-TRUECOLOR"),
         }
     }
 }
@@ -121,33 +125,13 @@ impl Variables {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub(crate) struct Subnegotiation<'a> {
-    config: &'a TransformerConfig,
-    prefix: &'a str,
-    variables: FlagSet<Variable>,
-}
-
-impl<'a> Display for Subnegotiation<'a> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        f.write_str(self.prefix)?;
-        for variable in self.variables {
-            variable.fmt(f, self.config)?;
-        }
-        Ok(())
-    }
-}
-
 impl Negotiate for Variables {
     const CODE: u8 = CODE;
 
-    type Output<'a> = Subnegotiation<'a>;
-
-    fn negotiate(self, config: &TransformerConfig) -> Subnegotiation {
-        Subnegotiation {
-            config,
-            prefix: self.prefix,
-            variables: self.inner,
+    fn negotiate(self, buf: &mut Vec<u8>, config: &TransformerConfig) {
+        buf.extend_from_slice(self.prefix.as_bytes());
+        for variable in self.inner {
+            variable.negotiate(buf, config);
         }
     }
 }

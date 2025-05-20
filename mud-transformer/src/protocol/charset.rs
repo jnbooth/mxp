@@ -1,5 +1,4 @@
 use flagset::{flags, FlagSet};
-use std::fmt::{self, Display, Formatter};
 
 use super::Negotiate;
 use crate::transformer::TransformerConfig;
@@ -48,34 +47,16 @@ impl Charsets {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub(crate) struct Subnegotiation {
-    charsets: FlagSet<Charset>,
-    utf8: bool,
-}
-
-impl Display for Subnegotiation {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        let sequence = if self.utf8 && self.charsets.contains(Charset::Utf8) {
-            "\x02UTF-8"
-        } else if self.charsets.contains(Charset::Ascii) {
-            "\x02US-ASCII"
-        } else {
-            "\x03"
-        };
-        f.write_str(sequence)
-    }
-}
-
 impl Negotiate for Charsets {
     const CODE: u8 = CODE;
 
-    type Output<'a> = Subnegotiation;
-
-    fn negotiate(self, config: &TransformerConfig) -> Subnegotiation {
-        Subnegotiation {
-            charsets: self.inner,
-            utf8: !config.disable_utf8,
+    fn negotiate(self, buf: &mut Vec<u8>, config: &TransformerConfig) {
+        if !config.disable_utf8 && self.inner.contains(Charset::Utf8) {
+            buf.extend_from_slice(b"\x02UTF-8");
+        } else if self.inner.contains(Charset::Ascii) {
+            buf.extend_from_slice(b"\x02US-ASCII");
+        } else {
+            buf.push(3);
         }
     }
 }

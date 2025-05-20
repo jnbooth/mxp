@@ -76,12 +76,11 @@ impl<T> Dimension<T> {
 }
 
 impl<T: Display> Display for Dimension<T> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.amount.fmt(f)?;
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self.unit {
-            DimensionUnit::Pixel => Ok(()),
-            DimensionUnit::CharacterHeight => f.write_str("c"),
-            DimensionUnit::Percentage => f.write_str("%"),
+            DimensionUnit::Pixel => write!(f, "{}", self.amount),
+            DimensionUnit::CharacterHeight => write!(f, "{}c", self.amount),
+            DimensionUnit::Percentage => write!(f, "{}%", self.amount),
         }
     }
 }

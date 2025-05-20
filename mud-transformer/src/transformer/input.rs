@@ -37,8 +37,8 @@ impl BufferedInput {
     }
 }
 
-impl AsRef<Vec<u8>> for BufferedInput {
-    fn as_ref(&self) -> &Vec<u8> {
+impl AsRef<[u8]> for BufferedInput {
+    fn as_ref(&self) -> &[u8] {
         &self.buf
     }
 }

@@ -1,4 +1,4 @@
-use std::fmt::{self, Display, Formatter};
+use std::io::Write;
 
 use super::Negotiate;
 use crate::transformer::TransformerConfig;
@@ -58,32 +58,15 @@ impl Negotiator {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub(crate) struct Subnegotiation<'a> {
-    config: &'a TransformerConfig,
-    sequence: u8,
-}
-
-impl<'a> Display for Subnegotiation<'a> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        f.write_str("\x00")?;
-        match self.sequence {
-            0 => f.write_str(&self.config.terminal_identification),
-            1 => f.write_str("ANSI"),
-            _ => bitmask(self.config).fmt(f),
-        }
-    }
-}
-
 impl Negotiate for Negotiator {
     const CODE: u8 = CODE;
 
-    type Output<'a> = Subnegotiation<'a>;
-
-    fn negotiate(self, config: &TransformerConfig) -> Subnegotiation {
-        Subnegotiation {
-            config,
-            sequence: self.sequence,
+    fn negotiate(self, buf: &mut Vec<u8>, config: &TransformerConfig) {
+        buf.push(0);
+        match self.sequence {
+            0 => buf.extend_from_slice(config.terminal_identification.as_bytes()),
+            1 => buf.extend_from_slice(b"ANSI"),
+            _ => write!(buf, "{}", bitmask(config)).unwrap(),
         }
     }
 }

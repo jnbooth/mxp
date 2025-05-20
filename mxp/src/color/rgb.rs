@@ -1,10 +1,11 @@
 use casefold::ascii::CaseFoldMap;
 
 use super::error::{HexOutOfRangeError, ParseHexColorError};
+use super::fmt::RgbDigits;
 use super::named::{NamedColorIter, NAMED_COLORS};
 use super::xterm::{first_xterm_colors, XTERM_COLORS};
 use std::fmt::{self, Display, Formatter};
-use std::str::FromStr;
+use std::str::{self, FromStr};
 use std::sync::LazyLock;
 
 /// A 24-bit color consisting of a red, green, and blue value.
@@ -86,20 +87,20 @@ impl RgbColor {
 }
 
 impl Display for RgbColor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "#{:0>6X}", self.code())
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        f.pad(RgbDigits::prefixed(*self).as_str())
     }
 }
 
 impl fmt::UpperHex for RgbColor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:0>6X}", self.code())
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        f.pad(RgbDigits::upper(*self).as_str())
     }
 }
 
 impl fmt::LowerHex for RgbColor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{:0>6x}", self.code())
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        f.pad(RgbDigits::lower(*self).as_str())
     }
 }
 

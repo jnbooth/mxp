@@ -70,8 +70,8 @@ impl Deref for SharedString {
 }
 
 impl Display for SharedString {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        self.as_str().fmt(f)
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        f.pad(self.as_str())
     }
 }
 
