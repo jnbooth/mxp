@@ -78,7 +78,7 @@ impl<T> Dimension<T> {
 impl<T: fmt::Display> fmt::Display for Dimension<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if f.width().is_some() || f.precision().is_some() {
-            return f.pad(&self.to_string());
+            return self.to_string().fmt(f);
         }
 
         match self.unit {
