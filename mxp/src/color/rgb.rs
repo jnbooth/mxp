@@ -5,7 +5,6 @@ use std::sync::LazyLock;
 use casefold::ascii::CaseFoldMap;
 
 use super::error::{HexOutOfRangeError, ParseHexColorError};
-use super::fmt::RgbDigits;
 use super::named::{NAMED_COLORS, NamedColorIter};
 use super::xterm::{XTERM_COLORS, first_xterm_colors};
 
@@ -89,19 +88,19 @@ impl RgbColor {
 
 impl fmt::Display for RgbColor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.pad(RgbDigits::prefixed(*self).as_str())
+        write!(f, "#{:02x}{:02x}{:02x}", self.r, self.g, self.b)
     }
 }
 
 impl fmt::UpperHex for RgbColor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.pad(RgbDigits::upper(*self).as_str())
+        write!(f, "{:02X}{:02X}{:02X}", self.r, self.g, self.b)
     }
 }
 
 impl fmt::LowerHex for RgbColor {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.pad(RgbDigits::lower(*self).as_str())
+        write!(f, "{:02x}{:02x}{:02x}", self.r, self.g, self.b)
     }
 }
 

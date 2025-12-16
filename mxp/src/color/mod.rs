@@ -1,8 +1,6 @@
 mod error;
 pub use error::{HexOutOfRangeError, ParseHexColorError};
 
-mod fmt;
-
 mod named;
 pub use named::NamedColorIter;
 
