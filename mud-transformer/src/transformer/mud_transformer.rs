@@ -355,7 +355,7 @@ impl Transformer {
             Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
             Action::Relocate(relocate) => self.output.append(relocate.into_owned()),
             Action::Reset => self.mxp_off(false),
-            Action::SBr => self.output.push(b' '),
+            Action::SBr => self.output.append_text(" "),
             Action::Small => self.output.set_mxp_flag(TextStyle::Small),
             Action::Sound(sound) => self.output.append(sound.into_owned()),
             Action::SoundOff => self.output.append(EffectFragment::SoundOff),
@@ -495,7 +495,8 @@ impl Transformer {
         }
 
         if self.phase == Phase::Utf8Character && !is_utf8_continuation(c) {
-            self.output.append_utf8_char(&self.utf8_sequence);
+            let sequence = str::from_utf8(&self.utf8_sequence).unwrap_or("�");
+            self.output.append_text(sequence);
             self.phase = Phase::Normal;
         }
 
@@ -861,27 +862,28 @@ impl Transformer {
                         self.output.start_line();
                     }
                 }
-                _ if is_utf8_higher_order(c) => {
-                    self.utf8_sequence.push(c);
-                    self.phase = Phase::Utf8Character;
-                }
-                _ if !self.mxp_active || !self.mxp_mode.is_mxp() => self.output.push(c),
-                b'<' => {
+                b'<' if self.mxp_active && self.mxp_mode.is_mxp() => {
                     self.mxp_entity_string.clear();
                     self.phase = Phase::MxpElement;
                 }
-                b'&' => {
+                b'&' if self.mxp_active && self.mxp_mode.is_mxp() => {
                     self.mxp_entity_string.clear();
                     self.phase = Phase::MxpEntity;
                 }
-                _ => self.output.push(c),
+                _ if c.is_ascii() => {
+                    let utf8 = &[c];
+                    // SAFETY: `utf8` is valid UTF8, since it is a single ASCII byte.
+                    // Tracking: https://github.com/rust-lang/rust/issues/110998
+                    let s = unsafe { str::from_utf8_unchecked(utf8) };
+                    self.output.append_text(s);
+                }
+                _ => {
+                    self.utf8_sequence.push(c);
+                    self.phase = Phase::Utf8Character;
+                }
             },
         }
     }
-}
-
-pub const fn is_utf8_higher_order(c: u8) -> bool {
-    (c & 0x80) != 0
 }
 
 pub const fn is_utf8_continuation(c: u8) -> bool {

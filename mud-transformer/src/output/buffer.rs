@@ -1,6 +1,5 @@
 use std::str;
 
-use bytes::BytesMut;
 use flagset::FlagSet;
 use mxp::RgbColor;
 
@@ -8,12 +7,8 @@ use super::color::TermColor;
 use super::fragment::{
     EntityFragment, Output, OutputDrain, OutputFragment, TelnetFragment, TextFragment,
 };
-use super::shared_string::SharedString;
+use super::shared_string::{BytesPool, SharedString, StringPool};
 use super::span::{EntitySetter, SpanList, TextStyle};
-
-macro_rules! debug_assert_utf8 {
-    ($e:expr) => (debug_assert!(str::from_utf8(&$e).is_ok(), "`MudTransformer::receive_byte` failed to validate UTF8. This should NEVER happen.\nBytes: {:?}\nString: {}", &*$e, String::from_utf8_lossy(&$e)))
-}
 
 fn get_color(
     span_color: Option<TermColor>,
@@ -29,7 +24,9 @@ fn get_color(
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct BufferedOutput {
-    buf: BytesMut,
+    bytes_pool: BytesPool,
+    string_pool: StringPool,
+    text_buf: String,
     fragments: Vec<Output>,
     spans: SpanList,
     variables: mxp::EntityMap,
@@ -45,7 +42,7 @@ pub(crate) struct BufferedOutput {
     ignore_mxp_colors: bool,
 
     in_variable: bool,
-    variable: Vec<u8>,
+    variable: String,
 }
 
 impl Default for BufferedOutput {
@@ -61,7 +58,9 @@ impl BufferedOutput {
             ansi_flags: FlagSet::default(),
             ansi_foreground: TermColor::WHITE,
             ansi_background: TermColor::BLACK,
-            buf: BytesMut::new(),
+            bytes_pool: BytesPool::new(),
+            string_pool: StringPool::new(),
+            text_buf: String::new(),
             fragments: Vec::new(),
             ignore_mxp_colors: false,
             in_line: false,
@@ -70,12 +69,12 @@ impl BufferedOutput {
             colors: Vec::new(),
             variables: mxp::EntityMap::new(),
             in_variable: false,
-            variable: Vec::new(),
+            variable: String::new(),
         }
     }
 
     pub fn is_empty(&self) -> bool {
-        self.fragments.is_empty() && self.buf.is_empty()
+        self.fragments.is_empty() && self.text_buf.is_empty()
     }
 
     pub fn set_colors(&mut self, colors: Vec<RgbColor>) {
@@ -93,7 +92,7 @@ impl BufferedOutput {
     }
 
     pub fn last(&self) -> Option<u8> {
-        self.buf.last().copied()
+        self.text_buf.as_bytes().last().copied()
     }
 
     pub fn disable_mxp_colors(&mut self) {
@@ -153,14 +152,13 @@ impl BufferedOutput {
     }
 
     fn take_buf(&mut self) -> SharedString {
-        let bytes = self.buf.split().freeze();
-        debug_assert_utf8!(bytes);
-        // SAFETY: MudTransformer::receive_byte sanitizes UTF8.
-        unsafe { SharedString::from_utf8_unchecked(bytes) }
+        let buf = self.string_pool.share(&self.text_buf);
+        self.text_buf.clear();
+        buf
     }
 
     fn flush_last(&mut self, i: usize) {
-        if self.buf.is_empty() {
+        if self.text_buf.is_empty() {
             return;
         }
         let text = self.take_buf();
@@ -213,48 +211,26 @@ impl BufferedOutput {
         self.append(OutputFragment::LineBreak);
     }
 
-    pub fn push(&mut self, byte: u8) {
-        self.buf.extend_from_slice(&[byte]);
-        self.spans.set_populated();
-        if self.in_variable {
-            self.variable.push(byte);
-        }
-    }
-
     pub fn append_text(&mut self, output: &str) {
-        let output = output.as_bytes();
-        self.buf.extend_from_slice(output);
-        self.spans.set_populated();
+        if self.text_buf.is_empty() {
+            self.spans.set_populated();
+        }
+        self.text_buf.push_str(output);
         if self.in_variable {
-            self.variable.extend_from_slice(output);
+            self.variable.push_str(output);
         }
-    }
-
-    pub fn append_utf8_char(&mut self, utf8: &[u8]) {
-        if str::from_utf8(utf8).is_ok() {
-            self.buf.extend_from_slice(utf8);
-            if self.in_variable {
-                self.variable.extend_from_slice(utf8);
-            }
-        } else {
-            self.buf.extend_from_slice("�".as_bytes());
-        }
-        self.spans.set_populated();
     }
 
     pub fn append_subnegotiation(&mut self, code: u8, data: &[u8]) {
         self.flush();
-        self.buf.extend_from_slice(data);
-        let data = self.buf.split().freeze();
+        let data = self.bytes_pool.share(data);
         self.append(TelnetFragment::Subnegotiation { code, data });
     }
 
     pub fn append_server_status(&mut self, key: &[u8], value: &[u8]) {
         self.flush();
-        self.buf.extend_from_slice(key);
-        let variable = self.buf.split().freeze();
-        self.buf.extend_from_slice(value);
-        let value = self.buf.split().freeze();
+        let variable = self.bytes_pool.share(key);
+        let value = self.bytes_pool.share(value);
         self.append(TelnetFragment::ServerStatus { variable, value });
     }
 
@@ -338,10 +314,7 @@ impl BufferedOutput {
             }));
             return;
         }
-        debug_assert_utf8!(self.variable);
-        // SAFETY: MudTransformer::receive_byte sanitizes UTF8.
-        let text = unsafe { str::from_utf8_unchecked(&self.variable) };
-        if let Ok(Some(entity)) = variables.set(&entity.name, text, None, entity.flags) {
+        if let Ok(Some(entity)) = variables.set(&entity.name, &self.variable, None, entity.flags) {
             self.fragments
                 .push(Output::from(EntityFragment::variable(&entity)));
         }
