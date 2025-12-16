@@ -10,7 +10,7 @@ workspace = true
 mud-transformer = { path = "../mud-transformer" }
 
 [dependencies.tokio]
-version = "1.38.0"
+version = "1.48.0"
 features = ["io-util", "net"]
 optional = true
 

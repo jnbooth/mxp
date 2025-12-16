@@ -19,5 +19,6 @@ too_many_lines = "allow"
 unreadable_literal = "allow"
 
 [workspace.dependencies]
-flagset = "0.4.6"
-serde = "1.0.204"
+bytes = "1.11.0"
+flagset = "0.4.7"
+serde = "1.0.228"
