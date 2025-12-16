@@ -2,6 +2,7 @@ use std::str;
 
 use bytes::BytesMut;
 use flagset::FlagSet;
+use mxp::RgbColor;
 
 use super::color::TermColor;
 use super::fragment::{
@@ -9,7 +10,6 @@ use super::fragment::{
 };
 use super::shared_string::SharedString;
 use super::span::{EntitySetter, SpanList, TextStyle};
-use mxp::RgbColor;
 
 macro_rules! debug_assert_utf8 {
     ($e:expr) => (debug_assert!(str::from_utf8(&$e).is_ok(), "`MudTransformer::receive_byte` failed to validate UTF8. This should NEVER happen.\nBytes: {:?}\nString: {}", &*$e, String::from_utf8_lossy(&$e)))

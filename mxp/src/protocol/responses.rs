@@ -1,9 +1,10 @@
+use std::fmt;
+
 use casefold::ascii::CaseFold;
 use flagset::FlagSet;
 
-use crate::element::{ActionKind, Tag, Tags};
 use crate::VERSION;
-use std::fmt;
+use crate::element::{ActionKind, Tag, Tags};
 
 /// Formats a [`<SUPPORT>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control) response.
 pub struct SupportResponse<'a, I>
@@ -91,7 +92,7 @@ where
     }
 }
 
-impl<'a, I> fmt::Display for SupportResponse<'a, I>
+impl<I> fmt::Display for SupportResponse<'_, I>
 where
     I: IntoIterator + Copy,
     I::Item: AsRef<str>,
@@ -116,7 +117,7 @@ pub struct VersionResponse<'a> {
     pub version: &'a str,
 }
 
-impl<'a> fmt::Display for VersionResponse<'a> {
+impl fmt::Display for VersionResponse<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,

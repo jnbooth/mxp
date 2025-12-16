@@ -12,11 +12,7 @@ pub const SEND: u8 = 1;
 
 #[inline]
 const fn mask(enable: bool, capability: u16) -> u16 {
-    if enable {
-        capability
-    } else {
-        0
-    }
+    if enable { capability } else { 0 }
 }
 
 pub const fn bitmask(config: &TransformerConfig) -> u16 {

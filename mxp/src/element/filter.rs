@@ -1,6 +1,7 @@
+use std::borrow::Cow;
+
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::parser::Error;
-use std::borrow::Cow;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Filter<S = String> {
@@ -19,7 +20,7 @@ impl Filter<&str> {
     }
 }
 
-impl<'a> Filter<Cow<'a, str>> {
+impl Filter<Cow<'_, str>> {
     pub fn into_owned(self) -> Filter {
         Filter {
             src: self.src.into_owned(),

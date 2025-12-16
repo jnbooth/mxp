@@ -1,5 +1,5 @@
-use mxp::escape::ansi;
 use mxp::RgbColor;
+use mxp::escape::ansi;
 
 use crate::output::{BufferedOutput, TermColor, TextStyle};
 

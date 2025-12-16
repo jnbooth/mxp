@@ -2,10 +2,10 @@ use std::borrow::Cow;
 use std::str::FromStr;
 
 use super::screen::Align;
+use crate::Dimension;
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::keyword::FrameKeyword;
 use crate::parser::{Error, UnrecognizedVariant};
-use crate::Dimension;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum FrameAction {
@@ -80,7 +80,7 @@ impl Frame<&str> {
     }
 }
 
-impl<'a> Frame<Cow<'a, str>> {
+impl Frame<Cow<'_, str>> {
     pub fn into_owned(self) -> Frame {
         Frame {
             name: self.name.into_owned(),

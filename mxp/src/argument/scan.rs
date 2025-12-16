@@ -1,13 +1,15 @@
-use super::keyword_filter::{KeywordFilter, NoKeywords};
-use crate::parser::{Error, ErrorKind};
-use casefold::ascii::CaseFoldMap;
-use flagset::{FlagSet, Flags};
 use std::borrow::Cow;
 use std::marker::PhantomData;
 use std::num::ParseIntError;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 use std::{slice, str};
+
+use casefold::ascii::CaseFoldMap;
+use flagset::{FlagSet, Flags};
+
+use super::keyword_filter::{KeywordFilter, NoKeywords};
+use crate::parser::{Error, ErrorKind};
 
 pub trait Decoder {
     fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Cow<'a, str>>;
@@ -97,7 +99,7 @@ impl<'a, D, S: AsRef<str>, K: Flags> Deref for KeywordScan<'a, D, S, K> {
     }
 }
 
-impl<'a, D, S: AsRef<str>, K: Flags> DerefMut for KeywordScan<'a, D, S, K> {
+impl<D, S: AsRef<str>, K: Flags> DerefMut for KeywordScan<'_, D, S, K> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }

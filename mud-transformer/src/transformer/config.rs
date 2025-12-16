@@ -1,8 +1,9 @@
-use flagset::{flags, FlagSet};
+use std::collections::HashSet;
+
+use flagset::{FlagSet, flags};
 use mxp::RgbColor;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 
 flags! {
     #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

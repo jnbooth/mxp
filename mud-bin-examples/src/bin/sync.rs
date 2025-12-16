@@ -1,9 +1,10 @@
-use mud_bin_examples::{get_config, write_output};
-use mud_stream::blocking::MudStream;
 use std::io;
 use std::io::{Read, Write};
 use std::net::TcpStream;
 use std::time::Duration;
+
+use mud_bin_examples::{get_config, write_output};
+use mud_stream::blocking::MudStream;
 
 fn main() -> io::Result<()> {
     let stream = TcpStream::connect(("discworld.atuin.net", 4242))?;

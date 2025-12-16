@@ -1,14 +1,16 @@
-use crate::argument::{Decoder, Scan};
-use crate::color::RgbColor;
-use crate::parser::Error;
-use crate::parser::UnrecognizedVariant;
-use flagset::flags;
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::num::NonZero;
 use std::str;
 use std::str::FromStr;
+
+use flagset::flags;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
+use crate::argument::{Decoder, Scan};
+use crate::color::RgbColor;
+use crate::parser::Error;
+use crate::parser::UnrecognizedVariant;
 
 flags! {
     #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -71,7 +73,7 @@ pub struct Font<S = String> {
     pub back: Option<RgbColor>,
 }
 
-impl<'a> Font<&'a str> {
+impl Font<&str> {
     pub fn into_owned(self) -> Font {
         Font {
             face: self.face.map(ToOwned::to_owned),
@@ -84,7 +86,7 @@ impl<'a> Font<&'a str> {
     }
 }
 
-impl<'a> Font<Cow<'a, str>> {
+impl Font<Cow<'_, str>> {
     pub fn into_owned(self) -> Font {
         Font {
             face: self.face.map(Cow::into_owned),

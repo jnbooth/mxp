@@ -2,12 +2,13 @@
 use std::num::NonZero;
 use std::ops::Index;
 
-use super::color::TermColor;
-use flagset::{flags, FlagSet};
-use mxp::escape::ansi;
+use flagset::{FlagSet, flags};
 use mxp::Heading;
+use mxp::escape::ansi;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+
+use super::color::TermColor;
 
 flags! {
     #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

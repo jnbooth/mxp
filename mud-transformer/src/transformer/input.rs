@@ -63,7 +63,7 @@ pub struct Drain<'a> {
     buf: &'a mut Vec<u8>,
 }
 
-impl<'a> Drain<'a> {
+impl Drain<'_> {
     #[inline]
     pub fn is_empty(&self) -> bool {
         self.cursor >= self.buf.len()
@@ -93,7 +93,7 @@ impl<'a> Drain<'a> {
     }
 }
 
-impl<'a> bytes::Buf for Drain<'a> {
+impl bytes::Buf for Drain<'_> {
     fn remaining(&self) -> usize {
         self.buf.len().saturating_sub(self.cursor)
     }
@@ -107,7 +107,7 @@ impl<'a> bytes::Buf for Drain<'a> {
     }
 }
 
-impl<'a> Drop for Drain<'a> {
+impl Drop for Drain<'_> {
     fn drop(&mut self) {
         *self.external_cursor = 0;
         if self.is_empty() {
@@ -119,7 +119,7 @@ impl<'a> Drop for Drain<'a> {
     }
 }
 
-impl<'a> Read for Drain<'a> {
+impl Read for Drain<'_> {
     #[inline]
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let n = self.slice().read(buf)?;
@@ -156,7 +156,7 @@ impl<'a> Read for Drain<'a> {
     }
 }
 
-impl<'a> BufRead for Drain<'a> {
+impl BufRead for Drain<'_> {
     #[inline]
     fn fill_buf(&mut self) -> io::Result<&[u8]> {
         Ok(self.slice())

@@ -1,14 +1,13 @@
 use std::collections::HashMap;
-
-use super::global::{CHARS, GLOBAL_ENTITIES, MIN_CHAR};
-use crate::keyword::EntityKeyword;
-use crate::parser::{Error, ErrorKind};
 use std::collections::hash_map::Entry;
 
-use super::iter::PublishedIter;
+use flagset::FlagSet;
 
 use super::entity::Entity;
-use flagset::FlagSet;
+use super::global::{CHARS, GLOBAL_ENTITIES, MIN_CHAR};
+use super::iter::PublishedIter;
+use crate::keyword::EntityKeyword;
+use crate::parser::{Error, ErrorKind};
 
 pub struct EntityEntry<'a> {
     pub name: &'a str,

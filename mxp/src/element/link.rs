@@ -1,10 +1,11 @@
 use std::borrow::Cow;
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::keyword::SendKeyword;
 use crate::parser::Error;
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]

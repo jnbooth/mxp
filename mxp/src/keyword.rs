@@ -1,7 +1,8 @@
+use std::str::FromStr;
+
 use flagset::flags;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 
 use crate::parser::UnrecognizedVariant;
 

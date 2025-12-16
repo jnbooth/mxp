@@ -40,9 +40,8 @@ impl<K: FromStr> KeywordFilter for K {
 
 #[cfg(test)]
 mod tests {
-    use crate::keyword::ElementKeyword;
-
     use super::*;
+    use crate::keyword::ElementKeyword;
 
     #[test]
     fn filter_keywords() {

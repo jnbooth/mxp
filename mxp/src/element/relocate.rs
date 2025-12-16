@@ -1,6 +1,7 @@
+use std::borrow::Cow;
+
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::parser::Error;
-use std::borrow::Cow;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Relocate<S = String> {
@@ -17,7 +18,7 @@ impl Relocate<&str> {
     }
 }
 
-impl<'a> Relocate<Cow<'a, str>> {
+impl Relocate<Cow<'_, str>> {
     pub fn into_owned(self) -> Relocate {
         Relocate {
             hostname: self.hostname.into_owned(),

@@ -17,7 +17,7 @@ impl<'a> ReceiveCursor<'a> {
     }
 }
 
-impl<'a> Read for ReceiveCursor<'a> {
+impl Read for ReceiveCursor<'_> {
     #[inline]
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         self.inner.read(buf)
@@ -44,7 +44,7 @@ impl<'a> Read for ReceiveCursor<'a> {
     }
 }
 
-impl<'a> BufRead for ReceiveCursor<'a> {
+impl BufRead for ReceiveCursor<'_> {
     #[inline]
     fn fill_buf(&mut self) -> io::Result<&[u8]> {
         self.inner.fill_buf()
@@ -56,7 +56,7 @@ impl<'a> BufRead for ReceiveCursor<'a> {
     }
 }
 
-impl<'a> Iterator for ReceiveCursor<'a> {
+impl Iterator for ReceiveCursor<'_> {
     type Item = u8;
 
     #[inline]
@@ -67,4 +67,4 @@ impl<'a> Iterator for ReceiveCursor<'a> {
     }
 }
 
-impl<'a> FusedIterator for ReceiveCursor<'a> {}
+impl FusedIterator for ReceiveCursor<'_> {}

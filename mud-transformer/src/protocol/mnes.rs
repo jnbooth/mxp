@@ -1,7 +1,8 @@
-use flagset::{flags, FlagSet};
 use std::io::Write;
 
-use super::{mtts, Negotiate};
+use flagset::{FlagSet, flags};
+
+use super::{Negotiate, mtts};
 use crate::transformer::TransformerConfig;
 
 /// MUD New-Environ Standard

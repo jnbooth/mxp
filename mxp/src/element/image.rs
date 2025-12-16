@@ -1,8 +1,9 @@
+use std::borrow::Cow;
+
 use super::screen::{Align, Dimension};
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::keyword::ImageKeyword;
 use crate::parser::Error;
-use std::borrow::Cow;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Image<S = String> {
@@ -17,7 +18,7 @@ pub struct Image<S = String> {
     pub is_map: bool,
 }
 
-impl<'a> Image<&'a str> {
+impl Image<&str> {
     pub fn into_owned(self) -> Image {
         Image {
             fname: self.fname.map(ToOwned::to_owned),
@@ -33,7 +34,7 @@ impl<'a> Image<&'a str> {
     }
 }
 
-impl<'a> Image<Cow<'a, str>> {
+impl Image<Cow<'_, str>> {
     pub fn into_owned(self) -> Image {
         Image {
             fname: self.fname.map(Cow::into_owned),

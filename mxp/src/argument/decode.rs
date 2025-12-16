@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::str;
 
 use super::arguments::Arguments;
 use super::keyword_filter::KeywordFilter;
@@ -6,7 +7,6 @@ use super::scan::Decoder;
 use crate::element::Element;
 use crate::entity::EntityMap;
 use crate::parser::{Error, ErrorKind};
-use std::str;
 
 fn decode_amps<'a, F>(mut s: &str, mut f: F) -> crate::Result<Cow<str>>
 where
@@ -50,15 +50,15 @@ pub struct ElementDecoder<'a, S: AsRef<str>> {
     pub(crate) args: &'a Arguments<S>,
 }
 
-impl<'a, S: AsRef<str>> Copy for ElementDecoder<'a, S> {}
+impl<S: AsRef<str>> Copy for ElementDecoder<'_, S> {}
 
-impl<'a, S: AsRef<str>> Clone for ElementDecoder<'a, S> {
+impl<S: AsRef<str>> Clone for ElementDecoder<'_, S> {
     fn clone(&self) -> Self {
         *self
     }
 }
 
-impl<'d, S: AsRef<str>> Decoder for ElementDecoder<'d, S> {
+impl<S: AsRef<str>> Decoder for ElementDecoder<'_, S> {
     fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Cow<'a, str>> {
         decode_amps(s, |entity| {
             if entity == "text" {

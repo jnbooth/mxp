@@ -105,7 +105,9 @@ const ALL_TAGS: &[Tag] = {
         Tag::new(
             "image",
             Image,
-            args!["url", "fname", "t", "h", "w", "hspace", "vspace", "align", "ismap"],
+            args![
+                "url", "fname", "t", "h", "w", "hspace", "vspace", "align", "ismap"
+            ],
         ),
         Tag::new("italic", Italic, &[]),
         Tag::new("music", Music, args!["fname", "v", "l", "c", "t", "u"]),

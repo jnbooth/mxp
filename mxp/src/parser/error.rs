@@ -1,8 +1,9 @@
-use flagset::Flags;
 use std::borrow::Cow;
 use std::fmt;
 use std::marker::PhantomData;
 use std::str;
+
+use flagset::Flags;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ErrorKind {

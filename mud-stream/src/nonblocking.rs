@@ -1,8 +1,9 @@
-use mud_transformer::{OutputDrain, Transformer, TransformerConfig};
 use std::io;
 use std::io::IoSlice;
 use std::pin::Pin;
 use std::task::{Context, Poll};
+
+use mud_transformer::{OutputDrain, Transformer, TransformerConfig};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::config::DEFAULT_BUFFER_SIZE;

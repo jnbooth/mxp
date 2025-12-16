@@ -3,6 +3,9 @@ use std::fmt::Write;
 use std::num::NonZero;
 use std::{io, mem};
 
+use flagset::FlagSet;
+use mxp::escape::telnet;
+
 use super::config::{TransformerConfig, UseMxp};
 use super::cursor::ReceiveCursor;
 use super::input::{BufferedInput, Drain as InputDrain};
@@ -12,9 +15,7 @@ use crate::output::{
     BufferedOutput, EffectFragment, EntityFragment, EntitySetter, OutputDrain, OutputFragment,
     TelnetFragment, TelnetSource, TelnetVerb, TextStyle,
 };
-use crate::protocol::{self, ansi, charset, mccp, mnes, mssp, mtts, Negotiate};
-use flagset::FlagSet;
-use mxp::escape::telnet;
+use crate::protocol::{self, Negotiate, ansi, charset, mccp, mnes, mssp, mtts};
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
     if auth.is_empty() {

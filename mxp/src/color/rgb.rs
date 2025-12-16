@@ -1,12 +1,13 @@
+use std::fmt;
+use std::str::{self, FromStr};
+use std::sync::LazyLock;
+
 use casefold::ascii::CaseFoldMap;
 
 use super::error::{HexOutOfRangeError, ParseHexColorError};
 use super::fmt::RgbDigits;
-use super::named::{NamedColorIter, NAMED_COLORS};
-use super::xterm::{first_xterm_colors, XTERM_COLORS};
-use std::fmt;
-use std::str::{self, FromStr};
-use std::sync::LazyLock;
+use super::named::{NAMED_COLORS, NamedColorIter};
+use super::xterm::{XTERM_COLORS, first_xterm_colors};
 
 /// A 24-bit color consisting of a red, green, and blue value.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]

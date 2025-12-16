@@ -1,5 +1,9 @@
 use std::borrow::Cow;
 
+use flagset::{FlagSet, flags};
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 use super::bar::{Gauge, Stat};
 use super::filter::Filter;
 use super::font::Font;
@@ -12,9 +16,6 @@ use crate::argument::args::{ColorArgs, MxpArgs, SupportArgs, VarArgs};
 use crate::argument::{Decoder, Scan};
 use crate::color::RgbColor;
 use crate::keyword::{EntityKeyword, MxpKeyword};
-use flagset::{flags, FlagSet};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
 
 flags! {
     #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

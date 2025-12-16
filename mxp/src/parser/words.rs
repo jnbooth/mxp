@@ -104,7 +104,7 @@ impl<'a> Iterator for Words<'a> {
     }
 }
 
-impl<'a> FusedIterator for Words<'a> {}
+impl FusedIterator for Words<'_> {}
 
 #[cfg(test)]
 mod tests {

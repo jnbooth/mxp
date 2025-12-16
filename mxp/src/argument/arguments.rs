@@ -2,7 +2,7 @@ use casefold::ascii::CaseFoldMap;
 
 use super::keyword_filter::KeywordFilter;
 use super::scan::{Decoder, Scan};
-use crate::parser::{validate, Error, ErrorKind, Words};
+use crate::parser::{Error, ErrorKind, Words, validate};
 
 /// Parsed arguments of an MXP command.
 ///

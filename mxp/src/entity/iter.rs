@@ -1,6 +1,7 @@
-use super::entity::Entity;
 use std::collections::hash_map;
 use std::iter::FusedIterator;
+
+use super::entity::Entity;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct EntityInfo<'a> {
@@ -40,14 +41,15 @@ impl<'a> Iterator for PublishedIter<'a> {
     }
 }
 
-impl<'a> FusedIterator for PublishedIter<'a> {}
+impl FusedIterator for PublishedIter<'_> {}
 
 #[cfg(test)]
 mod tests {
+    use flagset::FlagSet;
+
     use super::*;
     use crate::entity::EntityMap;
     use crate::keyword::EntityKeyword;
-    use flagset::FlagSet;
 
     #[test]
     fn published_iter() {

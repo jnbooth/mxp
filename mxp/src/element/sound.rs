@@ -1,9 +1,10 @@
-use crate::argument::{Decoder, ExpectArg, Scan};
-use crate::parser::{Error, UnrecognizedVariant};
 use std::borrow::Cow;
 use std::fmt;
 use std::num::NonZero;
 use std::str::FromStr;
+
+use crate::argument::{Decoder, ExpectArg, Scan};
+use crate::parser::{Error, UnrecognizedVariant};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum AudioRepetition {
@@ -129,7 +130,7 @@ impl Sound<&str> {
     }
 }
 
-impl<'a> Sound<Cow<'a, str>> {
+impl Sound<Cow<'_, str>> {
     pub fn into_owned(self) -> Sound {
         Sound {
             fname: self.fname.into_owned(),
@@ -187,7 +188,7 @@ impl Music<&str> {
     }
 }
 
-impl<'a> Music<Cow<'a, str>> {
+impl Music<Cow<'_, str>> {
     pub fn into_owned(self) -> Music {
         Music {
             fname: self.fname.into_owned(),
@@ -222,7 +223,7 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Music<Cow<'a, st
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{const_nonzero, format_from_pairs, parse_from_pairs, StringPair};
+    use crate::test_utils::{StringPair, const_nonzero, format_from_pairs, parse_from_pairs};
 
     const AUDIO_REPETITION_PAIRS: &[StringPair<AudioRepetition>] = &[
         (AudioRepetition::Forever, "-1"),

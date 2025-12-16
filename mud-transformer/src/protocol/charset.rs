@@ -1,4 +1,4 @@
-use flagset::{flags, FlagSet};
+use flagset::{FlagSet, flags};
 
 use super::Negotiate;
 use crate::transformer::TransformerConfig;

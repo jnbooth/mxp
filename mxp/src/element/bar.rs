@@ -23,7 +23,7 @@ impl Gauge<&str> {
     }
 }
 
-impl<'a> Gauge<Cow<'a, str>> {
+impl Gauge<Cow<'_, str>> {
     pub fn into_owned(self) -> Gauge {
         Gauge {
             entity: self.entity.into_owned(),
@@ -66,7 +66,7 @@ impl Stat<&str> {
     }
 }
 
-impl<'a> Stat<Cow<'a, str>> {
+impl Stat<Cow<'_, str>> {
     pub fn into_owned(self) -> Stat {
         Stat {
             entity: self.entity.into_owned(),

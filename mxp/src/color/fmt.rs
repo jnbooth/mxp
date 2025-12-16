@@ -1,6 +1,6 @@
-use super::RgbColor;
-
 use std::str;
+
+use super::RgbColor;
 
 pub(crate) struct RgbDigits<const N: usize>([u8; N]);
 

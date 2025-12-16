@@ -3,13 +3,13 @@ use std::num::NonZero;
 use std::vec;
 
 use bytes::Bytes;
-use flagset::{flags, FlagSet};
+use flagset::{FlagSet, flags};
+use mxp::RgbColor;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use super::shared_string::SharedString;
 use super::span::TextStyle;
-use mxp::RgbColor;
 
 pub type OutputDrain<'a> = vec::Drain<'a, Output>;
 

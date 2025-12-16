@@ -1,10 +1,11 @@
 use std::borrow::Cow;
 
+use flagset::FlagSet;
+
 use super::scan::{Decoder, ExpectArg, Scan};
 use crate::color::RgbColor;
 use crate::keyword::{EntityKeyword, MxpKeyword};
 use crate::parser::Error;
-use flagset::FlagSet;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct ColorArgs {

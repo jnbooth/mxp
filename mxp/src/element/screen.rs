@@ -106,7 +106,7 @@ impl<T: FromStr> FromStr for Dimension<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{format_from_pairs, parse_from_pairs, StringPair};
+    use crate::test_utils::{StringPair, format_from_pairs, parse_from_pairs};
 
     const DIMENSION_PAIRS: &[StringPair<Dimension>] = &[
         (Dimension::pixels(10), "10"),

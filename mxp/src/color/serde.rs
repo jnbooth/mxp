@@ -1,7 +1,8 @@
-use super::error::HexOutOfRangeError;
-use super::rgb::RgbColor;
 use serde::de::{Error as _, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+use super::error::HexOutOfRangeError;
+use super::rgb::RgbColor;
 
 impl Serialize for RgbColor {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {

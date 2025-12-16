@@ -3,7 +3,7 @@ use std::ops::{Deref, DerefMut};
 use casefold::ascii::{CaseFold, CaseFoldMap};
 
 use crate::element::{Element, Tag, Tags};
-use crate::parser::{validate, Error, ErrorKind};
+use crate::parser::{Error, ErrorKind, validate};
 
 /// A component in an [element definition](https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT).
 #[derive(Copy, Clone, Debug)]
@@ -14,7 +14,7 @@ pub enum ElementComponent<'a> {
     Tag(&'static Tag),
 }
 
-impl<'a> ElementComponent<'a> {
+impl ElementComponent<'_> {
     /// Returns the name of the component.
     ///
     /// For example, the name of `<SOUND "ouch.wav">` is `"SOUND"`.
