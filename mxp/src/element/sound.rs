@@ -223,11 +223,16 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Music<Cow<'a, st
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::{StringPair, const_nonzero, format_from_pairs, parse_from_pairs};
+    use crate::test_utils::{StringPair, format_from_pairs, parse_from_pairs};
+
+    const NONZERO_10: NonZero<u32> = match NonZero::new(10) {
+        Some(n) => n,
+        None => unreachable!(),
+    };
 
     const AUDIO_REPETITION_PAIRS: &[StringPair<AudioRepetition>] = &[
         (AudioRepetition::Forever, "-1"),
-        (AudioRepetition::Count(const_nonzero!(10)), "10"),
+        (AudioRepetition::Count(NONZERO_10), "10"),
     ];
 
     #[test]

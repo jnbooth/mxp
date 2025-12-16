@@ -77,10 +77,6 @@ impl<T> Dimension<T> {
 
 impl<T: fmt::Display> fmt::Display for Dimension<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if f.width().is_some() || f.precision().is_some() {
-            return self.to_string().fmt(f);
-        }
-
         match self.unit {
             DimensionUnit::Pixel => write!(f, "{}", self.amount),
             DimensionUnit::CharacterHeight => write!(f, "{}c", self.amount),

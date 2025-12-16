@@ -3,18 +3,6 @@ use std::str::FromStr;
 
 pub type StringPair<T> = (T, &'static str);
 
-macro_rules! const_nonzero {
-    ($n:expr) => {{
-        const _: () = ::std::assert!($n != 0);
-
-        match ::std::num::NonZero::new($n) {
-            Some(n) => n,
-            None => unreachable!(),
-        }
-    }};
-}
-pub(crate) use const_nonzero;
-
 fn zip_pairs<T, U, F>(pairs: &[StringPair<T>], mut zipper: F) -> (Vec<U>, Vec<U>)
 where
     F: FnMut(&T, &'static str) -> (U, U),
