@@ -7,8 +7,9 @@ use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::keyword::FrameKeyword;
 use crate::parser::{Error, UnrecognizedVariant};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum FrameAction {
+    #[default]
     Open,
     Close,
     Redirect,
@@ -24,12 +25,6 @@ impl FromStr for FrameAction {
             "REDIRECT" => Self::Redirect,
             _ => return Err(Self::Err::new(s)),
         })
-    }
-}
-
-impl Default for FrameAction {
-    fn default() -> Self {
-        Self::Open
     }
 }
 

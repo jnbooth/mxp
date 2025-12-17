@@ -10,7 +10,7 @@ pub(crate) struct Iter<'a> {
     inner: slice::Iter<'a, u8>,
 }
 
-pub fn iter(subnegotiation: &[u8]) -> Iter {
+pub fn iter(subnegotiation: &[u8]) -> Iter<'_> {
     let mut inner = subnegotiation.iter();
     inner.position(|&c| c == 1);
     Iter { inner }

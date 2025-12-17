@@ -52,7 +52,7 @@ impl<S: AsRef<str>> Arguments<S> {
         }
     }
 
-    pub(crate) fn scan<D: Decoder>(&self, decoder: D) -> Scan<D, S> {
+    pub(crate) fn scan<D: Decoder>(&self, decoder: D) -> Scan<'_, D, S> {
         Scan::new(decoder, &self.positional, &self.named)
     }
 

@@ -25,7 +25,7 @@ impl BufferedInput {
         self.buf.extend_from_slice(bytes.as_ref());
     }
 
-    pub fn drain(&mut self) -> Option<Drain> {
+    pub fn drain(&mut self) -> Option<Drain<'_>> {
         if self.buf.is_empty() {
             return None;
         }

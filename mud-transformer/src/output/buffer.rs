@@ -103,12 +103,12 @@ impl BufferedOutput {
         self.ignore_mxp_colors = false;
     }
 
-    pub fn drain(&mut self) -> OutputDrain {
+    pub fn drain(&mut self) -> OutputDrain<'_> {
         self.last_linebreak = None;
         self.fragments.drain(..)
     }
 
-    pub fn drain_complete(&mut self) -> OutputDrain {
+    pub fn drain_complete(&mut self) -> OutputDrain<'_> {
         if self.in_line {
             let last_break = self.last_break;
             self.last_break = 0;
@@ -400,7 +400,7 @@ impl BufferedOutput {
         }
     }
 
-    pub fn published_variables(&self) -> mxp::PublishedIter {
+    pub fn published_variables(&self) -> mxp::PublishedIter<'_> {
         self.variables.published()
     }
 }

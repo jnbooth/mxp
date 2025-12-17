@@ -4,9 +4,10 @@ const fn is_phase_reset_character(c: u8) -> bool {
     matches!(c, b'\r' | b'\n' | telnet::ESC | telnet::IAC)
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub(crate) enum Phase {
     /// Normal text
+    #[default]
     Normal,
     /// Received an escape
     Esc,
@@ -45,12 +46,6 @@ pub(crate) enum Phase {
     MxpQuote,
     /// Collecting entity, eg. &gt; . Starts on &, stops on ;
     MxpEntity,
-}
-
-impl Default for Phase {
-    fn default() -> Self {
-        Self::Normal
-    }
 }
 
 impl Phase {

@@ -3,19 +3,14 @@ use std::str::FromStr;
 
 use crate::parser::UnrecognizedVariant;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum Align {
     Left,
     Right,
+    #[default]
     Top,
     Middle,
     Bottom,
-}
-
-impl Default for Align {
-    fn default() -> Self {
-        Self::Top
-    }
 }
 
 impl FromStr for Align {
@@ -33,17 +28,12 @@ impl FromStr for Align {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum DimensionUnit {
+    #[default]
     Pixel,
     CharacterHeight,
     Percentage,
-}
-
-impl Default for DimensionUnit {
-    fn default() -> Self {
-        Self::Pixel
-    }
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]

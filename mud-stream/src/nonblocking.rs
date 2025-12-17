@@ -55,7 +55,7 @@ impl<T: AsyncRead + AsyncWrite + Unpin> MudStream<T> {
         &mut self.stream
     }
 
-    pub async fn read(&mut self) -> io::Result<Option<OutputDrain>> {
+    pub async fn read(&mut self) -> io::Result<Option<OutputDrain<'_>>> {
         if self.done {
             return Ok(None);
         }

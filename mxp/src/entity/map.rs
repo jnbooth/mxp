@@ -52,7 +52,7 @@ impl EntityMap {
         key.starts_with('#') || self.globals.contains_key(key)
     }
 
-    pub fn published(&self) -> PublishedIter {
+    pub fn published(&self) -> PublishedIter<'_> {
         PublishedIter {
             inner: self.inner.iter(),
         }

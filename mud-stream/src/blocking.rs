@@ -52,7 +52,7 @@ impl<T: Read + Write> MudStream<T> {
         &mut self.stream
     }
 
-    pub fn read(&mut self) -> io::Result<Option<OutputDrain>> {
+    pub fn read(&mut self) -> io::Result<Option<OutputDrain<'_>>> {
         if self.done {
             return Ok(None);
         }

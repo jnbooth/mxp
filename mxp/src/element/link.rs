@@ -8,17 +8,12 @@ use crate::keyword::SendKeyword;
 use crate::parser::Error;
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum SendTo {
     Internet,
+    #[default]
     World,
     Input,
-}
-
-impl Default for SendTo {
-    fn default() -> Self {
-        Self::World
-    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]

@@ -56,12 +56,12 @@ impl State {
     }
 
     /// Iterates through published entities.
-    pub fn published_entities(&self) -> PublishedIter {
+    pub fn published_entities(&self) -> PublishedIter<'_> {
         self.entities.published()
     }
 
     /// Retrieves a tag or element by name.
-    pub fn get_component(&self, name: &str) -> crate::Result<ElementComponent> {
+    pub fn get_component(&self, name: &str) -> crate::Result<ElementComponent<'_>> {
         self.elements.get_component(name, &self.tags)
     }
 
@@ -73,7 +73,11 @@ impl State {
     /// Creates a formatting `struct` that outputs a [`<SUPPORT>`] response.
     ///
     /// [`<SUPPORT>`]: https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control
-    pub fn supported_tags<I>(&self, iter: I, supported: FlagSet<ActionKind>) -> SupportResponse<I>
+    pub fn supported_tags<I>(
+        &self,
+        iter: I,
+        supported: FlagSet<ActionKind>,
+    ) -> SupportResponse<'_, I>
     where
         I: IntoIterator + Copy,
         I::Item: AsRef<str>,

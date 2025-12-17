@@ -38,16 +38,11 @@ impl FromStr for AudioRepetition {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub enum AudioContinuation {
     Restart,
+    #[default]
     Continue,
-}
-
-impl Default for AudioContinuation {
-    fn default() -> Self {
-        Self::Continue
-    }
 }
 
 impl fmt::Display for AudioContinuation {

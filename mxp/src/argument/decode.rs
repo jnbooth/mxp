@@ -8,7 +8,7 @@ use crate::element::Element;
 use crate::entity::EntityMap;
 use crate::parser::{Error, ErrorKind};
 
-fn decode_amps<'a, F>(mut s: &str, mut f: F) -> crate::Result<Cow<str>>
+fn decode_amps<'a, F>(mut s: &str, mut f: F) -> crate::Result<Cow<'_, str>>
 where
     F: FnMut(&str) -> crate::Result<Option<&'a str>>,
 {

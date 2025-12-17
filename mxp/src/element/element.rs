@@ -174,7 +174,7 @@ pub struct Element {
 }
 
 impl Element {
-    pub fn collect(text: &str) -> crate::Result<CollectedElement> {
+    pub fn collect(text: &str) -> crate::Result<CollectedElement<'_>> {
         CollectedElement::from_str(text)
     }
 

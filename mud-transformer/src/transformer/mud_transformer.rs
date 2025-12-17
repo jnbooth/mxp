@@ -132,24 +132,24 @@ impl Transformer {
         !self.output.is_empty()
     }
 
-    pub fn drain_output(&mut self) -> OutputDrain {
+    pub fn drain_output(&mut self) -> OutputDrain<'_> {
         self.output.drain_complete()
     }
 
-    pub fn flush_output(&mut self) -> OutputDrain {
+    pub fn flush_output(&mut self) -> OutputDrain<'_> {
         self.output.flush();
         self.output.drain()
     }
 
-    pub fn drain_input(&mut self) -> Option<InputDrain> {
+    pub fn drain_input(&mut self) -> Option<InputDrain<'_>> {
         self.input.drain()
     }
 
-    pub fn published_entities(&self) -> mxp::PublishedIter {
+    pub fn published_entities(&self) -> mxp::PublishedIter<'_> {
         self.mxp_state.published_entities()
     }
 
-    pub fn published_variables(&self) -> mxp::PublishedIter {
+    pub fn published_variables(&self) -> mxp::PublishedIter<'_> {
         self.output.published_variables()
     }
 
@@ -444,12 +444,11 @@ impl Transformer {
             return;
         }
         let mxp_state = mem::take(&mut self.mxp_state);
-        if let Some(element) = mxp_state.get_line_tag(newmode) {
-            if let Err(e) =
+        if let Some(element) = mxp_state.get_line_tag(newmode)
+            && let Err(e) =
                 self.mxp_open_element(element, &mxp::Arguments::<&str>::new(), &mxp_state)
-            {
-                self.handle_mxp_error(e);
-            }
+        {
+            self.handle_mxp_error(e);
         }
         self.mxp_state = mxp_state;
     }
@@ -790,11 +789,11 @@ impl Transformer {
             Phase::MxpComment => self.mxp_entity_string.push(c),
 
             Phase::MxpQuote => {
-                if let Some(terminator) = self.mxp_quote_terminator {
-                    if terminator.get() == c {
-                        self.phase = Phase::MxpElement;
-                        self.mxp_quote_terminator = None;
-                    }
+                if let Some(terminator) = self.mxp_quote_terminator
+                    && terminator.get() == c
+                {
+                    self.phase = Phase::MxpElement;
+                    self.mxp_quote_terminator = None;
                 }
                 self.mxp_entity_string.push(c);
             }

@@ -76,7 +76,7 @@ impl ElementMap {
         }
     }
 
-    pub fn get_component(&self, key: &str, tags: &Tags) -> crate::Result<ElementComponent> {
+    pub fn get_component(&self, key: &str, tags: &Tags) -> crate::Result<ElementComponent<'_>> {
         validate(key, ErrorKind::InvalidElementName)?;
 
         if let Some(tag) = tags.get(key) {
