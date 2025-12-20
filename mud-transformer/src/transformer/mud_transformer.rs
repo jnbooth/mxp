@@ -128,7 +128,7 @@ impl Transformer {
         self.subnegotiate(mnes_updates);
     }
 
-    pub fn has_output(&self) -> bool {
+    pub const fn has_output(&self) -> bool {
         !self.output.is_empty()
     }
 

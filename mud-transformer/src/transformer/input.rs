@@ -65,7 +65,7 @@ pub struct Drain<'a> {
 
 impl Drain<'_> {
     #[inline]
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.cursor >= self.buf.len()
     }
 

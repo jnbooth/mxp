@@ -18,15 +18,15 @@ impl ElementComponent<'_> {
     /// Returns the name of the component.
     ///
     /// For example, the name of `<SOUND "ouch.wav">` is `"SOUND"`.
-    pub fn name(&self) -> &str {
+    pub const fn name(&self) -> &str {
         match self {
-            Self::Element(el) => &el.name,
+            Self::Element(el) => el.name.as_str(),
             Self::Tag(tag) => tag.name,
         }
     }
 
     /// Returns `true` if the element has no closing tag, e.g. `<BR>`.
-    pub fn is_command(&self) -> bool {
+    pub const fn is_command(&self) -> bool {
         match self {
             Self::Element(el) => el.command,
             Self::Tag(tag) => tag.action.is_command(),
@@ -34,7 +34,7 @@ impl ElementComponent<'_> {
     }
 
     /// Returns `true` if the element is in Open mode, meaning users can override it.
-    pub fn is_open(&self) -> bool {
+    pub const fn is_open(&self) -> bool {
         match self {
             Self::Element(el) => el.open,
             Self::Tag(tag) => tag.action.is_open(),
@@ -42,9 +42,12 @@ impl ElementComponent<'_> {
     }
 
     /// Returns the element's variable name, if it has one.
-    pub fn variable(&self) -> Option<&str> {
+    pub const fn variable(&self) -> Option<&str> {
         match self {
-            Self::Element(el) => el.variable.as_deref(),
+            Self::Element(el) => match &el.variable {
+                Some(name) => Some(name.as_str()),
+                None => None,
+            },
             Self::Tag(_) => None,
         }
     }

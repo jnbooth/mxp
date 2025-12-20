@@ -158,8 +158,8 @@ impl SpanList {
         Self { spans: Vec::new() }
     }
 
-    pub fn get(&self) -> Option<&Span> {
-        self.spans.last()
+    pub const fn get(&self) -> Option<&Span> {
+        self.spans.as_slice().last()
     }
 
     fn get_mut(&mut self) -> Option<&mut Span> {
@@ -179,7 +179,7 @@ impl SpanList {
         self.spans.clear();
     }
 
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.spans.len()
     }
 

@@ -30,7 +30,7 @@ impl Decompress {
         }
     }
 
-    pub fn active(&self) -> bool {
+    pub const fn active(&self) -> bool {
         self.active
     }
 

@@ -14,7 +14,7 @@ flags! {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Charsets {
     inner: FlagSet<Charset>,
 }
@@ -42,8 +42,16 @@ impl<T: AsRef<[u8]>> From<T> for Charsets {
 }
 
 impl Charsets {
-    pub fn new() -> Self {
-        Self::default()
+    pub const fn new() -> Self {
+        Self {
+            inner: FlagSet::empty(),
+        }
+    }
+}
+
+impl Default for Charsets {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

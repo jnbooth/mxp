@@ -47,11 +47,11 @@ impl<T: AsyncRead + AsyncWrite + Unpin> MudStream<T> {
         (self.stream, self.transformer)
     }
 
-    pub fn get_ref(&self) -> &T {
+    pub const fn get_ref(&self) -> &T {
         &self.stream
     }
 
-    pub fn get_mut(&mut self) -> &mut T {
+    pub const fn get_mut(&mut self) -> &mut T {
         &mut self.stream
     }
 

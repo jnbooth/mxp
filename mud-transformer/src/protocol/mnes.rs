@@ -86,9 +86,9 @@ impl<T: AsRef<[u8]>> From<T> for Variables {
 }
 
 impl Variables {
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
-            inner: FlagSet::default(),
+            inner: FlagSet::empty(),
             prefix: "\x00",
         }
     }
