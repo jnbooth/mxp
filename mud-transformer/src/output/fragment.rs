@@ -287,10 +287,8 @@ impl fmt::Display for TextFragment {
         if self.action.is_some() {
             flags |= TextStyle::Underline;
         }
-        for flag in flags {
-            if let Some(ansi) = flag.ansi() {
-                write!(f, ";{ansi}")?;
-            }
+        for ansi in flags.into_iter().filter_map(TextStyle::ansi) {
+            write!(f, ";{ansi}")?;
         }
         write!(f, "m{}\x1B[0m", self.text)
     }

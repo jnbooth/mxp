@@ -61,9 +61,12 @@ impl Iterator for ReceiveCursor<'_> {
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        let byte = *self.inner.first()?;
-        self.inner = &self.inner[1..];
-        Some(byte)
+        if let [first, tail @ ..] = self.inner {
+            self.inner = tail;
+            Some(*first)
+        } else {
+            None
+        }
     }
 }
 

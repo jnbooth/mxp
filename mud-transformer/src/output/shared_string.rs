@@ -44,7 +44,7 @@ impl StringPool {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct SharedString {
     inner: Bytes,
 }
@@ -117,7 +117,13 @@ impl Hash for SharedString {
 
 impl fmt::Display for SharedString {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        f.pad(self.as_str())
+        self.as_str().fmt(f)
+    }
+}
+
+impl fmt::Debug for SharedString {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.as_str().fmt(f)
     }
 }
 
