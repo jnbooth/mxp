@@ -44,11 +44,11 @@ impl<T: Read + Write> MudStream<T> {
         (self.stream, self.transformer)
     }
 
-    pub const fn get_ref(&self) -> &T {
+    pub fn get_ref(&self) -> &T {
         &self.stream
     }
 
-    pub const fn get_mut(&mut self) -> &mut T {
+    pub fn get_mut(&mut self) -> &mut T {
         &mut self.stream
     }
 

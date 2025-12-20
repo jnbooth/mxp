@@ -162,8 +162,8 @@ impl SpanList {
         self.spans.as_slice().last()
     }
 
-    fn get_mut(&mut self) -> Option<&mut Span> {
-        self.spans.last_mut()
+    const fn get_mut(&mut self) -> Option<&mut Span> {
+        self.spans.as_mut_slice().last_mut()
     }
 
     pub fn truncate(&mut self, i: usize) -> Option<EntitySetter> {

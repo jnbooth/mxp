@@ -73,7 +73,7 @@ impl BufferedOutput {
         }
     }
 
-    pub const fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.fragments.is_empty() && self.text_buf.is_empty()
     }
 
@@ -91,7 +91,7 @@ impl BufferedOutput {
         }
     }
 
-    pub const fn last(&self) -> Option<u8> {
+    pub fn last(&self) -> Option<u8> {
         self.text_buf.as_bytes().last().copied()
     }
 
@@ -290,7 +290,7 @@ impl BufferedOutput {
         self.reset_mxp();
     }
 
-    pub const fn span_len(&self) -> usize {
+    pub fn span_len(&self) -> usize {
         self.spans.len()
     }
 
