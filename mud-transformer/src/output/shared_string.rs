@@ -44,7 +44,7 @@ impl StringPool {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SharedString {
     inner: Bytes,
 }
@@ -74,6 +74,13 @@ impl SharedString {
     }
 }
 
+impl AsRef<[u8]> for SharedString {
+    #[inline]
+    fn as_ref(&self) -> &[u8] {
+        self.as_bytes()
+    }
+}
+
 impl AsRef<str> for SharedString {
     #[inline]
     fn as_ref(&self) -> &str {
@@ -94,18 +101,6 @@ impl Deref for SharedString {
     #[inline]
     fn deref(&self) -> &Self::Target {
         self.as_str()
-    }
-}
-
-impl Ord for SharedString {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.as_str().cmp(other.as_str())
-    }
-}
-
-impl PartialOrd for SharedString {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
     }
 }
 
