@@ -167,14 +167,14 @@ impl ParseErrorTarget for &Vec<u8> {
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UnrecognizedVariant<T> {
     input: String,
-    __marker: PhantomData<T>,
+    phantom: PhantomData<T>,
 }
 
 impl<T> UnrecognizedVariant<T> {
     pub fn new(input: &str) -> Self {
         Self {
             input: input.to_owned(),
-            __marker: PhantomData,
+            phantom: PhantomData,
         }
     }
 }

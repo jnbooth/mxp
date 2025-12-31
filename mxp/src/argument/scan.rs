@@ -26,7 +26,7 @@ pub(crate) struct Scan<'a, D, S, F = NoKeywords> {
     decoder: D,
     inner: slice::Iter<'a, S>,
     named: &'a CaseFoldMap<String, S>,
-    __marker: PhantomData<F>,
+    phantom: PhantomData<F>,
 }
 
 impl<'a, D: Decoder, S: AsRef<str>, F: KeywordFilter> Scan<'a, D, S, F> {
@@ -35,7 +35,7 @@ impl<'a, D: Decoder, S: AsRef<str>, F: KeywordFilter> Scan<'a, D, S, F> {
             decoder,
             inner: positional.iter(),
             named,
-            __marker: PhantomData,
+            phantom: PhantomData,
         }
     }
 
@@ -44,7 +44,7 @@ impl<'a, D: Decoder, S: AsRef<str>, F: KeywordFilter> Scan<'a, D, S, F> {
             decoder: self.decoder,
             inner: self.inner,
             named: self.named,
-            __marker: PhantomData,
+            phantom: PhantomData,
         }
     }
 
