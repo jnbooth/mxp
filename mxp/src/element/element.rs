@@ -56,10 +56,10 @@ impl FromStr for DefinitionKind {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match_ci! {s,
-            "ATTLIST" | "ATT" => Self::AttributeList,
-            "ELEMENT" | "EL" => Self::Element,
-            "ENTITY" | "EN" => Self::Entity,
-            "TAG" => Self::LineTag,
+            "attlist" | "att" => Self::AttributeList,
+            "element" | "el" => Self::Element,
+            "entity" | "en" => Self::Entity,
+            "tag" => Self::LineTag,
             _ => return Err(Self::Err::new(s))
         })
     }
@@ -133,11 +133,11 @@ impl FromStr for ParseAs {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match_ci! {s,
-            "RoomName" => Self::RoomName,
-            "RoomDesc" => Self::RoomDesc,
-            "RoomExit" => Self::RoomExit,
-            "RoomNum" => Self::RoomNum,
-            "Prompt" => Self::Prompt,
+            "roomname" => Self::RoomName,
+            "roomdesc" => Self::RoomDesc,
+            "roomexit" => Self::RoomExit,
+            "roomnum" => Self::RoomNum,
+            "prompt" => Self::Prompt,
             _ => return Err(Self::Err::new(s)),
         })
     }

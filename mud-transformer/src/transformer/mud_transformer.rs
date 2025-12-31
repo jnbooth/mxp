@@ -453,7 +453,6 @@ impl Transformer {
         self.mxp_state = mxp_state;
     }
 
-    #[inline]
     pub fn receive(&mut self, bytes: &[u8], buf: &mut [u8]) -> io::Result<()> {
         if bytes.is_empty() {
             return Ok(());

@@ -20,9 +20,9 @@ impl FromStr for FrameAction {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match_ci! {s,
-            "OPEN" => Self::Open,
-            "CLOSE" => Self::Close,
-            "REDIRECT" => Self::Redirect,
+            "open" => Self::Open,
+            "close" => Self::Close,
+            "redirect" => Self::Redirect,
             _ => return Err(Self::Err::new(s)),
         })
     }

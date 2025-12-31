@@ -69,9 +69,9 @@ impl FromStr for ElementKeyword {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match_ci! {s,
-            "OPEN" => Self::Open,
-            "EMPTY" => Self::Empty,
-            "DELETE" => Self::Delete,
+            "open" => Self::Open,
+            "empty" => Self::Empty,
+            "delete" => Self::Delete,
             _ => return Err(Self::Err::new(s)),
         })
     }
@@ -82,11 +82,11 @@ impl FromStr for EntityKeyword {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match_ci! {s,
-            "PRIVATE" => Self::Private,
-            "PUBLISH" => Self::Publish,
-            "DELETE" => Self::Delete,
-            "ADD" => Self::Add,
-            "REMOVE" => Self::Remove,
+            "private" => Self::Private,
+            "publish" => Self::Publish,
+            "delete" => Self::Delete,
+            "add" => Self::Add,
+            "remove" => Self::Remove,
             _ => return Err(Self::Err::new(s)),
         })
     }
@@ -97,8 +97,8 @@ impl FromStr for FrameKeyword {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match_ci! {s,
-            "FLOATING" => Self::Floating,
-            "INTERNAL" => Self::Internal,
+            "floating" => Self::Floating,
+            "internal" => Self::Internal,
             _ => return Err(Self::Err::new(s))
         })
     }
@@ -109,7 +109,7 @@ impl FromStr for ImageKeyword {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match_ci! {s,
-            "ISMAP" => Self::IsMap,
+            "ismap" => Self::IsMap,
             _ => return Err(Self::Err::new(s))
         })
     }
@@ -120,12 +120,12 @@ impl FromStr for MxpKeyword {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match_ci! {s,
-            "OFF" => Self::Off,
-            "DEFAULTOPEN" => Self::DefaultOpen,
-            "DEFAULTSECURE" => Self::DefaultSecure,
-            "DEFAULTLOCKED" => Self::DefaultLocked,
-            "USENEWLINES" => Self::UseNewlines,
-            "IGNORENEWLINES" => Self::IgnoreNewlines,
+            "off" => Self::Off,
+            "defaultopen" => Self::DefaultOpen,
+            "defaultsecure" => Self::DefaultSecure,
+            "defaultlocked" => Self::DefaultLocked,
+            "usenewlines" => Self::UseNewlines,
+            "ignorenewlines" => Self::IgnoreNewlines,
             _ => return Err(Self::Err::new(s)),
         })
     }
@@ -136,7 +136,7 @@ impl FromStr for SendKeyword {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match_ci! {s,
-            "PROMPT" => Self::Prompt,
+            "prompt" => Self::Prompt,
             _ => return Err(Self::Err::new(s))
         })
     }
@@ -147,9 +147,9 @@ impl FromStr for TagKeyword {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match_ci! {s,
-            "GAG" => Self::Gag,
-            "ENABLE" => Self::Enable,
-            "DISABLE" => Self::Disable,
+            "gag" => Self::Gag,
+            "enable" => Self::Enable,
+            "disable" => Self::Disable,
             _ => return Err(Self::Err::new(s))
         })
     }
