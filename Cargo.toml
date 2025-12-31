@@ -4,6 +4,8 @@ members = ["mxp", "mud-bin-examples", "mud-stream", "mud-transformer"]
 
 [workspace.package]
 version = "0.10.0"
+repository = "https://github.com/jnbooth/mxp"
+license = "MIT"
 edition = "2024"
 
 [workspace.lints.clippy]
