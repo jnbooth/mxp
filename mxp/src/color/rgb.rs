@@ -43,17 +43,21 @@ impl RgbColor {
     /// `RgbColor` implements `TryFrom<u32>`, which performs a check to ensure the value does not
     /// exceed the maximum possible value rather than silently discarding the highest byte.
     pub const fn hex(code: u32) -> Self {
-        Self {
-            r: ((code >> 16) & 0xFF) as u8,
-            g: ((code >> 8) & 0xFF) as u8,
-            b: (code & 0xFF) as u8,
-        }
+        #[cfg(target_endian = "big")]
+        let [_, r, g, b] = code.to_ne_bytes();
+        #[cfg(target_endian = "little")]
+        let [b, g, r, _] = code.to_ne_bytes();
+        Self { r, g, b }
     }
 
     /// Encodes an RGB triple as a 32-bit number, where the last three bytes correspond to the red,
     /// green, and blue values respectively, and the highest byte is zeroed.
     pub const fn code(self) -> u32 {
-        (self.r as u32) << 16 | (self.g as u32) << 8 | (self.b as u32)
+        #[cfg(target_endian = "big")]
+        let bytes = [0, self.r, self.g, self.b];
+        #[cfg(target_endian = "little")]
+        let bytes = [self.b, self.g, self.r, 0];
+        u32::from_ne_bytes(bytes)
     }
 
     /// Translates an 8-bit integer into an 8-bit color.
