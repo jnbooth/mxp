@@ -5,16 +5,16 @@ use mxp::RgbColor;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-flags! {
-    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-    #[derive(PartialOrd, Ord, Hash)]
-    pub enum UseMxp: u8 {
-        Command,
-        Query,
-        Always,
-        Never,
-    }
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum UseMxp {
+    Command,
+    Query,
+    Always,
+    Never,
+}
 
+flags! {
     #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum Tag: u32 {

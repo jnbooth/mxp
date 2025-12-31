@@ -3,7 +3,7 @@ use std::num::NonZero;
 use std::vec;
 
 use bytes::Bytes;
-use flagset::{FlagSet, flags};
+use flagset::FlagSet;
 use mxp::RgbColor;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -208,22 +208,20 @@ impl From<mxp::Stat> for OutputFragment {
     }
 }
 
-flags! {
-    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-    #[derive(PartialOrd, Ord, Hash)]
-    pub enum TelnetSource: u8 {
-        Client,
-        Server,
-    }
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum TelnetSource {
+    Client,
+    Server,
+}
 
-    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-    #[derive(PartialOrd, Ord, Hash)]
-    pub enum TelnetVerb: u8 {
-        Do,
-        Dont,
-        Will,
-        Wont,
-    }
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum TelnetVerb {
+    Do,
+    Dont,
+    Will,
+    Wont,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
