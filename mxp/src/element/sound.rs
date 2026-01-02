@@ -108,7 +108,7 @@ pub struct Sound<S = String> {
 
 impl<S: AsRef<str>> Sound<S> {
     pub fn is_off(&self) -> bool {
-        self.fname.as_ref().eq_ignore_ascii_case("Off")
+        self.fname.as_ref().eq_ignore_ascii_case("off")
     }
 }
 
@@ -170,7 +170,7 @@ pub struct Music<S = String> {
 
 impl<S: AsRef<str>> Music<S> {
     pub fn is_off(&self) -> bool {
-        self.fname.as_ref().eq_ignore_ascii_case("Off")
+        self.fname.as_ref().eq_ignore_ascii_case("off")
     }
 }
 

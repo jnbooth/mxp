@@ -115,7 +115,7 @@ where
         let height = scanner.next_or("height")?.expect_number()?;
         let scrolling = scanner
             .next_or("scrolling")?
-            .is_some_and(|scrolling| scrolling.as_ref().eq_ignore_ascii_case("YES"));
+            .is_some_and(|scrolling| scrolling.as_ref().eq_ignore_ascii_case("yes"));
         let keywords = scanner.into_keywords();
         let layout = if keywords.contains(FrameKeyword::Internal) {
             FrameLayout::Internal { align }
