@@ -33,11 +33,15 @@ impl<S: AsRef<str>> Arguments<S> {
 
     /// Finds the value of an entity, using an element's attribute list to identify arguments
     /// and provide default values.
-    pub(crate) fn find_from_attributes<'a, F: KeywordFilter, S2: AsRef<str>>(
+    pub(crate) fn find_from_attributes<'a, F, S2>(
         &'a self,
         entity: &str,
         attributes: &'a Arguments<S2>,
-    ) -> Option<&'a str> {
+    ) -> Option<&'a str>
+    where
+        F: KeywordFilter,
+        S2: AsRef<str>,
+    {
         if let Some(named) = attributes.named.get(entity) {
             return Some(match self.named.get(entity) {
                 Some(entity) => entity.as_ref(),

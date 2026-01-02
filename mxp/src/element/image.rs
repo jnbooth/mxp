@@ -50,7 +50,11 @@ impl Image<Cow<'_, str>> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Image<Cow<'a, str>> {
+impl<'a, D, S> TryFrom<Scan<'a, D, S>> for Image<Cow<'a, str>>
+where
+    D: Decoder,
+    S: AsRef<str>,
+{
     type Error = Error;
 
     fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {

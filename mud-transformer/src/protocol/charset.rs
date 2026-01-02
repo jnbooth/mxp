@@ -19,7 +19,10 @@ pub(crate) struct Charsets {
     inner: FlagSet<Charset>,
 }
 
-impl<T: AsRef<[u8]>> From<T> for Charsets {
+impl<T> From<T> for Charsets
+where
+    T: AsRef<[u8]>,
+{
     fn from(value: T) -> Self {
         // Reduce monomorphization
         fn inner(data: &[u8]) -> Charsets {
@@ -37,6 +40,7 @@ impl<T: AsRef<[u8]>> From<T> for Charsets {
             }
             Charsets { inner: flags }
         }
+
         inner(value.as_ref())
     }
 }

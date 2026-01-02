@@ -27,7 +27,11 @@ impl Relocate<Cow<'_, str>> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Relocate<Cow<'a, str>> {
+impl<'a, D, S> TryFrom<Scan<'a, D, S>> for Relocate<Cow<'a, str>>
+where
+    D: Decoder,
+    S: AsRef<str>,
+{
     type Error = Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {

@@ -88,7 +88,11 @@ pub(crate) struct HyperlinkArgs<S> {
     pub expire: Option<S>,
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for HyperlinkArgs<Cow<'a, str>> {
+impl<'a, D, S> TryFrom<Scan<'a, D, S>> for HyperlinkArgs<Cow<'a, str>>
+where
+    D: Decoder,
+    S: AsRef<str>,
+{
     type Error = Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
@@ -100,7 +104,10 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for HyperlinkArgs<Co
     }
 }
 
-impl<S: AsRef<str>> From<HyperlinkArgs<S>> for Link {
+impl<S> From<HyperlinkArgs<S>> for Link
+where
+    S: AsRef<str>,
+{
     fn from(value: HyperlinkArgs<S>) -> Self {
         Self::new(
             value.href.as_ref(),
@@ -119,7 +126,11 @@ pub(crate) struct SendArgs<S> {
     pub expire: Option<S>,
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for SendArgs<Cow<'a, str>> {
+impl<'a, D, S> TryFrom<Scan<'a, D, S>> for SendArgs<Cow<'a, str>>
+where
+    D: Decoder,
+    S: AsRef<str>,
+{
     type Error = Error;
 
     fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
@@ -137,7 +148,10 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for SendArgs<Cow<'a,
     }
 }
 
-impl<S: AsRef<str>> From<SendArgs<S>> for Link {
+impl<S> From<SendArgs<S>> for Link
+where
+    S: AsRef<str>,
+{
     fn from(value: SendArgs<S>) -> Self {
         Self::new(
             value
@@ -156,7 +170,11 @@ pub(crate) struct ExpireArgs<S> {
     pub name: Option<S>,
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for ExpireArgs<Cow<'a, str>> {
+impl<'a, D, S> TryFrom<Scan<'a, D, S>> for ExpireArgs<Cow<'a, str>>
+where
+    D: Decoder,
+    S: AsRef<str>,
+{
     type Error = Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {

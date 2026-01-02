@@ -30,7 +30,10 @@ fn is_not_keyword<K: FromStr, S: AsRef<str>>(arg: &&S) -> bool {
     K::from_str(arg.as_ref()).is_err()
 }
 
-impl<K: FromStr> KeywordFilter for K {
+impl<K> KeywordFilter for K
+where
+    K: FromStr,
+{
     type Iter<'a, S: 'a> = Filter<slice::Iter<'a, S>, fn(&&S) -> bool>;
 
     fn iter<'a, S: AsRef<str> + 'a>(args: &'a [S]) -> Self::Iter<'a, S> {

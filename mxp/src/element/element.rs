@@ -212,6 +212,7 @@ impl Element {
         let Some(argument) = argument else {
             return Ok(Vec::new());
         };
+
         inner(argument.as_ref(), tags)
     }
 
@@ -225,11 +226,15 @@ impl Element {
         }
     }
 
-    pub(crate) fn parse<D: Decoder, S: AsRef<str>>(
+    pub(crate) fn parse<D, S>(
         name: String,
         scanner: Scan<D, S>,
         tags: &Tags,
-    ) -> crate::Result<Option<Self>> {
+    ) -> crate::Result<Option<Self>>
+    where
+        D: Decoder,
+        S: AsRef<str>,
+    {
         let mut scanner = scanner.with_keywords();
         let items = Self::parse_items(scanner.next()?, tags)?;
 

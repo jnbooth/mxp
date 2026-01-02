@@ -13,7 +13,10 @@ pub struct MudStream<T> {
     midpoint: usize,
 }
 
-impl<T: Read + Write> MudStream<T> {
+impl<T> MudStream<T>
+where
+    T: Read + Write,
+{
     pub fn new(stream: T, config: TransformerConfig) -> Self {
         Self::with_capacity(stream, config, DEFAULT_BUFFER_SIZE)
     }
@@ -72,7 +75,10 @@ impl<T: Read + Write> MudStream<T> {
         Ok(Some(self.transformer.drain_output()))
     }
 }
-impl<T: Write> Write for MudStream<T> {
+impl<T> Write for MudStream<T>
+where
+    T: Write,
+{
     #[inline]
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.stream.write(buf)

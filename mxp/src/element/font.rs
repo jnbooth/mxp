@@ -1,7 +1,8 @@
 use std::borrow::Cow;
+use std::iter::FilterMap;
 use std::num::NonZero;
-use std::str;
 use std::str::FromStr;
+use std::str::{self, Split};
 
 use flagset::flags;
 #[cfg(feature = "serde")]
@@ -60,7 +61,17 @@ pub struct FgColor<S> {
 }
 
 impl<S: AsRef<str>> FgColor<S> {
-    pub fn iter(&self) -> impl Iterator<Item = FontEffect> + '_ {
+    pub fn iter(&self) -> <&Self as IntoIterator>::IntoIter {
+        self.into_iter()
+    }
+}
+
+impl<'a, S: AsRef<str>> IntoIterator for &'a FgColor<S> {
+    type Item = FontEffect;
+
+    type IntoIter = FilterMap<Split<'a, char>, fn(&str) -> Option<FontEffect>>;
+
+    fn into_iter(self) -> Self::IntoIter {
         self.inner.as_ref().split(',').filter_map(FontEffect::parse)
     }
 }
@@ -99,7 +110,11 @@ impl Font<Cow<'_, str>> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Font<Cow<'a, str>> {
+impl<'a, D, S> TryFrom<Scan<'a, D, S>> for Font<Cow<'a, str>>
+where
+    D: Decoder,
+    S: AsRef<str>,
+{
     type Error = Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {

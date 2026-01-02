@@ -16,7 +16,10 @@ pub struct MudStream<T> {
     midpoint: usize,
 }
 
-impl<T: AsyncRead + AsyncWrite + Unpin> MudStream<T> {
+impl<T> MudStream<T>
+where
+    T: AsyncRead + AsyncWrite + Unpin,
+{
     pub fn new(stream: T, config: TransformerConfig) -> Self {
         Self::with_capacity(stream, config, DEFAULT_BUFFER_SIZE)
     }
@@ -76,7 +79,10 @@ impl<T: AsyncRead + AsyncWrite + Unpin> MudStream<T> {
     }
 }
 
-impl<T: AsyncRead + AsyncWrite + Unpin> AsyncWrite for MudStream<T> {
+impl<T> AsyncWrite for MudStream<T>
+where
+    T: AsyncRead + AsyncWrite + Unpin,
+{
     fn poll_flush(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Result<(), io::Error>> {
         Pin::new(&mut self.stream).poll_flush(cx)
     }

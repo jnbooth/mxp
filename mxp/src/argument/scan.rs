@@ -12,11 +12,16 @@ use super::keyword_filter::{KeywordFilter, NoKeywords};
 use crate::parser::{Error, ErrorKind};
 
 pub trait Decoder {
-    fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Cow<'a, str>>;
+    fn decode<'a, F>(&self, s: &'a str) -> crate::Result<Cow<'a, str>>
+    where
+        F: KeywordFilter;
 }
 
 impl<D: Decoder> Decoder for &D {
-    fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Cow<'a, str>> {
+    fn decode<'a, F>(&self, s: &'a str) -> crate::Result<Cow<'a, str>>
+    where
+        F: KeywordFilter,
+    {
         D::decode::<F>(self, s)
     }
 }
@@ -29,7 +34,12 @@ pub(crate) struct Scan<'a, D, S, F = NoKeywords> {
     phantom: PhantomData<F>,
 }
 
-impl<'a, D: Decoder, S: AsRef<str>, F: KeywordFilter> Scan<'a, D, S, F> {
+impl<'a, D, S, F> Scan<'a, D, S, F>
+where
+    D: Decoder,
+    S: AsRef<str>,
+    F: KeywordFilter,
+{
     pub fn new(decoder: D, positional: &'a [S], named: &'a CaseFoldMap<String, S>) -> Self {
         Self {
             decoder,
@@ -105,7 +115,12 @@ impl<D, S: AsRef<str>, K: Flags> DerefMut for KeywordScan<'_, D, S, K> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>, K: Flags + FromStr> KeywordScan<'a, D, S, K> {
+impl<'a, D, S, K> KeywordScan<'a, D, S, K>
+where
+    D: Decoder,
+    S: AsRef<str>,
+    K: Flags + FromStr,
+{
     fn next_non_keyword(&mut self) -> Option<&'a str> {
         for arg in &mut self.inner.inner {
             let arg = arg.as_ref();

@@ -193,7 +193,10 @@ pub struct DecodeElement<'a, D> {
     items: slice::Iter<'a, ElementItem<String>>,
 }
 
-impl<'a, D: Decoder + Copy> Iterator for DecodeElement<'a, D> {
+impl<'a, D> Iterator for DecodeElement<'a, D>
+where
+    D: Decoder + Copy,
+{
     type Item = crate::Result<Action<Cow<'a, str>>>;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -69,19 +69,22 @@ impl Default for Variables {
     }
 }
 
-impl<T: AsRef<[u8]>> From<T> for Variables {
+impl<T> From<T> for Variables
+where
+    T: AsRef<[u8]>,
+{
     fn from(value: T) -> Self {
-        let mut inner = FlagSet::default();
-        inner.extend(
-            value
-                .as_ref()
-                .split(|&c| c == 0)
-                .filter_map(Variable::parse),
-        );
-        Self {
-            inner,
-            prefix: "\x00",
+        // Reduce monomorphization
+        fn inner(value: &[u8]) -> Variables {
+            let mut inner = FlagSet::default();
+            inner.extend(value.split(|&c| c == 0).filter_map(Variable::parse));
+            Variables {
+                inner,
+                prefix: "\x00",
+            }
         }
+
+        inner(value.as_ref())
     }
 }
 

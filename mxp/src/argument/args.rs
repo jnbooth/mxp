@@ -13,7 +13,11 @@ pub(crate) struct ColorArgs {
     pub back: Option<RgbColor>,
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for ColorArgs {
+impl<'a, D, S> TryFrom<Scan<'a, D, S>> for ColorArgs
+where
+    D: Decoder,
+    S: AsRef<str>,
+{
     type Error = Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
@@ -33,7 +37,11 @@ pub(crate) struct MxpArgs {
     pub keywords: FlagSet<MxpKeyword>,
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for MxpArgs {
+impl<'a, D, S> TryFrom<Scan<'a, D, S>> for MxpArgs
+where
+    D: Decoder,
+    S: AsRef<str>,
+{
     type Error = Error;
 
     fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
@@ -49,7 +57,11 @@ pub(crate) struct SupportArgs<S> {
     pub questions: Vec<S>,
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for SupportArgs<Cow<'a, str>> {
+impl<'a, D, S> TryFrom<Scan<'a, D, S>> for SupportArgs<Cow<'a, str>>
+where
+    D: Decoder,
+    S: AsRef<str>,
+{
     type Error = Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> Result<Self, Self::Error> {
@@ -67,7 +79,11 @@ pub(crate) struct VarArgs<S> {
     pub keywords: FlagSet<EntityKeyword>,
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for VarArgs<Cow<'a, str>> {
+impl<'a, D, S> TryFrom<Scan<'a, D, S>> for VarArgs<Cow<'a, str>>
+where
+    D: Decoder,
+    S: AsRef<str>,
+{
     type Error = Error;
 
     fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {

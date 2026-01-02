@@ -20,7 +20,10 @@ pub struct Output {
     pub window: Option<String>,
 }
 
-impl<T: Into<OutputFragment>> From<T> for Output {
+impl<T> From<T> for Output
+where
+    T: Into<OutputFragment>,
+{
     fn from(value: T) -> Self {
         Self {
             fragment: value.into(),

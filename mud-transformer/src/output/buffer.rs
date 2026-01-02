@@ -118,7 +118,10 @@ impl BufferedOutput {
         }
     }
 
-    pub fn append<T: Into<OutputFragment>>(&mut self, fragment: T) {
+    pub fn append<T>(&mut self, fragment: T)
+    where
+        T: Into<OutputFragment>,
+    {
         // Reduce monomorphization
         fn inner(buffer: &mut BufferedOutput, fragment: OutputFragment) {
             if fragment.should_flush() {
@@ -148,6 +151,7 @@ impl BufferedOutput {
                 window: span.window.clone(),
             });
         }
+
         inner(self, fragment.into());
     }
 
@@ -354,7 +358,7 @@ impl BufferedOutput {
             changed = self.spans.set_size(size) || changed;
         }
         if let Some(color) = color {
-            for fg in color.iter() {
+            for fg in &color {
                 changed = match fg {
                     mxp::FontEffect::Color(fg) => self.spans.set_foreground(fg.into()),
                     mxp::FontEffect::Style(style) => self.spans.set_flag(style.into()),
