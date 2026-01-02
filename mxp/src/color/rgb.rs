@@ -1,11 +1,8 @@
 use std::fmt;
 use std::str::{self, FromStr};
-use std::sync::LazyLock;
-
-use casefold::ascii::CaseFoldMap;
 
 use super::error::{HexOutOfRangeError, ParseHexColorError};
-use super::named::{NAMED_COLORS, NamedColorIter};
+use super::named::{NAMED_COLORS, NamedColorIter, get_named_color};
 use super::xterm::{XTERM_COLORS, first_xterm_colors};
 
 /// A 24-bit color consisting of a red, green, and blue value.
@@ -65,21 +62,30 @@ impl RgbColor {
         RgbColor::XTERM_256[code as usize]
     }
 
-    /// Finds a color by its name in the standard list of [148 CSS colors]. Case-insensitive.
-    ///
-    /// [148 CSS colors]: https://www.w3.org/wiki/CSS/Properties/color/keywords
-    pub fn named(name: &str) -> Option<RgbColor> {
-        static LOOKUP: LazyLock<CaseFoldMap<&str, RgbColor>> = LazyLock::new(|| {
-            NAMED_COLORS
-                .iter()
-                .map(|&(key, val)| (key.into(), val))
-                .collect()
-        });
+    #[inline]
+    pub const fn named(name: &str) -> Option<RgbColor> {
+        const MAX_COLOR_LEN: usize = {
+            let mut max_len = 0;
+            let mut i = 0;
+            while i < NAMED_COLORS.len() {
+                let len = NAMED_COLORS[i].0.len();
+                if len > max_len {
+                    max_len = len;
+                }
+                i += 1;
+            }
+            max_len
+        };
 
-        if name.starts_with('#') {
-            return name.parse().ok();
-        }
-        LOOKUP.get(name).copied()
+        let mut buf = [0; MAX_COLOR_LEN];
+
+        let Some((name_lower, _)) = buf.split_at_mut_checked(name.len()) else {
+            return None;
+        };
+
+        name_lower.copy_from_slice(name.as_bytes());
+        name_lower.make_ascii_lowercase();
+        get_named_color(name_lower)
     }
 
     /// Iterates through colors in the standard list of [148 CSS colors].
