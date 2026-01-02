@@ -884,6 +884,7 @@ impl Transformer {
     }
 }
 
+#[inline]
 pub const fn is_utf8_continuation(c: u8) -> bool {
     (c & 0xC0) != 0x80
 }

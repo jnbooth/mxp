@@ -155,6 +155,7 @@ pub(super) const NAMED_COLORS: &[(&str, RgbColor)] = &[
     ("yellowgreen", RgbColor::hex(0x9ACD32)),
 ];
 
+#[inline]
 pub(super) const fn get_named_color(name: &[u8]) -> Option<RgbColor> {
     match name {
         b"aliceblue" => Some(RgbColor::hex(0xF0F8FF)),

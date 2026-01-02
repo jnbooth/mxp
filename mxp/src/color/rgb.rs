@@ -58,11 +58,11 @@ impl RgbColor {
     }
 
     /// Translates an 8-bit integer into an 8-bit color.
+    #[inline]
     pub const fn xterm(code: u8) -> Self {
         RgbColor::XTERM_256[code as usize]
     }
 
-    #[inline]
     pub const fn named(name: &str) -> Option<RgbColor> {
         const MAX_COLOR_LEN: usize = {
             let mut max_len = 0;

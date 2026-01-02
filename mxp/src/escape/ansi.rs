@@ -37,6 +37,7 @@ pub const BG_WHITE: u8 = 47;
 pub const BG_256_COLOR: u8 = 48;
 pub const BG_DEFAULT: u8 = 49;
 
+#[inline]
 #[must_use = "inputs are not modified"]
 pub const fn append_digit_to_code(code: u8, digit: u8) -> u8 {
     code * 10 + (digit - b'0')

@@ -1,16 +1,6 @@
 use super::rgb::RgbColor;
 
-pub(super) const XTERM_COLORS: &[RgbColor; 256] = &create_xterm_colors();
-
-// Will be unnecessary once const Option::unwrap is stabilized.
-pub(super) const fn first_xterm_colors<const N: usize>() -> &'static [RgbColor; N] {
-    match XTERM_COLORS.first_chunk() {
-        Some(chunk) => chunk,
-        None => unreachable!(),
-    }
-}
-
-const fn create_xterm_colors() -> [RgbColor; 256] {
+pub(super) const XTERM_COLORS: &[RgbColor; 256] = &{
     const COLOR_SCALE: &[u8] = &[
         0,
         95,
@@ -62,4 +52,8 @@ const fn create_xterm_colors() -> [RgbColor; 256] {
         i += 1;
     }
     colors
+};
+
+pub(super) const fn first_xterm_colors<const N: usize>() -> &'static [RgbColor; N] {
+    XTERM_COLORS.first_chunk().unwrap()
 }

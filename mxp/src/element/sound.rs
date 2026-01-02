@@ -228,14 +228,9 @@ mod tests {
     use super::*;
     use crate::test_utils::{StringPair, format_from_pairs, parse_from_pairs};
 
-    const NONZERO_10: NonZero<u32> = match NonZero::new(10) {
-        Some(n) => n,
-        None => unreachable!(),
-    };
-
     const AUDIO_REPETITION_PAIRS: &[StringPair<AudioRepetition>] = &[
         (AudioRepetition::Forever, "-1"),
-        (AudioRepetition::Count(NONZERO_10), "10"),
+        (AudioRepetition::Count(NonZero::new(10).unwrap()), "10"),
     ];
 
     #[test]
