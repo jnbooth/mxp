@@ -27,6 +27,7 @@ impl RgbColor {
     pub const XTERM_256: &[Self; 256] = XTERM_COLORS;
 
     /// Constructs an `RgbColor` from a red, green, and blue value.
+    #[inline]
     pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
     }
@@ -39,6 +40,7 @@ impl RgbColor {
     /// This function is mainly intended for creating `const` `RgbColor`s. For other cases,
     /// `RgbColor` implements `TryFrom<u32>`, which performs a check to ensure the value does not
     /// exceed the maximum possible value rather than silently discarding the highest byte.
+    #[inline]
     pub const fn hex(code: u32) -> Self {
         #[cfg(target_endian = "big")]
         let [_, r, g, b] = code.to_ne_bytes();
@@ -49,6 +51,7 @@ impl RgbColor {
 
     /// Encodes an RGB triple as a 32-bit number, where the last three bytes correspond to the red,
     /// green, and blue values respectively, and the highest byte is zeroed.
+    #[inline]
     pub const fn code(self) -> u32 {
         #[cfg(target_endian = "big")]
         let bytes = [0, self.r, self.g, self.b];
@@ -64,6 +67,15 @@ impl RgbColor {
     }
 
     pub const fn named(name: &str) -> Option<RgbColor> {
+        const fn hex_digit(byte: u8) -> u8 {
+            if byte > b'9' {
+                const TO_UPPERCASE_MASK: u8 = !0b0010_0000;
+                (byte.wrapping_sub(b'A') & TO_UPPERCASE_MASK) + 10
+            } else {
+                byte.wrapping_sub(b'0')
+            }
+        }
+
         const MAX_COLOR_LEN: usize = {
             let mut max_len = 0;
             let mut i = 0;
@@ -76,6 +88,25 @@ impl RgbColor {
             }
             max_len
         };
+
+        if let &[b'#', r0, r1, g0, g1, b0, b1] = name.as_bytes() {
+            let (r0, r1, g0, g1, b0, b1) = (
+                hex_digit(r0),
+                hex_digit(r1),
+                hex_digit(g0),
+                hex_digit(g1),
+                hex_digit(b0),
+                hex_digit(b1),
+            );
+            if r0 >= 16 || r1 >= 16 || g0 >= 16 || g1 >= 16 || b0 >= 16 || b1 >= 16 {
+                return None;
+            }
+            return Some(Self {
+                r: r0 << 4 | r1,
+                g: g0 << 4 | g1,
+                b: b0 << 4 | b1,
+            });
+        }
 
         let mut buf = [0; MAX_COLOR_LEN];
 
@@ -165,6 +196,22 @@ mod tests {
     #[test]
     fn rgb_from_str() {
         assert_eq!("#123456".parse(), Ok(RgbColor::rgb(0x12, 0x34, 0x56)));
+    }
+
+    #[test]
+    fn rgb_from_name() {
+        assert_eq!(
+            RgbColor::named("DARKblue"),
+            Some(RgbColor::rgb(0x00, 0x00, 0x8B))
+        );
+    }
+
+    #[test]
+    fn rgb_from_hex_code() {
+        assert_eq!(
+            RgbColor::named("#F23456"),
+            Some(RgbColor::rgb(0xF2, 0x34, 0x56))
+        );
     }
 
     #[test]
