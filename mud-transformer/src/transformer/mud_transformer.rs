@@ -11,6 +11,7 @@ use super::config::{TransformerConfig, UseMxp};
 use super::cursor::ReceiveCursor;
 use super::input::{BufferedInput, Drain as InputDrain};
 use super::phase::Phase;
+use super::state::StateLock;
 use super::tag::{Tag, TagList};
 use crate::output::{
     BufferedOutput, EffectFragment, EntityFragment, EntitySetter, OutputDrain, OutputFragment,
@@ -39,7 +40,7 @@ pub struct Transformer {
     mxp_mode_previous: mxp::Mode,
     mxp_mode: mxp::Mode,
     mxp_quote_terminator: Option<NonZero<u8>>,
-    mxp_state: mxp::State,
+    mxp_state: StateLock,
     mxp_tags: TagList,
 
     charsets: charset::Charsets,
@@ -82,7 +83,7 @@ impl Transformer {
             mxp_quote_terminator: None,
             mxp_entity_string: Vec::new(),
             mxp_tags: TagList::new(),
-            mxp_state: mxp::State::populated(),
+            mxp_state: mxp::State::populated().into(),
 
             ansi: ansi::Interpreter::new(),
             charsets: charset::Charsets::new(),
@@ -236,9 +237,9 @@ impl Transformer {
             mxp::CollectedElement::Definition(definition) => self.mxp_definition(definition, &text),
             mxp::CollectedElement::TagClose(text) => self.mxp_endtag(text),
             mxp::CollectedElement::TagOpen(text) => {
-                let mxp_state = mem::take(&mut self.mxp_state);
+                let mxp_state = self.mxp_state.take();
                 let result = self.mxp_start_tag(text, &mxp_state);
-                self.mxp_state = mxp_state;
+                self.mxp_state.set(mxp_state);
                 result
             }
         }
@@ -415,9 +416,7 @@ impl Transformer {
         let name = mxp_string.trim();
         mxp::validate(name, mxp::ErrorKind::InvalidEntityName)?;
         if let Some(entity) = self.mxp_state.decode_entity(name)? {
-            self.mxp_active = false;
             self.output.append_text(entity);
-            self.mxp_active = true;
         }
         Ok(())
     }
@@ -444,14 +443,14 @@ impl Transformer {
         if !newmode.is_user_defined() {
             return;
         }
-        let mxp_state = mem::take(&mut self.mxp_state);
+        let mxp_state = self.mxp_state.take();
         if let Some(element) = mxp_state.get_line_tag(newmode)
             && let Err(e) =
                 self.mxp_open_element(element, &mxp::Arguments::<&str>::new(), &mxp_state)
         {
             self.handle_mxp_error(e);
         }
-        self.mxp_state = mxp_state;
+        self.mxp_state.set(mxp_state);
     }
 
     pub fn receive(&mut self, bytes: &[u8], buf: &mut [u8]) -> io::Result<()> {
