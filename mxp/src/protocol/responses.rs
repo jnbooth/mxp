@@ -4,43 +4,33 @@ use casefold::ascii::CaseFold;
 use flagset::FlagSet;
 
 use crate::VERSION;
-use crate::element::{ActionKind, Tag, Tags};
+use crate::element::{ActionKind, Tag};
 
 /// Formats a [`<SUPPORT>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control) response.
-pub struct SupportResponse<'a, I>
+pub struct SupportResponse<I>
 where
     I: IntoIterator + Copy,
     I::Item: AsRef<str>,
 {
     iter: I,
     supported: FlagSet<ActionKind>,
-    tags: &'a Tags,
 }
 
-impl<'a, I> SupportResponse<'a, I>
+impl<I> SupportResponse<I>
 where
     I: IntoIterator + Copy,
     I::Item: AsRef<str>,
 {
-    pub(crate) fn new(iter: I, supported: FlagSet<ActionKind>, tags: &'a Tags) -> Self {
-        Self {
-            iter,
-            supported,
-            tags,
-        }
+    pub fn new(iter: I, supported: FlagSet<ActionKind>) -> Self {
+        Self { iter, supported }
     }
 
-    fn write_supported(
-        &self,
-        f: &mut fmt::Formatter,
-        supported: FlagSet<ActionKind>,
-        arg: &str,
-    ) -> fmt::Result {
+    fn write_supported(&self, f: &mut fmt::Formatter, arg: &str) -> fmt::Result {
         let mut questions = arg.split('.');
         let tag_name = questions.next().unwrap();
-        match self.tags.get(tag_name) {
+        match Tag::well_known(tag_name) {
             None => Self::write_cant(f, tag_name),
-            Some(tag) if !supported.contains(tag.action) => Self::write_cant(f, tag_name),
+            Some(tag) if !self.supported.contains(tag.action) => Self::write_cant(f, tag_name),
             Some(tag) => match questions.next() {
                 None => Self::write_can(f, tag_name),
                 Some("*") => Self::write_can_args(f, tag),
@@ -50,11 +40,7 @@ where
         }
     }
 
-    fn write_supported_suffix(
-        &self,
-        f: &mut fmt::Formatter,
-        supported: FlagSet<ActionKind>,
-    ) -> fmt::Result {
+    fn write_supported_suffix(&self, f: &mut fmt::Formatter) -> fmt::Result {
         /// Alternative `<font>` definition that does not include the "face" and "size" arguments.
         const SIMPLE_FONT_TAG: &Tag = &Tag::new(
             "font",
@@ -62,13 +48,14 @@ where
             &[CaseFold::borrow("color"), CaseFold::borrow("back")],
         );
 
-        for tag in self.tags {
-            if supported.contains(tag.action) {
+        for tag in Tag::supported() {
+            if self.supported.contains(tag.action) {
                 Self::write_can(f, tag.name)?;
                 Self::write_can_args(f, tag)?;
             }
         }
-        if !supported.contains(ActionKind::Font) && supported.contains(ActionKind::Color) {
+        if !self.supported.contains(ActionKind::Font) && self.supported.contains(ActionKind::Color)
+        {
             Self::write_can(f, SIMPLE_FONT_TAG.name)?;
             Self::write_can_args(f, SIMPLE_FONT_TAG)?;
         }
@@ -92,7 +79,7 @@ where
     }
 }
 
-impl<I> fmt::Display for SupportResponse<'_, I>
+impl<I> fmt::Display for SupportResponse<I>
 where
     I: IntoIterator + Copy,
     I::Item: AsRef<str>,
@@ -102,10 +89,10 @@ where
         let mut has_args = false;
         for arg in self.iter {
             has_args = true;
-            self.write_supported(f, self.supported, arg.as_ref())?;
+            self.write_supported(f, arg.as_ref())?;
         }
         if !has_args {
-            self.write_supported_suffix(f, self.supported)?;
+            self.write_supported_suffix(f)?;
         }
         write!(f, ">")
     }

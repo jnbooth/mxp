@@ -5,6 +5,7 @@ use std::{io, mem};
 
 use flagset::FlagSet;
 use mxp::escape::telnet;
+use mxp::responses::{SupportResponse, VersionResponse};
 
 use super::config::{TransformerConfig, UseMxp};
 use super::cursor::ReceiveCursor;
@@ -363,7 +364,7 @@ impl Transformer {
             Action::Strikeout => self.output.set_mxp_flag(TextStyle::Strikeout),
             Action::Support { questions } => {
                 let supported_actions = self.config.supported_actions();
-                let supported_tags = mxp_state.supported_tags(&questions, supported_actions);
+                let supported_tags = SupportResponse::new(&questions, supported_actions);
                 writeln!(self.input, "{supported_tags}\r").unwrap();
             }
             Action::Tt => self.output.set_mxp_flag(TextStyle::NonProportional),
@@ -373,7 +374,7 @@ impl Transformer {
                 self.mxp_set_entity(variable.into_owned(), keywords, mxp_state);
             }
             Action::Version => {
-                let response = mxp::responses::VersionResponse {
+                let response = VersionResponse {
                     name: &self.config.app_name,
                     version: &self.config.version,
                 };

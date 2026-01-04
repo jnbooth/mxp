@@ -1,8 +1,8 @@
 use std::ops::{Deref, DerefMut};
 
-use casefold::ascii::{CaseFold, CaseFoldMap};
+use casefold::ascii::CaseFoldMap;
 
-use crate::element::{Element, Tag, Tags};
+use crate::element::{Element, Tag};
 use crate::parser::{Error, ErrorKind, validate};
 
 /// A component in an [element definition](https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT).
@@ -79,10 +79,10 @@ impl ElementMap {
         }
     }
 
-    pub fn get_component(&self, key: &str, tags: &Tags) -> crate::Result<ElementComponent<'_>> {
+    pub fn get_component(&self, key: &str) -> crate::Result<ElementComponent<'_>> {
         validate(key, ErrorKind::InvalidElementName)?;
 
-        if let Some(tag) = tags.get(key) {
+        if let Some(tag) = Tag::well_known(key) {
             Ok(ElementComponent::Tag(tag))
         } else if let Some(custom) = self.get(key) {
             Ok(ElementComponent::Element(custom))
@@ -93,9 +93,9 @@ impl ElementMap {
 }
 
 fn well_known_elements() -> CaseFoldMap<String, Element> {
-    fn color_el(name: &'static str, hex: u32) -> (CaseFold<String>, Element) {
+    fn color_el(name: &'static str, hex: u32) -> (String, Element) {
         (
-            name.to_owned().into(),
+            name.to_owned(),
             Element {
                 name: name.to_owned(),
                 open: true,

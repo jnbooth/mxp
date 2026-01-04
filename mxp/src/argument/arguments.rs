@@ -110,11 +110,11 @@ mod tests {
         let expected = Arguments {
             positional: ["EL", "RName", "<FONT COLOR=Red><B>"]
                 .iter()
-                .map(ToString::to_string)
+                .map(|&arg| arg.to_owned())
                 .collect(),
             named: [("flag", "RoomName")]
                 .iter()
-                .map(|&(k, v)| (k.to_owned().into(), v.to_owned()))
+                .map(|&(k, v)| (k.to_owned(), v.to_owned()))
                 .collect(),
         };
         assert_eq!(args, expected);

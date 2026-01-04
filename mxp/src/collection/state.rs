@@ -7,7 +7,7 @@ use super::element_map::{ElementComponent, ElementMap};
 use super::line_tags::{LineTagUpdate, LineTags};
 use crate::argument::{Arguments, Decoder, ElementDecoder};
 use crate::element::{
-    Action, ActionKind, CollectedDefinition, DefinitionKind, Element, ElementItem, Mode, Tag, Tags,
+    Action, ActionKind, CollectedDefinition, DefinitionKind, Element, ElementItem, Mode, Tag,
 };
 use crate::entity::{EntityEntry, EntityMap, PublishedIter};
 use crate::parser::{Error, ErrorKind, Words};
@@ -19,7 +19,6 @@ pub struct State {
     elements: ElementMap,
     entities: EntityMap,
     line_tags: LineTags,
-    tags: Tags,
 }
 
 impl State {
@@ -32,7 +31,6 @@ impl State {
             elements: ElementMap::well_known(),
             entities: EntityMap::with_globals(),
             line_tags: LineTags::new(),
-            tags: Tags::well_known(),
         }
     }
 
@@ -62,7 +60,7 @@ impl State {
 
     /// Retrieves a tag or element by name.
     pub fn get_component(&self, name: &str) -> crate::Result<ElementComponent<'_>> {
-        self.elements.get_component(name, &self.tags)
+        self.elements.get_component(name)
     }
 
     /// Retrieves the element associated with a line tag for a specified mode, if one exists.
@@ -73,16 +71,12 @@ impl State {
     /// Creates a formatting `struct` that outputs a [`<SUPPORT>`] response.
     ///
     /// [`<SUPPORT>`]: https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control
-    pub fn supported_tags<I>(
-        &self,
-        iter: I,
-        supported: FlagSet<ActionKind>,
-    ) -> SupportResponse<'_, I>
+    pub fn supported_tags<I>(&self, iter: I, supported: FlagSet<ActionKind>) -> SupportResponse<I>
     where
         I: IntoIterator + Copy,
         I::Item: AsRef<str>,
     {
-        SupportResponse::new(iter, supported, &self.tags)
+        SupportResponse::new(iter, supported)
     }
 
     /// Decodes the actions of an element, using the specified arguments.
@@ -139,8 +133,7 @@ impl State {
         let mut words = Words::new(definition);
         let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
         let args = words.parse_args::<String>()?;
-        let Some(el) = Element::parse(name.to_owned(), args.scan(&self.entities), &self.tags)?
-        else {
+        let Some(el) = Element::parse(name.to_owned(), args.scan(&self.entities))? else {
             self.elements.remove(&name);
             return Ok(());
         };

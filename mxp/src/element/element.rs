@@ -3,7 +3,7 @@ use std::num::NonZero;
 use std::str::FromStr;
 
 use super::mode::Mode;
-use super::tag::{Tag, Tags};
+use super::tag::Tag;
 use crate::argument::{Arguments, Decoder, Scan};
 use crate::color::RgbColor;
 use crate::keyword::ElementKeyword;
@@ -17,7 +17,7 @@ pub struct ElementItem<S: AsRef<str>> {
 }
 
 impl<S: AsRef<str>> ElementItem<S> {
-    pub(crate) fn parse<'a>(tag: &'a str, tags: &Tags) -> crate::Result<Self>
+    pub(crate) fn parse<'a>(tag: &'a str) -> crate::Result<Self>
     where
         S: From<&'a str>,
     {
@@ -33,8 +33,7 @@ impl<S: AsRef<str>> ElementItem<S> {
         if let Some(invalid) = invalid_name {
             return Err(Error::new(words.next().unwrap_or(""), invalid));
         }
-        let tag = tags
-            .get(tag_name)
+        let tag = Tag::well_known(tag_name)
             .ok_or_else(|| Error::new(tag_name, ErrorKind::NoInbuiltDefinitionTag))?;
         Ok(Self {
             tag,
@@ -178,12 +177,9 @@ impl Element {
         CollectedElement::from_str(text)
     }
 
-    fn parse_items<S: AsRef<str>>(
-        argument: Option<S>,
-        tags: &Tags,
-    ) -> crate::Result<Vec<ElementItem<String>>> {
+    fn parse_items<S: AsRef<str>>(argument: Option<S>) -> crate::Result<Vec<ElementItem<String>>> {
         // Reduce monomorphization
-        fn inner(argument: &str, tags: &Tags) -> crate::Result<Vec<ElementItem<String>>> {
+        fn inner(argument: &str) -> crate::Result<Vec<ElementItem<String>>> {
             let size_guess = argument.bytes().filter(|&c| c == b'<').count();
             let mut items = Vec::with_capacity(size_guess);
 
@@ -198,7 +194,7 @@ impl Element {
                         .ok_or_else(|| Error::new(argument, ErrorKind::NoClosingDefinitionQuote))?;
                     if endc == '>' {
                         let definition = &argument[start + 1..end];
-                        items.push(ElementItem::parse(definition, tags)?);
+                        items.push(ElementItem::parse(definition)?);
                         break;
                     }
                     if (endc == '\'' || endc == '"') && !iter.any(|(_, c)| c == endc) {
@@ -213,7 +209,7 @@ impl Element {
             return Ok(Vec::new());
         };
 
-        inner(argument.as_ref(), tags)
+        inner(argument.as_ref())
     }
 
     fn parse_tag(tag: Option<Cow<str>>) -> crate::Result<Option<NonZero<u8>>> {
@@ -226,17 +222,13 @@ impl Element {
         }
     }
 
-    pub(crate) fn parse<D, S>(
-        name: String,
-        scanner: Scan<D, S>,
-        tags: &Tags,
-    ) -> crate::Result<Option<Self>>
+    pub(crate) fn parse<D, S>(name: String, scanner: Scan<D, S>) -> crate::Result<Option<Self>>
     where
         D: Decoder,
         S: AsRef<str>,
     {
         let mut scanner = scanner.with_keywords();
-        let items = Self::parse_items(scanner.next()?, tags)?;
+        let items = Self::parse_items(scanner.next()?)?;
 
         let attributes = match scanner.next_or("att")? {
             Some(atts) => Words::new(atts.as_ref()).parse_args()?,

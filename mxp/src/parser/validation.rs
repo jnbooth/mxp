@@ -5,7 +5,7 @@ use super::error::{Error, ErrorKind};
 pub fn is_valid(target: &str) -> bool {
     let s: &[u8] = target.as_ref();
     !s.is_empty()
-        && s[0].is_ascii_alphabetic()
+        && s.first().is_some_and(u8::is_ascii_alphabetic)
         && s.iter()
             .all(|&c| c.is_ascii_alphanumeric() || c == b'_' || c == b'-' || c == b'.')
 }
