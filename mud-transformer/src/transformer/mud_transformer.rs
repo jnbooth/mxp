@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::fmt::Write;
 use std::num::NonZero;
-use std::{io, mem};
+use std::{io, mem, slice};
 
 use flagset::FlagSet;
 use mxp::escape::telnet;
@@ -415,8 +415,10 @@ impl Transformer {
         let mxp_string = self.take_mxp_string()?;
         let name = mxp_string.trim();
         mxp::validate(name, mxp::ErrorKind::InvalidEntityName)?;
-        if let Some(entity) = self.mxp_state.decode_entity(name)? {
-            self.output.append_text(entity);
+        match self.mxp_state.decode_entity(name)? {
+            Some(mxp::DecodedEntity::Char(c)) => self.output.append_char(c),
+            Some(mxp::DecodedEntity::Str(s)) => self.output.append_text(s),
+            None => (),
         }
         Ok(())
     }
@@ -868,13 +870,11 @@ impl Transformer {
                     self.mxp_entity_string.clear();
                     self.phase = Phase::MxpEntity;
                 }
-                _ if c.is_ascii() => {
-                    let utf8 = &[c];
+                _ if c.is_ascii() => self.output.append_text(
                     // SAFETY: `utf8` is valid UTF8, since it is a single ASCII byte.
                     // Tracking: https://github.com/rust-lang/rust/issues/110998
-                    let s = unsafe { str::from_utf8_unchecked(utf8) };
-                    self.output.append_text(s);
-                }
+                    unsafe { str::from_utf8_unchecked(slice::from_ref(&c)) },
+                ),
                 _ => {
                     self.utf8_sequence.push(c);
                     self.phase = Phase::Utf8Character;

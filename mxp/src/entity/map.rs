@@ -3,11 +3,27 @@ use std::collections::hash_map::Entry;
 
 use flagset::FlagSet;
 
+use super::decoded::DecodedEntity;
 use super::entity::Entity;
-use super::global::{CHARS, GLOBAL_ENTITIES, MIN_CHAR};
 use super::iter::PublishedIter;
 use crate::keyword::EntityKeyword;
 use crate::parser::{Error, ErrorKind};
+
+const GLOBAL_ENTITIES: &[(&str, char)] = &{
+    const N: usize = htmlentity::data::ENTITIES.len();
+    let entities = &htmlentity::data::ENTITIES;
+    let mut globals: [(&str, char); N] = [("", '\0'); _];
+    let mut i = 0;
+    while i < N {
+        let (k, v) = entities[i];
+        let Ok(k) = str::from_utf8(k) else {
+            unreachable!();
+        };
+        globals[i] = (k, char::from_u32(v).unwrap());
+        i += 1;
+    }
+    globals
+};
 
 pub struct EntityEntry<'a> {
     pub name: &'a str,
@@ -17,7 +33,7 @@ pub struct EntityEntry<'a> {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct EntityMap {
     inner: HashMap<String, Entity>,
-    globals: HashMap<&'static str, &'static str>,
+    globals: HashMap<&'static str, char>,
 }
 
 impl EntityMap {
@@ -53,9 +69,17 @@ impl EntityMap {
     }
 
     pub fn published(&self) -> PublishedIter<'_> {
-        PublishedIter {
-            inner: self.inner.iter(),
-        }
+        self.inner.iter().filter_map(|(k, v)| {
+            if v.published {
+                Some(super::EntityInfo {
+                    name: k,
+                    description: &v.description,
+                    value: &v.value,
+                })
+            } else {
+                None
+            }
+        })
     }
 
     pub fn set<'a, T: Into<FlagSet<EntityKeyword>>>(
@@ -137,25 +161,28 @@ impl EntityMap {
         inner(self, key, value, description, keywords.into())
     }
 
-    fn get(&self, key: &str) -> Option<&str> {
-        if let Some(global) = self.globals.get(key) {
-            return Some(global);
+    #[inline]
+    fn get(&self, key: &str) -> Option<DecodedEntity<'_>> {
+        if let Some(&global) = self.globals.get(key) {
+            return Some(global.into());
         }
-        Some(&self.inner.get(key)?.value)
+        Some(self.inner.get(key)?.value.as_str().into())
     }
 
-    pub(crate) fn decode_entity(&self, key: &str) -> crate::Result<Option<&str>> {
-        let Some(code) = key.strip_prefix('#') else {
-            return Ok(self.get(key));
+    pub(crate) fn decode_entity(&self, key: &str) -> crate::Result<Option<DecodedEntity<'_>>> {
+        let (start, radix) = match key.as_bytes() {
+            [b'#', b'x', ..] => (2, 16),
+            [b'#', ..] => (1, 10),
+            _ => return Ok(self.get(key)),
         };
-        let id = match code.strip_prefix('x') {
-            Some(hex) => usize::from_str_radix(hex, 16),
-            None => code.parse::<usize>(),
-        }
-        .map_err(|_| Error::new(key, ErrorKind::InvalidEntityNumber))?;
-        match id.checked_sub(MIN_CHAR).and_then(|id| CHARS.get(id..=id)) {
-            None => Err(Error::new(key, ErrorKind::DisallowedEntityNumber)),
-            some => Ok(some),
+        let Ok(code) = u32::from_str_radix(&key[start..], radix) else {
+            return Err(Error::new(key, ErrorKind::InvalidEntityNumber));
+        };
+        match char::from_u32(code) {
+            Some('\0'..='\x08' | '\x0a'..='\x1f' | '\x7f'..='\u{9f}') | None => {
+                Err(Error::new(key, ErrorKind::DisallowedEntityNumber))
+            }
+            Some(c) => Ok(Some(c.into())),
         }
     }
 }
@@ -168,7 +195,7 @@ mod tests {
     fn set_new() {
         let mut map = EntityMap::new();
         map.set("key", "value", None, None).ok();
-        assert_eq!(map.get("key"), Some("value"));
+        assert_eq!(map.decode_entity("key"), Ok(Some("value".into())));
     }
 
     #[test]
@@ -176,7 +203,7 @@ mod tests {
         let mut map = EntityMap::new();
         map.set("key", "value", None, None).ok();
         map.set("key", "", None, EntityKeyword::Delete).ok();
-        assert_eq!(map.get("key"), None);
+        assert_eq!(map.decode_entity("key"), Ok(None));
     }
 
     #[test]
@@ -203,7 +230,7 @@ mod tests {
         map.set("key", "value3", None, EntityKeyword::Add).ok();
         map.set("key", "value2", None, EntityKeyword::Remove).ok();
         map.set("key", "x", None, EntityKeyword::Remove).ok();
-        assert_eq!(map.get("key"), Some("value1|value3"));
+        assert_eq!(map.decode_entity("key"), Ok(Some("value1|value3".into())));
     }
 
     #[test]
@@ -224,7 +251,7 @@ mod tests {
         let mut map = EntityMap::new();
         map.set("key1", "value1", None, None).ok();
         map.set("key2", "value2", None, None).ok();
-        assert_eq!(map.decode_entity("key1"), Ok(Some("value1")));
+        assert_eq!(map.decode_entity("key1"), Ok(Some("value1".into())));
     }
 
     #[test]
@@ -236,12 +263,18 @@ mod tests {
 
     #[test]
     fn decode_decimal() {
-        assert_eq!(EntityMap::new().decode_entity("#32"), Ok(Some("\x20")));
+        assert_eq!(
+            EntityMap::new().decode_entity("#32"),
+            Ok(Some('\x20'.into()))
+        );
     }
 
     #[test]
     fn decode_hex() {
-        assert_eq!(EntityMap::new().decode_entity("#x7F"), Ok(Some("\x7f")));
+        assert_eq!(
+            EntityMap::new().decode_entity("#x7E"),
+            Ok(Some('\x7e'.into()))
+        );
     }
 
     #[test]

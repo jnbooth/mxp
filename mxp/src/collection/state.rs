@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::iter::FusedIterator;
 use std::slice;
 
 use flagset::FlagSet;
@@ -9,7 +10,7 @@ use crate::argument::{Arguments, Decoder, ElementDecoder};
 use crate::element::{
     Action, ActionKind, CollectedDefinition, DefinitionKind, Element, ElementItem, Mode, Tag,
 };
-use crate::entity::{EntityEntry, EntityMap, PublishedIter};
+use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
 use crate::parser::{Error, ErrorKind, Words};
 use crate::responses::SupportResponse;
 
@@ -29,7 +30,7 @@ impl State {
     pub fn populated() -> Self {
         Self {
             elements: ElementMap::well_known(),
-            entities: EntityMap::with_globals(),
+            entities: EntityMap::new(),
             line_tags: LineTags::new(),
         }
     }
@@ -96,7 +97,7 @@ impl State {
     }
 
     /// Decodes the value of an entity.
-    pub fn decode_entity(&self, name: &str) -> crate::Result<Option<&str>> {
+    pub fn decode_entity(&self, name: &str) -> crate::Result<Option<DecodedEntity<'_>>> {
         self.entities.decode_entity(name)
     }
 
@@ -198,3 +199,5 @@ where
         Some(Action::parse(item.tag.action, scanner))
     }
 }
+
+impl<D> FusedIterator for DecodeElement<'_, D> where D: Decoder + Copy {}

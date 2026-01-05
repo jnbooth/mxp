@@ -5,12 +5,12 @@ use super::arguments::Arguments;
 use super::keyword_filter::KeywordFilter;
 use super::scan::Decoder;
 use crate::element::Element;
-use crate::entity::EntityMap;
+use crate::entity::{DecodedEntity, EntityMap};
 use crate::parser::{Error, ErrorKind};
 
 fn decode_amps<'a, F>(mut s: &str, mut f: F) -> crate::Result<Cow<'_, str>>
 where
-    F: FnMut(&str) -> crate::Result<Option<&'a str>>,
+    F: FnMut(&str) -> crate::Result<Option<DecodedEntity<'a>>>,
 {
     let mut res = String::new();
     while let Some(start) = s.find('&') {
@@ -21,7 +21,10 @@ where
         let end = s
             .find(';')
             .ok_or_else(|| Error::new(s, ErrorKind::NoClosingSemicolon))?;
-        res.push_str(f(&s[1..end])?.unwrap_or(&s[..=end]));
+        match f(&s[1..end])? {
+            Some(decoded) => decoded.push_to(&mut res),
+            None => res.push_str(&s[..=end]),
+        }
         s = &s[end + 1..];
     }
     if res.is_empty() {
@@ -68,7 +71,7 @@ impl<S: AsRef<str>> Decoder for ElementDecoder<'_, S> {
                 .args
                 .find_from_attributes::<F, _>(entity, &self.element.attributes)
             {
-                Some(attr) => Ok(Some(attr)),
+                Some(attr) => Ok(Some(attr.into())),
                 None => self.entities.decode_entity(entity),
             }
         })

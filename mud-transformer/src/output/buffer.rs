@@ -215,6 +215,7 @@ impl BufferedOutput {
         self.append(OutputFragment::LineBreak);
     }
 
+    #[inline]
     pub fn append_text(&mut self, output: &str) {
         if self.text_buf.is_empty() {
             self.spans.set_populated();
@@ -222,6 +223,16 @@ impl BufferedOutput {
         self.text_buf.push_str(output);
         if self.in_variable {
             self.variable.push_str(output);
+        }
+    }
+
+    pub fn append_char(&mut self, output: char) {
+        if self.text_buf.is_empty() {
+            self.spans.set_populated();
+        }
+        self.text_buf.push(output);
+        if self.in_variable {
+            self.variable.push(output);
         }
     }
 

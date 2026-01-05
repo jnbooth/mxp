@@ -1,7 +1,8 @@
+mod decoded;
+pub use decoded::DecodedEntity;
+
 mod entity;
 pub use entity::Entity;
-
-mod global;
 
 mod iter;
 pub use iter::{EntityInfo, PublishedIter};
