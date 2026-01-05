@@ -3,7 +3,6 @@ use std::fmt;
 use casefold::ascii::CaseFold;
 use flagset::FlagSet;
 
-use crate::VERSION;
 use crate::element::{ActionKind, Tag};
 
 /// Formats a [`<SUPPORT>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control) response.
@@ -95,21 +94,5 @@ where
             self.write_supported_suffix(f)?;
         }
         write!(f, ">")
-    }
-}
-
-/// Formats a [`<VERSION>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control) response.
-pub struct VersionResponse<'a> {
-    pub name: &'a str,
-    pub version: &'a str,
-}
-
-impl fmt::Display for VersionResponse<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "\x1B[1z<VERSION MXP=\"{VERSION}\" CLIENT={} VERSION=\"{}\" REGISTERED=yes>",
-            self.name, self.version
-        )
     }
 }

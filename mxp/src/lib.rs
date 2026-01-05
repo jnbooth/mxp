@@ -21,11 +21,10 @@ pub mod escape;
 mod keyword;
 pub use keyword::{EntityKeyword, MxpKeyword};
 
-mod protocol;
-pub use protocol::responses;
-
 mod parser;
 pub use parser::{Error, ErrorKind, ParseErrorTarget, Words, validate};
+
+pub mod responses;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
