@@ -9,22 +9,6 @@ use super::iter::PublishedIter;
 use crate::keyword::EntityKeyword;
 use crate::parser::{Error, ErrorKind};
 
-const GLOBAL_ENTITIES: &[(&str, char)] = &{
-    const N: usize = htmlentity::data::ENTITIES.len();
-    let entities = &htmlentity::data::ENTITIES;
-    let mut globals: [(&str, char); N] = [("", '\0'); _];
-    let mut i = 0;
-    while i < N {
-        let (k, v) = entities[i];
-        let Ok(k) = str::from_utf8(k) else {
-            unreachable!();
-        };
-        globals[i] = (k, char::from_u32(v).unwrap());
-        i += 1;
-    }
-    globals
-};
-
 pub struct EntityEntry<'a> {
     pub name: &'a str,
     pub value: Option<&'a Entity>,
@@ -33,7 +17,7 @@ pub struct EntityEntry<'a> {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct EntityMap {
     inner: HashMap<String, Entity>,
-    globals: HashMap<&'static str, char>,
+    globals: HashMap<&'static [u8], &'static str>,
 }
 
 impl EntityMap {
@@ -44,7 +28,7 @@ impl EntityMap {
     pub fn with_globals() -> Self {
         Self {
             inner: HashMap::new(),
-            globals: GLOBAL_ENTITIES.iter().copied().collect(),
+            globals: html_escape::NAMED_ENTITIES.iter().copied().collect(),
         }
     }
 
@@ -65,7 +49,7 @@ impl EntityMap {
     }
 
     pub fn is_global(&self, key: &str) -> bool {
-        key.starts_with('#') || self.globals.contains_key(key)
+        key.starts_with('#') || self.globals.contains_key(key.as_bytes())
     }
 
     pub fn published(&self) -> PublishedIter<'_> {
@@ -163,7 +147,7 @@ impl EntityMap {
 
     #[inline]
     fn get(&self, key: &str) -> Option<DecodedEntity<'_>> {
-        if let Some(&global) = self.globals.get(key) {
+        if let Some(&global) = self.globals.get(key.as_bytes()) {
             return Some(global.into());
         }
         Some(self.inner.get(key)?.value.as_str().into())
