@@ -26,7 +26,7 @@ where
                 writeln!(writer, "\nMXP error: {e}")?;
             }
             OutputFragment::Text(fragment) => {
-                write!(writer, "{fragment}")?;
+                write!(writer, "{}", fragment.ansi())?;
             }
             OutputFragment::LineBreak => {
                 writer.write_all(b"\n")?;
