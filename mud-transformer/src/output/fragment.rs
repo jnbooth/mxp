@@ -277,6 +277,10 @@ impl From<TextFragment> for OutputFragment {
 }
 
 impl TextFragment {
+    pub fn ansi(&self) -> TextFragmentANSI<'_> {
+        TextFragmentANSI { fragment: self }
+    }
+
     pub fn html(&self) -> TextFragmentHtml<'_> {
         TextFragmentHtml { fragment: self }
     }
@@ -284,20 +288,32 @@ impl TextFragment {
 
 impl fmt::Display for TextFragment {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let fg = self.foreground;
+        self.text.fmt(f)
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct TextFragmentANSI<'a> {
+    fragment: &'a TextFragment,
+}
+
+impl fmt::Display for TextFragmentANSI<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let frag = self.fragment;
+        let fg = frag.foreground;
         write!(f, "\x1B[\x1B[38;2;{};{};{}", fg.r, fg.g, fg.b)?;
-        let bg = self.background;
+        let bg = frag.background;
         if bg != RgbColor::BLACK {
             write!(f, ";48;2;{};{};{}", bg.r, bg.g, bg.b)?;
         }
-        let mut flags = self.flags;
-        if self.action.is_some() {
+        let mut flags = frag.flags;
+        if frag.action.is_some() {
             flags |= TextStyle::Underline;
         }
         for ansi in flags.into_iter().filter_map(TextStyle::ansi) {
             write!(f, ";{ansi}")?;
         }
-        write!(f, "m{}\x1B[0m", self.text)
+        write!(f, "m{}\x1B[0m", frag.text)
     }
 }
 
