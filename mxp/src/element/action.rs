@@ -113,6 +113,12 @@ flags! {
     }
 }
 
+impl Heading {
+    pub const fn level(self) -> u8 {
+        (self as u8) + 1
+    }
+}
+
 impl ActionKind {
     pub const fn is_command(self) -> bool {
         matches!(

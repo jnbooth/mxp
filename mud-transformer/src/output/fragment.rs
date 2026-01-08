@@ -4,7 +4,7 @@ use std::vec;
 
 use bytes::Bytes;
 use flagset::FlagSet;
-use mxp::RgbColor;
+use mxp::{Heading, RgbColor};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -276,6 +276,12 @@ impl From<TextFragment> for OutputFragment {
     }
 }
 
+impl TextFragment {
+    pub fn html(&self) -> TextFragmentHtml<'_> {
+        TextFragmentHtml { fragment: self }
+    }
+}
+
 impl fmt::Display for TextFragment {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let fg = self.foreground;
@@ -292,5 +298,82 @@ impl fmt::Display for TextFragment {
             write!(f, ";{ansi}")?;
         }
         write!(f, "m{}\x1B[0m", self.text)
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct TextFragmentHtml<'a> {
+    fragment: &'a TextFragment,
+}
+
+impl fmt::Display for TextFragmentHtml<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        struct StyleSeparator(bool);
+        impl StyleSeparator {
+            pub fn write(&mut self, f: &mut fmt::Formatter) -> fmt::Result {
+                if self.0 {
+                    return f.write_str(";");
+                }
+                self.0 = true;
+                f.write_str(" style=\"")
+            }
+        }
+
+        let mut sep = StyleSeparator(false);
+        let frag = self.fragment;
+        let text = html_escape::encode_text(&frag.text);
+        if let Some(action) = &frag.action {
+            write!(f, "<a href=\"{}\">", action.action)?;
+        }
+        let tag = match frag.heading {
+            Some(Heading::H1) => "h1",
+            Some(Heading::H2) => "h2",
+            Some(Heading::H3) => "h3",
+            Some(Heading::H4) => "h4",
+            Some(Heading::H5) => "h5",
+            Some(Heading::H6) => "h6",
+            None => "span",
+        };
+        write!(f, "<{tag}")?;
+        if frag.flags.contains(TextStyle::Bold) {
+            sep.write(f)?;
+            f.write_str("font-weight:bold")?;
+        }
+        if frag.flags.contains(TextStyle::Italic) {
+            sep.write(f)?;
+            f.write_str("font-style:italic")?;
+        }
+        if frag.flags.contains(TextStyle::Underline) {
+            sep.write(f)?;
+            f.write_str("text-decoration:underline")?;
+        }
+        if frag.flags.contains(TextStyle::Strikeout) {
+            sep.write(f)?;
+            f.write_str("text-decoration:line-through")?;
+        }
+        if frag.foreground != RgbColor::WHITE {
+            sep.write(f)?;
+            write!(f, "color:#{:X}", frag.foreground)?;
+        }
+        if frag.background != RgbColor::BLACK {
+            sep.write(f)?;
+            write!(f, "background-color:#{:X}", frag.background)?;
+        }
+        if let Some(font) = &frag.font {
+            sep.write(f)?;
+            write!(f, "font-family:{font}")?;
+        }
+        if let Some(size) = frag.size {
+            sep.write(f)?;
+            write!(f, "font-size:{size}px")?;
+        }
+        if sep.0 {
+            f.write_str("\"")?;
+        }
+        write!(f, ">{text}</{tag}>")?;
+        if frag.action.is_some() {
+            write!(f, "</a>")?;
+        }
+        Ok(())
     }
 }

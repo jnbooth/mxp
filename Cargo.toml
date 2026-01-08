@@ -3,7 +3,7 @@ resolver = "2"
 members = ["mxp", "mud-bin-examples", "mud-stream", "mud-transformer"]
 
 [workspace.package]
-version = "0.11.1"
+version = "0.11.2"
 repository = "https://github.com/jnbooth/mxp"
 license = "MIT"
 edition = "2024"
@@ -23,4 +23,5 @@ unreadable_literal = "allow"
 [workspace.dependencies]
 bytes = "1.11.0"
 flagset = "0.4.7"
+html-escape = "0.2.13"
 serde = "1.0.228"
