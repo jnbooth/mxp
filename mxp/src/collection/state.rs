@@ -69,6 +69,16 @@ impl State {
         self.line_tags.get(usize::from(mode.0), &self.elements)
     }
 
+    /// Returns the number of custom MXP elements that have been stored.
+    pub fn count_custom_elements(&self) -> usize {
+        self.elements.custom_count()
+    }
+
+    /// Returns the number of custom MXP entities that have been stored.
+    pub fn count_custom_entities(&self) -> usize {
+        self.entities.len()
+    }
+
     /// Creates a formatting `struct` that outputs a [`<SUPPORT>`] response.
     ///
     /// [`<SUPPORT>`]: https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control

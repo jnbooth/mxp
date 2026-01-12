@@ -163,6 +163,14 @@ impl Transformer {
         self.output.published_variables()
     }
 
+    pub fn count_custom_mxp_elements(&self) -> usize {
+        self.mxp_state.count_custom_elements()
+    }
+
+    pub fn count_custom_mxp_entities(&self) -> usize {
+        self.mxp_state.count_custom_entities()
+    }
+
     fn handle_mxp_error(&mut self, err: mxp::Error) {
         self.output.append(err);
     }

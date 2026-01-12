@@ -75,8 +75,12 @@ impl DerefMut for ElementMap {
 impl ElementMap {
     pub fn well_known() -> Self {
         Self {
-            inner: well_known_elements(),
+            inner: well_known_elements().into_iter().collect(),
         }
+    }
+
+    pub fn custom_count(&self) -> usize {
+        self.len().saturating_sub(NUM_WELL_KNOWN)
     }
 
     pub fn get_component(&self, key: &str) -> crate::Result<ElementComponent<'_>> {
@@ -92,7 +96,9 @@ impl ElementMap {
     }
 }
 
-fn well_known_elements() -> CaseFoldMap<String, Element> {
+const NUM_WELL_KNOWN: usize = 8;
+
+fn well_known_elements() -> [(String, Element); NUM_WELL_KNOWN] {
     fn color_el(name: &'static str, hex: u32) -> (String, Element) {
         (
             name.to_owned(),
@@ -115,6 +121,4 @@ fn well_known_elements() -> CaseFoldMap<String, Element> {
         color_el("CyanMXP", 0x00FFFF),
         color_el("WhiteMXP", 0xFFFFFF),
     ]
-    .into_iter()
-    .collect()
 }
