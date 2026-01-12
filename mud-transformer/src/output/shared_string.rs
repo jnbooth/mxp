@@ -133,3 +133,17 @@ impl From<&SharedString> for String {
         value.as_str().to_owned()
     }
 }
+
+impl From<&str> for SharedString {
+    fn from(value: &str) -> Self {
+        Self {
+            inner: Bytes::copy_from_slice(value.as_bytes()),
+        }
+    }
+}
+
+impl From<&String> for SharedString {
+    fn from(value: &String) -> Self {
+        value.as_str().into()
+    }
+}

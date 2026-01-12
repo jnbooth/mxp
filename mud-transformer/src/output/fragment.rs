@@ -292,6 +292,15 @@ impl fmt::Display for TextFragment {
     }
 }
 
+impl From<&str> for TextFragment {
+    fn from(value: &str) -> Self {
+        Self {
+            text: value.into(),
+            ..Default::default()
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct TextFragmentANSI<'a> {
     fragment: &'a TextFragment,
