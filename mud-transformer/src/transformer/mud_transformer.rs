@@ -102,6 +102,14 @@ impl Transformer {
         }
     }
 
+    pub fn decompressing(&self) -> bool {
+        self.decompress.active()
+    }
+
+    pub fn mxp_active(&self) -> bool {
+        self.mxp_active
+    }
+
     fn subnegotiate<T: Negotiate>(&mut self, negotiator: T) {
         self.input.append([telnet::IAC, telnet::SB, T::CODE]);
         negotiator.negotiate(self.input.as_mut(), &self.config);
