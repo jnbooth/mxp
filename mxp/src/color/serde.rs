@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use serde::de::{Error as _, Unexpected};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -17,9 +19,9 @@ impl Serialize for RgbColor {
 impl<'de> Deserialize<'de> for RgbColor {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         if deserializer.is_human_readable() {
-            let code = <&str>::deserialize(deserializer)?;
+            let code = Cow::<'de, str>::deserialize(deserializer)?;
             code.parse()
-                .map_err(|_| D::Error::invalid_value(Unexpected::Str(code), &"hex color code"))
+                .map_err(|_| D::Error::invalid_value(Unexpected::Str(&code), &"hex color code"))
         } else {
             u32::deserialize(deserializer)?
                 .try_into()
