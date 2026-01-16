@@ -16,9 +16,11 @@ impl Serialize for RgbColor {
 }
 
 impl<'de> Deserialize<'de> for RgbColor {
-    #[allow(clippy::cast_sign_loss)]
-    #[allow(clippy::manual_range_contains)]
-    #[allow(clippy::cast_possible_truncation)]
+    #[allow(
+        clippy::cast_sign_loss,
+        clippy::manual_range_contains,
+        clippy::cast_possible_truncation
+    )]
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         macro_rules! impl_visit_unsigned_small {
             ($t:ty, $i:ident) => {
