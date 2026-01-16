@@ -60,10 +60,6 @@ impl<'de> Deserialize<'de> for RgbColor {
                 })
             }
 
-            fn visit_string<E: de::Error>(self, value: String) -> Result<Self::Value, E> {
-                self.visit_str(&value)
-            }
-
             fn visit_u32<E: de::Error>(self, value: u32) -> Result<Self::Value, E> {
                 value.try_into().map_err(|code: HexOutOfRangeError| {
                     E::invalid_value(Unexpected::Unsigned(u64::from(code.0)), &EXPECT_INT)
