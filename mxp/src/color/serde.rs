@@ -22,13 +22,11 @@ impl<'de> Deserialize<'de> for RgbColor {
 
         macro_rules! impl_visit_int {
             ($t:ty, $i:ident, $unexpected:ident, $wide:ty) => {
-                fn $i<E: de::Error>(self, value: $t) -> Result<Self::Value, E> {
-                    let value = u32::try_from(value).map_err(|_| {
-                        E::invalid_value(Unexpected::$unexpected(<$wide>::from(value)), &EXPECT_INT)
+                fn $i<E: de::Error>(self, v: $t) -> Result<Self::Value, E> {
+                    let v = u32::try_from(v).map_err(|_| {
+                        E::invalid_value(Unexpected::$unexpected(<$wide>::from(v)), &EXPECT_INT)
                     })?;
-                    value.try_into().map_err(|code: HexOutOfRangeError| {
-                        E::invalid_value(Unexpected::Unsigned(u64::from(code.0)), &EXPECT_INT)
-                    })
+                    self.visit_u32(v)
                 }
             };
         }
@@ -43,6 +41,17 @@ impl<'de> Deserialize<'de> for RgbColor {
             };
         }
 
+        macro_rules! impl_visit_128 {
+            ($t:ty, $i:ident) => {
+                fn $i<E: de::Error>(self, v: $t) -> Result<Self::Value, E> {
+                    let value = u32::try_from(v).map_err(|_| {
+                        E::invalid_value(Unexpected::Other(stringify!($t)), &EXPECT_INT)
+                    })?;
+                    self.visit_u32(value)
+                }
+            };
+        }
+
         struct RgbColorVisitor;
 
         impl Visitor<'_> for RgbColorVisitor {
@@ -54,14 +63,14 @@ impl<'de> Deserialize<'de> for RgbColor {
                 )
             }
 
-            fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
-                RgbColor::named(value).ok_or_else(|| {
-                    E::invalid_value(Unexpected::Str(value), &"a hex color code or standard name")
+            fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                RgbColor::named(v).ok_or_else(|| {
+                    E::invalid_value(Unexpected::Str(v), &"a hex color code or standard name")
                 })
             }
 
-            fn visit_u32<E: de::Error>(self, value: u32) -> Result<Self::Value, E> {
-                value.try_into().map_err(|code: HexOutOfRangeError| {
+            fn visit_u32<E: de::Error>(self, v: u32) -> Result<Self::Value, E> {
+                v.try_into().map_err(|code: HexOutOfRangeError| {
                     E::invalid_value(Unexpected::Unsigned(u64::from(code.0)), &EXPECT_INT)
                 })
             }
@@ -73,6 +82,8 @@ impl<'de> Deserialize<'de> for RgbColor {
             impl_visit_unsigned!(u8, visit_u8);
             impl_visit_unsigned!(u16, visit_u16);
             impl_visit_unsigned!(u64, visit_u64);
+            impl_visit_128!(i128, visit_i128);
+            impl_visit_128!(u128, visit_u128);
         }
 
         deserializer.deserialize_u32(RgbColorVisitor)
