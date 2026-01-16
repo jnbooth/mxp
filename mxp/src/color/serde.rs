@@ -18,7 +18,7 @@ impl Serialize for RgbColor {
 
 impl<'de> Deserialize<'de> for RgbColor {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        const EXPECT_INT: &str = "integer between 0x000000 and 0xFFFFFF";
+        const EXPECT_INT: &str = "an integer between 0x000000 and 0xFFFFFF";
 
         macro_rules! impl_visit_int {
             ($t:ty, $i:ident, $unexpected:ident, $wide:ty) => {
@@ -50,13 +50,13 @@ impl<'de> Deserialize<'de> for RgbColor {
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str(
-                    "hex color code, standard name, or integer between 0x000000 and 0xFFFFFF",
+                    "a hex color code, standard name, or integer between 0x000000 and 0xFFFFFF",
                 )
             }
 
             fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
                 RgbColor::named(value).ok_or_else(|| {
-                    E::invalid_value(Unexpected::Str(value), &"hex color code or standard name")
+                    E::invalid_value(Unexpected::Str(value), &"a hex color code or standard name")
                 })
             }
 
