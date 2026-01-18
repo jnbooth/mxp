@@ -65,8 +65,8 @@ pub(crate) struct EntitySetter {
 pub(crate) struct Span {
     populated: bool,
     pub(super) flags: FlagSet<TextStyle>,
-    pub(super) foreground: Option<TermColor>,
-    pub(super) background: Option<TermColor>,
+    pub(super) foreground: TermColor,
+    pub(super) background: TermColor,
     pub(super) font: Option<String>,
     pub(super) size: Option<NonZero<u8>>,
     pub(super) action: Option<mxp::Link>,
@@ -194,11 +194,11 @@ impl SpanList {
     }
 
     pub fn set_foreground(&mut self, foreground: TermColor) -> bool {
-        set_prop!(self, foreground);
+        set_prop!(self, foreground, foreground);
     }
 
     pub fn set_background(&mut self, background: TermColor) -> bool {
-        set_prop!(self, background);
+        set_prop!(self, background, background);
     }
 
     pub fn set_font(&mut self, font: String) -> bool {

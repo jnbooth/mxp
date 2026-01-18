@@ -6,36 +6,24 @@ use std::str;
 
 use bytes::{Bytes, BytesMut};
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct BytesPool {
     inner: BytesMut,
 }
 
 impl BytesPool {
-    pub fn new() -> Self {
-        Self {
-            inner: BytesMut::new(),
-        }
-    }
-
     pub fn share(&mut self, bytes: &[u8]) -> Bytes {
         self.inner.extend_from_slice(bytes);
         self.inner.split().freeze()
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StringPool {
     inner: BytesMut,
 }
 
 impl StringPool {
-    pub fn new() -> Self {
-        Self {
-            inner: BytesMut::new(),
-        }
-    }
-
     pub fn share(&mut self, s: &str) -> SharedString {
         self.inner.extend_from_slice(s.as_bytes());
         SharedString {

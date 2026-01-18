@@ -12,8 +12,8 @@ pub(crate) enum Palette {
 impl Palette {
     pub fn set(self, output: &mut BufferedOutput, color: RgbColor) {
         match self {
-            Self::Background => output.set_ansi_foreground(color),
-            Self::Foreground => output.set_ansi_background(color),
+            Self::Background => output.set_ansi_background(color),
+            Self::Foreground => output.set_ansi_foreground(color),
         }
     }
 
@@ -26,8 +26,8 @@ impl Palette {
 
     pub fn set_default(self, output: &mut BufferedOutput) {
         match self {
-            Self::Background => output.set_ansi_background(TermColor::BLACK),
-            Self::Foreground => output.set_ansi_foreground(TermColor::WHITE),
+            Self::Background => output.set_ansi_background(TermColor::Unset),
+            Self::Foreground => output.set_ansi_foreground(TermColor::Unset),
         }
     }
 }

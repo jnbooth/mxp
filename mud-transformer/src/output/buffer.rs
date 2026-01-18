@@ -10,19 +10,7 @@ use super::fragment::{
 use super::shared_string::{BytesPool, SharedString, StringPool};
 use super::span::{EntitySetter, SpanList, TextStyle};
 
-fn get_color(
-    span_color: Option<TermColor>,
-    ansi_color: TermColor,
-    ignore_mxp: bool,
-    default: TermColor,
-) -> TermColor {
-    match span_color {
-        Some(span_color) if !ignore_mxp && span_color != default => span_color,
-        _ => ansi_color,
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct BufferedOutput {
     bytes_pool: BytesPool,
     string_pool: StringPool,
@@ -45,32 +33,9 @@ pub(crate) struct BufferedOutput {
     variable: String,
 }
 
-impl Default for BufferedOutput {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl BufferedOutput {
     pub fn new() -> Self {
-        Self {
-            spans: SpanList::new(),
-            ansi_flags: FlagSet::default(),
-            ansi_foreground: TermColor::WHITE,
-            ansi_background: TermColor::BLACK,
-            bytes_pool: BytesPool::new(),
-            string_pool: StringPool::new(),
-            text_buf: String::new(),
-            fragments: Vec::new(),
-            ignore_mxp_colors: false,
-            in_line: false,
-            last_break: 0,
-            last_linebreak: None,
-            colors: Vec::new(),
-            variables: mxp::EntityMap::new(),
-            in_variable: false,
-            variable: String::new(),
-        }
+        Self::default()
     }
 
     pub fn is_empty(&self) -> bool {
@@ -81,13 +46,14 @@ impl BufferedOutput {
         self.colors = colors;
     }
 
-    fn color(&self, color: TermColor) -> RgbColor {
+    fn color(&self, color: TermColor) -> Option<RgbColor> {
         match color {
-            TermColor::Ansi(i) => match self.colors.get(usize::from(i)) {
+            TermColor::Unset => None,
+            TermColor::Ansi(i) => Some(match self.colors.get(usize::from(i)) {
                 Some(color) => *color,
                 None => RgbColor::xterm(i),
-            },
-            TermColor::Rgb(color) => color,
+            }),
+            TermColor::Rgb(color) => Some(color),
         }
     }
 
@@ -180,21 +146,15 @@ impl BufferedOutput {
             return;
         }
         let span = &self.spans[self.spans.len() - i];
-        let ignore_colors = self.ignore_mxp_colors;
+        let (foreground, background) = if self.ignore_mxp_colors {
+            (self.ansi_foreground, self.ansi_background)
+        } else {
+            (span.foreground, span.background)
+        };
         self.append(TextFragment {
             flags: span.flags | self.ansi_flags,
-            foreground: self.color(get_color(
-                span.foreground,
-                self.ansi_foreground,
-                ignore_colors,
-                TermColor::WHITE,
-            )),
-            background: self.color(get_color(
-                span.background,
-                self.ansi_background,
-                ignore_colors,
-                TermColor::BLACK,
-            )),
+            foreground: self.color(foreground),
+            background: self.color(background),
             font: span.font.clone(),
             size: span.size,
             action: span.action.as_ref().map(|action| action.with_text(&text)),
@@ -262,13 +222,8 @@ impl BufferedOutput {
         if self.ansi_foreground == foreground {
             return;
         }
-        let Some(span) = self.spans.get() else {
-            self.flush();
-            self.ansi_foreground = foreground;
-            return;
-        };
-        match &span.foreground {
-            Some(color) if *color == foreground => (),
+        match self.spans.get() {
+            Some(span) if span.foreground == foreground => (),
             _ => self.flush(),
         }
         self.ansi_foreground = foreground;
@@ -279,13 +234,8 @@ impl BufferedOutput {
         if self.ansi_background == background {
             return;
         }
-        let Some(span) = self.spans.get() else {
-            self.flush();
-            self.ansi_background = background;
-            return;
-        };
-        match &span.background {
-            Some(color) if *color == background => (),
+        match self.spans.get() {
+            Some(span) if span.background == background => (),
             _ => self.flush(),
         }
         self.ansi_background = background;
@@ -294,8 +244,8 @@ impl BufferedOutput {
     pub fn reset_ansi(&mut self) {
         self.flush();
         self.ansi_flags.clear();
-        self.ansi_foreground = TermColor::WHITE;
-        self.ansi_background = TermColor::BLACK;
+        self.ansi_foreground = TermColor::Unset;
+        self.ansi_background = TermColor::Unset;
     }
 
     pub fn reset_mxp(&mut self) {

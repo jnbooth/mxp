@@ -258,31 +258,16 @@ impl From<TelnetFragment> for OutputFragment {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct TextFragment {
     pub text: SharedString,
     pub flags: FlagSet<TextStyle>,
-    pub foreground: RgbColor,
-    pub background: RgbColor,
+    pub foreground: Option<RgbColor>,
+    pub background: Option<RgbColor>,
     pub font: Option<String>,
     pub size: Option<NonZero<u8>>,
     pub action: Option<mxp::Link>,
     pub heading: Option<mxp::Heading>,
-}
-
-impl Default for TextFragment {
-    fn default() -> Self {
-        Self {
-            text: SharedString::default(),
-            flags: FlagSet::default(),
-            foreground: RgbColor::hex(0xc0c0c0),
-            background: RgbColor::BLACK,
-            font: None,
-            size: None,
-            action: None,
-            heading: None,
-        }
-    }
 }
 
 impl From<TextFragment> for OutputFragment {
@@ -324,10 +309,11 @@ pub struct TextFragmentANSI<'a> {
 impl fmt::Display for TextFragmentANSI<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let frag = self.fragment;
-        let fg = frag.foreground;
-        write!(f, "\x1B[\x1B[38;2;{};{};{}", fg.r, fg.g, fg.b)?;
-        let bg = frag.background;
-        if bg != RgbColor::BLACK {
+        write!(f, "\x1B[")?;
+        if let Some(fg) = frag.foreground {
+            write!(f, "\x1B[38;2;{};{};{}", fg.r, fg.g, fg.b)?;
+        }
+        if let Some(bg) = frag.background {
             write!(f, ";48;2;{};{};{}", bg.r, bg.g, bg.b)?;
         }
         let mut flags = frag.flags;
@@ -391,13 +377,15 @@ impl fmt::Display for TextFragmentHtml<'_> {
             sep.write(f)?;
             f.write_str("text-decoration:line-through")?;
         }
-        if frag.foreground != RgbColor::WHITE {
+        if let Some(fg) = frag.foreground {
             sep.write(f)?;
-            write!(f, "color:#{:X}", frag.foreground)?;
+            write!(f, "color:#{fg:X}")?;
         }
-        if frag.background != RgbColor::BLACK {
+        if let Some(bg) = frag.background
+            && bg != RgbColor::BLACK
+        {
             sep.write(f)?;
-            write!(f, "background-color:#{:X}", frag.background)?;
+            write!(f, "background-color:#{bg:X}")?;
         }
         if let Some(font) = &frag.font {
             sep.write(f)?;
