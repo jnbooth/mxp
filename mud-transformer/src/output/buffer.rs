@@ -262,14 +262,16 @@ impl BufferedOutput {
         if self.ansi_foreground == foreground {
             return;
         }
-        self.ansi_foreground = foreground;
         let Some(span) = self.spans.get() else {
+            self.flush();
+            self.ansi_foreground = foreground;
             return;
         };
         match &span.foreground {
             Some(color) if *color == foreground => (),
             _ => self.flush(),
         }
+        self.ansi_foreground = foreground;
     }
 
     pub fn set_ansi_background<C: Into<TermColor>>(&mut self, background: C) {
@@ -277,15 +279,16 @@ impl BufferedOutput {
         if self.ansi_background == background {
             return;
         }
-        self.ansi_background = background;
         let Some(span) = self.spans.get() else {
+            self.flush();
+            self.ansi_background = background;
             return;
         };
         match &span.background {
             Some(color) if *color == background => (),
             _ => self.flush(),
         }
-        self.flush();
+        self.ansi_background = background;
     }
 
     pub fn reset_ansi(&mut self) {

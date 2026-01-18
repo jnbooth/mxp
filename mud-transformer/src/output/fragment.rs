@@ -258,7 +258,7 @@ impl From<TelnetFragment> for OutputFragment {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TextFragment {
     pub text: SharedString,
     pub flags: FlagSet<TextStyle>,
@@ -268,6 +268,21 @@ pub struct TextFragment {
     pub size: Option<NonZero<u8>>,
     pub action: Option<mxp::Link>,
     pub heading: Option<mxp::Heading>,
+}
+
+impl Default for TextFragment {
+    fn default() -> Self {
+        Self {
+            text: SharedString::default(),
+            flags: FlagSet::default(),
+            foreground: RgbColor::hex(0xc0c0c0),
+            background: RgbColor::BLACK,
+            font: None,
+            size: None,
+            action: None,
+            heading: None,
+        }
+    }
 }
 
 impl From<TextFragment> for OutputFragment {
