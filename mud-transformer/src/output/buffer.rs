@@ -94,6 +94,9 @@ impl BufferedOutput {
                 buffer.flush();
                 if fragment.is_newline() {
                     buffer.in_line = false;
+                    buffer.ansi_flags.clear();
+                    buffer.ansi_foreground = TermColor::Unset;
+                    buffer.ansi_background = TermColor::Unset;
                 }
             }
             if !fragment.is_visual() {
