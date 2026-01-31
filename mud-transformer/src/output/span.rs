@@ -2,6 +2,7 @@
 use std::num::NonZero;
 use std::ops::Index;
 
+use bytes_pool::ByteString;
 use flagset::{FlagSet, flags};
 use mxp::Heading;
 use mxp::escape::ansi;
@@ -72,7 +73,7 @@ pub(crate) struct Span {
     pub(super) action: Option<mxp::Link>,
     pub(super) heading: Option<Heading>,
     pub(super) gag: bool,
-    pub(super) window: Option<String>,
+    pub(super) window: Option<ByteString>,
     pub(super) entity: Option<EntitySetter>,
 }
 
@@ -225,7 +226,7 @@ impl SpanList {
         set_prop!(self, gag, true);
     }
 
-    pub fn set_window(&mut self, window: String) -> bool {
+    pub fn set_window(&mut self, window: ByteString) -> bool {
         set_prop!(self, window);
     }
 }

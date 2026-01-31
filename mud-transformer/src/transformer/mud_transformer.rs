@@ -323,7 +323,7 @@ impl Transformer {
             self.output.set_mxp_gag();
         }
         if let Some(window) = &el.window {
-            self.output.set_mxp_window(window.clone());
+            self.output.set_mxp_window(window);
         }
         for action in mxp_state.decode_element(el, args) {
             self.mxp_open_tag(action?, mxp_state);
@@ -351,7 +351,7 @@ impl Transformer {
                     self.output.set_mxp_background(bg);
                 }
             }
-            Action::Dest { name } => self.output.set_mxp_window(name.into_owned()),
+            Action::Dest { name } => self.output.set_mxp_window(&name),
             Action::Expire { name } => self
                 .output
                 .append(EffectFragment::ExpireLinks(name.map(Cow::into_owned))),

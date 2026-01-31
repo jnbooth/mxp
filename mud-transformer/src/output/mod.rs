@@ -10,9 +10,6 @@ pub use fragment::{
     TelnetSource, TelnetVerb, TextFragment, TextFragmentANSI, TextFragmentHtml,
 };
 
-mod shared_string;
-pub use shared_string::SharedString;
-
 mod span;
 pub(crate) use span::EntitySetter;
 pub use span::TextStyle;

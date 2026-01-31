@@ -1,5 +1,6 @@
 use std::str;
 
+use bytes_pool::{ByteString, BytesPool};
 use flagset::FlagSet;
 use mxp::RgbColor;
 
@@ -7,13 +8,11 @@ use super::color::TermColor;
 use super::fragment::{
     EntityFragment, Output, OutputDrain, OutputFragment, TelnetFragment, TextFragment,
 };
-use super::shared_string::{BytesPool, SharedString, StringPool};
 use super::span::{EntitySetter, SpanList, TextStyle};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct BufferedOutput {
     bytes_pool: BytesPool,
-    string_pool: StringPool,
     text_buf: String,
     fragments: Vec<Output>,
     spans: SpanList,
@@ -124,8 +123,8 @@ impl BufferedOutput {
         inner(self, fragment.into());
     }
 
-    fn take_buf(&mut self) -> SharedString {
-        let buf = self.string_pool.share(&self.text_buf);
+    fn take_buf(&mut self) -> ByteString {
+        let buf = self.bytes_pool.share_str(&self.text_buf);
         self.text_buf.clear();
         buf
     }
@@ -201,14 +200,14 @@ impl BufferedOutput {
 
     pub fn append_subnegotiation(&mut self, code: u8, data: &[u8]) {
         self.flush();
-        let data = self.bytes_pool.share(data);
+        let data = self.bytes_pool.share_bytes(data);
         self.append(TelnetFragment::Subnegotiation { code, data });
     }
 
     pub fn append_server_status(&mut self, key: &[u8], value: &[u8]) {
         self.flush();
-        let variable = self.bytes_pool.share(key);
-        let value = self.bytes_pool.share(value);
+        let variable = self.bytes_pool.share_bytes(key);
+        let value = self.bytes_pool.share_bytes(value);
         self.append(TelnetFragment::ServerStatus { variable, value });
     }
 
@@ -365,7 +364,8 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_mxp_window(&mut self, window: String) {
+    pub fn set_mxp_window(&mut self, window: &str) {
+        let window = self.bytes_pool.share_str(window);
         if self.spans.set_window(window) {
             self.flush_mxp();
         }

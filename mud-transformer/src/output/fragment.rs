@@ -2,13 +2,12 @@ use std::fmt;
 use std::num::NonZero;
 use std::vec;
 
-use bytes::Bytes;
+use bytes_pool::{ByteString, Bytes};
 use flagset::FlagSet;
 use mxp::{Heading, RgbColor};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::shared_string::SharedString;
 use super::span::TextStyle;
 
 pub type OutputDrain<'a> = vec::Drain<'a, Output>;
@@ -17,7 +16,7 @@ pub type OutputDrain<'a> = vec::Drain<'a, Output>;
 pub struct Output {
     pub fragment: OutputFragment,
     pub gag: bool,
-    pub window: Option<String>,
+    pub window: Option<ByteString>,
 }
 
 impl<T> From<T> for Output
@@ -260,7 +259,7 @@ impl From<TelnetFragment> for OutputFragment {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct TextFragment {
-    pub text: SharedString,
+    pub text: ByteString,
     pub flags: FlagSet<TextStyle>,
     pub foreground: Option<RgbColor>,
     pub background: Option<RgbColor>,
