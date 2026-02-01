@@ -13,4 +13,5 @@ pub use output::{
 mod transformer;
 pub use transformer::{InputDrain, Tag, Transformer, TransformerConfig, UseMxp};
 
-pub use bytes_pool::{ByteString, Bytes};
+pub use bytes::Bytes;
+pub use bytestring::ByteString;

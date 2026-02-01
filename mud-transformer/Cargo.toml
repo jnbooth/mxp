@@ -10,7 +10,7 @@ workspace = true
 
 [dependencies]
 bytes = { workspace = true }
-bytes-pool = "1.0.2"
+bytestring = "1.5.0"
 flagset = { workspace = true }
 flate2 = "1.1.5"
 html-escape = { workspace = true }

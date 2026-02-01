@@ -2,7 +2,8 @@ use std::fmt;
 use std::num::NonZero;
 use std::vec;
 
-use bytes_pool::{ByteString, Bytes};
+use bytes::Bytes;
+use bytestring::ByteString;
 use flagset::FlagSet;
 use mxp::{Heading, RgbColor};
 #[cfg(feature = "serde")]
@@ -263,7 +264,7 @@ pub struct TextFragment {
     pub flags: FlagSet<TextStyle>,
     pub foreground: Option<RgbColor>,
     pub background: Option<RgbColor>,
-    pub font: Option<String>,
+    pub font: Option<ByteString>,
     pub size: Option<NonZero<u8>>,
     pub action: Option<mxp::Link>,
     pub heading: Option<mxp::Heading>,

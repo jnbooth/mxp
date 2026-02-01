@@ -1,6 +1,7 @@
 use std::str;
 
-use bytes_pool::{ByteString, BytesPool};
+use bytes::BytesMut;
+use bytestring::ByteString;
 use flagset::FlagSet;
 use mxp::RgbColor;
 
@@ -12,8 +13,7 @@ use super::span::{EntitySetter, SpanList, TextStyle};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct BufferedOutput {
-    bytes_pool: BytesPool,
-    text_buf: String,
+    text_buf: BytesMut,
     fragments: Vec<Output>,
     spans: SpanList,
     variables: mxp::EntityMap,
@@ -57,7 +57,7 @@ impl BufferedOutput {
     }
 
     pub fn last(&self) -> Option<u8> {
-        self.text_buf.as_bytes().last().copied()
+        self.text_buf.last().copied()
     }
 
     pub fn disable_mxp_colors(&mut self) {
@@ -124,9 +124,9 @@ impl BufferedOutput {
     }
 
     fn take_buf(&mut self) -> ByteString {
-        let buf = self.bytes_pool.share_str(&self.text_buf);
-        self.text_buf.clear();
-        buf
+        let buf = self.text_buf.split().freeze();
+        // SAFETY: `self.text_buf` contains only valid UTF-8.
+        unsafe { ByteString::from_bytes_unchecked(buf) }
     }
 
     fn flush_last(&mut self, i: usize) {
@@ -178,37 +178,18 @@ impl BufferedOutput {
     }
 
     #[inline]
+    pub fn append_char(&mut self, output: char) {
+        self.append_text(output.encode_utf8(&mut [0; 4]));
+    }
+
     pub fn append_text(&mut self, output: &str) {
         if self.text_buf.is_empty() {
             self.spans.set_populated();
         }
-        self.text_buf.push_str(output);
+        self.text_buf.extend_from_slice(output.as_bytes());
         if self.in_variable {
             self.variable.push_str(output);
         }
-    }
-
-    pub fn append_char(&mut self, output: char) {
-        if self.text_buf.is_empty() {
-            self.spans.set_populated();
-        }
-        self.text_buf.push(output);
-        if self.in_variable {
-            self.variable.push(output);
-        }
-    }
-
-    pub fn append_subnegotiation(&mut self, code: u8, data: &[u8]) {
-        self.flush();
-        let data = self.bytes_pool.share_bytes(data);
-        self.append(TelnetFragment::Subnegotiation { code, data });
-    }
-
-    pub fn append_server_status(&mut self, key: &[u8], value: &[u8]) {
-        self.flush();
-        let variable = self.bytes_pool.share_bytes(key);
-        let value = self.bytes_pool.share_bytes(value);
-        self.append(TelnetFragment::ServerStatus { variable, value });
     }
 
     pub fn set_ansi_flag(&mut self, flag: TextStyle) {
@@ -318,7 +299,7 @@ impl BufferedOutput {
         } = font;
         let mut changed = false;
         if let Some(face) = face {
-            changed = self.spans.set_font(face) || changed;
+            changed = self.spans.set_font(&face) || changed;
         }
         if let Some(size) = size {
             changed = self.spans.set_size(size) || changed;
@@ -365,7 +346,6 @@ impl BufferedOutput {
     }
 
     pub fn set_mxp_window(&mut self, window: &str) {
-        let window = self.bytes_pool.share_str(window);
         if self.spans.set_window(window) {
             self.flush_mxp();
         }

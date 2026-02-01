@@ -2,7 +2,8 @@
 use std::num::NonZero;
 use std::ops::Index;
 
-use bytes_pool::ByteString;
+use bytes::BytesMut;
+use bytestring::ByteString;
 use flagset::{FlagSet, flags};
 use mxp::Heading;
 use mxp::escape::ansi;
@@ -68,7 +69,7 @@ pub(crate) struct Span {
     pub(super) flags: FlagSet<TextStyle>,
     pub(super) foreground: TermColor,
     pub(super) background: TermColor,
-    pub(super) font: Option<String>,
+    pub(super) font: Option<ByteString>,
     pub(super) size: Option<NonZero<u8>>,
     pub(super) action: Option<mxp::Link>,
     pub(super) heading: Option<Heading>,
@@ -79,7 +80,7 @@ pub(crate) struct Span {
 
 macro_rules! set_flag {
     ($self:ident, $p:ident, $val:ident) => {
-        let span = match $self.get_mut() {
+        let span = match $self.spans.as_mut_slice().last_mut() {
             Some(span) if span.$p.contains($val) => {
                 return false;
             }
@@ -105,25 +106,21 @@ macro_rules! set_flag {
 
 macro_rules! set_prop {
     ($self:ident, $p:ident) => {
-        let some_val = Some($p);
-        set_prop!($self, $p, some_val)
-    };
-    ($self:ident, $p:ident, $val:expr) => {
-        let span = match $self.get_mut() {
-            Some(span) if span.$p == $val => {
+        let span = match $self.spans.as_mut_slice().last_mut() {
+            Some(span) if span.$p == $p => {
                 return false;
             }
             Some(span) if !span.populated => {
-                span.$p = $val;
+                span.$p = $p;
                 return false;
             }
             Some(span) => Span {
                 populated: false,
-                $p: $val,
+                $p: $p,
                 ..span.clone()
             },
             None => Span {
-                $p: $val,
+                $p: $p,
                 ..Default::default()
             },
         };
@@ -132,15 +129,46 @@ macro_rules! set_prop {
     };
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct SpanList {
-    spans: Vec<Span>,
+macro_rules! set_opt_prop {
+    ($self:ident, $p:ident) => {
+        set_opt_prop!($self, $p, $p)
+    };
+    ($self:ident, $p:ident, $val:expr) => {
+        let span = match $self.spans.as_mut_slice().last_mut() {
+            Some(Span {
+                $p: Some(other), ..
+            }) if other == &$p => {
+                return false;
+            }
+            Some(span) if !span.populated => {
+                span.$p = Some($val);
+                return false;
+            }
+            Some(span) => Span {
+                populated: false,
+                $p: Some($val),
+                ..span.clone()
+            },
+            None => Span {
+                $p: Some($val),
+                ..Default::default()
+            },
+        };
+        $self.spans.push(span);
+        return true;
+    };
 }
 
-impl Default for SpanList {
-    fn default() -> Self {
-        Self::new()
-    }
+macro_rules! set_string_prop {
+    ($self:ident, $p:ident) => {
+        set_opt_prop!($self, $p, share_string(&mut $self.buf, $p));
+    };
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct SpanList {
+    spans: Vec<Span>,
+    buf: BytesMut,
 }
 
 impl<I> Index<I> for SpanList
@@ -155,10 +183,6 @@ where
 }
 
 impl SpanList {
-    pub const fn new() -> Self {
-        Self { spans: Vec::new() }
-    }
-
     pub const fn get(&self) -> Option<&Span> {
         self.spans.as_slice().last()
     }
@@ -195,38 +219,46 @@ impl SpanList {
     }
 
     pub fn set_foreground(&mut self, foreground: TermColor) -> bool {
-        set_prop!(self, foreground, foreground);
+        set_prop!(self, foreground);
     }
 
     pub fn set_background(&mut self, background: TermColor) -> bool {
-        set_prop!(self, background, background);
+        set_prop!(self, background);
     }
 
-    pub fn set_font(&mut self, font: String) -> bool {
-        set_prop!(self, font);
+    pub fn set_font(&mut self, font: &str) -> bool {
+        set_string_prop!(self, font);
     }
 
     pub fn set_size(&mut self, size: NonZero<u8>) -> bool {
-        set_prop!(self, size);
+        set_opt_prop!(self, size);
     }
 
     pub fn set_action(&mut self, action: mxp::Link) -> bool {
-        set_prop!(self, action);
+        set_opt_prop!(self, action);
     }
 
     pub fn set_heading(&mut self, heading: Heading) -> bool {
-        set_prop!(self, heading);
+        set_opt_prop!(self, heading);
     }
 
     pub fn set_entity(&mut self, entity: EntitySetter) -> bool {
-        set_prop!(self, entity);
+        set_opt_prop!(self, entity);
     }
 
     pub fn set_gag(&mut self) -> bool {
-        set_prop!(self, gag, true);
+        let gag = true;
+        set_prop!(self, gag);
     }
 
-    pub fn set_window(&mut self, window: ByteString) -> bool {
-        set_prop!(self, window);
+    pub fn set_window(&mut self, window: &str) -> bool {
+        set_string_prop!(self, window);
     }
+}
+
+fn share_string(buf: &mut BytesMut, s: &str) -> ByteString {
+    buf.extend_from_slice(s.as_bytes());
+    let bytes = buf.split().freeze();
+    // SAFETY: `bytes` is valid UTF-8.
+    unsafe { ByteString::from_bytes_unchecked(bytes) }
 }

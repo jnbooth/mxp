@@ -3,6 +3,7 @@ use std::fmt::Write;
 use std::num::NonZero;
 use std::{io, mem, slice};
 
+use bytes::BytesMut;
 use flagset::FlagSet;
 use mxp::escape::telnet;
 use mxp::responses::{SupportResponse, VersionResponse};
@@ -49,7 +50,7 @@ pub struct Transformer {
     ttype_negotiator: mtts::Negotiator,
 
     ansi: ansi::Interpreter,
-    subnegotiation_data: Vec<u8>,
+    subnegotiation_data: BytesMut,
     subnegotiation_type: u8,
     utf8_sequence: Vec<u8>,
 
@@ -92,7 +93,7 @@ impl Transformer {
             ttype_negotiator: mtts::Negotiator::new(),
 
             subnegotiation_type: 0,
-            subnegotiation_data: Vec::new(),
+            subnegotiation_data: BytesMut::new(),
 
             utf8_sequence: Vec::with_capacity(4),
             output,
@@ -714,7 +715,7 @@ impl Transformer {
             }
 
             Phase::Subnegotiation if c == telnet::IAC => self.phase = Phase::SubnegotiationIac,
-            Phase::Subnegotiation => self.subnegotiation_data.push(c),
+            Phase::Subnegotiation => self.subnegotiation_data.extend_from_slice(&[c]),
 
             Phase::Compress if c == telnet::WILL => self.phase = Phase::CompressWill,
             Phase::Compress => self.phase = Phase::Normal,
@@ -723,11 +724,12 @@ impl Transformer {
             Phase::CompressWill => self.phase = Phase::Normal,
 
             Phase::SubnegotiationIac if c == telnet::IAC => {
-                self.subnegotiation_data.push(c);
+                self.subnegotiation_data.extend_from_slice(&[c]);
                 self.phase = Phase::Subnegotiation;
             }
             Phase::SubnegotiationIac => {
                 self.phase = Phase::Normal;
+                let data = self.subnegotiation_data.split().freeze();
                 match self.subnegotiation_type {
                     protocol::MCCP2 => {
                         if !self.config.disable_compression {
@@ -740,29 +742,31 @@ impl Transformer {
                         }
                     }
                     protocol::MTTS if !self.config.terminal_identification.is_empty() => {
-                        if self.subnegotiation_data.first() == Some(&mtts::SEND) {
+                        if data.first() == Some(&mtts::SEND) {
                             self.subnegotiate(self.ttype_negotiator);
                             self.ttype_negotiator.advance();
                         }
                     }
                     protocol::CHARSET => {
-                        self.charsets = charset::Charsets::from(&self.subnegotiation_data);
+                        self.charsets = charset::Charsets::from(&data);
                         self.subnegotiate(self.charsets);
                     }
                     protocol::MSSP => {
-                        for (variable, value) in mssp::iter(&self.subnegotiation_data) {
-                            self.output.append_server_status(variable, value);
+                        for (variable, value) in mssp::iter(&data) {
+                            self.output
+                                .append(TelnetFragment::ServerStatus { variable, value });
                         }
                     }
                     protocol::MNES => {
-                        self.mnes_variables = mnes::Variables::from(&self.subnegotiation_data);
+                        self.mnes_variables = mnes::Variables::from(&data);
                         self.subnegotiate(self.mnes_variables);
                     }
                     _ => (),
                 }
-                self.output
-                    .append_subnegotiation(self.subnegotiation_type, &self.subnegotiation_data);
-                self.subnegotiation_data.clear();
+                self.output.append(TelnetFragment::Subnegotiation {
+                    code: self.subnegotiation_type,
+                    data,
+                });
             }
 
             Phase::MxpElement => match c {
