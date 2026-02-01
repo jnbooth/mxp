@@ -165,7 +165,7 @@ macro_rules! set_string_prop {
     };
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default)]
 pub(crate) struct SpanList {
     spans: Vec<Span>,
     buf: BytesMut,

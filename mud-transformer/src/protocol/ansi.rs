@@ -4,7 +4,7 @@ use mxp::escape::ansi;
 use crate::output::{BufferedOutput, TermColor, TextStyle};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) enum Palette {
+enum Palette {
     Foreground,
     Background,
 }
@@ -50,7 +50,7 @@ pub(crate) enum Outcome {
     Mxp(mxp::Mode),
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug)]
 pub(crate) struct Interpreter {
     palette: Palette,
     phase: Phase,

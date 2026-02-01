@@ -11,7 +11,7 @@ use super::fragment::{
 };
 use super::span::{EntitySetter, SpanList, TextStyle};
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default)]
 pub(crate) struct BufferedOutput {
     text_buf: BytesMut,
     fragments: Vec<Output>,

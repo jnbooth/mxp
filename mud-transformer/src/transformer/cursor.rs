@@ -2,7 +2,7 @@ use std::io::{self, BufRead, IoSliceMut, Read};
 use std::iter::FusedIterator;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Default)]
 pub(crate) struct ReceiveCursor<'a> {
     inner: &'a [u8],
 }

@@ -25,7 +25,7 @@ pub const fn bitmask(config: &TransformerConfig) -> u16 {
             | mask(config.ssl, 2048) // SSL
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug)]
 pub(crate) struct Negotiator {
     sequence: u8,
 }

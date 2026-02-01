@@ -1,6 +1,6 @@
 use super::OutputFragment;
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MxpFragment {
     Entity(EntityFragment),
     Error(mxp::Error),
@@ -15,7 +15,7 @@ pub enum MxpFragment {
     StatusBar(mxp::Stat),
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum EntityFragment {
     Set {
         name: String,

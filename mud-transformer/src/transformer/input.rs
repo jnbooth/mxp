@@ -1,7 +1,7 @@
 use std::fmt;
 use std::io::{self, BufRead, IoSliceMut, Read, Write};
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug)]
 pub(crate) struct BufferedInput {
     buf: Vec<u8>,
     cursor: usize,

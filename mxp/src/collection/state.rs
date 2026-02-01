@@ -15,7 +15,7 @@ use crate::parser::{Error, ErrorKind, Words};
 use crate::responses::SupportResponse;
 
 /// A store of MXP state: elements, entities, and line tags.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Debug, Default)]
 pub struct State {
     elements: ElementMap,
     entities: EntityMap,

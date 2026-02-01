@@ -96,7 +96,7 @@ impl LineTags {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Default)]
 pub(crate) struct LineTagUpdate {
     index: u8,
     window: Option<String>,

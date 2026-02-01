@@ -51,7 +51,7 @@ impl From<&str> for TextFragment {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct TextFragmentANSI<'a> {
     fragment: &'a TextFragment,
 }
@@ -94,7 +94,7 @@ impl fmt::Display for TextFragmentANSI<'_> {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct TextFragmentHtml<'a> {
     fragment: &'a TextFragment,
 }
