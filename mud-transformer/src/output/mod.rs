@@ -6,8 +6,8 @@ pub(crate) use color::TermColor;
 
 mod fragment;
 pub use fragment::{
-    EffectFragment, EntityFragment, Output, OutputDrain, OutputFragment, TelnetFragment,
-    TelnetSource, TelnetVerb, TextFragment, TextFragmentANSI, TextFragmentHtml,
+    ControlFragment, EntityFragment, MxpFragment, Output, OutputDrain, OutputFragment,
+    TelnetFragment, TelnetSource, TelnetVerb, TextFragment, TextFragmentANSI, TextFragmentHtml,
 };
 
 mod span;

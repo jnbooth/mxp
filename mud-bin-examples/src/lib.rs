@@ -1,6 +1,6 @@
 use std::io::{self, Write};
 
-use mud_transformer::{Output, OutputFragment, Tag, TransformerConfig};
+use mud_transformer::{MxpFragment, Output, OutputFragment, Tag, TransformerConfig};
 
 pub fn get_config() -> TransformerConfig {
     TransformerConfig {
@@ -22,7 +22,7 @@ where
 {
     for output in iter {
         match output.fragment {
-            OutputFragment::MxpError(e) => {
+            OutputFragment::Mxp(MxpFragment::Error(e)) => {
                 writeln!(writer, "\nMXP error: {e}")?;
             }
             OutputFragment::Text(fragment) => {

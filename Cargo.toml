@@ -11,6 +11,7 @@ edition = "2024"
 [workspace.lints.clippy]
 pedantic = { level = "warn", priority = -1 }
 doc_markdown = "allow"
+many_single_char_names = "allow"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 module_inception = "allow"

@@ -6,8 +6,9 @@ pub use protocol::naws::subnegotiate as naws;
 
 mod output;
 pub use output::{
-    EffectFragment, EntityFragment, Output, OutputDrain, OutputFragment, TelnetFragment,
-    TelnetSource, TelnetVerb, TextFragment, TextFragmentANSI, TextFragmentHtml, TextStyle,
+    ControlFragment, EntityFragment, MxpFragment, Output, OutputDrain, OutputFragment,
+    TelnetFragment, TelnetSource, TelnetVerb, TextFragment, TextFragmentANSI, TextFragmentHtml,
+    TextStyle,
 };
 
 mod transformer;

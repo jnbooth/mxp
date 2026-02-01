@@ -15,8 +15,8 @@ use super::phase::Phase;
 use super::state::StateLock;
 use super::tag::{Tag, TagList};
 use crate::output::{
-    BufferedOutput, EffectFragment, EntityFragment, EntitySetter, OutputDrain, OutputFragment,
-    TelnetFragment, TelnetSource, TelnetVerb, TextStyle,
+    BufferedOutput, ControlFragment, EntityFragment, EntitySetter, MxpFragment, OutputDrain,
+    OutputFragment, TelnetFragment, TelnetSource, TelnetVerb, TextStyle,
 };
 use crate::protocol::{self, Negotiate, ansi, charset, mccp, mnes, mssp, mtts};
 
@@ -355,7 +355,7 @@ impl Transformer {
             Action::Dest { name } => self.output.set_mxp_window(&name),
             Action::Expire { name } => self
                 .output
-                .append(EffectFragment::ExpireLinks(name.map(Cow::into_owned))),
+                .append(MxpFragment::ExpireLinks(name.map(Cow::into_owned))),
             Action::Filter(filter) => self.output.append(filter.into_owned()),
             Action::Font(font) => self.output.set_mxp_font(font.into_owned()),
             Action::Frame(frame) => self.output.append(frame.into_owned()),
@@ -367,7 +367,7 @@ impl Transformer {
             Action::Italic => self.output.set_mxp_flag(TextStyle::Italic),
             Action::Link(link) => self.output.set_mxp_action(link.clone()),
             Action::Music(music) => self.output.append(music.into_owned()),
-            Action::MusicOff => self.output.append(EffectFragment::MusicOff),
+            Action::MusicOff => self.output.append(MxpFragment::MusicOff),
             Action::Mxp { keywords } => self.mxp_set_keywords(keywords),
             Action::NoBr => self.ignore_next_newline = true,
             Action::P => self.in_paragraph = true,
@@ -377,7 +377,7 @@ impl Transformer {
             Action::SBr => self.output.append_text(" "),
             Action::Small => self.output.set_mxp_flag(TextStyle::Small),
             Action::Sound(sound) => self.output.append(sound.into_owned()),
-            Action::SoundOff => self.output.append(EffectFragment::SoundOff),
+            Action::SoundOff => self.output.append(MxpFragment::SoundOff),
             Action::Stat(stat) => self.output.append(stat.into_owned()),
             Action::Strikeout => self.output.set_mxp_flag(TextStyle::Strikeout),
             Action::Support { questions } => {
@@ -507,7 +507,7 @@ impl Transformer {
         let last_char = self.output.last().unwrap_or(b'\n');
 
         if last_char == b'\r' && c != b'\n' {
-            self.output.append(EffectFragment::CarriageReturn);
+            self.output.append(OutputFragment::CarriageReturn);
             return;
         }
 
@@ -566,11 +566,11 @@ impl Transformer {
                     }
                     telnet::EC => {
                         self.phase = Phase::Normal;
-                        self.output.append(EffectFragment::EraseCharacter);
+                        self.output.append(ControlFragment::EraseCharacter);
                     }
                     telnet::EL => {
                         self.phase = Phase::Normal;
-                        self.output.append(EffectFragment::EraseLine);
+                        self.output.append(ControlFragment::EraseLine);
                     }
                     _ => self.phase = Phase::Normal,
                 }
@@ -850,9 +850,9 @@ impl Transformer {
                 telnet::ESC => self.phase = Phase::Esc,
                 telnet::IAC => self.phase = Phase::Iac,
                 // BEL
-                0x07 => self.output.append(EffectFragment::Beep),
+                0x07 => self.output.append(ControlFragment::Beep),
                 // BS
-                0x08 => self.output.append(EffectFragment::Backspace),
+                0x08 => self.output.append(ControlFragment::Backspace),
                 // FF
                 0x0C => self.output.append(OutputFragment::PageBreak),
                 b'\t' if self.in_paragraph => {

@@ -91,26 +91,32 @@ impl BufferedOutput {
         fn inner(buffer: &mut BufferedOutput, fragment: OutputFragment) {
             if fragment.should_flush() {
                 buffer.flush();
-                if fragment.is_newline() {
+            }
+            match fragment {
+                OutputFragment::CarriageReturn
+                | OutputFragment::Hr
+                | OutputFragment::LineBreak
+                | OutputFragment::PageBreak => {
                     buffer.in_line = false;
                     buffer.ansi_flags.clear();
                     buffer.ansi_foreground = TermColor::Unset;
                     buffer.ansi_background = TermColor::Unset;
                 }
-            }
-            if !fragment.is_visual() {
-                if fragment == OutputFragment::Telnet(TelnetFragment::GoAhead) {
+                OutputFragment::Text(_) | OutputFragment::Image(_) if !buffer.in_line => {
+                    buffer.in_line = true;
+                    buffer.last_break = buffer.fragments.len();
+                }
+                OutputFragment::Telnet(TelnetFragment::GoAhead) => {
                     buffer.last_break = buffer.fragments.len() + 1;
                 }
-                buffer.fragments.push(Output::from(fragment));
+                _ => (),
+            }
+            if fragment.is_windowless() {
+                buffer.fragments.push(fragment.into());
                 return;
             }
-            if !buffer.in_line && !fragment.is_newline() {
-                buffer.in_line = true;
-                buffer.last_break = buffer.fragments.len();
-            }
             let Some(span) = buffer.spans.get() else {
-                buffer.fragments.push(Output::from(fragment));
+                buffer.fragments.push(fragment.into());
                 return;
             };
             buffer.fragments.push(Output {
