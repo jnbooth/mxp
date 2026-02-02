@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::fmt;
 
 use super::Negotiate;
 use crate::transformer::TransformerConfig;
@@ -57,12 +57,11 @@ impl Negotiator {
 impl Negotiate for Negotiator {
     const CODE: u8 = CODE;
 
-    fn negotiate(self, buf: &mut Vec<u8>, config: &TransformerConfig) {
-        buf.push(0);
+    fn negotiate<W: fmt::Write>(self, mut f: W, config: &TransformerConfig) -> fmt::Result {
         match self.sequence {
-            0 => buf.extend_from_slice(config.terminal_identification.as_bytes()),
-            1 => buf.extend_from_slice(b"ANSI"),
-            _ => write!(buf, "{}", bitmask(config)).unwrap(),
+            0 => write!(f, "\0{}", &config.terminal_identification),
+            1 => f.write_str("\0ANSI"),
+            _ => write!(f, "\0{}", bitmask(config)),
         }
     }
 }

@@ -1,4 +1,4 @@
-use std::io::Write;
+use std::fmt;
 
 use flagset::{FlagSet, flags};
 
@@ -32,27 +32,25 @@ impl Variable {
         }
     }
 
-    fn negotiate(self, buf: &mut Vec<u8>, config: &TransformerConfig) {
+    fn negotiate<W: fmt::Write>(self, mut f: W, config: &TransformerConfig) -> fmt::Result {
         match self {
             Self::Mtts => {
-                write!(buf, "\x00MTTS\x01{}", mtts::bitmask(config)).unwrap();
+                write!(f, "\x00MTTS\x01{}", mtts::bitmask(config))
             }
             Self::Charset => {
                 if config.disable_utf8 {
-                    buf.extend_from_slice(b"\x00CHARSET\x01ASCII");
+                    f.write_str("\x00CHARSET\x01ASCII")
                 } else {
-                    buf.extend_from_slice(b"\x00CHARSET\x01UTF-8");
+                    f.write_str("\x00CHARSET\x01UTF-8")
                 }
             }
             Self::ClientName => {
-                buf.extend_from_slice(b"\x00CLIENT_NAME\x01");
-                buf.extend_from_slice(config.terminal_identification.as_bytes());
+                write!(f, "\x00CLIENT_NAME\x01{}", config.terminal_identification)
             }
             Self::ClientVersion => {
-                buf.extend_from_slice(b"\x00CLIENT_VERSION\x01");
-                buf.extend_from_slice(config.version.as_bytes());
+                write!(f, "\x00CLIENT_VERSION\x01{}", config.version)
             }
-            Self::TerminalType => buf.extend_from_slice(b"\x00TERMINAL_TYPE\x01ANSI-TRUECOLOR"),
+            Self::TerminalType => f.write_str("\x00TERMINAL_TYPE\x01ANSI-TRUECOLOR"),
         }
     }
 }
@@ -80,7 +78,7 @@ where
             inner.extend(value.split(|&c| c == 0).filter_map(Variable::parse));
             Variables {
                 inner,
-                prefix: "\x00",
+                prefix: "\0",
             }
         }
 
@@ -92,7 +90,7 @@ impl Variables {
     pub const fn new() -> Self {
         Self {
             inner: FlagSet::empty(),
-            prefix: "\x00",
+            prefix: "\0",
         }
     }
 
@@ -132,10 +130,11 @@ impl Variables {
 impl Negotiate for Variables {
     const CODE: u8 = CODE;
 
-    fn negotiate(self, buf: &mut Vec<u8>, config: &TransformerConfig) {
-        buf.extend_from_slice(self.prefix.as_bytes());
+    fn negotiate<W: fmt::Write>(self, mut f: W, config: &TransformerConfig) -> fmt::Result {
+        f.write_str(self.prefix)?;
         for variable in self.inner {
-            variable.negotiate(buf, config);
+            variable.negotiate(&mut f, config)?;
         }
+        Ok(())
     }
 }

@@ -1,3 +1,5 @@
+use std::fmt;
+
 use flagset::{FlagSet, flags};
 
 use super::Negotiate;
@@ -62,13 +64,13 @@ impl Default for Charsets {
 impl Negotiate for Charsets {
     const CODE: u8 = CODE;
 
-    fn negotiate(self, buf: &mut Vec<u8>, config: &TransformerConfig) {
+    fn negotiate<W: fmt::Write>(self, mut f: W, config: &TransformerConfig) -> fmt::Result {
         if !config.disable_utf8 && self.inner.contains(Charset::Utf8) {
-            buf.extend_from_slice(b"\x02UTF-8");
+            f.write_str("\x02UTF-8")
         } else if self.inner.contains(Charset::Ascii) {
-            buf.extend_from_slice(b"\x02US-ASCII");
+            f.write_str("\x02US-ASCII")
         } else {
-            buf.push(3);
+            f.write_str("\x03")
         }
     }
 }

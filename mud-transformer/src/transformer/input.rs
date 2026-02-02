@@ -37,18 +37,6 @@ impl BufferedInput {
     }
 }
 
-impl AsRef<[u8]> for BufferedInput {
-    fn as_ref(&self) -> &[u8] {
-        &self.buf
-    }
-}
-
-impl AsMut<Vec<u8>> for BufferedInput {
-    fn as_mut(&mut self) -> &mut Vec<u8> {
-        &mut self.buf
-    }
-}
-
 impl fmt::Write for BufferedInput {
     fn write_str(&mut self, s: &str) -> fmt::Result {
         self.append(s.as_bytes());
