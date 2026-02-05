@@ -1,3 +1,52 @@
+use crate::ControlFragment;
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Rect {
+    pub top: Option<u16>,
+    pub left: Option<u16>,
+    pub bottom: Option<u16>,
+    pub right: Option<u16>,
+}
+
+impl Rect {
+    pub const fn new() -> Self {
+        Self {
+            top: None,
+            left: None,
+            bottom: None,
+            right: None,
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum RectEffect {
+    /// DECCRA (Copy Rectangular Area)
+    Copy {
+        source: usize,
+        row: u16,
+        column: u16,
+        target: usize,
+    },
+    /// DECERA (Erase Rectangular Area),
+    /// DECSERA (Selective Erase Rectangular Area)
+    Erase { selective: bool },
+    /// DECFRA (Fill Rectangular Area)
+    Fill { fill_char: u8 },
+    /// DECEFR (Enable Filter Rectangle)
+    Filter,
+    /// DECRARA (Reverse Attributes in Rectangular Area)
+    ReverseAttributes(super::ReverseVisualCharacterAttribute),
+    /// DECCARA (Change Attributes in Rectangular Area)
+    SetAttributes(super::VisualCharacterAttribute),
+}
+
+impl RectEffect {
+    pub const fn with(self, rect: Rect) -> ControlFragment {
+        ControlFragment::Rect(rect, self)
+    }
+}
+
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum VisualCharacterAttribute {
     #[default]
@@ -44,10 +93,6 @@ pub enum ReverseVisualCharacterAttribute {
 }
 
 impl ReverseVisualCharacterAttribute {
-    pub const fn code(self) -> u8 {
-        self as u8
-    }
-
     pub(crate) const fn from_code(code: u16) -> Option<Self> {
         match code {
             0 => Some(Self::All),

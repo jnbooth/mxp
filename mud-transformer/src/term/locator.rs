@@ -19,9 +19,9 @@ impl LocatorReporting {
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum LocatorUnit {
+    Pixels = 1,
     #[default]
     Characters,
-    Pixels,
 }
 
 impl LocatorUnit {

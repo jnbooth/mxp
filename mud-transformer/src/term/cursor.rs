@@ -55,11 +55,23 @@ pub enum CursorEffect {
     Index,
     /// RI (Reverse Index)
     ReverseIndex,
+    /// DECFI (Forward Index)
+    ForwardIndex,
+    /// DECBI (Back Index)
+    BackIndex,
 
-    /// SCOSC (Save Current Cursor Position)
-    Save,
-    /// SCORC (Restore Saved Cursor Position)
-    Restore,
+    /// `Save { dec: false }`: SCOSC (Save Current Cursor Position)
+    ///
+    /// `Save { dec: true }`: DECSC (Save Cursor)
+    ///
+    /// DECSC is supposed to save more information. See https://vt100.net/docs/vt510-rm/DECSC.html
+    Save { dec: bool },
+    /// `Save { dec: false }`: SCORC (Restore Saved Cursor Position)
+    ///
+    /// `Save { dec: true }`: DECRC (Restore Cursor)
+    ///
+    /// These correspond to the states of [`CursorEffect::Save`].
+    Restore { dec: bool },
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -90,7 +102,7 @@ pub enum EraseTarget {
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum CursorStyle {
     #[default]
-    BlinkBlock,
+    BlinkBlock = 1,
     SteadyBlock,
     BlinkUnderline,
     SteadyUnderline,

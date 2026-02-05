@@ -9,7 +9,10 @@ use crate::output::{BufferedOutput, ControlFragment};
 use crate::responses::{
     CursorInformationReport, HMarginsReport, TabStopReport, UnknownSettingReport, VMarginsReport,
 };
-use crate::term::{CursorEffect, Dec, DynamicColor, Rect, Reset, SelectionData};
+use crate::term::{
+    ControlStringType, CursorEffect, DynamicColor, Line, Mode, Rect, Reset, SelectionData,
+    TabEffect,
+};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum Start {
@@ -62,15 +65,15 @@ impl Interpreter {
                 self.ansi.reset();
                 return Start::Continue;
             }
-            b'6' => Dec::BackIndex.into(),
-            b'7' => Dec::SaveCursor.into(),
-            b'8' => Dec::RestoreCursor.into(),
-            b'9' => Dec::ForwardIndex.into(),
-            b'=' => Dec::ApplicationKeypad.into(),
-            b'>' => Dec::NormalKeypad.into(),
+            b'6' => CursorEffect::BackIndex.into(),
+            b'7' => CursorEffect::Save { dec: true }.into(),
+            b'8' => CursorEffect::Restore { dec: false }.into(),
+            b'9' => CursorEffect::ForwardIndex.into(),
+            b'=' => ControlFragment::ModeSet(Mode::NUMERIC_KEYPAD, false),
+            b'>' => ControlFragment::ModeSet(Mode::NUMERIC_KEYPAD, true),
             b'D' => CursorEffect::Index.into(),
             b'E' => ControlFragment::NextLine,
-            b'H' => ControlFragment::SetTabStop,
+            b'H' => TabEffect::SetStop.into(),
             b'M' => CursorEffect::ReverseIndex.into(),
             b'Q' => {
                 self.phase = Phase::FunctionKey;
@@ -123,11 +126,11 @@ impl Interpreter {
 
     fn interpret_code(&self, code: u8) -> Option<ControlFragment> {
         match &[self.code, code] {
-            b"#3" => Some(Dec::DoubleHeightLineTop.into()),
-            b"#4" => Some(Dec::DoubleHeightLineBottom.into()),
-            b"#5" => Some(Dec::SingleWidthLine.into()),
-            b"#6" => Some(Dec::DoubleWidthLine.into()),
-            b"#8" => Some(Dec::ScreenAlignmentTest.into()),
+            b"#3" => Some(Line::DoubleHeightTop.into()),
+            b"#4" => Some(Line::DoubleHeightBottom.into()),
+            b"#5" => Some(Line::SingleWidth.into()),
+            b"#6" => Some(Line::DoubleWidth.into()),
+            b"#8" => Some(ControlFragment::ScreenAlignmentTest),
             _ => None,
         }
     }
@@ -178,17 +181,24 @@ impl Interpreter {
         Outcome::Continue
     }
 
-    fn finish_control_string(&mut self, output: &mut BufferedOutput, input: &mut BufferedInput) {
+    fn finish_control_string(
+        &mut self,
+        output: &mut BufferedOutput,
+        input: &mut BufferedInput,
+    ) -> Option<()> {
         let control_string = self.control_string.split().freeze();
-        match self.code {
-            ansi::ESC_DCS => self.process_dcs(&control_string, output, input),
-            ansi::ESC_OSC => process_osc(&control_string, output, input),
-            _ => {
-                output.append(ControlFragment::ControlString(self.code, control_string));
-                Some(())
-            }
-        };
+        let code = self.code;
         self.code = 0;
+        let string_type = match code {
+            ansi::ESC_DCS => return self.process_dcs(&control_string, output, input),
+            ansi::ESC_OSC => return process_osc(&control_string, output, input),
+            ansi::ESC_SOS => ControlStringType::Sos,
+            ansi::ESC_PM => ControlStringType::Pm,
+            ansi::ESC_APC => ControlStringType::Apc,
+            _ => return None,
+        };
+        output.append(ControlFragment::ControlString(string_type, control_string));
+        Some(())
     }
 
     fn process_dcs(

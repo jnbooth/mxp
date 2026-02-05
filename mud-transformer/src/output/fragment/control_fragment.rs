@@ -9,26 +9,20 @@ use crate::term;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ControlFragment {
+    AdjustLine(term::Line),
+    /// BS (Backspace)
     Backspace,
+    /// BEL (Beep)
     Beep,
     /// CR (Carriage Return)
     CarriageReturn,
+    /// ED (Erase in Display)
     Clear,
-    /// TBC (Tab Clear)
-    ClearTab,
-    /// TBC (Tab Clear)
-    ClearTabs,
-    ControlString(u8, Bytes),
-    /// DECCRA (Copy Rectangular Area)
-    CopyRect {
-        rect: term::Rect,
-        source: usize,
-        row: u16,
-        column: u16,
-        target: usize,
-    },
+    /// SOS (Start of String),
+    /// PM (Private Message),
+    /// APC (Application Program Command)
+    ControlString(term::ControlStringType, Bytes),
     Cursor(term::CursorEffect),
-    DEC(term::Dec),
     /// DCH (Delete Character)
     DeleteCharacters(usize),
     /// DECDC (Delete Column)
@@ -49,21 +43,6 @@ pub enum ControlFragment {
     EraseCharacter,
     /// ECH (Erase Character)
     EraseCharacters(usize),
-    /// DECERA (Erase Rectangular Area),
-    /// DECSERA (Selective Erase Rectangular Area)
-    EraseRect {
-        rect: term::Rect,
-        selective: bool,
-    },
-    /// DECFRA (Fill Rectangular Area)
-    FillRect {
-        rect: term::Rect,
-        fill_char: u8,
-    },
-    /// DECEFR (Enable Filter Rectangle)
-    FilterRect {
-        rect: term::Rect,
-    },
     /// DECFNK (Function Key)
     FunctionKey {
         keystroke: u8,
@@ -84,6 +63,7 @@ pub enum ControlFragment {
     InsertLines(usize),
     /// ICH (Insert Character)
     InsertSpaces(usize),
+    /// OSC 52 (Query or Change Clipboard Data)
     ManipulateSelection(term::SelectionData, ByteString),
     /// MC (Media Copy)
     MediaCopy(term::PrintFunction),
@@ -98,6 +78,8 @@ pub enum ControlFragment {
     /// Rarely used. Not to be confused with [`CursorEffect::NextLine`].
     NextLine,
     QueryKeyFormat(u8),
+    Rect(term::Rect, term::RectEffect),
+    /// REP (Repeat)
     Repeat(usize),
     Request(term::AttributeRequest),
     ResetKeyFormat,
@@ -105,18 +87,13 @@ pub enum ControlFragment {
     /// DECSTR (Soft Terminal Reset),
     /// RIS (Reset to Initial State)
     ResetTerminal(term::Reset),
-    /// DECRSPS (Restore Presentation State)
-    RestoreTabStops(Vec<u16>),
-    /// DECRARA (Reverse Attributes in Rectangular Area)
-    ReverseRectAttribute {
-        rect: term::Rect,
-        attribute: term::ReverseVisualCharacterAttribute,
-    },
     /// DECSLE (Select Locator Events)
     SelectLocatorEvents {
         on_press: bool,
         on_release: bool,
     },
+    /// DECALN (Screen Alignment Pattern)
+    ScreenAlignmentTest,
     /// DECSASD (Select Active Status Display)
     ///
     /// - **true:** Selects the status line. The terminal sends data to the status line only.
@@ -127,6 +104,7 @@ pub enum ControlFragment {
     /// - **true:** DECCARA and DECRARA affect all character positions in the rectangular area. The DECCARA or DECRARA command specifies the top-left and bottom-right corners.
     /// - **false:** DECCARA or DECRARA affect the stream of character positions that begins with the first position specified in the DECCARA or DECRARA command, and ends with the second character position specified.
     SetAttributeChangeExtent(bool),
+    /// DECSCSA (Select Character Protection Attribute)
     SetCharacterProtection(bool),
     /// DECSCPP (Select 80 or 132 Columns per Page)
     SetColumns(u16),
@@ -134,6 +112,7 @@ pub enum ControlFragment {
     SetDisconnectDelay(Duration),
     SetDynamicColor(term::DynamicColor, RgbColor),
     SetFont(ByteString),
+    /// OSC 1 (Change Window Icon)
     SetIconLabel(ByteString),
     /// DECSKCV (Set Key Click Volume)
     SetKeyClickVolume(u8),
@@ -148,22 +127,17 @@ pub enum ControlFragment {
     /// DECLL (Load LEDs)
     SetLed(term::KeyboardLed, bool),
     SetLocator(term::LocatorReporting, term::LocatorUnit),
-    /// DECCARA (Change Attributes in Rectangular Area)
-    SetRectAttribute {
-        rect: term::Rect,
-        attribute: term::VisualCharacterAttribute,
-    },
     /// DECSRFR (Select Refresh Rate)
     SetRefreshRate(term::RefreshRate),
     /// DECSNLS (Set Lines Per Screen)
     SetRows(u16),
     /// DECSSCLS (Set Scroll Speed)
     SetScrollSpeed(u8),
+    /// XTSHIFTESCAPE (Set Shift-Escape)
     SetShiftEscape(bool),
     /// DECSSDT (Select Status Display (Line) Type)
     SetStatusDisplay(term::StatusDisplayType),
-    /// HTS (Horizontal Tab Set)
-    SetTabStop,
+    /// OSC 2 (Change Window Title)
     SetTitle(ByteString),
     /// "prop=value", or just "prop" to delete the property
     SetXProperty(ByteString),
@@ -171,6 +145,7 @@ pub enum ControlFragment {
     SetWarningVolume(u8),
     /// DECSCUSR (Set Cursor Style)
     StyleCursor(term::CursorStyle),
+    Tab(term::TabEffect),
     /// DECLTOD (Load Time of Day)
     TimeOfDay {
         hour: u8,
@@ -226,18 +201,6 @@ impl From<term::CursorEffect> for OutputFragment {
     }
 }
 
-impl From<term::Dec> for ControlFragment {
-    fn from(value: term::Dec) -> Self {
-        Self::DEC(value)
-    }
-}
-
-impl From<term::Dec> for OutputFragment {
-    fn from(value: term::Dec) -> Self {
-        Self::Control(ControlFragment::DEC(value))
-    }
-}
-
 impl From<term::HighlightTracking> for ControlFragment {
     fn from(value: term::HighlightTracking) -> Self {
         Self::Track(value)
@@ -247,6 +210,30 @@ impl From<term::HighlightTracking> for ControlFragment {
 impl From<term::HighlightTracking> for OutputFragment {
     fn from(value: term::HighlightTracking) -> Self {
         Self::Control(ControlFragment::Track(value))
+    }
+}
+
+impl From<term::Line> for ControlFragment {
+    fn from(value: term::Line) -> Self {
+        Self::AdjustLine(value)
+    }
+}
+
+impl From<term::Line> for OutputFragment {
+    fn from(value: term::Line) -> Self {
+        Self::Control(ControlFragment::AdjustLine(value))
+    }
+}
+
+impl From<term::TabEffect> for ControlFragment {
+    fn from(value: term::TabEffect) -> Self {
+        Self::Tab(value)
+    }
+}
+
+impl From<term::TabEffect> for OutputFragment {
+    fn from(value: term::TabEffect) -> Self {
+        Self::Control(ControlFragment::Tab(value))
     }
 }
 

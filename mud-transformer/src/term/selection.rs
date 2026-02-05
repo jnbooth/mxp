@@ -4,7 +4,8 @@ use std::fmt;
 pub enum SelectionData {
     Clipboard,
     Primary,
-    Select,
+    Secondary,
+    Selection,
     CutBuffer(u8),
 }
 
@@ -13,8 +14,9 @@ impl SelectionData {
         match code {
             b'c' => Some(Self::Clipboard),
             b'p' => Some(Self::Primary),
-            b's' => Some(Self::Select),
-            (b'0'..=b'7') => Some(Self::CutBuffer(code - b'0')),
+            b'q' => Some(Self::Secondary),
+            b's' => Some(Self::Selection),
+            (b'0'..=b'9') => Some(Self::CutBuffer(code - b'0')),
             _ => None,
         }
     }
@@ -22,10 +24,11 @@ impl SelectionData {
 
 impl fmt::Display for SelectionData {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
+        match *self {
             Self::Clipboard => f.write_str("c"),
             Self::Primary => f.write_str("p"),
-            Self::Select => f.write_str("s"),
+            Self::Secondary => f.write_str("q"),
+            Self::Selection => f.write_str("s"),
             Self::CutBuffer(n) => write!(f, "{n}"),
         }
     }

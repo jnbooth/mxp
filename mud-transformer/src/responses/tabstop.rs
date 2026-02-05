@@ -2,7 +2,8 @@ use std::fmt;
 
 use mxp::escape::ansi::{DCS, ST};
 
-use crate::output::{BufferedOutput, ControlFragment};
+use crate::output::BufferedOutput;
+use crate::term::TabEffect;
 
 /// Formats a DECTABSR report.
 #[derive(Copy, Clone, Debug)]
@@ -36,6 +37,6 @@ where
 
 impl TabStopReport<Vec<u16>> {
     pub(crate) fn restore(self, output: &mut BufferedOutput) {
-        output.append(ControlFragment::RestoreTabStops(self.stops));
+        output.append(TabEffect::RestoreStops(self.stops));
     }
 }

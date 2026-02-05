@@ -1,6 +1,3 @@
-mod character;
-pub use character::{ReverseVisualCharacterAttribute, VisualCharacterAttribute};
-
 mod color;
 pub use color::DynamicColor;
 pub(crate) use color::{TermColor, XTermPalette};
@@ -19,6 +16,9 @@ pub use mode::Mode;
 
 mod print_function;
 pub use print_function::PrintFunction;
+
+mod rect;
+pub use rect::{Rect, RectEffect, ReverseVisualCharacterAttribute, VisualCharacterAttribute};
 
 mod selection;
 pub use selection::SelectionData;
@@ -43,39 +43,25 @@ pub enum AttributeRequest {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum Dec {
-    /// DECSC (Save Cursor)
-    SaveCursor,
-    /// DECRC (Restore Cursor)
-    RestoreCursor,
+pub enum ControlStringType {
+    /// SOS (Start of String)
+    Sos = b'X' as isize,
+    /// PM (Private Message)
+    Pm = b'^' as isize,
+    /// APC (Application Program Command)
+    Apc = b'_' as isize,
+}
 
-    /// DECKPAM (Keyboard Application Mode)
-    ApplicationKeypad,
-    /// DECKPNM (Keypad Numeric Mode)
-    NormalKeypad,
-
-    /// DECSCSA (Select Character Protection Attribute)
-    CharacterProtection,
-
-    /// DECST8C (Set Tab at Every 8 Columns)
-    Tab8Columns,
-
-    /// DECSWL (Single-Width, Single-Height Line)
-    SingleWidthLine,
-    /// DECDWL (Double-Width, Single-Height Line)
-    DoubleWidthLine,
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum Line {
     /// DECDHL (Double-Width, Double-Height Line) Top Half
-    DoubleHeightLineTop,
+    DoubleHeightTop = 3,
     /// DECDHL (Double-Width, Double-Height Line) Bottom Half
-    DoubleHeightLineBottom,
-
-    /// DECFI (Forward Index)
-    ForwardIndex,
-    /// DECBI (Back Index)
-    BackIndex,
-
-    /// DECALN (Screen Alignment Pattern)
-    ScreenAlignmentTest,
+    DoubleHeightBottom,
+    /// DECSWL (Single-Width, Single-Height Line)
+    SingleWidth,
+    /// DECDWL (Double-Width, Single-Height Line)
+    DoubleWidth,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -84,25 +70,6 @@ pub enum KeyboardLed {
     NumLock,
     CapsLock,
     ScrollLock,
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Rect {
-    pub top: Option<u16>,
-    pub left: Option<u16>,
-    pub bottom: Option<u16>,
-    pub right: Option<u16>,
-}
-
-impl Rect {
-    pub const fn new() -> Self {
-        Self {
-            top: None,
-            left: None,
-            bottom: None,
-            right: None,
-        }
-    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -132,4 +99,18 @@ impl StatusDisplayType {
             _ => None,
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum TabEffect {
+    /// TBC (Tab Clear)
+    ClearAtCursor,
+    /// TBC (Tab Clear)
+    ClearAll,
+    /// DECRSPS (Restore Presentation State)
+    RestoreStops(Vec<u16>),
+    /// DECST8C (Set Tab at Every 8 Columns)
+    SetEvery8Columns,
+    /// HTS (Horizontal Tab Set)
+    SetStop,
 }

@@ -55,7 +55,7 @@ impl fmt::Display for TermColor {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum DynamicColor {
-    TextForeground,
+    TextForeground = 10,
     TextBackground,
     TextCursor,
     MouseForeground,

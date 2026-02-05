@@ -11,10 +11,10 @@ use crate::responses::{
     TerminalParamsReport,
 };
 use crate::term::{
-    self, AttributeRequest, CursorEffect, CursorStyle, Dec, DeviceStatus, EraseRange, EraseTarget,
+    self, AttributeRequest, CursorEffect, CursorStyle, DeviceStatus, EraseRange, EraseTarget,
     HighlightTracking, KeyboardLed, LocatorReporting, LocatorUnit, Mode, PrintFunction, Rect,
-    RefreshRate, Reset, ReverseVisualCharacterAttribute, StatusDisplayType, TermColor,
-    VisualCharacterAttribute, WindowOp,
+    RectEffect, RefreshRate, Reset, ReverseVisualCharacterAttribute, StatusDisplayType, TabEffect,
+    TermColor, VisualCharacterAttribute, WindowOp,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -178,7 +178,14 @@ impl Interpreter {
             self.interpret_suffix(code, output, input)?;
             return Some(Outcome::Done);
         }
-        if code.is_ascii_digit() {
+        if code < 0x20 {
+            return None;
+        }
+        if code < 0x30 {
+            self.suffix = code;
+            return Some(Outcome::Continue);
+        }
+        if code < 0x3A {
             let digit = u16::from(code - b'0');
             self.code = Some(match self.code {
                 Some(n) => n.checked_mul(10)?.checked_add(digit)?,
@@ -186,96 +193,32 @@ impl Interpreter {
             });
             return Some(Outcome::Continue);
         }
+        if code < 0x3C {
+            self.sequence.push(self.code.take());
+            return Some(Outcome::Continue);
+        }
+        if self.prefix != 0 {
+            output.append(match self.prefix {
+                b'>' => self.interpret_secondary(code, input),
+                b'?' => return self.interpret_private(code, output),
+                _ => None,
+            }?);
+            return Some(Outcome::Done);
+        }
         let single = self.sequence.is_empty();
         let empty = single && self.code.is_none();
+        if code < 0x40 {
+            if !empty {
+                return None;
+            }
+            self.prefix = code;
+            return Some(Outcome::Continue);
+        }
+        if !single {
+            return self.interpret_sequence(code, output);
+        }
         let n = unwrap_pos(self.code);
         output.append(match code {
-            b';' | b':' => {
-                self.sequence.push(self.code.take());
-                return Some(Outcome::Continue);
-            }
-            b' ' | b'!' | b'"' | b'$' | b'&' | b'\'' | b')' | b'*' | b'+' | b',' => {
-                self.suffix = code;
-                return Some(Outcome::Continue);
-            }
-            _ if self.prefix != 0 => match self.prefix {
-                b'>' => self.interpret_secondary(code, input),
-                b'?' => return self.interpret_private(code, output, input),
-                _ => None,
-            }?,
-            b'=' | b'>' | b'?' if empty => {
-                self.prefix = code;
-                return Some(Outcome::Continue);
-            }
-            b'H' | b'f' => {
-                let &[row] = &*self.sequence else {
-                    return None;
-                };
-                CursorEffect::Position {
-                    row: unwrap_pos(row),
-                    column: n,
-                }
-                .into()
-            }
-            b'T' if !single => {
-                let &[func, start_x, start_y, first_row] = &*self.sequence else {
-                    return None;
-                };
-                HighlightTracking {
-                    func: func.unwrap_or_default() != 0,
-                    start_x: unwrap_pos(start_x),
-                    start_y: unwrap_pos(start_y),
-                    first_row: unwrap_pos(first_row),
-                    last_row: n,
-                }
-                .into()
-            }
-            b'h' => return self.set_modes(true, output),
-            b'l' => return self.set_modes(false, output),
-            b'm' => {
-                self.interpret_mode(output)?;
-                return Some(Outcome::Done);
-            }
-            b'r' if !single => {
-                let &[top] = &*self.sequence else {
-                    return None;
-                };
-                self.margins.top = top;
-                self.margins.bottom = self.code;
-                ControlFragment::VMargins {
-                    top,
-                    bottom: self.code,
-                }
-            }
-            b's' if !single => {
-                let &[left] = &*self.sequence else {
-                    return None;
-                };
-                self.margins.left = left;
-                self.margins.right = self.code;
-                ControlFragment::HMargins {
-                    left,
-                    right: self.code,
-                }
-            }
-            b't' if empty => WindowOp::SetLines(24).into(),
-            b't' => {
-                for op in WindowOp::parse(self.iter()) {
-                    output.append(op);
-                }
-                return Some(Outcome::Done);
-            }
-            b'~' => {
-                let &[Some(keystroke)] = &*self.sequence else {
-                    return None;
-                };
-                output.append(ControlFragment::FunctionKey {
-                    keystroke: keystroke.try_into().ok()?,
-                    modifiers: self.code_u8_or(0)?,
-                });
-                return Some(Outcome::Done);
-            }
-            _ if !single => return None,
             b'@' => ControlFragment::InsertSpaces(n.into()),
             b'A' => CursorEffect::Up(n).into(),
             b'B' => CursorEffect::Down(n).into(),
@@ -299,17 +242,34 @@ impl Interpreter {
             b'`' => CursorEffect::ColumnAbsolute(n).into(),
             b'a' => CursorEffect::ColumnRelative(n).into(),
             b'b' => ControlFragment::Repeat(n.into()),
-            b'c' if self.code_or(0) == 0 => {
+            b'c' => {
+                if !matches!(self.code, None | Some(0)) {
+                    return None;
+                }
                 write!(input, "{PrimaryAttributeReport}");
                 return Some(Outcome::Done);
             }
             b'd' => CursorEffect::RowAbsolute(n).into(),
             b'e' => CursorEffect::RowRelative(n).into(),
             b'g' => match self.code {
-                None | Some(0) => ControlFragment::ClearTab,
-                Some(3) => ControlFragment::ClearTabs,
+                None | Some(0) => TabEffect::ClearAtCursor.into(),
+                Some(3) => TabEffect::ClearAll.into(),
                 _ => return None,
             },
+            b'h' => return self.set_modes(true, output),
+            b'i' => ControlFragment::MediaCopy(PrintFunction::new(self.code_u8()?, false)),
+            b'l' => return self.set_modes(false, output),
+            b'm' => {
+                self.interpret_mode(output)?;
+                return Some(Outcome::Done);
+            }
+            b'n' => {
+                if self.code == Some(5) {
+                    write!(input, "{OkReport}");
+                    return Some(Outcome::Done);
+                }
+                ControlFragment::DeviceStatusReport(DeviceStatus::new(self.code_u8()?, false))
+            }
             b'q' => match self.code {
                 Some(0) => ControlFragment::SetLed(KeyboardLed::All, false),
                 Some(1) => ControlFragment::SetLed(KeyboardLed::NumLock, true),
@@ -320,37 +280,102 @@ impl Interpreter {
                 Some(6) => ControlFragment::SetLed(KeyboardLed::ScrollLock, false),
                 _ => return None,
             },
-            b's' if empty => CursorEffect::Save.into(),
-            b'u' if empty => CursorEffect::Restore.into(),
-            b'x' if self.code_or(0) <= 1 => {
+            b'r' => ControlFragment::ModeRestore(Mode::new(self.code?, false)),
+            b's' => {
+                if empty {
+                    CursorEffect::Save { dec: false }.into()
+                } else {
+                    ControlFragment::ModeSave(Mode::new(self.code?, false))
+                }
+            }
+            b't' => {
+                if empty {
+                    WindowOp::SetLines(24).into()
+                } else {
+                    WindowOp::parse(self.iter()).next()?.into()
+                }
+            }
+            b'u' => {
+                if !empty {
+                    return None;
+                }
+                CursorEffect::Restore { dec: false }.into()
+            }
+            b'x' => {
+                if !matches!(self.code, None | Some(0 | 1)) {
+                    return None;
+                }
                 write!(input, "{TerminalParamsReport}");
                 return Some(Outcome::Done);
             }
             b'z' => return Some(Outcome::Mxp(self.code?.try_into().ok()?)),
-            _ => self.interpret_param(code, input, false)?,
+            _ => return None,
         });
         Some(Outcome::Done)
     }
 
-    fn interpret_param(
-        &self,
-        code: u8,
-        input: &mut BufferedInput,
-        private: bool,
-    ) -> Option<ControlFragment> {
-        Some(match code {
-            b'i' => ControlFragment::MediaCopy(PrintFunction::new(self.code_u8()?, private)),
-            b'n' if self.code == Some(5) => {
-                write!(input, "{OkReport}");
-                return None;
+    fn interpret_sequence(&mut self, code: u8, output: &mut BufferedOutput) -> Option<Outcome> {
+        output.append(match code {
+            b'H' | b'f' => {
+                let &[row] = self.exact_sequence()?;
+                CursorEffect::Position {
+                    row: unwrap_pos(row),
+                    column: unwrap_pos(self.code),
+                }
+                .into()
             }
-            b'n' => {
-                ControlFragment::DeviceStatusReport(DeviceStatus::new(self.code_u8()?, private))
+            b'T' => {
+                let &[func, start_x, start_y, first_row] = self.exact_sequence()?;
+                HighlightTracking {
+                    func: func.unwrap_or_default() != 0,
+                    start_x: unwrap_pos(start_x),
+                    start_y: unwrap_pos(start_y),
+                    first_row: unwrap_pos(first_row),
+                    last_row: unwrap_pos(self.code),
+                }
+                .into()
             }
-            b'r' => ControlFragment::ModeRestore(Mode::new(self.code?, private)),
-            b's' => ControlFragment::ModeSave(Mode::new(self.code?, private)),
+            b'h' => return self.set_modes(true, output),
+            b'l' => return self.set_modes(false, output),
+            b'm' => {
+                self.interpret_mode(output)?;
+                return Some(Outcome::Done);
+            }
+            b'r' => {
+                let &[top] = self.exact_sequence()?;
+                self.margins.top = top;
+                self.margins.bottom = self.code;
+                ControlFragment::VMargins {
+                    top,
+                    bottom: self.code,
+                }
+            }
+            b's' => {
+                let &[left] = self.exact_sequence()?;
+                self.margins.left = left;
+                self.margins.right = self.code;
+                ControlFragment::HMargins {
+                    left,
+                    right: self.code,
+                }
+            }
+            b't' => {
+                for op in WindowOp::parse(self.iter()) {
+                    output.append(op);
+                }
+                return Some(Outcome::Done);
+            }
+            b'~' => {
+                let &[keystroke] = self.exact_sequence()?;
+                output.append(ControlFragment::FunctionKey {
+                    keystroke: keystroke?.try_into().ok()?,
+                    modifiers: self.code_u8_or(0)?,
+                });
+                return Some(Outcome::Done);
+            }
             _ => return None,
-        })
+        });
+        Some(Outcome::Done)
     }
 
     fn set_modes(&mut self, enable: bool, output: &mut BufferedOutput) -> Option<Outcome> {
@@ -361,21 +386,20 @@ impl Interpreter {
         Some(Outcome::Done)
     }
 
-    fn interpret_private(
-        &mut self,
-        code: u8,
-        output: &mut BufferedOutput,
-        input: &mut BufferedInput,
-    ) -> Option<Outcome> {
+    fn interpret_private(&mut self, code: u8, output: &mut BufferedOutput) -> Option<Outcome> {
         output.append(match code {
             b'h' => return self.set_modes(true, output),
             b'l' => return self.set_modes(false, output),
             _ if !self.sequence.is_empty() => return None,
-            b'g' => ControlFragment::QueryKeyFormat(self.code_u8()?),
             b'J' => self.interpret_erase(EraseTarget::Display, true)?,
             b'K' => self.interpret_erase(EraseTarget::Line, true)?,
-            b'W' if self.code == Some(5) => Dec::Tab8Columns.into(),
-            _ => self.interpret_param(code, input, true)?,
+            b'W' if self.code == Some(5) => TabEffect::SetEvery8Columns.into(),
+            b'g' => ControlFragment::QueryKeyFormat(self.code_u8()?),
+            b'i' => ControlFragment::MediaCopy(PrintFunction::new(self.code_u8()?, true)),
+            b'n' => ControlFragment::DeviceStatusReport(DeviceStatus::new(self.code_u8()?, true)),
+            b'r' => ControlFragment::ModeRestore(Mode::new(self.code?, true)),
+            b's' => ControlFragment::ModeSave(Mode::new(self.code?, true)),
+            _ => return None,
         });
         Some(Outcome::Done)
     }
@@ -390,79 +414,57 @@ impl Interpreter {
             b"$p" => ControlFragment::ModeRequest(Mode::new(self.code?, self.prefix == b'?')),
             b"$r" => {
                 self.sequence.push(self.code);
-                let (rect, attributes) = self.get_rect()?;
+                let (rect, attributes) = self.sequence_rect()?;
                 for &attribute in attributes {
-                    output.append(ControlFragment::SetRectAttribute {
-                        rect,
-                        attribute: VisualCharacterAttribute::from_code(attribute?)?,
-                    });
+                    let attribute = VisualCharacterAttribute::from_code(attribute?)?;
+                    output.append(RectEffect::SetAttributes(attribute).with(rect));
                 }
                 return Some(());
             }
             b"$t" => {
                 self.sequence.push(self.code);
-                let (rect, attributes) = self.get_rect()?;
+                let (rect, attributes) = self.sequence_rect()?;
                 for &attribute in attributes {
-                    output.append(ControlFragment::ReverseRectAttribute {
-                        rect,
-                        attribute: ReverseVisualCharacterAttribute::from_code(attribute?)?,
-                    });
+                    let attribute = ReverseVisualCharacterAttribute::from_code(attribute?)?;
+                    output.append(RectEffect::ReverseAttributes(attribute).with(rect));
                 }
                 return Some(());
             }
             b"$v" => {
-                let Some((rect, &[sp, td, tl])) = self.get_rect() else {
-                    return None;
-                };
-                ControlFragment::CopyRect {
-                    rect,
+                let (rect, &[sp, td, tl]) = self.exact_sequence_rect()?;
+                RectEffect::Copy {
                     source: unwrap_pos(sp).into(),
                     row: unwrap_pos(td),
                     column: unwrap_pos(tl),
                     target: unwrap_pos(self.code).into(),
                 }
+                .with(rect)
             }
             b"$x" => {
-                let &[c, t, l, b] = &*self.sequence else {
-                    return None;
-                };
-                ControlFragment::FillRect {
-                    fill_char: c?.try_into().ok()?,
-                    rect: Rect {
-                        top: t,
-                        left: l,
-                        bottom: b,
-                        right: self.code,
-                    },
-                }
+                let &[c, t, l, b] = self.exact_sequence()?;
+                let fill_char = c?.try_into().ok()?;
+                RectEffect::Fill { fill_char }.with(Rect {
+                    top: t,
+                    left: l,
+                    bottom: b,
+                    right: self.code,
+                })
             }
             b"$z" | b"${" => {
                 self.sequence.push(self.code);
-                let Some((rect, &[])) = self.get_rect() else {
-                    return None;
-                };
-                ControlFragment::EraseRect {
+                let (rect, &[]) = self.exact_sequence_rect()?;
+                RectEffect::Erase {
                     selective: code == b'{',
-                    rect,
                 }
+                .with(rect)
             }
             b"'w" => {
-                let &[t, l, b] = &*self.sequence else {
-                    return None;
-                };
-                ControlFragment::FilterRect {
-                    rect: Rect {
-                        top: t,
-                        left: l,
-                        bottom: b,
-                        right: self.code,
-                    },
-                }
+                self.sequence.push(self.code);
+                let (rect, &[]) = self.exact_sequence_rect()?;
+                RectEffect::Filter.with(rect)
             }
             b"'z" => {
-                let &[param] = &*self.sequence else {
-                    return None;
-                };
+                let &[param] = self.exact_sequence()?;
                 let reporting = LocatorReporting::from_code(param)?;
                 let unit = LocatorUnit::from_code(param)?;
                 ControlFragment::SetLocator(reporting, unit)
@@ -490,9 +492,7 @@ impl Interpreter {
                 }
             }
             b",p" => {
-                let &[hour] = &*self.sequence else {
-                    return None;
-                };
+                let &[hour] = self.exact_sequence()?;
                 let hour = hour.unwrap_or(8);
                 let minute = self.code_or(0);
                 if hour > 23 || minute > 59 {
@@ -650,10 +650,28 @@ impl Interpreter {
         }
     }
 
-    const fn get_rect(&self) -> Option<(Rect, &[Option<u16>])> {
+    fn exact_sequence<const N: usize>(&self) -> Option<&[Option<u16>; N]> {
+        self.sequence.as_slice().try_into().ok()
+    }
+
+    const fn sequence_rect(&self) -> Option<(Rect, &[Option<u16>])> {
         let [t, l, b, r, remaining @ ..] = self.sequence.as_slice() else {
             return None;
         };
+        let rect = Rect {
+            top: *t,
+            left: *l,
+            bottom: *b,
+            right: *r,
+        };
+        Some((rect, remaining))
+    }
+
+    fn exact_sequence_rect<const N: usize>(&self) -> Option<(Rect, &[Option<u16>; N])> {
+        let [t, l, b, r, remaining @ ..] = self.sequence.as_slice() else {
+            return None;
+        };
+        let remaining = remaining.try_into().ok()?;
         let rect = Rect {
             top: *t,
             left: *l,
