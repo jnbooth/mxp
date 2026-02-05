@@ -1,30 +1,30 @@
 use std::borrow::Cow;
-use std::fmt::Write;
 use std::num::NonZero;
 use std::{io, mem, slice};
 
 use bytes::BytesMut;
 use flagset::FlagSet;
-use mxp::escape::telnet;
+use mxp::escape::{ansi, telnet};
 use mxp::responses::{SupportResponse, VersionResponse};
 
 use super::config::{TransformerConfig, UseMxp};
 use super::cursor::ReceiveCursor;
-use super::input::{BufferedInput, Drain as InputDrain};
 use super::phase::Phase;
 use super::state::StateLock;
 use super::tag::{Tag, TagList};
+use crate::input::{BufferedInput, Drain as InputDrain};
 use crate::output::{
     BufferedOutput, ControlFragment, EntityFragment, EntitySetter, MxpFragment, OutputDrain,
     OutputFragment, TelnetFragment, TelnetSource, TelnetVerb, TextStyle,
 };
-use crate::protocol::{self, Negotiate, ansi, charset, mccp, mnes, mssp, mtts};
+use crate::protocol::{self, Negotiate, charset, mccp, mnes, mssp, mtts, xterm};
+use crate::term::{EraseRange, EraseTarget};
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
     if auth.is_empty() {
         return;
     }
-    writeln!(input, "{auth}\r").unwrap();
+    writeln!(input, "{auth}\r");
 }
 
 #[derive(Debug)]
@@ -49,9 +49,10 @@ pub struct Transformer {
     mnes_variables: mnes::Variables,
     ttype_negotiator: mtts::Negotiator,
 
-    ansi: ansi::Interpreter,
+    ansi: xterm::Interpreter,
     subnegotiation_data: BytesMut,
     subnegotiation_type: u8,
+    last_char: u8,
     utf8_sequence: Vec<u8>,
 
     input: BufferedInput,
@@ -86,15 +87,16 @@ impl Transformer {
             mxp_tags: TagList::new(),
             mxp_state: mxp::State::populated().into(),
 
-            ansi: ansi::Interpreter::new(),
             charsets: charset::Charsets::new(),
             decompress: mccp::Decompress::new(),
             mnes_variables: mnes::Variables::new(),
             ttype_negotiator: mtts::Negotiator::new(),
 
+            ansi: xterm::Interpreter::new(),
             subnegotiation_type: 0,
             subnegotiation_data: BytesMut::new(),
 
+            last_char: b'\n',
             utf8_sequence: Vec::with_capacity(4),
             output,
             input: BufferedInput::new(),
@@ -383,7 +385,7 @@ impl Transformer {
             Action::Support { questions } => {
                 let supported_actions = self.config.supported_actions();
                 let supported_tags = SupportResponse::new(&questions, supported_actions);
-                writeln!(self.input, "{supported_tags}\r").unwrap();
+                writeln!(self.input, "{supported_tags}\r");
             }
             Action::Tt => self.output.set_mxp_flag(TextStyle::NonProportional),
             Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
@@ -396,7 +398,7 @@ impl Transformer {
                     name: &self.config.app_name,
                     version: &self.config.version,
                 };
-                writeln!(self.input, "{response}\r").unwrap();
+                writeln!(self.input, "{response}\r");
             }
         }
     }
@@ -504,11 +506,8 @@ impl Transformer {
 
     #[allow(clippy::match_same_arms)]
     fn receive_byte(&mut self, c: u8) {
-        let last_char = self.output.last().unwrap_or(b'\n');
-
-        if last_char == b'\r' && c != b'\n' {
-            self.output.append(OutputFragment::CarriageReturn);
-            return;
+        if self.last_char == b'\r' && c != b'\n' {
+            self.output.append(ControlFragment::CarriageReturn);
         }
 
         if self.phase == Phase::Utf8Character && !is_utf8_continuation(c) {
@@ -522,26 +521,30 @@ impl Transformer {
         }
 
         match self.phase {
-            Phase::Esc if c == b'[' => {
-                self.phase = Phase::Ansi;
-                self.ansi.reset();
+            Phase::Esc => {
+                self.phase = match self.ansi.start(c, &mut self.output) {
+                    xterm::Start::Continue => Phase::Ansi,
+                    xterm::Start::BeginString => Phase::AnsiString,
+                    xterm::Start::Done => Phase::Normal,
+                }
             }
-            Phase::Esc => self.phase = Phase::Normal,
 
             Phase::Utf8Character => self.utf8_sequence.push(c),
 
-            Phase::Ansi => match self.ansi.interpret(c, &mut self.output) {
-                ansi::Outcome::Continue => (),
-                ansi::Outcome::Done => self.phase = Phase::Normal,
-                ansi::Outcome::Mxp(mxp::Mode::RESET) => {
-                    self.mxp_off(false);
-                    self.phase = Phase::Normal;
+            Phase::Ansi | Phase::AnsiString => {
+                match self.ansi.interpret(c, &mut self.output, &mut self.input) {
+                    xterm::Outcome::Continue => (),
+                    xterm::Outcome::Done | xterm::Outcome::Fail => self.phase = Phase::Normal,
+                    xterm::Outcome::Mxp(mxp::Mode::RESET) => {
+                        self.mxp_off(false);
+                        self.phase = Phase::Normal;
+                    }
+                    xterm::Outcome::Mxp(mode) => {
+                        self.mxp_mode_change(Some(mode));
+                        self.phase = Phase::Normal;
+                    }
                 }
-                ansi::Outcome::Mxp(mode) => {
-                    self.mxp_mode_change(Some(mode));
-                    self.phase = Phase::Normal;
-                }
-            },
+            }
 
             Phase::Iac if c == telnet::IAC => (),
 
@@ -570,7 +573,11 @@ impl Transformer {
                     }
                     telnet::EL => {
                         self.phase = Phase::Normal;
-                        self.output.append(ControlFragment::EraseLine);
+                        self.output.append(ControlFragment::Erase {
+                            target: EraseTarget::Line,
+                            range: EraseRange::Full,
+                            selective: false,
+                        });
                     }
                     _ => self.phase = Phase::Normal,
                 }
@@ -846,60 +853,64 @@ impl Transformer {
                 _ => self.mxp_entity_string.push(c),
             },
 
-            Phase::Normal => match c {
-                telnet::ESC => self.phase = Phase::Esc,
-                telnet::IAC => self.phase = Phase::Iac,
-                // BEL
-                0x07 => self.output.append(ControlFragment::Beep),
-                // BS
-                0x08 => self.output.append(ControlFragment::Backspace),
-                // FF
-                0x0C => self.output.append(OutputFragment::PageBreak),
-                b'\t' if self.in_paragraph => {
-                    if last_char != b' ' {
-                        self.output.append_text(" ");
-                    }
-                }
-                b'\r' => (),
-                b' ' if last_char == b' ' && self.in_paragraph => {}
-                b'\n' => {
-                    if self.mxp_active {
-                        self.mxp_mode_change(None);
-                    }
-                    if self.in_paragraph {
-                        match last_char {
-                            b'\n' => {
-                                self.output.start_line();
-                                self.output.start_line();
-                            }
-                            b'.' => self.output.append_text("  "),
-                            b' ' | b'\t' | 0x0C => (),
-                            _ => self.output.append_text(" "),
+            Phase::Normal => {
+                let last_char = self.last_char;
+                self.last_char = c;
+                match c {
+                    telnet::IAC => self.phase = Phase::Iac,
+                    ansi::ESC => self.phase = Phase::Esc,
+                    ansi::ENQ => self.input.append(self.ansi.answerback()),
+                    ansi::BEL => self.output.append(ControlFragment::Beep),
+                    ansi::BS => self.output.append(ControlFragment::Backspace),
+                    ansi::VT => self.output.append(ControlFragment::VerticalTab),
+                    ansi::FF => self.output.append(OutputFragment::PageBreak),
+                    b'\r' => (),
+                    b'\t' if self.in_paragraph => {
+                        if last_char != b' ' {
+                            self.output.append_text(" ");
                         }
-                    } else if self.ignore_next_newline {
-                        self.ignore_next_newline = false;
-                    } else {
-                        self.output.start_line();
                     }
+                    b' ' if last_char == b' ' && self.in_paragraph => {}
+                    b'\n' => {
+                        if self.mxp_active {
+                            self.mxp_mode_change(None);
+                        }
+                        if self.in_paragraph {
+                            match last_char {
+                                b'\n' => {
+                                    self.output.start_line();
+                                    self.output.start_line();
+                                }
+                                b'.' => self.output.append_text("  "),
+                                b' ' | b'\t' | 0x0C => (),
+                                _ => self.output.append_text(" "),
+                            }
+                        } else if self.ignore_next_newline {
+                            self.ignore_next_newline = false;
+                        } else {
+                            self.output.start_line();
+                        }
+                    }
+                    b'<' if self.mxp_active && self.mxp_mode.is_mxp() => {
+                        self.mxp_entity_string.clear();
+                        self.phase = Phase::MxpElement;
+                    }
+                    b'&' if self.mxp_active && self.mxp_mode.is_mxp() => {
+                        self.mxp_entity_string.clear();
+                        self.phase = Phase::MxpEntity;
+                    }
+                    0..32 => (),
+                    128.. => {
+                        self.utf8_sequence.push(c);
+                        self.phase = Phase::Utf8Character;
+                    }
+                    _ => self.output.append_text(
+                        // SAFETY: `utf8` is valid UTF8, since it is a single ASCII byte.
+                        // Tracking: https://github.com/rust-lang/rust/issues/110998
+                        unsafe { str::from_utf8_unchecked(slice::from_ref(&c)) },
+                    ),
                 }
-                b'<' if self.mxp_active && self.mxp_mode.is_mxp() => {
-                    self.mxp_entity_string.clear();
-                    self.phase = Phase::MxpElement;
-                }
-                b'&' if self.mxp_active && self.mxp_mode.is_mxp() => {
-                    self.mxp_entity_string.clear();
-                    self.phase = Phase::MxpEntity;
-                }
-                _ if c.is_ascii() => self.output.append_text(
-                    // SAFETY: `utf8` is valid UTF8, since it is a single ASCII byte.
-                    // Tracking: https://github.com/rust-lang/rust/issues/110998
-                    unsafe { str::from_utf8_unchecked(slice::from_ref(&c)) },
-                ),
-                _ => {
-                    self.utf8_sequence.push(c);
-                    self.phase = Phase::Utf8Character;
-                }
-            },
+            }
         }
     }
 }

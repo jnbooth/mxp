@@ -1,3 +1,5 @@
+use bytestring::ByteString;
+
 mod control_fragment;
 pub use control_fragment::ControlFragment;
 
@@ -9,8 +11,6 @@ pub use telnet_fragment::{TelnetFragment, TelnetSource, TelnetVerb};
 
 mod text_fragment;
 pub use text_fragment::{TextFragment, TextFragmentANSI, TextFragmentHtml};
-
-use bytestring::ByteString;
 
 pub type OutputDrain<'a> = std::vec::Drain<'a, Output>;
 
@@ -36,7 +36,6 @@ where
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum OutputFragment {
-    CarriageReturn,
     Control(ControlFragment),
     Frame(mxp::Frame),
     Hr,
@@ -50,10 +49,7 @@ pub enum OutputFragment {
 
 impl OutputFragment {
     pub const fn is_newline(&self) -> bool {
-        matches!(
-            self,
-            Self::CarriageReturn | Self::Hr | Self::LineBreak | Self::PageBreak
-        )
+        matches!(self, Self::Hr | Self::LineBreak | Self::PageBreak)
     }
 
     pub const fn is_line_content(&self) -> bool {

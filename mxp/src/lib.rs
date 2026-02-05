@@ -28,6 +28,8 @@ pub mod responses;
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+pub use flagset::FlagSet;
+
 pub const VERSION: &str = "0.5";
 
 #[cfg(test)]

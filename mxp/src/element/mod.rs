@@ -25,7 +25,7 @@ mod link;
 pub use link::{Link, SendTo};
 
 mod mode;
-pub use mode::Mode;
+pub use mode::{Mode, ModeRangeError};
 
 mod relocate;
 pub use relocate::Relocate;

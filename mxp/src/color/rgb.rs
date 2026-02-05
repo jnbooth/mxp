@@ -42,6 +42,8 @@ impl RgbColor {
     /// exceed the maximum possible value rather than silently discarding the highest byte.
     #[inline]
     pub const fn hex(code: u32) -> Self {
+        debug_assert!(code <= 0xFFFFFF);
+
         #[cfg(target_endian = "big")]
         let [_, r, g, b] = code.to_ne_bytes();
         #[cfg(target_endian = "little")]

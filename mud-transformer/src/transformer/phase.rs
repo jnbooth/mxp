@@ -1,8 +1,4 @@
-use mxp::escape::telnet;
-
-const fn is_phase_reset_character(c: u8) -> bool {
-    matches!(c, b'\r' | b'\n' | telnet::ESC | telnet::IAC)
-}
+use mxp::escape::{ansi, telnet};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
 pub(crate) enum Phase {
@@ -13,6 +9,8 @@ pub(crate) enum Phase {
     Esc,
     /// Processing an ANSI escape sequence
     Ansi,
+    /// Processing an ANSI control string
+    AnsiString,
     /// Received TELNET IAC (interpret as command)
     Iac,
     /// Received TELNET WILL
@@ -57,17 +55,10 @@ impl Phase {
     }
 
     pub const fn is_phase_reset(self, c: u8) -> bool {
-        is_phase_reset_character(c) && !self.is_iac(c) && !self.is_subnegotiation()
-    }
-
-    const fn is_subnegotiation(self) -> bool {
-        matches!(
-            self,
-            Self::Sb | Self::Subnegotiation | Self::SubnegotiationIac
-        )
-    }
-
-    const fn is_iac(self, c: u8) -> bool {
-        c == telnet::IAC && matches!(self, Self::Iac)
+        match self {
+            Self::Sb | Self::Subnegotiation | Self::SubnegotiationIac | Self::AnsiString => false,
+            Self::Iac => matches!(c, b'\r' | b'\n' | ansi::ESC),
+            _ => matches!(c, b'\r' | b'\n' | ansi::ESC | telnet::IAC),
+        }
     }
 }

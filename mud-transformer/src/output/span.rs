@@ -10,33 +10,37 @@ use mxp::escape::ansi;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::color::TermColor;
+use crate::term::TermColor;
 
 flags! {
     #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
     #[derive(PartialOrd, Ord, Hash)]
     pub enum TextStyle: u16 {
-        Blink,
-        Bold,
-        Highlight,
-        Italic,
         NonProportional,
-        Small,
-        Strikeout,
+        Bold,
+        Faint,
+        Italic,
         Underline,
+        Blink,
+        Small,
         Inverse,
+        Conceal,
+        Strikeout,
+        Highlight,
     }
 }
 
 impl TextStyle {
     pub const fn ansi(self) -> Option<u8> {
         match self {
-            Self::Blink => Some(ansi::BLINK),
             Self::Bold => Some(ansi::BOLD),
-            Self::Italic => Some(ansi::SLOW_BLINK),
-            Self::Strikeout => Some(ansi::STRIKEOUT),
+            Self::Faint => Some(ansi::FAINT),
+            Self::Italic => Some(ansi::ITALIC),
             Self::Underline => Some(ansi::UNDERLINE),
+            Self::Blink => Some(ansi::SLOW_BLINK),
             Self::Inverse => Some(ansi::INVERSE),
+            Self::Conceal => Some(ansi::CONCEAL),
+            Self::Strikeout => Some(ansi::STRIKEOUT),
             Self::Highlight | Self::NonProportional | Self::Small => None,
         }
     }
@@ -206,6 +210,14 @@ impl SpanList {
 
     pub const fn len(&self) -> usize {
         self.spans.len()
+    }
+
+    pub fn reset_ansi(&mut self) {
+        for span in &mut self.spans {
+            span.foreground = TermColor::Unset;
+            span.background = TermColor::Unset;
+            span.flags.clear();
+        }
     }
 
     pub fn set_populated(&mut self) {

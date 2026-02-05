@@ -5,11 +5,13 @@ use bytestring::ByteString;
 use flagset::FlagSet;
 use mxp::RgbColor;
 
-use super::color::TermColor;
 use super::fragment::{
-    EntityFragment, Output, OutputDrain, OutputFragment, TelnetFragment, TextFragment,
+    ControlFragment, EntityFragment, Output, OutputDrain, OutputFragment, TelnetFragment,
+    TextFragment,
 };
 use super::span::{EntitySetter, SpanList, TextStyle};
+use crate::responses::SgrReport;
+use crate::term::{TermColor, XTermPalette};
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct BufferedOutput {
@@ -26,6 +28,7 @@ pub(crate) struct BufferedOutput {
     ansi_foreground: TermColor,
     ansi_background: TermColor,
     colors: Vec<RgbColor>,
+    xterm_palette: Box<XTermPalette>,
     ignore_mxp_colors: bool,
 
     in_variable: bool,
@@ -45,19 +48,31 @@ impl BufferedOutput {
         self.colors = colors;
     }
 
+    pub fn get_xterm_color(&self, code: u8) -> RgbColor {
+        self.xterm_palette[code]
+    }
+
+    pub fn set_xterm_color(&mut self, code: u8, color: RgbColor) {
+        self.xterm_palette[code] = color;
+    }
+
+    pub fn ansi_mode(&self) -> SgrReport {
+        SgrReport {
+            flags: self.ansi_flags,
+            foreground: self.ansi_foreground,
+            background: self.ansi_background,
+        }
+    }
+
     fn color(&self, color: TermColor) -> Option<RgbColor> {
         match color {
             TermColor::Unset => None,
             TermColor::Ansi(i) => Some(match self.colors.get(usize::from(i)) {
                 Some(color) => *color,
-                None => RgbColor::xterm(i),
+                None => self.xterm_palette[i],
             }),
             TermColor::Rgb(color) => Some(color),
         }
-    }
-
-    pub fn last(&self) -> Option<u8> {
-        self.text_buf.last().copied()
     }
 
     pub fn disable_mxp_colors(&mut self) {
@@ -93,7 +108,7 @@ impl BufferedOutput {
                 buffer.flush();
             }
             match fragment {
-                OutputFragment::CarriageReturn
+                OutputFragment::Control(ControlFragment::CarriageReturn)
                 | OutputFragment::Hr
                 | OutputFragment::LineBreak
                 | OutputFragment::PageBreak => {
@@ -108,6 +123,10 @@ impl BufferedOutput {
                 }
                 OutputFragment::Telnet(TelnetFragment::GoAhead) => {
                     buffer.last_break = buffer.fragments.len() + 1;
+                }
+                OutputFragment::Control(ControlFragment::ResetTerminal { .. }) => {
+                    buffer.xterm_palette.reset();
+                    buffer.reset_ansi();
                 }
                 _ => (),
             }
@@ -154,10 +173,15 @@ impl BufferedOutput {
             return;
         }
         let span = &self.spans[self.spans.len() - i];
-        let (foreground, background) = if self.ignore_mxp_colors {
-            (self.ansi_foreground, self.ansi_background)
+        let foreground = if self.ignore_mxp_colors || span.foreground == TermColor::Unset {
+            self.ansi_foreground
         } else {
-            (span.foreground, span.background)
+            span.foreground
+        };
+        let background = if self.ignore_mxp_colors || span.background == TermColor::Unset {
+            self.ansi_background
+        } else {
+            span.background
         };
         self.append(TextFragment {
             flags: span.flags | self.ansi_flags,
@@ -211,10 +235,7 @@ impl BufferedOutput {
         if self.ansi_foreground == foreground {
             return;
         }
-        match self.spans.get() {
-            Some(span) if span.foreground == foreground => (),
-            _ => self.flush(),
-        }
+        self.flush();
         self.ansi_foreground = foreground;
     }
 
@@ -232,6 +253,7 @@ impl BufferedOutput {
 
     pub fn reset_ansi(&mut self) {
         self.flush();
+        self.spans.reset_ansi();
         self.ansi_flags.clear();
         self.ansi_foreground = TermColor::Unset;
         self.ansi_background = TermColor::Unset;

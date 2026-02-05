@@ -1,3 +1,8 @@
+pub use bytes::Bytes;
+pub use bytestring::ByteString;
+
+mod input;
+pub use input::Drain as InputDrain;
 pub use mxp;
 pub use mxp::escape;
 
@@ -11,8 +16,9 @@ pub use output::{
     TextStyle,
 };
 
-mod transformer;
-pub use transformer::{InputDrain, Tag, Transformer, TransformerConfig, UseMxp};
+pub mod responses;
 
-pub use bytes::Bytes;
-pub use bytestring::ByteString;
+pub mod term;
+
+mod transformer;
+pub use transformer::{Tag, Transformer, TransformerConfig, UseMxp};

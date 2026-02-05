@@ -1,54 +1,10 @@
-use std::fmt;
 use std::io::{self, BufRead, IoSliceMut, Read, Write};
-
-#[derive(Clone, Debug)]
-pub(crate) struct BufferedInput {
-    buf: Vec<u8>,
-    cursor: usize,
-}
-
-impl Default for BufferedInput {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl BufferedInput {
-    pub const fn new() -> Self {
-        Self {
-            buf: Vec::new(),
-            cursor: 0,
-        }
-    }
-
-    pub fn append<S: AsRef<[u8]>>(&mut self, bytes: S) {
-        self.buf.extend_from_slice(bytes.as_ref());
-    }
-
-    pub fn drain(&mut self) -> Option<Drain<'_>> {
-        if self.buf.is_empty() {
-            return None;
-        }
-        Some(Drain {
-            cursor: self.cursor,
-            external_cursor: &mut self.cursor,
-            buf: &mut self.buf,
-        })
-    }
-}
-
-impl fmt::Write for BufferedInput {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        self.append(s.as_bytes());
-        Ok(())
-    }
-}
 
 #[must_use = "if the output is unused, use self.clear() instead"]
 pub struct Drain<'a> {
-    external_cursor: &'a mut usize,
-    cursor: usize,
-    buf: &'a mut Vec<u8>,
+    pub(super) external_cursor: &'a mut usize,
+    pub(super) cursor: usize,
+    pub(super) buf: &'a mut Vec<u8>,
 }
 
 impl Drain<'_> {
@@ -69,7 +25,6 @@ impl Drain<'_> {
     }
 
     pub fn write_all_to<W: Write>(&mut self, mut writer: W) -> io::Result<()> {
-        writer.write_all(self.slice())?;
         self.cursor = self.buf.len();
         let mut slice = &self.buf[self.cursor..];
         while !slice.is_empty() {

@@ -1,4 +1,3 @@
-pub const ESC: u8 = 0x1B;
 /// IAC WILL END-OF-RECORD.
 ///
 /// Specified in [RFC 885](https://datatracker.ietf.org/doc/html/rfc885):

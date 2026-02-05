@@ -1,6 +1,6 @@
-use super::OutputFragment;
-
 use bytes::Bytes;
+
+use super::OutputFragment;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum TelnetSource {
