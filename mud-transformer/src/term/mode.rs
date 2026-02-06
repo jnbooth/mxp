@@ -180,3 +180,65 @@ impl fmt::Display for Mode {
         }
     }
 }
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for Mode {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        if serializer.is_human_readable() {
+            return self.to_string().serialize(serializer);
+        }
+        match *self {
+            Self::Standard(code) => u32::from(code),
+            Self::Private(code) => u32::from(code) | 0x10000,
+        }
+        .serialize(serializer)
+    }
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Mode {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        use serde::de;
+
+        struct ModeVisitor;
+
+        impl de::Visitor<'_> for ModeVisitor {
+            type Value = Mode;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("an unsigned integer in range, optionally preceded by '?'")
+            }
+
+            fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                let (private, code) = match v.strip_prefix("?") {
+                    Some(code) => (true, code),
+                    _ => (false, v),
+                };
+                let Ok(code) = code.parse() else {
+                    return Err(E::invalid_value(de::Unexpected::Str(code), &self));
+                };
+                Ok(Mode::new(code, private))
+            }
+
+            fn visit_u64<E: de::Error>(self, v: u64) -> Result<Self::Value, E> {
+                let Ok(code) = (v & !0x10000).try_into() else {
+                    return Err(E::invalid_value(de::Unexpected::Unsigned(v), &self));
+                };
+                Ok(Mode::new(code, v >= 0x10000))
+            }
+
+            fn visit_i64<E: de::Error>(self, v: i64) -> Result<Self::Value, E> {
+                let Ok(code) = (v & !0x10000).try_into() else {
+                    return Err(E::invalid_value(de::Unexpected::Signed(v), &self));
+                };
+                Ok(Mode::new(code, v >= 0x10000))
+            }
+        }
+
+        if deserializer.is_human_readable() {
+            deserializer.deserialize_str(ModeVisitor)
+        } else {
+            deserializer.deserialize_u32(ModeVisitor)
+        }
+    }
+}
