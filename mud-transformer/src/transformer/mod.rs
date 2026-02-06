@@ -1,5 +1,5 @@
 mod config;
-pub use config::{Tag, TransformerConfig, UseMxp};
+pub use config::{TabBehavior, Tag, TransformerConfig, UseMxp};
 
 mod cursor;
 

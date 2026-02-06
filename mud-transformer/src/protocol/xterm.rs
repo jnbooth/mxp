@@ -110,6 +110,14 @@ impl Interpreter {
         output: &mut BufferedOutput,
         input: &mut BufferedInput,
     ) -> Outcome {
+        match code {
+            ansi::CAN => return Outcome::Done,
+            ansi::SUB => {
+                output.append_text("⸮");
+                return Outcome::Fail;
+            }
+            _ => (),
+        }
         match self.phase {
             Phase::Csi => self.ansi.interpret(code, output, input),
             Phase::Normal => {

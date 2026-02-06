@@ -531,6 +531,10 @@ impl Transformer {
 
             Phase::Utf8Character => self.utf8_sequence.push(c),
 
+            Phase::Ansi | Phase::AnsiString if c == ansi::ESC => {
+                self.phase = Phase::Esc;
+            }
+
             Phase::Ansi | Phase::AnsiString => {
                 match self.ansi.interpret(c, &mut self.output, &mut self.input) {
                     xterm::Outcome::Continue => (),
@@ -774,6 +778,17 @@ impl Transformer {
                     code: self.subnegotiation_type,
                     data,
                 });
+            }
+
+            Phase::MxpElement | Phase::MxpComment | Phase::MxpQuote | Phase::MxpEntity
+                if c == ansi::ESC =>
+            {
+                self.handle_mxp_error(mxp::Error::new(
+                    &self.mxp_entity_string,
+                    mxp::ErrorKind::UnterminatedElement,
+                ));
+                self.mxp_entity_string.clear();
+                self.phase = Phase::Esc;
             }
 
             Phase::MxpElement => match c {

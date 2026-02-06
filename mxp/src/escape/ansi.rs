@@ -1,5 +1,17 @@
+/// Null character
+pub const NULL: u8 = 0x00;
+/// Start of Header
+pub const SOH: u8 = 0x01;
+/// Start of Text
+pub const STX: u8 = 0x02;
+/// End of Text
+pub const ETX: u8 = 0x03;
+/// End of Transmission
+pub const EOT: u8 = 0x04;
 /// Enquiry
 pub const ENQ: u8 = 0x05;
+/// Acknowledgement
+pub const ACK: u8 = 0x06;
 /// Ring the terminal bell
 pub const BEL: u8 = 0x07;
 /// Backspace
@@ -18,8 +30,38 @@ pub const CR: u8 = b'\r';
 pub const SO: u8 = 0x0E;
 /// Shift out
 pub const SI: u8 = 0x0F;
+/// Data link escape
+pub const DLE: u8 = 0x10;
+/// Device control 1
+pub const DC1: u8 = 0x11;
+/// Device control 2
+pub const DC2: u8 = 0x12;
+/// Device control 3
+pub const DC3: u8 = 0x13;
+/// Device control 4
+pub const DC4: u8 = 0x14;
+/// Negative acknowledgement
+pub const NAK: u8 = 0x15;
+/// Synchronous idle
+pub const SYN: u8 = 0x16;
+/// End of transmission block
+pub const ETB: u8 = 0x17;
+/// Cancel
+pub const CAN: u8 = 0x18;
+/// End of medium
+pub const EM: u8 = 0x19;
+/// Substitute
+pub const SUB: u8 = 0x1a;
 /// Escape
 pub const ESC: u8 = 0x1B;
+/// File separator
+pub const FS: u8 = 0x1C;
+/// Group separator
+pub const GS: u8 = 0x1D;
+/// Record separator
+pub const RS: u8 = 0x1E;
+/// Unit separator
+pub const US: u8 = 0x1F;
 /// Delete character
 pub const DEL: u8 = 0x7F;
 
