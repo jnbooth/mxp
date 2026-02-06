@@ -162,15 +162,6 @@ pub enum ControlFragment {
     },
 }
 
-impl ControlFragment {
-    pub(super) const fn should_flush(&self) -> bool {
-        !matches!(
-            self,
-            Self::Beep | Self::SetMarginVolume(_) | Self::SetWarningVolume(_) | Self::SetTitle(_),
-        )
-    }
-}
-
 impl From<ControlFragment> for OutputFragment {
     fn from(value: ControlFragment) -> Self {
         Self::Control(value)
