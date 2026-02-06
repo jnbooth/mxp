@@ -17,7 +17,6 @@ use crate::term::{
     TermColor, VisualCharacterAttribute, WindowOp,
 };
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum Palette {
     Foreground,
     Background,
@@ -68,7 +67,7 @@ impl Palette {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Outcome {
     Fail,
     Continue,

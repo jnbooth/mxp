@@ -26,7 +26,7 @@ pub use selection::SelectionData;
 mod window;
 pub use window::{RefreshRate, WindowOp};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum AttributeRequest {
     /// DECCIR (Cursor Information Report) with [`CursorInformationReport`](crate::responses::CursorInformationReport)
     CursorInformation,
@@ -42,7 +42,7 @@ pub enum AttributeRequest {
     TerminalState,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ControlStringType {
     /// SOS (Start of String)
     Sos = b'X' as isize,
@@ -52,7 +52,7 @@ pub enum ControlStringType {
     Apc = b'_' as isize,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Line {
     /// DECDHL (Double-Width, Double-Height Line) Top Half
     DoubleHeightTop = 3,
@@ -64,7 +64,7 @@ pub enum Line {
     DoubleWidth,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum KeyboardLed {
     All,
     NumLock,
@@ -72,7 +72,7 @@ pub enum KeyboardLed {
     ScrollLock,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Reset {
     /// DECSTR (Soft Terminal Reset)
     Soft,
@@ -82,7 +82,7 @@ pub enum Reset {
     Secure,
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum StatusDisplayType {
     #[default]
     Hidden,
@@ -101,7 +101,7 @@ impl StatusDisplayType {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TabEffect {
     /// TBC (Tab Clear)
     ClearAtCursor,

@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::parser::Error;
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Relocate<S = String> {
     pub hostname: S,
     pub port: u16,

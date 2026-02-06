@@ -3,7 +3,7 @@ use casefold::ascii::CaseFold;
 use super::action::ActionKind;
 
 /// Atomic MXP tags that we recognise, e.g. <b>.
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Tag {
     /// Tag name, e.g. bold
     pub name: &'static str,

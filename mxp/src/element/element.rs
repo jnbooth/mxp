@@ -42,7 +42,7 @@ impl<S: AsRef<str>> ElementItem<S> {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum DefinitionKind {
     AttributeList,
     Element,
@@ -64,7 +64,7 @@ impl FromStr for DefinitionKind {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct CollectedDefinition<'a> {
     pub(crate) kind: DefinitionKind,
     pub(crate) text: &'a str,
@@ -90,7 +90,7 @@ impl<'a> CollectedDefinition<'a> {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum CollectedElement<'a> {
     Definition(CollectedDefinition<'a>),
     TagClose(&'a str),
@@ -113,7 +113,7 @@ impl<'a> CollectedElement<'a> {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ParseAs {
     /// The text for the element is parsed by the automapper as the name of a room
     RoomName,

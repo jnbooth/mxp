@@ -4,7 +4,7 @@ use mxp::escape::ansi::CSI;
 
 use crate::term::Mode;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ModeReportSetting {
     NotRecognized,
     Set,

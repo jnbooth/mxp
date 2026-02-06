@@ -1,5 +1,5 @@
 /// Outstanding (unclosed) tags.
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct Tag {
     /// Name of tag we opened
     pub name: String,
@@ -41,7 +41,7 @@ impl Tag {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct TagList {
     inner: Vec<Tag>,
 }

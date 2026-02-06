@@ -220,4 +220,18 @@ mod tests {
     fn rgb_code() {
         assert_eq!(RgbColor::rgb(0x12, 0x34, 0x56).code(), 0x123456);
     }
+
+    #[test]
+    fn rgb_ord() {
+        let mut colors = [
+            RgbColor::hex(0x000000),
+            RgbColor::hex(0x00FFFF),
+            RgbColor::hex(0x010000),
+            RgbColor::hex(0x100000),
+            RgbColor::hex(0xFFFFFF),
+        ];
+        colors.sort_unstable();
+        let codes = colors.map(RgbColor::code);
+        assert_eq!(codes, [0x000000, 0x00FFFF, 0x010000, 0x100000, 0xFFFFFF]);
+    }
 }

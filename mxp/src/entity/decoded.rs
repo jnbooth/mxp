@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub enum DecodedEntity<'a> {
     Char(char),
     Str(&'a str),

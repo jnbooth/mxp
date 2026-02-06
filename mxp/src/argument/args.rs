@@ -7,7 +7,7 @@ use crate::color::RgbColor;
 use crate::keyword::{EntityKeyword, MxpKeyword};
 use crate::parser::Error;
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct ColorArgs {
     pub fore: Option<RgbColor>,
     pub back: Option<RgbColor>,
@@ -52,7 +52,7 @@ where
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct SupportArgs<S> {
     pub questions: Vec<S>,
 }

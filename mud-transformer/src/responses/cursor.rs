@@ -10,7 +10,6 @@ use crate::term::{CursorEffect, Mode};
 const BIT_7: u8 = 0b1000000;
 
 flags! {
-    #[derive(PartialOrd, Ord, Hash)]
     pub enum CursorInformation: u16 {
         /// Bold is on.
         Bold,

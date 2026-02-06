@@ -3,7 +3,7 @@ use std::fmt;
 use flagset::{FlagSet, flags};
 use mxp::escape::ansi::CSI;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum LocatorReportEvent {
     /// Locator unavailable - no other parameters sent
     Unavailable,
@@ -17,12 +17,11 @@ pub enum LocatorReportEvent {
     RightUp,
     M4Down,
     M4Up,
-    /// Locator ooutside filter rectangle
+    /// Locator outside filter rectangle
     Outside,
 }
 
 flags! {
-#[derive(PartialOrd, Ord, Hash)]
 pub enum LocatorReportButton: u8 {
     Right,
     Middle,

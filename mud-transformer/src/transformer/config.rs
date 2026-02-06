@@ -6,7 +6,7 @@ use mxp::RgbColor;
 use serde::{Deserialize, Serialize};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum UseMxp {
     /// Activate MXP in response to an `IAC` subnegotiation from the server setting MXP on.
     #[default]
@@ -21,7 +21,6 @@ pub enum UseMxp {
 
 flags! {
     #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-    #[derive(PartialOrd, Ord, Hash)]
     pub enum Tag: u32 {
         Bold,
         Color,

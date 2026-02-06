@@ -9,7 +9,6 @@ use crate::transformer::TransformerConfig;
 pub const CODE: u8 = 42;
 
 flags! {
-    #[derive(PartialOrd, Ord, Hash)]
     enum Charset: u8 {
         Ascii,
         Utf8

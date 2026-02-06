@@ -14,7 +14,6 @@ use crate::term::TermColor;
 
 flags! {
     #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-    #[derive(PartialOrd, Ord, Hash)]
     pub enum TextStyle: u16 {
         NonProportional,
         Bold,

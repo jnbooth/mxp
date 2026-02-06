@@ -14,7 +14,7 @@ use crate::term::{
     TabEffect,
 };
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Start {
     Done,
     Continue,

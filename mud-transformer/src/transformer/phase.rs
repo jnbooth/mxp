@@ -1,6 +1,6 @@
 use mxp::escape::{ansi, telnet};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) enum Phase {
     /// Normal text
     #[default]

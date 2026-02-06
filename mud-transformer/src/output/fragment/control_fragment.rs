@@ -7,7 +7,7 @@ use mxp::RgbColor;
 use super::OutputFragment;
 use crate::term;
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ControlFragment {
     AdjustLine(term::Line),
     /// BS (Backspace)

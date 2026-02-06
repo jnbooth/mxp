@@ -10,7 +10,6 @@ use crate::transformer::TransformerConfig;
 pub const CODE: u8 = 39;
 
 flags! {
-    #[derive(PartialOrd, Ord, Hash)]
     enum Variable: u8 {
         Charset,
         ClientName,

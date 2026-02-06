@@ -5,7 +5,7 @@ use crate::element::{Element, Mode};
 use crate::keyword::TagKeyword;
 use crate::parser::{Error, ErrorKind, Words};
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct LineTag {
     element: String,
     enabled: bool,
@@ -28,7 +28,7 @@ impl LineTag {
 
 const OFFSET: usize = Mode::USER_DEFINED_MIN.0 as usize;
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct LineTags {
     inner: Vec<LineTag>,
 }

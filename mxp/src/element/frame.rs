@@ -7,7 +7,7 @@ use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::keyword::FrameKeyword;
 use crate::parser::{Error, UnrecognizedVariant};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum FrameAction {
     #[default]
     Open,
@@ -28,7 +28,7 @@ impl FromStr for FrameAction {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum FrameLayout {
     Internal {
         align: Align,
@@ -54,7 +54,7 @@ impl Default for FrameLayout {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Frame<S = String> {
     pub name: S,
     pub action: FrameAction,
@@ -138,7 +138,7 @@ where
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct DestArgs<S> {
     pub name: S,
 }

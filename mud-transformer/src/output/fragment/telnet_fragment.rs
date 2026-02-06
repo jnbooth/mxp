@@ -2,13 +2,13 @@ use bytes::Bytes;
 
 use super::OutputFragment;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TelnetSource {
     Client,
     Server,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TelnetVerb {
     Do,
     Dont,
@@ -16,7 +16,7 @@ pub enum TelnetVerb {
     Wont,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TelnetFragment {
     GoAhead,
     Mxp {

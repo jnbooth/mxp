@@ -5,7 +5,7 @@ use std::str;
 
 use flagset::Flags;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ErrorKind {
     /// eg. < ... \n
     UnterminatedElement,
@@ -101,7 +101,7 @@ pub enum ErrorKind {
     InvalidLineTag,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Error {
     target: String,
     error: ErrorKind,
@@ -164,7 +164,7 @@ impl ParseErrorTarget for &Vec<u8> {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct UnrecognizedVariant<T> {
     input: String,
     phantom: PhantomData<T>,

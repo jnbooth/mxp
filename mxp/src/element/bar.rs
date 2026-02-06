@@ -4,7 +4,7 @@ use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::color::RgbColor;
 use crate::parser::Error;
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Gauge<S = String> {
     pub entity: S,
     pub max: Option<S>,
@@ -53,7 +53,7 @@ where
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Stat<S = String> {
     pub entity: S,
     pub max: Option<S>,

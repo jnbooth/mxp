@@ -46,7 +46,7 @@ impl Decoder for EntityMap {
 ///
 /// This `struct` is created by [`State::decode_element`](crate::State::decode_element).
 /// See its documentation for more.
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug)]
 pub struct ElementDecoder<'a, S: AsRef<str>> {
     pub(crate) element: &'a Element,
     pub(crate) entities: &'a EntityMap,

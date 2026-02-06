@@ -2,7 +2,7 @@ use flagset::FlagSet;
 
 use crate::EntityKeyword;
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Entity {
     pub value: String,
     pub published: bool,

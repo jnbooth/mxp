@@ -1,4 +1,7 @@
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum CursorEffect {
     /// CUU (Cursor Up)
     Up(u16),
@@ -74,7 +77,7 @@ pub enum CursorEffect {
     Restore { dec: bool },
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum EraseRange {
     #[default]
     AfterCursor,
@@ -93,13 +96,14 @@ impl EraseRange {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum EraseTarget {
     Line,
     Display,
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum CursorStyle {
     #[default]
     BlinkBlock = 1,
@@ -124,7 +128,7 @@ impl CursorStyle {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct HighlightTracking {
     pub func: bool,
     pub start_x: u16,

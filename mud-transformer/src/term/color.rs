@@ -3,9 +3,11 @@ use std::ops::{Index, IndexMut};
 use std::{array, fmt, iter, slice};
 
 use mxp::RgbColor;
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
 
 /// A color set by the terminal.
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) enum TermColor {
     #[default]
     Unset,
@@ -53,6 +55,7 @@ impl fmt::Display for TermColor {
     }
 }
 
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum DynamicColor {
     TextForeground = 10,

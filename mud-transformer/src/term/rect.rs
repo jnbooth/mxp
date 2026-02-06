@@ -1,6 +1,6 @@
 use crate::ControlFragment;
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Rect {
     pub top: Option<u16>,
     pub left: Option<u16>,
@@ -19,7 +19,7 @@ impl Rect {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum RectEffect {
     /// DECCRA (Copy Rectangular Area)
     Copy {
@@ -47,7 +47,7 @@ impl RectEffect {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum VisualCharacterAttribute {
     #[default]
     Reset = 0,
@@ -82,7 +82,7 @@ impl VisualCharacterAttribute {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum ReverseVisualCharacterAttribute {
     #[default]
     All = 0,

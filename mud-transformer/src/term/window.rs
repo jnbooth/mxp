@@ -1,6 +1,6 @@
 use std::iter::FusedIterator;
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RefreshRate {
     At50Hz = 1,
     At60Hz,
@@ -19,7 +19,7 @@ impl RefreshRate {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum WindowOp {
     /// Iconify or de-iconify the window.
     SetIconify(bool),

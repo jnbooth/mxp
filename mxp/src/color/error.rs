@@ -4,7 +4,7 @@ use std::num::ParseIntError;
 
 /// An error which is returned when attempting to create an [`RgbColor`](crate::RgbColor) from a
 /// number greater than the maximum hex code value (`0xFFFFFF`).
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct HexOutOfRangeError(pub u32);
 
 impl fmt::Display for HexOutOfRangeError {

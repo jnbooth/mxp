@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use crate::parser::UnrecognizedVariant;
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum Align {
     Left,
     Right,
@@ -28,7 +28,7 @@ impl FromStr for Align {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum DimensionUnit {
     #[default]
     Pixel,
@@ -36,7 +36,7 @@ pub enum DimensionUnit {
     Percentage,
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Dimension<T = u32> {
     pub amount: T,
     pub unit: DimensionUnit,

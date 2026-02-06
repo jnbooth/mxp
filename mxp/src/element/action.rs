@@ -1,8 +1,6 @@
 use std::borrow::Cow;
 
 use flagset::{FlagSet, flags};
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
 
 use super::bar::{Gauge, Stat};
 use super::filter::Filter;
@@ -18,8 +16,6 @@ use crate::color::RgbColor;
 use crate::keyword::{EntityKeyword, MxpKeyword};
 
 flags! {
-    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-    #[derive(PartialOrd, Ord, Hash)]
     pub enum ActionKind: u64 {
         /// bold
         Bold,
@@ -100,22 +96,21 @@ flags! {
         /// version request
         Version,
     }
+}
 
-    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-    #[derive(PartialOrd, Ord, Hash)]
-    pub enum Heading: u8 {
-        H1,
-        H2,
-        H3,
-        H4,
-        H5,
-        H6,
-    }
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Heading {
+    H1 = 1,
+    H2,
+    H3,
+    H4,
+    H5,
+    H6,
 }
 
 impl Heading {
     pub const fn level(self) -> u8 {
-        (self as u8) + 1
+        self as u8
     }
 }
 

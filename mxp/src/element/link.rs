@@ -1,14 +1,10 @@
 use std::borrow::Cow;
 
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
-
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::keyword::SendKeyword;
 use crate::parser::Error;
 
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum SendTo {
     Internet,
     #[default]
@@ -16,7 +12,7 @@ pub enum SendTo {
     Input,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Link {
     pub action: String,
     /// Flyover hint.
@@ -81,7 +77,7 @@ fn split_list(list: &str) -> (String, Vec<String>) {
     (first, iter.map(ToOwned::to_owned).collect())
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct HyperlinkArgs<S> {
     pub href: S,
     pub hint: Option<S>,
@@ -118,7 +114,7 @@ where
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct SendArgs<S> {
     pub href: Option<S>,
     pub hint: Option<S>,
@@ -165,7 +161,7 @@ where
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct ExpireArgs<S> {
     pub name: Option<S>,
 }

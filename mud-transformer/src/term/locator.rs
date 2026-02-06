@@ -1,4 +1,4 @@
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum LocatorReporting {
     #[default]
     Disabled,
@@ -17,7 +17,7 @@ impl LocatorReporting {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum LocatorUnit {
     Pixels = 1,
     #[default]

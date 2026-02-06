@@ -6,7 +6,7 @@ use std::str::FromStr;
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::parser::{Error, UnrecognizedVariant};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum AudioRepetition {
     Forever,
     Count(NonZero<u32>),
@@ -38,7 +38,7 @@ impl FromStr for AudioRepetition {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Default)]
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub enum AudioContinuation {
     Restart,
     #[default]
@@ -72,7 +72,7 @@ impl FromStr for AudioContinuation {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 struct SoundOrMusic<S> {
     fname: S,
     volume: u8,
@@ -96,7 +96,7 @@ impl<'a> SoundOrMusic<Cow<'a, str>> {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Sound<S = String> {
     pub fname: S,
     pub volume: u8,
@@ -158,7 +158,7 @@ where
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Music<S = String> {
     pub fname: S,
     pub volume: u8,

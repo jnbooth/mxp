@@ -5,8 +5,6 @@ use std::str::FromStr;
 use std::str::{self, Split};
 
 use flagset::flags;
-#[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
 
 use crate::argument::{Decoder, Scan};
 use crate::color::RgbColor;
@@ -14,8 +12,6 @@ use crate::parser::Error;
 use crate::parser::UnrecognizedVariant;
 
 flags! {
-    #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-    #[derive(PartialOrd, Ord, Hash)]
     pub enum FontStyle: u8 {
         Blink,
         Bold,
@@ -40,7 +36,7 @@ impl FromStr for FontStyle {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum FontEffect {
     Color(RgbColor),
     Style(FontStyle),
@@ -55,7 +51,7 @@ impl FontEffect {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct FgColor<S> {
     pub(crate) inner: S,
 }
@@ -76,7 +72,7 @@ impl<'a, S: AsRef<str>> IntoIterator for &'a FgColor<S> {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Font<S = String> {
     pub face: Option<S>,
     pub size: Option<NonZero<u8>>,

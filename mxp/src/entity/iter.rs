@@ -3,7 +3,7 @@ use std::iter;
 
 use super::entity::Entity;
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct EntityInfo<'a> {
     pub name: &'a str,
     pub description: &'a str,
@@ -38,7 +38,7 @@ mod tests {
             .ok();
         map.set("key5", "val5", None, published).ok();
         let mut published = map.published().collect::<Vec<_>>();
-        published.sort();
+        published.sort_unstable_by_key(|i| i.name);
         let expected = vec![
             EntityInfo {
                 name: "key2",
