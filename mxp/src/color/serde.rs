@@ -96,6 +96,10 @@ impl<'de> Deserialize<'de> for RgbColor {
             impl_visit_128!(u128, visit_u128);
         }
 
-        deserializer.deserialize_u32(RgbColorVisitor)
+        if deserializer.is_human_readable() {
+            deserializer.deserialize_str(RgbColorVisitor)
+        } else {
+            deserializer.deserialize_u32(RgbColorVisitor)
+        }
     }
 }
