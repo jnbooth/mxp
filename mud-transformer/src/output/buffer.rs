@@ -274,10 +274,12 @@ impl BufferedOutput {
     }
 
     pub fn set_ansi_flag(&mut self, flag: TextStyle) {
+        self.flush();
         self.ansi_flags |= flag;
     }
 
     pub fn unset_ansi_flag(&mut self, flag: TextStyle) {
+        self.flush();
         self.ansi_flags -= flag;
     }
 
