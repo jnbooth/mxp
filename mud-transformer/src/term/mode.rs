@@ -7,14 +7,38 @@ pub enum Mode {
 }
 
 impl Mode {
+    /// GATM (Guarded Area Transfer Mode)
+    pub const GUARDED_AREA_TRANSFER: Self = Self::Standard(1);
     /// KAM (Keyboard Action Mode)
     pub const KEYBOARD_ACTION: Self = Self::Standard(2);
     /// CRM (Show Control Character Mode)
     pub const SHOW_CONTROL_CHARACTER: Self = Self::Standard(3);
     /// IRM (Insert/Replace Mode)
     pub const INSERT: Self = Self::Standard(4);
+    /// SRTM (Status Reporting Transfer Mode)
+    pub const STATUS_REPORTING_TRANSFER: Self = Self::Standard(5);
+    /// VEM (Vertical Editing Mode)
+    pub const VERTICAL_EDITING: Self = Self::Standard(7);
+    /// HEM (Horizontal Editing Mode)
+    pub const HEM: Self = Self::Standard(10);
+    /// PUM (Positioning Unit Mode)
+    pub const POSITIONING_UNIT: Self = Self::Standard(11);
     /// SRM (Local Echo: Send/Receive Mode)
     pub const NO_ECHO: Self = Self::Standard(12);
+    /// FEAM (Format Effector Action Mode)
+    pub const FORMAT_ACTION: Self = Self::Standard(13);
+    /// FETM (Format Effector Transfer Mode)
+    pub const FORMAT_TRANSFER: Self = Self::Standard(14);
+    /// MATM (Multiple Area Transfer Mode)
+    pub const MULTIPLE_AREA_TRANSFER: Self = Self::Standard(15);
+    /// TTM (Transfer Termination Mode)
+    pub const TRANSFER_TERMINATION: Self = Self::Standard(16);
+    /// SATM (Selected Area Transfer Mode)
+    pub const SELECTED_AREA_TRANSFER: Self = Self::Standard(17);
+    /// TSM (Tabulation Stop Mode)
+    pub const TAB_STOP: Self = Self::Standard(18);
+    /// EBM (Editing Boundary Mode)
+    pub const EDIT_BOUNDARY: Self = Self::Standard(19);
     /// LNM (Line Feed/New Line Mode)
     pub const NEW_LINE: Self = Self::Standard(20);
 
@@ -76,6 +100,8 @@ impl Mode {
     pub const GREEK_MAPPING: Self = Self::Private(57);
     /// DECIPEM (IBM ProPrinter Emulation Mode)
     pub const PRO_PRINTER: Self = Self::Private(58);
+    /// DECHCCM (Horizontal Cursor-Coupling Mode)
+    pub const HORIZONTAL_CURSOR_COUPLING: Self = Self::Private(60);
     /// DECVCCM (Vertical Cursor-Coupling Mode)
     pub const VERTICAL_CURSOR_COUPLING: Self = Self::Private(61);
     /// DECPCCM (Page Cursor-Coupling Mode)
@@ -84,10 +110,12 @@ impl Mode {
     pub const NUMERIC_KEYPAD: Self = Self::Private(66);
     /// DECBKM (Backarrow Key Mode)
     pub const BACKARROW_KEY: Self = Self::Private(67);
-    /// DECLRMM (Left Right Margin Mode)
-    pub const HMARGIN: Self = Self::Private(69);
     /// DECKBUM (Typewriter or Data Processing Keys)
     pub const DATA_PROCESSING_KEYS: Self = Self::Private(68);
+    /// DECLRMM (Left Right Margin Mode)
+    pub const HMARGIN: Self = Self::Private(69);
+    /// DECXRLMM (Transmit rate limiting)
+    pub const RATE_LIMITING: Self = Self::Private(73);
     /// DECKPM (Key Position Mode)
     pub const KEY_POSITION: Self = Self::Private(81);
     /// DECNCSM (No Clearing Screen On Column Change)
@@ -96,6 +124,8 @@ impl Mode {
     pub const RIGHT_TO_LEFT_COPY: Self = Self::Private(96);
     /// DECCRTSM (CRT Save Mode)
     pub const CRT_SAVER: Self = Self::Private(97);
+    /// DECARSM (Auto Resize Mode)
+    pub const AUTO_RESIZE: Self = Self::Private(98);
     /// DECMCM (Modem Control Mode)
     pub const MODEM_CONTROL: Self = Self::Private(99);
     /// DECAAM (Auto Answerback Mode)
