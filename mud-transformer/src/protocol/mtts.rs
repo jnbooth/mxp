@@ -66,6 +66,7 @@ pub const fn bitmask(config: &TransformerConfig) -> u16 {
         | mask(config.proxy, MTTS::PROXY)
         | MTTS::TRUECOLOR
         | MTTS::MNES
+        | MTTS::MSLP
         | mask(config.ssl, MTTS::SSL)
 }
 

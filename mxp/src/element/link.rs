@@ -81,6 +81,13 @@ impl Link {
         }
     }
 
+    pub fn for_text() -> Self {
+        Self {
+            action: Self::EMBED_ENTITY.to_owned(),
+            ..Default::default()
+        }
+    }
+
     #[must_use = "function returns a new link"]
     pub fn with_text(&self, text: &str) -> Self {
         Self {

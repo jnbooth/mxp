@@ -50,6 +50,7 @@ pub struct Transformer {
     ttype_negotiator: mtts::Negotiator,
 
     ansi: xterm::Interpreter,
+    after_ansi: bool,
     subnegotiation_data: BytesMut,
     subnegotiation_type: u8,
     last_char: u8,
@@ -93,6 +94,7 @@ impl Transformer {
             ttype_negotiator: mtts::Negotiator::new(),
 
             ansi: xterm::Interpreter::new(),
+            after_ansi: false,
             subnegotiation_type: 0,
             subnegotiation_data: BytesMut::new(),
 
@@ -506,6 +508,14 @@ impl Transformer {
 
     #[allow(clippy::match_same_arms)]
     fn receive_byte(&mut self, c: u8) {
+        if self.after_ansi
+            && c != ansi::ESC
+            && !matches!(self.phase, Phase::Esc | Phase::Ansi | Phase::AnsiString)
+        {
+            self.after_ansi = false;
+            self.ansi.clear_mslp_link();
+        }
+
         if self.last_char == b'\r' && c != b'\n' {
             self.output.append(ControlFragment::CarriageReturn);
         }
@@ -530,7 +540,10 @@ impl Transformer {
                 self.phase = match self.ansi.escape(c, &mut self.output, &mut self.input) {
                     xterm::Start::Continue => Phase::Ansi,
                     xterm::Start::BeginString => Phase::AnsiString,
-                    xterm::Start::Done => Phase::Normal,
+                    xterm::Start::Done => {
+                        self.after_ansi = true;
+                        Phase::Normal
+                    }
                 }
             }
 
@@ -545,11 +558,19 @@ impl Transformer {
                 match self.ansi.interpret(c, &mut self.output, &mut self.input) {
                     xterm::Outcome::Continue => reset = false,
                     xterm::Outcome::Done | xterm::Outcome::Fail => (),
+                    xterm::Outcome::Link => {
+                        if let Some(link) = self.ansi.take_mslp_link() {
+                            self.output.set_mxp_action(link);
+                        } else if self.config.linkify_underlined {
+                            self.output.set_mxp_action(mxp::Link::for_text());
+                        }
+                    }
                     xterm::Outcome::Mxp(mxp::Mode::RESET) => self.mxp_off(false),
                     xterm::Outcome::Mxp(mode) => self.mxp_mode_change(Some(mode)),
                 }
                 if reset {
                     self.phase = Phase::Normal;
+                    self.after_ansi = true;
                 }
             }
 

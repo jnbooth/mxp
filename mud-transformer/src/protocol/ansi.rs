@@ -22,6 +22,7 @@ pub(crate) enum Outcome {
     Fail,
     Continue,
     Done,
+    Link,
     Mxp(mxp::Mode),
 }
 
@@ -29,6 +30,7 @@ pub(crate) enum Outcome {
 pub(crate) struct Interpreter {
     code: Option<u16>,
     sequence: Vec<Option<u16>>,
+    first_byte: u8,
     prefix: u8,
     suffix: u8,
 }
@@ -52,6 +54,7 @@ impl Interpreter {
         Self {
             code: None,
             sequence: Vec::new(),
+            first_byte: 0,
             prefix: 0,
             suffix: 0,
         }
@@ -60,6 +63,7 @@ impl Interpreter {
     pub fn reset(&mut self) {
         self.code = None;
         self.sequence.clear();
+        self.first_byte = 0;
         self.prefix = 0;
         self.suffix = 0;
     }
@@ -120,6 +124,10 @@ impl Interpreter {
         output: &mut BufferedOutput,
         input: &mut BufferedInput,
     ) -> Option<Outcome> {
+        let empty = self.first_byte == 0;
+        if empty {
+            self.first_byte = code;
+        }
         if self.suffix != 0 {
             self.interpret_suffix(code, output, input)?;
             return Some(Outcome::Done);
@@ -151,8 +159,6 @@ impl Interpreter {
             }?);
             return Some(Outcome::Done);
         }
-        let single = self.sequence.is_empty();
-        let empty = single && self.code.is_none();
         if code < 0x40 {
             if !empty {
                 return None;
@@ -160,7 +166,7 @@ impl Interpreter {
             self.prefix = code;
             return Some(Outcome::Continue);
         }
-        if !single {
+        if !self.sequence.is_empty() {
             return self.interpret_sequence(code, output);
         }
         let n = unwrap_pos(self.code);
@@ -218,10 +224,7 @@ impl Interpreter {
             b'h' => return self.set_modes(true, output),
             b'i' => ControlFragment::MediaCopy(PrintFunction::new(self.code_u8()?, false)),
             b'l' => return self.set_modes(false, output),
-            b'm' => {
-                self.interpret_mode(output)?;
-                return Some(Outcome::Done);
-            }
+            b'm' => return self.interpret_mode(output),
             b'n' => {
                 if self.code == Some(5) {
                     write!(input, "{OkReport}");
@@ -296,10 +299,7 @@ impl Interpreter {
             }
             b'h' => return self.set_modes(true, output),
             b'l' => return self.set_modes(false, output),
-            b'm' => {
-                self.interpret_mode(output)?;
-                return Some(Outcome::Done);
-            }
+            b'm' => return self.interpret_mode(output),
             b'r' => {
                 let &[top] = self.exact_sequence()?;
                 ControlFragment::VMargins {
@@ -523,7 +523,7 @@ impl Interpreter {
         })
     }
 
-    fn interpret_mode(&mut self, output: &mut BufferedOutput) -> Option<()> {
+    fn interpret_mode(&mut self, output: &mut BufferedOutput) -> Option<Outcome> {
         let mut iter = self.iter().map(|n| n.and_then(|n| u8::try_from(n).ok()));
 
         while let Some(Some(code)) = iter.next() {
@@ -559,7 +559,12 @@ impl Interpreter {
                 _ => (),
             }
         }
-        Some(())
+
+        if self.first_byte == b'4' && (self.sequence.first().unwrap_or(&self.code) == &Some(4)) {
+            Some(Outcome::Link)
+        } else {
+            Some(Outcome::Done)
+        }
     }
 
     fn interpret_secondary(

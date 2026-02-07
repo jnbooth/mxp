@@ -4,10 +4,15 @@ use std::ops::{Deref, DerefMut};
 use mud_transformer::{OutputFragment, Transformer, TransformerConfig, UseMxp};
 
 pub fn transform(s: &str) -> TestTransformer {
-    let mut transformer = Transformer::new(TransformerConfig {
+    let config = TransformerConfig {
         use_mxp: UseMxp::Always,
         ..Default::default()
-    });
+    };
+    transform_with(config, s)
+}
+
+pub fn transform_with(config: TransformerConfig, s: &str) -> TestTransformer {
+    let mut transformer = Transformer::new(config);
     let mut buf = [0; 1024 * 10];
     transformer.receive(s.as_bytes(), &mut buf).unwrap();
     TestTransformer { transformer }

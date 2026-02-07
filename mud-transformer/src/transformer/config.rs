@@ -144,6 +144,9 @@ pub struct TransformerConfig {
     /// Ignore colors set by MXP tags.
     /// Default: false.
     pub ignore_mxp_colors: bool,
+    /// Convert underlined text into clickable links, as per the Mud Server Link Protocol.
+    /// Default: false.
+    pub linkify_underlined: bool,
     /// Client supports XTerm mouse tracking.
     /// Default: false.
     pub mouse_tracking: bool,
@@ -207,6 +210,7 @@ impl TransformerConfig {
             disable_compression: false,
             disable_utf8: false,
             ignore_mxp_colors: false,
+            linkify_underlined: false,
             mouse_tracking: false,
             naws: false,
             no_echo_off: false,

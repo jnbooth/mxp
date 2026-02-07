@@ -41,6 +41,7 @@ pub(crate) struct Interpreter {
     answerback: Vec<u8>,
     code: u8,
     string: BytesMut,
+    mslp_link: Option<mxp::Link>,
 }
 
 impl Interpreter {
@@ -50,6 +51,14 @@ impl Interpreter {
 
     pub fn answerback(&self) -> &[u8] {
         &self.answerback
+    }
+
+    pub fn clear_mslp_link(&mut self) {
+        self.mslp_link = None;
+    }
+
+    pub fn take_mslp_link(&mut self) -> Option<mxp::Link> {
+        self.mslp_link.take()
     }
 
     pub fn terminate(&mut self) {
@@ -70,6 +79,9 @@ impl Interpreter {
             }
             self.string.extend_from_slice(&[ansi::ESC, code]);
             return Start::Continue;
+        }
+        if code != ansi::ESC_CSI {
+            self.mslp_link = None;
         }
         output.append(match code {
             ansi::ESC_CSI => {
@@ -135,7 +147,13 @@ impl Interpreter {
             _ => (),
         }
         match self.phase {
-            Phase::Csi => self.ansi.interpret(code, output, input),
+            Phase::Csi => {
+                let outcome = self.ansi.interpret(code, output, input);
+                if !matches!(outcome, Outcome::Continue | Outcome::Link) {
+                    self.mslp_link = None;
+                }
+                outcome
+            }
             Phase::Normal => {
                 if (0x20..0x30).contains(&code) {
                     self.string.extend_from_slice(&[code]);
@@ -194,7 +212,7 @@ impl Interpreter {
         self.code = 0;
         let string_type = match code {
             ansi::ESC_DCS => return self.process_dcs(&control_string, output, input),
-            ansi::ESC_OSC => return process_osc(&control_string, output, input),
+            ansi::ESC_OSC => return self.process_osc(&control_string, output, input),
             ansi::ESC_SOS => ControlStringType::Sos,
             ansi::ESC_PM => ControlStringType::Pm,
             ansi::ESC_APC => ControlStringType::Apc,
@@ -222,6 +240,68 @@ impl Interpreter {
             b"+q" => process_request_term(rest, input),
             _ => None,
         }?;
+        Some(())
+    }
+
+    fn process_osc(
+        &mut self,
+        control_string: &Bytes,
+        output: &mut BufferedOutput,
+        input: &mut BufferedInput,
+    ) -> Option<()> {
+        let (code, text) = parse_osc(control_string)?;
+        match code {
+            0 => {
+                output.append(ControlFragment::SetIconLabel(text.clone()));
+                output.append(ControlFragment::SetTitle(text));
+            }
+            1 => output.append(ControlFragment::SetIconLabel(text)),
+            2 => output.append(ControlFragment::SetTitle(text)),
+            3 => output.append(ControlFragment::SetXProperty(text)),
+            4 => {
+                let mut iter = text.split(';');
+                while let Some(color) = iter.next() {
+                    let spec = iter.next()?;
+                    let color_code = color.parse().ok()?;
+                    if spec == "?" {
+                        let RgbColor { r, g, b } = output.get_xterm_color(color_code);
+                        write!(input, "{color};rgb:{r}00/{g}00/{b}00");
+                    }
+                    if let Some(spec) = RgbColor::named(spec) {
+                        output.set_xterm_color(color_code, spec);
+                    }
+                }
+            }
+            10 => set_dynamic(DynamicColor::TextForeground, &text, output),
+            11 => set_dynamic(DynamicColor::TextBackground, &text, output),
+            12 => set_dynamic(DynamicColor::TextCursor, &text, output),
+            13 => set_dynamic(DynamicColor::MouseForeground, &text, output),
+            14 => set_dynamic(DynamicColor::MouseBackground, &text, output),
+            15 => set_dynamic(DynamicColor::TektronixForeground, &text, output),
+            16 => set_dynamic(DynamicColor::TektronixBackground, &text, output),
+            17 => set_dynamic(DynamicColor::Highlight, &text, output),
+            18 => set_dynamic(DynamicColor::TektronixCursor, &text, output),
+            50 => output.append(ControlFragment::SetFont(text)),
+            52 => {
+                let &[selection, b';', ..] = (*text).as_bytes() else {
+                    return None;
+                };
+                let selection = SelectionData::from_code(selection)?;
+                let (_, text) = text.split_at(2);
+                output.append(ControlFragment::ManipulateSelection(selection, text));
+            }
+            68 => match text.split_at_checked(7) {
+                Some(("1;SEND;", text)) => self.mslp_link = Some(mslp_send(text)),
+                Some(("1;MENU;", text)) => self.mslp_link = Some(mslp_menu(text)?),
+                _ => return None,
+            },
+            104 => {
+                for code in text.split(';').filter_map(|code| code.parse().ok()) {
+                    output.reset_xterm_color(code);
+                }
+            }
+            _ => return None,
+        }
         Some(())
     }
 }
@@ -287,15 +367,6 @@ fn parse_dcs(control_string: &[u8]) -> Option<(Option<u8>, &[u8], &[u8])> {
     Some((code, command, rest))
 }
 
-fn process_osc(
-    control_string: &Bytes,
-    output: &mut BufferedOutput,
-    input: &mut BufferedInput,
-) -> Option<()> {
-    let (code, text) = parse_osc(control_string)?;
-    do_osc(code, text, output, input)
-}
-
 fn parse_osc(control_string: &Bytes) -> Option<(u8, ByteString)> {
     let mut iter = control_string.iter();
     let mut has_code = false;
@@ -315,62 +386,6 @@ fn parse_osc(control_string: &Bytes) -> Option<(u8, ByteString)> {
     let text_bytes = control_string.slice(offset..);
     let text = ByteString::try_from(text_bytes).ok()?;
     Some((code, text))
-}
-
-fn do_osc(
-    code: u8,
-    text: ByteString,
-    output: &mut BufferedOutput,
-    input: &mut BufferedInput,
-) -> Option<()> {
-    match code {
-        0 => {
-            output.append(ControlFragment::SetIconLabel(text.clone()));
-            output.append(ControlFragment::SetTitle(text));
-        }
-        1 => output.append(ControlFragment::SetIconLabel(text)),
-        2 => output.append(ControlFragment::SetTitle(text)),
-        3 => output.append(ControlFragment::SetXProperty(text)),
-        4 => {
-            let mut iter = text.split(';');
-            while let Some(color) = iter.next() {
-                let spec = iter.next()?;
-                let color_code = color.parse().ok()?;
-                if spec == "?" {
-                    let RgbColor { r, g, b } = output.get_xterm_color(color_code);
-                    write!(input, "{color};rgb:{r}00/{g}00/{b}00");
-                }
-                if let Some(spec) = RgbColor::named(spec) {
-                    output.set_xterm_color(color_code, spec);
-                }
-            }
-        }
-        10 => set_dynamic(DynamicColor::TextForeground, &text, output),
-        11 => set_dynamic(DynamicColor::TextBackground, &text, output),
-        12 => set_dynamic(DynamicColor::TextCursor, &text, output),
-        13 => set_dynamic(DynamicColor::MouseForeground, &text, output),
-        14 => set_dynamic(DynamicColor::MouseBackground, &text, output),
-        15 => set_dynamic(DynamicColor::TektronixForeground, &text, output),
-        16 => set_dynamic(DynamicColor::TektronixBackground, &text, output),
-        17 => set_dynamic(DynamicColor::Highlight, &text, output),
-        18 => set_dynamic(DynamicColor::TektronixCursor, &text, output),
-        50 => output.append(ControlFragment::SetFont(text)),
-        52 => {
-            let &[selection, b';', ..] = (*text).as_bytes() else {
-                return None;
-            };
-            let selection = SelectionData::from_code(selection)?;
-            let (_, text) = text.split_at(2);
-            output.append(ControlFragment::ManipulateSelection(selection, text));
-        }
-        104 => {
-            for code in text.split(';').filter_map(|code| code.parse().ok()) {
-                output.reset_xterm_color(code);
-            }
-        }
-        _ => return None,
-    }
-    Some(())
 }
 
 fn set_dynamic(dynamic_color: DynamicColor, spec: &str, output: &mut BufferedOutput) {
@@ -403,4 +418,31 @@ fn decode_hex(sequence: &[u8], buf: &mut Vec<u8>) -> Option<()> {
     }
 
     if rest.is_empty() { Some(()) } else { None }
+}
+
+fn mslp_send(text: &str) -> mxp::Link {
+    mxp::Link {
+        action: text.to_owned(),
+        sendto: mxp::SendTo::World,
+        ..Default::default()
+    }
+}
+
+fn mslp_menu(text: &str) -> Option<mxp::Link> {
+    let mut prompts = Vec::with_capacity(text.chars().filter(|&c| c == '{').count());
+    let mut iter = text.split('{');
+    iter.next()?;
+    while let Some(label) = iter.next() {
+        let action = iter.next()?.trim_ascii_end().strip_suffix('}')?;
+        let label = label.strip_suffix('}')?;
+        prompts.push(mxp::LinkPrompt {
+            action: action.to_owned(),
+            label: Some(label.to_owned()),
+        });
+    }
+    Some(mxp::Link {
+        sendto: mxp::SendTo::World,
+        prompts,
+        ..Default::default()
+    })
 }
