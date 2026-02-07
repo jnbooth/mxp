@@ -13,12 +13,42 @@ pub enum SendTo {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct LinkPrompt {
+    /// Action to send.
+    pub action: String,
+    /// Optional label to display instead of the action text.
+    pub label: Option<String>,
+}
+
+impl LinkPrompt {
+    pub fn label(&self) -> &str {
+        self.label.as_deref().unwrap_or(&self.action)
+    }
+
+    fn with_text(&self, text: &str) -> Self {
+        Self {
+            action: embed(&self.action, text),
+            label: self.label.clone(),
+        }
+    }
+}
+
+impl From<&str> for LinkPrompt {
+    fn from(value: &str) -> Self {
+        Self {
+            action: value.to_owned(),
+            label: None,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Link {
     pub action: String,
     /// Flyover hint.
     pub hint: Option<String>,
     /// Right-click prompts for actions.
-    pub prompts: Vec<String>,
+    pub prompts: Vec<LinkPrompt>,
     /// Where to send the result of clicking on the link.
     pub sendto: SendTo,
     /// Optional scope for the link.
@@ -59,7 +89,7 @@ impl Link {
             prompts: self
                 .prompts
                 .iter()
-                .map(|prompt| embed(prompt, text))
+                .map(|prompt| prompt.with_text(text))
                 .collect(),
             sendto: self.sendto,
             expires: self.expires.clone(),
@@ -71,10 +101,10 @@ fn embed(action: &str, text: &str) -> String {
     action.replace(Link::EMBED_ENTITY, text)
 }
 
-fn split_list(list: &str) -> (String, Vec<String>) {
+fn split_list(list: &str) -> (String, Vec<LinkPrompt>) {
     let mut iter = list.split('|');
     let first = iter.next().unwrap().to_owned();
-    (first, iter.map(ToOwned::to_owned).collect())
+    (first, iter.map(LinkPrompt::from).collect())
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
@@ -184,8 +214,8 @@ where
 mod tests {
     use super::*;
 
-    fn strings(strs: &[&str]) -> Vec<String> {
-        strs.iter().map(|s| (*s).to_owned()).collect()
+    fn strings(strs: &[&str]) -> Vec<LinkPrompt> {
+        strs.iter().map(|&s| LinkPrompt::from(s)).collect()
     }
 
     #[test]
