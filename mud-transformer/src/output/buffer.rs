@@ -13,6 +13,12 @@ use super::span::{EntitySetter, SpanList, TextStyle};
 use crate::responses::SgrReport;
 use crate::term::{TermColor, XTermPalette};
 
+fn last_printable_char(s: &str) -> Option<char> {
+    s.chars()
+        .rev()
+        .find(|c| !matches!(c, '\0'..'\x20' | '\x7f'..='\u{9f}'))
+}
+
 #[derive(Clone, Debug, Default)]
 pub(crate) struct BufferedOutput {
     text_buf: BytesMut,
@@ -23,6 +29,7 @@ pub(crate) struct BufferedOutput {
     in_line: bool,
     last_break: usize,
     last_linebreak: Option<usize>,
+    last_char: Option<char>,
 
     ansi_flags: FlagSet<TextStyle>,
     ansi_foreground: TermColor,
@@ -99,6 +106,32 @@ impl BufferedOutput {
         }
     }
 
+    pub fn append_repeated(&mut self, text: &str, times: usize) {
+        if times == 0 {
+            return;
+        }
+        if self.text_buf.is_empty() {
+            self.spans.set_populated();
+        }
+        for _ in 0..times {
+            self.text_buf.extend_from_slice(text.as_bytes());
+            if self.in_variable {
+                self.variable.push_str(text);
+            }
+        }
+        self.cursor += text.len() * times;
+        if let Some(c) = last_printable_char(text) {
+            self.last_char = Some(c);
+        }
+    }
+
+    pub fn last_printed_character(&self) -> Option<char> {
+        if let Some(c) = last_printable_char(self.view_buf()) {
+            return Some(c);
+        }
+        self.last_char
+    }
+
     #[inline]
     pub fn append<T>(&mut self, fragment: T)
     where
@@ -115,21 +148,23 @@ impl BufferedOutput {
         if fragment.resets_line() {
             self.cursor = 0;
             self.in_line = false;
-            self.reset_ansi_unflushed();
         } else if !self.in_line && fragment.is_line_content() {
             self.in_line = true;
             self.last_break = self.fragments.len();
         }
         match &fragment {
-            OutputFragment::Control(ControlFragment::Repeat(n)) => {
-                self.cursor += usize::from(*n);
+            OutputFragment::LineBreak => {
+                self.reset_ansi_after_flush();
             }
             OutputFragment::Control(ControlFragment::ResetTerminal { .. }) => {
                 self.xterm_palette.reset();
-                self.reset_ansi_unflushed();
+                self.reset_ansi_after_flush();
             }
             OutputFragment::Text(fragment) => {
                 self.cursor += fragment.text.len();
+                if let Some(c) = last_printable_char(&fragment.text) {
+                    self.last_char = Some(c);
+                }
             }
             OutputFragment::Telnet(TelnetFragment::GoAhead) => {
                 self.last_break = self.fragments.len() + 1;
@@ -163,6 +198,11 @@ impl BufferedOutput {
         let buf = self.text_buf.split().freeze();
         // SAFETY: `self.text_buf` contains only valid UTF-8.
         unsafe { ByteString::from_bytes_unchecked(buf) }
+    }
+
+    fn view_buf(&self) -> &str {
+        // SAFETY: `self.text_buf` contains only valid UTF-8.
+        unsafe { str::from_utf8_unchecked(&self.text_buf) }
     }
 
     fn flush_last(&mut self, i: usize) {
@@ -264,10 +304,10 @@ impl BufferedOutput {
 
     pub fn reset_ansi(&mut self) {
         self.flush();
-        self.reset_ansi_unflushed();
+        self.reset_ansi_after_flush();
     }
 
-    fn reset_ansi_unflushed(&mut self) {
+    fn reset_ansi_after_flush(&mut self) {
         self.spans.reset_ansi();
         self.ansi_flags.clear();
         self.ansi_foreground = TermColor::Unset;

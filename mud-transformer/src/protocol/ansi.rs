@@ -5,7 +5,7 @@ use mxp::RgbColor;
 use mxp::escape::ansi;
 
 use crate::input::BufferedInput;
-use crate::output::{BufferedOutput, ControlFragment, TextStyle};
+use crate::output::{BufferedOutput, ControlFragment, OutputFragment, TextStyle};
 use crate::responses::{
     OkReport, PrimaryAttributeReport, SecondaryAttributeReport, SecureResetConfirmation,
     TerminalParamsReport,
@@ -215,7 +215,10 @@ impl Interpreter {
         }
         let n = unwrap_pos(self.code);
         output.append(match code {
-            b'@' => ControlFragment::InsertSpaces(n),
+            b'@' => {
+                output.append_repeated(" ", n.into());
+                return Some(Outcome::Done);
+            }
             b'A' => CursorEffect::Up(n).into(),
             b'B' => CursorEffect::Down(n).into(),
             b'C' => CursorEffect::Forward(n).into(),
@@ -226,7 +229,12 @@ impl Interpreter {
             b'I' => CursorEffect::TabForward(n).into(),
             b'J' => self.interpret_erase(EraseTarget::Display, false)?,
             b'K' => self.interpret_erase(EraseTarget::Line, false)?,
-            b'L' => ControlFragment::InsertLines(n),
+            b'L' => {
+                for _ in 0..n {
+                    output.append(OutputFragment::LineBreak);
+                }
+                return Some(Outcome::Done);
+            }
             b'M' => ControlFragment::DeleteLines(n),
             b'P' => ControlFragment::DeleteCharacters(n),
             b'S' => CursorEffect::ScrollUp(n).into(),
@@ -237,7 +245,12 @@ impl Interpreter {
             b'Z' => CursorEffect::TabBack(n).into(),
             b'`' => CursorEffect::ColumnAbsolute(n).into(),
             b'a' => CursorEffect::ColumnRelative(n).into(),
-            b'b' => ControlFragment::Repeat(n),
+            b'b' => {
+                if let Some(c) = output.last_printed_character() {
+                    output.append_repeated(c.encode_utf8(&mut [0; 4]), n.into());
+                }
+                return Some(Outcome::Done);
+            }
             b'c' => {
                 if !matches!(self.code, None | Some(0)) {
                     return None;
@@ -551,7 +564,7 @@ impl Interpreter {
 
     fn interpret_erase(&self, target: EraseTarget, selective: bool) -> Option<ControlFragment> {
         if self.code == Some(3) && target == EraseTarget::Display {
-            return Some(ControlFragment::Clear);
+            return Some(ControlFragment::EraseSavedLines);
         }
         Some(ControlFragment::Erase {
             target,

@@ -18,8 +18,6 @@ pub enum ControlFragment {
     Beep,
     /// CR (Carriage Return)
     CarriageReturn,
-    /// ED (Erase in Display)
-    Clear,
     /// SOS (Start of String),
     /// PM (Private Message),
     /// APC (Application Program Command)
@@ -45,6 +43,8 @@ pub enum ControlFragment {
     },
     /// ECH (Erase Character)
     EraseCharacters(u16),
+    /// Clear saved lines (xterm)
+    EraseSavedLines,
     /// DECFNK (Function Key)
     FunctionKey { keystroke: u8, modifiers: u8 },
     /// SPA (Start of Guarded Area)
@@ -58,10 +58,6 @@ pub enum ControlFragment {
     },
     /// DECIC (Insert Column)
     InsertColumns(u16),
-    /// IL (Insert Line)
-    InsertLines(u16),
-    /// ICH (Insert Character)
-    InsertSpaces(u16),
     /// OSC 52 (Query or Change Clipboard Data)
     ManipulateSelection(term::SelectionData, ByteString),
     /// MC (Media Copy)
@@ -87,8 +83,6 @@ pub enum ControlFragment {
     /// DECRARA (Reverse Attributes in Rectangular Area),
     /// DECCARA (Change Attributes in Rectangular Area)
     Rect(term::Rect, term::RectEffect),
-    /// REP (Repeat)
-    Repeat(u16),
     /// See [`AttributeRequest`](term::AttributeRequest).
     Request(term::AttributeRequest),
     /// DECSR (Secure Reset),

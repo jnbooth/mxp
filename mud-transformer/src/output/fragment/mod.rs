@@ -55,11 +55,7 @@ impl OutputFragment {
             Self::Hr
                 | Self::LineBreak
                 | Self::PageBreak
-                | Self::Control(
-                    ControlFragment::CarriageReturn
-                        | ControlFragment::Clear
-                        | ControlFragment::VerticalTab
-                )
+                | Self::Control(ControlFragment::CarriageReturn)
         )
     }
 
