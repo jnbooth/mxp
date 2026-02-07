@@ -27,11 +27,11 @@ pub enum ControlFragment {
     /// See [`CursorEffect`](term::CursorEffect).
     Cursor(term::CursorEffect),
     /// DCH (Delete Character)
-    DeleteCharacters(usize),
+    DeleteCharacters(u16),
     /// DECDC (Delete Column)
-    DeleteColumns(usize),
+    DeleteColumns(u16),
     /// DL (Delete Line)
-    DeleteLines(usize),
+    DeleteLines(u16),
     /// DSR (Device Status Reports)
     DeviceStatusReport(term::DeviceStatus),
     /// DECSED (Selective Erase in Display),
@@ -44,7 +44,7 @@ pub enum ControlFragment {
         selective: bool,
     },
     /// ECH (Erase Character)
-    EraseCharacters(usize),
+    EraseCharacters(u16),
     /// DECFNK (Function Key)
     FunctionKey { keystroke: u8, modifiers: u8 },
     /// SPA (Start of Guarded Area)
@@ -57,11 +57,11 @@ pub enum ControlFragment {
         right: Option<u16>,
     },
     /// DECIC (Insert Column)
-    InsertColumns(usize),
+    InsertColumns(u16),
     /// IL (Insert Line)
-    InsertLines(usize),
+    InsertLines(u16),
     /// ICH (Insert Character)
-    InsertSpaces(usize),
+    InsertSpaces(u16),
     /// OSC 52 (Query or Change Clipboard Data)
     ManipulateSelection(term::SelectionData, ByteString),
     /// MC (Media Copy)
@@ -88,7 +88,7 @@ pub enum ControlFragment {
     /// DECCARA (Change Attributes in Rectangular Area)
     Rect(term::Rect, term::RectEffect),
     /// REP (Repeat)
-    Repeat(usize),
+    Repeat(u16),
     /// See [`AttributeRequest`](term::AttributeRequest).
     Request(term::AttributeRequest),
     /// DECSR (Secure Reset),

@@ -122,7 +122,7 @@ impl BufferedOutput {
         }
         match &fragment {
             OutputFragment::Control(ControlFragment::Repeat(n)) => {
-                self.cursor += n;
+                self.cursor += usize::from(*n);
             }
             OutputFragment::Control(ControlFragment::ResetTerminal { .. }) => {
                 self.xterm_palette.reset();

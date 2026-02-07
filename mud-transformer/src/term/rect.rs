@@ -23,10 +23,14 @@ impl Rect {
 pub enum RectEffect {
     /// DECCRA (Copy Rectangular Area)
     Copy {
-        source: usize,
+        /// Source page
+        source: u16,
+        /// Target row
         row: u16,
+        /// Target column
         column: u16,
-        target: usize,
+        /// Target page
+        target: u16,
     },
     /// DECERA (Erase Rectangular Area),
     /// DECSERA (Selective Erase Rectangular Area)

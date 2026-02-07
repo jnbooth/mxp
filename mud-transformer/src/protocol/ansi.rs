@@ -215,7 +215,7 @@ impl Interpreter {
         }
         let n = unwrap_pos(self.code);
         output.append(match code {
-            b'@' => ControlFragment::InsertSpaces(n.into()),
+            b'@' => ControlFragment::InsertSpaces(n),
             b'A' => CursorEffect::Up(n).into(),
             b'B' => CursorEffect::Down(n).into(),
             b'C' => CursorEffect::Forward(n).into(),
@@ -226,18 +226,18 @@ impl Interpreter {
             b'I' => CursorEffect::TabForward(n).into(),
             b'J' => self.interpret_erase(EraseTarget::Display, false)?,
             b'K' => self.interpret_erase(EraseTarget::Line, false)?,
-            b'L' => ControlFragment::InsertLines(n.into()),
-            b'M' => ControlFragment::DeleteLines(n.into()),
-            b'P' => ControlFragment::DeleteCharacters(n.into()),
+            b'L' => ControlFragment::InsertLines(n),
+            b'M' => ControlFragment::DeleteLines(n),
+            b'P' => ControlFragment::DeleteCharacters(n),
             b'S' => CursorEffect::ScrollUp(n).into(),
             b'T' => CursorEffect::ScrollDown(n).into(),
             b'U' => CursorEffect::NextPage(n).into(),
             b'V' => CursorEffect::PrecedingPage(n).into(),
-            b'X' => ControlFragment::EraseCharacters(n.into()),
+            b'X' => ControlFragment::EraseCharacters(n),
             b'Z' => CursorEffect::TabBack(n).into(),
             b'`' => CursorEffect::ColumnAbsolute(n).into(),
             b'a' => CursorEffect::ColumnRelative(n).into(),
-            b'b' => ControlFragment::Repeat(n.into()),
+            b'b' => ControlFragment::Repeat(n),
             b'c' => {
                 if !matches!(self.code, None | Some(0)) {
                     return None;
@@ -424,10 +424,10 @@ impl Interpreter {
             b"$v" => {
                 let (rect, &[sp, td, tl]) = self.exact_sequence_rect()?;
                 RectEffect::Copy {
-                    source: unwrap_pos(sp).into(),
+                    source: unwrap_pos(sp),
                     row: unwrap_pos(td),
                     column: unwrap_pos(tl),
-                    target: unwrap_pos(self.code).into(),
+                    target: unwrap_pos(self.code),
                 }
                 .with(rect)
             }
@@ -530,8 +530,8 @@ impl Interpreter {
             }),
             b"$~" => ControlFragment::SetStatusDisplay(StatusDisplayType::from_code(self.code)?),
             b"'|" if self.code_or(0) <= 1 => AttributeRequest::LocatorPosition.into(),
-            b"'}" => ControlFragment::InsertColumns(unwrap_pos(self.code).into()),
-            b"'~" => ControlFragment::DeleteColumns(unwrap_pos(self.code).into()),
+            b"'}" => ControlFragment::InsertColumns(unwrap_pos(self.code)),
+            b"'~" => ControlFragment::DeleteColumns(unwrap_pos(self.code)),
             b"*x" => ControlFragment::SetAttributeChangeExtent(match self.code {
                 None | Some(0 | 1) => false,
                 Some(2) => true,
