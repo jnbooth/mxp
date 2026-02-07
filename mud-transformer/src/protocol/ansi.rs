@@ -17,56 +17,6 @@ use crate::term::{
     TermColor, VisualCharacterAttribute, WindowOp,
 };
 
-enum Palette {
-    Foreground,
-    Background,
-}
-
-impl Palette {
-    pub fn set(self, output: &mut BufferedOutput, color: RgbColor) {
-        match self {
-            Self::Background => output.set_ansi_background(color),
-            Self::Foreground => output.set_ansi_foreground(color),
-        }
-    }
-
-    pub fn set_code(self, output: &mut BufferedOutput, color: u8) {
-        match self {
-            Self::Background => output.set_ansi_background(TermColor::Ansi(color - ansi::BG_BLACK)),
-            Self::Foreground => output.set_ansi_foreground(TermColor::Ansi(color - ansi::FG_BLACK)),
-        }
-    }
-
-    pub fn set_default(self, output: &mut BufferedOutput) {
-        match self {
-            Self::Background => output.set_ansi_background(TermColor::Unset),
-            Self::Foreground => output.set_ansi_foreground(TermColor::Unset),
-        }
-    }
-
-    fn interpret_mode<I>(self, output: &mut BufferedOutput, mut iter: I) -> Option<()>
-    where
-        I: Iterator<Item = Option<u8>>,
-    {
-        match iter.next()?? {
-            ansi::BEGIN_XTERM_COLOR => {
-                self.set(output, RgbColor::xterm(iter.next()??));
-                Some(())
-            }
-            ansi::BEGIN_TRUECOLOR => {
-                let color = RgbColor {
-                    r: iter.next()??,
-                    g: iter.next()??,
-                    b: iter.next()??,
-                };
-                self.set(output, color);
-                Some(())
-            }
-            _ => None,
-        }
-    }
-}
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) enum Outcome {
     Fail,
@@ -666,5 +616,55 @@ impl Interpreter {
             right: *r,
         };
         Some((rect, remaining))
+    }
+}
+
+enum Palette {
+    Foreground,
+    Background,
+}
+
+impl Palette {
+    pub fn set(self, output: &mut BufferedOutput, color: RgbColor) {
+        match self {
+            Self::Background => output.set_ansi_background(color),
+            Self::Foreground => output.set_ansi_foreground(color),
+        }
+    }
+
+    pub fn set_code(self, output: &mut BufferedOutput, color: u8) {
+        match self {
+            Self::Background => output.set_ansi_background(TermColor::Ansi(color - ansi::BG_BLACK)),
+            Self::Foreground => output.set_ansi_foreground(TermColor::Ansi(color - ansi::FG_BLACK)),
+        }
+    }
+
+    pub fn set_default(self, output: &mut BufferedOutput) {
+        match self {
+            Self::Background => output.set_ansi_background(TermColor::Unset),
+            Self::Foreground => output.set_ansi_foreground(TermColor::Unset),
+        }
+    }
+
+    fn interpret_mode<I>(self, output: &mut BufferedOutput, mut iter: I) -> Option<()>
+    where
+        I: Iterator<Item = Option<u8>>,
+    {
+        match iter.next()?? {
+            ansi::BEGIN_XTERM_COLOR => {
+                self.set(output, RgbColor::xterm(iter.next()??));
+                Some(())
+            }
+            ansi::BEGIN_TRUECOLOR => {
+                let color = RgbColor {
+                    r: iter.next()??,
+                    g: iter.next()??,
+                    b: iter.next()??,
+                };
+                self.set(output, color);
+                Some(())
+            }
+            _ => None,
+        }
     }
 }
