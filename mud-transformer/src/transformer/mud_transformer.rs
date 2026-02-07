@@ -524,7 +524,7 @@ impl Transformer {
             Phase::Esc if c == ansi::ESC => (),
 
             Phase::Esc => {
-                self.phase = match self.ansi.start(c, &mut self.output, &mut self.input) {
+                self.phase = match self.ansi.escape(c, &mut self.output, &mut self.input) {
                     xterm::Start::Continue => Phase::Ansi,
                     xterm::Start::BeginString => Phase::AnsiString,
                     xterm::Start::Done => Phase::Normal,

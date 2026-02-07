@@ -52,12 +52,20 @@ impl Interpreter {
         &self.answerback
     }
 
-    pub fn start(
+    pub fn escape(
         &mut self,
         code: u8,
         output: &mut BufferedOutput,
         input: &mut BufferedInput,
     ) -> Start {
+        if self.phase == Phase::ControlString {
+            if code == ansi::ESC_ST {
+                self.finish_control_string(output, input);
+                return Start::Done;
+            }
+            self.string.extend_from_slice(&[ansi::ESC, code]);
+            return Start::Continue;
+        }
         output.append(match code {
             ansi::ESC_CSI => {
                 self.phase = Phase::Csi;
@@ -75,10 +83,6 @@ impl Interpreter {
                 self.code = code;
                 self.phase = Phase::ControlString;
                 return Start::BeginString;
-            }
-            ansi::ESC_ST if self.phase == Phase::ControlString => {
-                self.finish_control_string(output, input);
-                return Start::Done;
             }
             b'6' => CursorEffect::BackIndex.into(),
             b'7' => CursorEffect::Save { dec: true }.into(),
@@ -101,8 +105,12 @@ impl Interpreter {
             b'c' => ControlFragment::ResetTerminal(Reset::Hard),
             b'l' => ControlFragment::SetMemoryLock(true),
             b'm' => ControlFragment::SetMemoryLock(false),
-            _ => return Start::Done,
+            _ => {
+                self.phase = Phase::Normal;
+                return Start::Done;
+            }
         });
+        self.phase = Phase::Normal;
         Start::Done
     }
 
@@ -136,8 +144,26 @@ impl Interpreter {
                 }
                 Outcome::Done
             }
-            Phase::ControlString => self.interpret_control_string(code, output, input),
-            Phase::FunctionKey => self.interpret_function_key(code),
+            Phase::ControlString => {
+                if code == ansi::BEL {
+                    self.finish_control_string(output, input);
+                    return Outcome::Done;
+                }
+                self.string.extend_from_slice(&[code]);
+                Outcome::Continue
+            }
+            Phase::FunctionKey => {
+                if self.code == 0 {
+                    self.code = code;
+                    return Outcome::Continue;
+                }
+                if self.string.first() == Some(&code) {
+                    self.phase = Phase::Normal;
+                    return Outcome::Done;
+                }
+                self.string.extend_from_slice(&[code]);
+                Outcome::Continue
+            }
         }
     }
 
@@ -153,33 +179,6 @@ impl Interpreter {
             b"#8" => Some(ControlFragment::ScreenAlignmentTest),
             _ => None,
         }
-    }
-
-    fn interpret_function_key(&mut self, code: u8) -> Outcome {
-        if self.code == 0 {
-            self.code = code;
-            return Outcome::Continue;
-        }
-        if self.string.first() == Some(&code) {
-            self.phase = Phase::Normal;
-            return Outcome::Done;
-        }
-        self.string.extend_from_slice(&[code]);
-        Outcome::Continue
-    }
-
-    fn interpret_control_string(
-        &mut self,
-        code: u8,
-        output: &mut BufferedOutput,
-        input: &mut BufferedInput,
-    ) -> Outcome {
-        if code == ansi::BEL {
-            self.finish_control_string(output, input);
-            return Outcome::Done;
-        }
-        self.string.extend_from_slice(&[code]);
-        Outcome::Continue
     }
 
     fn finish_control_string(
