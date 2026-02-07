@@ -1,6 +1,6 @@
 use super::rgb::RgbColor;
 
-pub(super) const XTERM_COLORS: &[RgbColor; 256] = &{
+pub(super) const XTERM_COLORS: [RgbColor; 256] = {
     const COLOR_SCALE: &[u8] = &[
         0,
         95,
@@ -54,6 +54,6 @@ pub(super) const XTERM_COLORS: &[RgbColor; 256] = &{
     colors
 };
 
-pub(super) const fn first_xterm_colors<const N: usize>() -> &'static [RgbColor; N] {
-    XTERM_COLORS.first_chunk().unwrap()
+pub(super) const fn first_xterm_colors<const N: usize>() -> [RgbColor; N] {
+    *XTERM_COLORS.first_chunk().unwrap()
 }

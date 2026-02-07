@@ -331,7 +331,6 @@ fn do_osc(
         3 => output.append(ControlFragment::SetXProperty(text)),
         4 => {
             let mut iter = text.split(';');
-            iter.next()?;
             while let Some(color) = iter.next() {
                 let spec = iter.next()?;
                 let color_code = color.parse().ok()?;
@@ -361,6 +360,11 @@ fn do_osc(
             let selection = SelectionData::from_code(selection)?;
             let (_, text) = text.split_at(2);
             output.append(ControlFragment::ManipulateSelection(selection, text));
+        }
+        104 => {
+            for code in text.split(';').filter_map(|code| code.parse().ok()) {
+                output.reset_xterm_color(code);
+            }
         }
         _ => return None,
     }

@@ -15,8 +15,12 @@ pub enum TabBehavior {
     Spaces(u8),
     /// When a tab character is received, append spaces such that the cursor reaches the next column
     /// whose index is a multiple of 8.
+    ///
+    /// Note: This does not take cursor operations into account, so if your client responds to
+    /// control commands such as [`CursorEffect::Back`](crate::term::CursorEffect::TabForward),
+    /// the transformer will likely miscalculate the next multiple of 8.
     NextMultipleOf8,
-    /// Interpret tab characters as control characters ([`CursorEffect::TabForward(1)`](crate::term::CursorEffect::TabForward)).
+    /// Interpret tab characters as [`CursorEffect::TabForward`](crate::term::CursorEffect::TabForward)) control characters.
     Control,
 }
 

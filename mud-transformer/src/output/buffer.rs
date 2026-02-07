@@ -34,7 +34,6 @@ pub(crate) struct BufferedOutput {
     ansi_flags: FlagSet<TextStyle>,
     ansi_foreground: TermColor,
     ansi_background: TermColor,
-    colors: Vec<RgbColor>,
     xterm_palette: Box<XTermPalette>,
     ignore_mxp_colors: bool,
 
@@ -52,8 +51,8 @@ impl BufferedOutput {
         self.fragments.is_empty() && self.text_buf.is_empty()
     }
 
-    pub fn set_colors(&mut self, colors: Vec<RgbColor>) {
-        self.colors = colors;
+    pub fn set_colors(&mut self, colors: &[RgbColor]) {
+        self.xterm_palette.set_defaults(colors);
     }
 
     pub fn get_xterm_color(&self, code: u8) -> RgbColor {
@@ -62,6 +61,10 @@ impl BufferedOutput {
 
     pub fn set_xterm_color(&mut self, code: u8, color: RgbColor) {
         self.xterm_palette[code] = color;
+    }
+
+    pub fn reset_xterm_color(&mut self, code: u8) {
+        self.xterm_palette.reset_color(code);
     }
 
     pub fn ansi_mode(&self) -> SgrReport {
@@ -75,10 +78,7 @@ impl BufferedOutput {
     fn color(&self, color: TermColor) -> Option<RgbColor> {
         match color {
             TermColor::Unset => None,
-            TermColor::Ansi(i) => Some(match self.colors.get(usize::from(i)) {
-                Some(color) => *color,
-                None => self.xterm_palette[i],
-            }),
+            TermColor::Ansi(i) => Some(self.xterm_palette[i]),
             TermColor::Rgb(color) => Some(color),
         }
     }

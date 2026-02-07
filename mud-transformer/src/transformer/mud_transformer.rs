@@ -68,7 +68,7 @@ impl Default for Transformer {
 impl Transformer {
     pub fn new(config: TransformerConfig) -> Self {
         let mut output = BufferedOutput::new();
-        output.set_colors(config.colors.clone());
+        output.set_colors(&config.colors);
         if config.ignore_mxp_colors {
             output.disable_mxp_colors();
         }
@@ -127,7 +127,7 @@ impl Transformer {
             self.output.enable_mxp_colors();
         }
         if config.colors != self.config.colors {
-            self.output.set_colors(self.config.colors.clone());
+            self.output.set_colors(&self.config.colors);
         }
         match self.config.use_mxp {
             UseMxp::Always => self.mxp_on(),

@@ -18,13 +18,13 @@ impl RgbColor {
     pub const WHITE: Self = Self::hex(0xFFFFFF);
 
     /// Standard definitions for 3-bit color.
-    pub const XTERM_8: &[Self; 8] = first_xterm_colors();
+    pub const XTERM_8: [Self; 8] = first_xterm_colors();
 
     /// Standard definitions for 4-bit color.
-    pub const XTERM_16: &[Self; 16] = first_xterm_colors();
+    pub const XTERM_16: [Self; 16] = first_xterm_colors();
 
     /// Standard definitions for 8-bit color.
-    pub const XTERM_256: &[Self; 256] = XTERM_COLORS;
+    pub const XTERM_256: [Self; 256] = XTERM_COLORS;
 
     /// Constructs an `RgbColor` from a red, green, and blue value.
     #[inline]
