@@ -518,6 +518,9 @@ impl Transformer {
 
         if self.phase.is_phase_reset(c) {
             self.phase = Phase::Normal;
+            if matches!(self.phase, Phase::Ansi | Phase::AnsiString) {
+                self.ansi.terminate();
+            }
         }
 
         match self.phase {
@@ -538,17 +541,15 @@ impl Transformer {
             }
 
             Phase::Ansi | Phase::AnsiString => {
+                let mut reset = true;
                 match self.ansi.interpret(c, &mut self.output, &mut self.input) {
-                    xterm::Outcome::Continue => (),
-                    xterm::Outcome::Done | xterm::Outcome::Fail => self.phase = Phase::Normal,
-                    xterm::Outcome::Mxp(mxp::Mode::RESET) => {
-                        self.mxp_off(false);
-                        self.phase = Phase::Normal;
-                    }
-                    xterm::Outcome::Mxp(mode) => {
-                        self.mxp_mode_change(Some(mode));
-                        self.phase = Phase::Normal;
-                    }
+                    xterm::Outcome::Continue => reset = false,
+                    xterm::Outcome::Done | xterm::Outcome::Fail => (),
+                    xterm::Outcome::Mxp(mxp::Mode::RESET) => self.mxp_off(false),
+                    xterm::Outcome::Mxp(mode) => self.mxp_mode_change(Some(mode)),
+                }
+                if reset {
+                    self.phase = Phase::Normal;
                 }
             }
 

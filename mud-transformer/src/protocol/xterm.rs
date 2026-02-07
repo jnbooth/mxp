@@ -52,6 +52,11 @@ impl Interpreter {
         &self.answerback
     }
 
+    pub fn terminate(&mut self) {
+        self.phase = Phase::Normal;
+        self.string.clear();
+    }
+
     pub fn escape(
         &mut self,
         code: u8,
@@ -73,13 +78,11 @@ impl Interpreter {
                 return Start::Continue;
             }
             0x20..0x30 => {
-                self.string.clear();
                 self.code = code;
                 self.phase = Phase::Normal;
                 return Start::Continue;
             }
             ansi::ESC_DCS | ansi::ESC_SOS | ansi::ESC_OSC | ansi::ESC_PM | ansi::ESC_APC => {
-                self.string.clear();
                 self.code = code;
                 self.phase = Phase::ControlString;
                 return Start::BeginString;
@@ -95,7 +98,6 @@ impl Interpreter {
             b'H' => TabEffect::SetStop.into(),
             b'M' => CursorEffect::ReverseIndex.into(),
             b'Q' => {
-                self.string.clear();
                 self.code = 0;
                 self.phase = Phase::FunctionKey;
                 return Start::BeginString;
@@ -122,11 +124,11 @@ impl Interpreter {
     ) -> Outcome {
         match code {
             ansi::CAN => {
-                self.phase = Phase::Normal;
+                self.terminate();
                 return Outcome::Done;
             }
             ansi::SUB => {
-                self.phase = Phase::Normal;
+                self.terminate();
                 output.append_text("⸮");
                 return Outcome::Fail;
             }
