@@ -61,6 +61,7 @@ pub const fn bitmask(config: &TransformerConfig) -> u16 {
         | mask(!config.disable_utf8, MTTS::UTF_8)
         | MTTS::XTERM_COLORS
         | mask(config.mouse_tracking, MTTS::MOUSE_TRACKING)
+        | MTTS::OSC_COLOR_PALETTE
         | mask(config.screen_reader, MTTS::SCREEN_READER)
         | mask(config.proxy, MTTS::PROXY)
         | MTTS::TRUECOLOR
