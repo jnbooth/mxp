@@ -18,15 +18,15 @@ pub enum CursorEffect {
     PreviousLine(u16),
 
     /// NP (Next Page)
-    NextPage(usize),
+    NextPage(u16),
     /// PP (Preceding Page)
-    PrecedingPage(usize),
+    PrecedingPage(u16),
     /// PPB (Page Position Backward)
-    PageBackward(usize),
+    PageBackward(u16),
     /// PPR (Page Position Relative)
-    PageForward(usize),
+    PageForward(u16),
     /// PPA (Page Position Absolute)
-    PageAbsolute(usize),
+    PageAbsolute(u16),
 
     /// CHT (Cursor Horizontal Forward Tabulation)
     TabForward(u16),

@@ -9,9 +9,11 @@ use crate::term;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ControlFragment {
+    /// DECDHL (Double-Width, Double-Height Line) Top Half,
+    /// DECDHL (Double-Width, Double-Height Line) Bottom Half,
+    /// DECSWL (Single-Width, Single-Height Line),
+    /// DECDWL (Double-Width, Single-Height Line)
     AdjustLine(term::Line),
-    /// BS (Backspace)
-    Backspace,
     /// BEL (Beep)
     Beep,
     /// CR (Carriage Return)
@@ -22,6 +24,7 @@ pub enum ControlFragment {
     /// PM (Private Message),
     /// APC (Application Program Command)
     ControlString(term::ControlStringType, Bytes),
+    /// See [`CursorEffect`](term::CursorEffect).
     Cursor(term::CursorEffect),
     /// DCH (Delete Character)
     DeleteCharacters(usize),
@@ -40,14 +43,10 @@ pub enum ControlFragment {
         range: term::EraseRange,
         selective: bool,
     },
-    EraseCharacter,
     /// ECH (Erase Character)
     EraseCharacters(usize),
     /// DECFNK (Function Key)
-    FunctionKey {
-        keystroke: u8,
-        modifiers: u8,
-    },
+    FunctionKey { keystroke: u8, modifiers: u8 },
     /// SPA (Start of Guarded Area)
     GuardedAreaStart,
     /// EPA (End of Guarded Area)
@@ -67,8 +66,11 @@ pub enum ControlFragment {
     ManipulateSelection(term::SelectionData, ByteString),
     /// MC (Media Copy)
     MediaCopy(term::PrintFunction),
+    /// DECRQM (Request Mode)
     ModeRequest(term::Mode),
+    /// Restore mode values (xterm)
     ModeRestore(term::Mode),
+    /// Save mode values (xterm)
     ModeSave(term::Mode),
     /// SM (Set Mode),
     /// RM (Reset Mode)
@@ -77,21 +79,24 @@ pub enum ControlFragment {
     ///
     /// Rarely used. Not to be confused with [`CursorEffect::NextLine`].
     NextLine,
-    QueryKeyFormat(u8),
+    /// DECCRA (Copy Rectangular Area),
+    /// DECERA (Erase Rectangular Area),
+    /// DECSERA (Selective Erase Rectangular Area),
+    /// DECFRA (Fill Rectangular Area),
+    /// DECEFR (Enable Filter Rectangle),
+    /// DECRARA (Reverse Attributes in Rectangular Area),
+    /// DECCARA (Change Attributes in Rectangular Area)
     Rect(term::Rect, term::RectEffect),
     /// REP (Repeat)
     Repeat(usize),
+    /// See [`AttributeRequest`](term::AttributeRequest).
     Request(term::AttributeRequest),
-    ResetKeyFormat,
     /// DECSR (Secure Reset),
     /// DECSTR (Soft Terminal Reset),
     /// RIS (Reset to Initial State)
     ResetTerminal(term::Reset),
     /// DECSLE (Select Locator Events)
-    SelectLocatorEvents {
-        on_press: bool,
-        on_release: bool,
-    },
+    SelectLocatorEvents { on_press: bool, on_release: bool },
     /// DECALN (Screen Alignment Pattern)
     ScreenAlignmentTest,
     /// DECSASD (Select Active Status Display)
@@ -110,22 +115,21 @@ pub enum ControlFragment {
     SetColumns(u16),
     /// DECSDDT (Select Disconnect Delay Time)
     SetDisconnectDelay(Duration),
+    /// OSC 10-18 (Set Dynamic Color)
     SetDynamicColor(term::DynamicColor, RgbColor),
+    /// OSC 50 (Set Font)
     SetFont(ByteString),
     /// OSC 1 (Change Window Icon)
     SetIconLabel(ByteString),
     /// DECSKCV (Set Key Click Volume)
     SetKeyClickVolume(u8),
-    SetKeyFormat {
-        param: u8,
-        value: Option<u16>,
-    },
     /// DECSMBV (Set Margin Bell Volume)
     SetMarginVolume(u8),
     /// Locks memory above the cursor.
     SetMemoryLock(bool),
     /// DECLL (Load LEDs)
     SetLed(term::KeyboardLed, bool),
+    /// DECELR (Enable Locator Reporting)
     SetLocator(term::LocatorReporting, term::LocatorUnit),
     /// DECSRFR (Select Refresh Rate)
     SetRefreshRate(term::RefreshRate),
@@ -145,13 +149,16 @@ pub enum ControlFragment {
     SetWarningVolume(u8),
     /// DECSCUSR (Set Cursor Style)
     StyleCursor(term::CursorStyle),
+    /// TBC (Tab Clear),
+    /// DECRSPS (Restore Presentation State),
+    /// DECST8C (Set Tab at Every 8 Columns),
+    /// HTS (Horizontal Tab Set)
     Tab(term::TabEffect),
     /// DECLTOD (Load Time of Day)
-    TimeOfDay {
-        hour: u8,
-        minute: u8,
-    },
+    TimeOfDay { hour: u8, minute: u8 },
+    /// Enable mouse tracking (xterm)
     Track(term::HighlightTracking),
+    /// See [`WindowOp`](term::WindowOp).
     Window(term::WindowOp),
     /// VT (Vertical Tab)
     VerticalTab,

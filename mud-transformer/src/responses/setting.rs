@@ -6,21 +6,6 @@ use mxp::{FlagSet, RgbColor};
 use crate::output::TextStyle;
 use crate::term::TermColor;
 
-const PRE: &str = "\x1BP0$r";
-
-struct IfSome<T>(Option<T>);
-impl<T> fmt::Display for IfSome<T>
-where
-    T: fmt::Display,
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &self.0 {
-            Some(x) => x.fmt(f),
-            None => Ok(()),
-        }
-    }
-}
-
 /// Formats a DECRPSS response.
 #[derive(Copy, Clone, Debug)]
 pub(crate) struct SgrReport {
@@ -36,7 +21,7 @@ impl fmt::Display for SgrReport {
             foreground,
             background,
         } = self;
-        write!(f, "{PRE}0")?;
+        write!(f, "\x1BP0$r0")?;
         for ansi in flags.into_iter().filter_map(TextStyle::ansi) {
             write!(f, ";{ansi}")?;
         }
@@ -51,36 +36,6 @@ impl fmt::Display for SgrReport {
             TermColor::Rgb(RgbColor { r, g, b }) => write!(f, ";48;2;{r};{g};{b}")?,
         }
         write!(f, "m{ST}")
-    }
-}
-
-/// Formats a DECRPSS response for DECSTBM.
-#[derive(Copy, Clone, Debug)]
-pub(crate) struct VMarginsReport {
-    pub top: Option<u16>,
-    pub bottom: Option<u16>,
-}
-
-impl fmt::Display for VMarginsReport {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let top = IfSome(self.top);
-        let bottom = IfSome(self.bottom);
-        write!(f, "{PRE}{top};{bottom}s")
-    }
-}
-
-/// Formats a DECRPSS response for DECSLRM.
-#[derive(Copy, Clone, Debug)]
-pub(crate) struct HMarginsReport {
-    pub left: Option<u16>,
-    pub right: Option<u16>,
-}
-
-impl fmt::Display for HMarginsReport {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let left = IfSome(self.left);
-        let right = IfSome(self.right);
-        write!(f, "{PRE}{left};{right}s")
     }
 }
 

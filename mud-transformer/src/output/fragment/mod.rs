@@ -49,8 +49,18 @@ pub enum OutputFragment {
 
 impl OutputFragment {
     /// Fragment causes a new line to begin, resetting most ANSI effects and flushing text.
-    pub const fn is_newline(&self) -> bool {
-        matches!(self, Self::Hr | Self::LineBreak | Self::PageBreak)
+    pub const fn resets_line(&self) -> bool {
+        matches!(
+            self,
+            Self::Hr
+                | Self::LineBreak
+                | Self::PageBreak
+                | Self::Control(
+                    ControlFragment::CarriageReturn
+                        | ControlFragment::Clear
+                        | ControlFragment::VerticalTab
+                )
+        )
     }
 
     /// Fragment takes up space inside a line of text.

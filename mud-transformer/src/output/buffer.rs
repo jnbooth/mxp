@@ -31,6 +31,7 @@ pub(crate) struct BufferedOutput {
     xterm_palette: Box<XTermPalette>,
     ignore_mxp_colors: bool,
 
+    cursor: usize,
     in_variable: bool,
     variable: String,
 }
@@ -98,54 +99,64 @@ impl BufferedOutput {
         }
     }
 
+    #[inline]
     pub fn append<T>(&mut self, fragment: T)
     where
         T: Into<OutputFragment>,
     {
-        // Reduce monomorphization
-        fn inner(buffer: &mut BufferedOutput, fragment: OutputFragment) {
-            if fragment.should_flush() {
-                buffer.flush();
-            }
-            match fragment {
-                OutputFragment::Control(ControlFragment::CarriageReturn)
-                | OutputFragment::Hr
-                | OutputFragment::LineBreak
-                | OutputFragment::PageBreak => {
-                    buffer.in_line = false;
-                    buffer.ansi_flags.clear();
-                    buffer.ansi_foreground = TermColor::Unset;
-                    buffer.ansi_background = TermColor::Unset;
-                }
-                OutputFragment::Text(_) | OutputFragment::Image(_) if !buffer.in_line => {
-                    buffer.in_line = true;
-                    buffer.last_break = buffer.fragments.len();
-                }
-                OutputFragment::Telnet(TelnetFragment::GoAhead) => {
-                    buffer.last_break = buffer.fragments.len() + 1;
-                }
-                OutputFragment::Control(ControlFragment::ResetTerminal { .. }) => {
-                    buffer.xterm_palette.reset();
-                    buffer.reset_ansi();
-                }
-                _ => (),
-            }
-            if fragment.is_windowless() {
-                buffer.fragments.push(fragment.into());
-                return;
-            }
-            let Some(span) = buffer.spans.get() else {
-                buffer.fragments.push(fragment.into());
-                return;
-            };
-            buffer.fragments.push(Output {
-                fragment,
-                gag: span.gag,
-                window: span.window.clone(),
-            });
-        }
+        self.append_fragment(fragment.into());
+    }
 
-        inner(self, fragment.into());
+    // Reduce monomorphization.
+    fn append_fragment(&mut self, fragment: OutputFragment) {
+        if !self.text_buf.is_empty() && fragment.should_flush() {
+            self.flush();
+        }
+        if fragment.resets_line() {
+            self.cursor = 0;
+            self.in_line = false;
+            self.reset_ansi_unflushed();
+        } else if !self.in_line && fragment.is_line_content() {
+            self.in_line = true;
+            self.last_break = self.fragments.len();
+        }
+        match &fragment {
+            OutputFragment::Control(ControlFragment::Repeat(n)) => {
+                self.cursor += n;
+            }
+            OutputFragment::Control(ControlFragment::ResetTerminal { .. }) => {
+                self.xterm_palette.reset();
+                self.reset_ansi_unflushed();
+            }
+            OutputFragment::Text(fragment) => {
+                self.cursor += fragment.text.len();
+            }
+            OutputFragment::Telnet(TelnetFragment::GoAhead) => {
+                self.last_break = self.fragments.len() + 1;
+            }
+            _ => (),
+        }
+        if fragment.is_windowless() {
+            self.fragments.push(fragment.into());
+            return;
+        }
+        let Some(span) = self.spans.get() else {
+            self.fragments.push(fragment.into());
+            return;
+        };
+        self.fragments.push(Output {
+            fragment,
+            gag: span.gag,
+            window: span.window.clone(),
+        });
+    }
+
+    pub fn append_tab(&mut self) {
+        const TABS: &[u8] = b"        ";
+        let text_cursor = self.cursor + self.text_buf.len();
+        let spacing = text_cursor % TABS.len();
+        let spaces = if spacing == 0 { TABS } else { &TABS[..spacing] };
+        self.text_buf.extend_from_slice(spaces);
     }
 
     fn take_buf(&mut self) -> ByteString {
@@ -253,6 +264,10 @@ impl BufferedOutput {
 
     pub fn reset_ansi(&mut self) {
         self.flush();
+        self.reset_ansi_unflushed();
+    }
+
+    fn reset_ansi_unflushed(&mut self) {
         self.spans.reset_ansi();
         self.ansi_flags.clear();
         self.ansi_foreground = TermColor::Unset;

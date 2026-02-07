@@ -7,6 +7,35 @@ use serde::{Deserialize, Serialize};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub enum TabBehavior {
+    /// Append tab characters directly to the text buffer.
+    #[default]
+    TabCharacter,
+    /// When a tab character is received, append some number of spaces to the text buffer.
+    Spaces(u8),
+    /// When a tab character is received, append spaces such that the cursor reaches the next column
+    /// whose index is a multiple of 8.
+    NextMultipleOf8,
+    /// Interpret tab characters as control characters ([`CursorEffect::TabForward(1)`](crate::term::CursorEffect::TabForward)).
+    Control,
+}
+
+impl TabBehavior {
+    pub(crate) fn string(self) -> &'static str {
+        const SPACES: &str = match str::from_utf8(&[b' '; 256]) {
+            Ok(spaces) => spaces,
+            Err(_) => unreachable!(),
+        };
+        match self {
+            Self::TabCharacter => "\t",
+            Self::Spaces(n) => &SPACES[..n.into()],
+            _ => "",
+        }
+    }
+}
+
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum UseMxp {
     /// Activate MXP in response to an `IAC` subnegotiation from the server setting MXP on.
     #[default]
@@ -138,6 +167,9 @@ pub struct TransformerConfig {
     /// MXP tags supported by the client.
     /// Default: all tags.
     pub supports: FlagSet<Tag>,
+    /// Behavior when the server sends a tab (`'\t'`) character.
+    /// Default: [`TabBehavior::TabCharacter`].
+    pub tab: TabBehavior,
     /// String used to identify the terminal to the server.
     /// Default: empty.
     pub terminal_identification: String,
@@ -180,6 +212,7 @@ impl TransformerConfig {
             screen_reader: false,
             ssl: false,
             supports: FlagSet::full(),
+            tab: TabBehavior::TabCharacter,
             terminal_identification: String::new(),
             use_mxp: UseMxp::Command,
             version: String::new(),

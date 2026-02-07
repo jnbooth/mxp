@@ -27,7 +27,7 @@ mod mode;
 pub use mode::{ModeReport, ModeReportSetting};
 
 mod setting;
-pub(crate) use setting::{HMarginsReport, SgrReport, UnknownSettingReport, VMarginsReport};
+pub(crate) use setting::{SgrReport, UnknownSettingReport};
 
 mod tabstop;
 pub use tabstop::TabStopReport;

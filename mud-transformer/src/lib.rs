@@ -21,4 +21,4 @@ pub mod responses;
 pub mod term;
 
 mod transformer;
-pub use transformer::{Tag, Transformer, TransformerConfig, UseMxp};
+pub use transformer::{TabBehavior, Tag, Transformer, TransformerConfig, UseMxp};

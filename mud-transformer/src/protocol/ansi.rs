@@ -11,7 +11,7 @@ use crate::responses::{
     TerminalParamsReport,
 };
 use crate::term::{
-    self, AttributeRequest, CursorEffect, CursorStyle, DeviceStatus, EraseRange, EraseTarget,
+    AttributeRequest, CursorEffect, CursorStyle, DeviceStatus, EraseRange, EraseTarget,
     HighlightTracking, KeyboardLed, LocatorReporting, LocatorUnit, Mode, PrintFunction, Rect,
     RectEffect, RefreshRate, Reset, ReverseVisualCharacterAttribute, StatusDisplayType, TabEffect,
     TermColor, VisualCharacterAttribute, WindowOp,
@@ -81,8 +81,6 @@ pub(crate) struct Interpreter {
     sequence: Vec<Option<u16>>,
     prefix: u8,
     suffix: u8,
-
-    pub margins: term::Rect,
 }
 
 impl Default for Interpreter {
@@ -106,7 +104,6 @@ impl Interpreter {
             sequence: Vec::new(),
             prefix: 0,
             suffix: 0,
-            margins: Rect::new(),
         }
     }
 
@@ -234,8 +231,8 @@ impl Interpreter {
             b'P' => ControlFragment::DeleteCharacters(n.into()),
             b'S' => CursorEffect::ScrollUp(n).into(),
             b'T' => CursorEffect::ScrollDown(n).into(),
-            b'U' => CursorEffect::NextPage(n.into()).into(),
-            b'V' => CursorEffect::PrecedingPage(n.into()).into(),
+            b'U' => CursorEffect::NextPage(n).into(),
+            b'V' => CursorEffect::PrecedingPage(n).into(),
             b'X' => ControlFragment::EraseCharacters(n.into()),
             b'Z' => CursorEffect::TabBack(n).into(),
             b'`' => CursorEffect::ColumnAbsolute(n).into(),
@@ -342,8 +339,6 @@ impl Interpreter {
             }
             b'r' => {
                 let &[top] = self.exact_sequence()?;
-                self.margins.top = top;
-                self.margins.bottom = self.code;
                 ControlFragment::VMargins {
                     top,
                     bottom: self.code,
@@ -351,8 +346,6 @@ impl Interpreter {
             }
             b's' => {
                 let &[left] = self.exact_sequence()?;
-                self.margins.left = left;
-                self.margins.right = self.code;
                 ControlFragment::HMargins {
                     left,
                     right: self.code,
@@ -393,7 +386,6 @@ impl Interpreter {
             b'J' => self.interpret_erase(EraseTarget::Display, true)?,
             b'K' => self.interpret_erase(EraseTarget::Line, true)?,
             b'W' if self.code == Some(5) => TabEffect::SetEvery8Columns.into(),
-            b'g' => ControlFragment::QueryKeyFormat(self.code_u8()?),
             b'i' => ControlFragment::MediaCopy(PrintFunction::new(self.code_u8()?, true)),
             b'n' => ControlFragment::DeviceStatusReport(DeviceStatus::new(self.code_u8()?, true)),
             b'r' => ControlFragment::ModeRestore(Mode::new(self.code?, true)),
@@ -504,9 +496,9 @@ impl Interpreter {
                 }
             }
             _ if !self.sequence.is_empty() => return None,
-            b" P" => CursorEffect::PageAbsolute(unwrap_pos(self.code).into()).into(),
-            b" Q" => CursorEffect::PageForward(unwrap_pos(self.code).into()).into(),
-            b" R" => CursorEffect::PageBackward(unwrap_pos(self.code).into()).into(),
+            b" P" => CursorEffect::PageAbsolute(unwrap_pos(self.code)).into(),
+            b" Q" => CursorEffect::PageForward(unwrap_pos(self.code)).into(),
+            b" R" => CursorEffect::PageBackward(unwrap_pos(self.code)).into(),
             b" q" => ControlFragment::StyleCursor(CursorStyle::from_code(self.code)?),
             b" r" => ControlFragment::SetKeyClickVolume(self.code_u8_or(0)?),
             b" t" => ControlFragment::SetWarningVolume(self.code_u8_or(0)?),
@@ -526,10 +518,6 @@ impl Interpreter {
                 Some(2) => Duration::from_millis(60),
                 _ => return None,
             }),
-            b"$u" => match self.code {
-                Some(1) => AttributeRequest::TerminalState.into(),
-                _ => return None,
-            },
             b"$w" => match self.code {
                 Some(1) => AttributeRequest::CursorInformation.into(),
                 Some(2) => AttributeRequest::TabStop.into(),
@@ -541,7 +529,6 @@ impl Interpreter {
                 _ => return None,
             }),
             b"$~" => ControlFragment::SetStatusDisplay(StatusDisplayType::from_code(self.code)?),
-            b"&u" => AttributeRequest::PreferredSupplementalSet.into(),
             b"'|" if self.code_or(0) <= 1 => AttributeRequest::LocatorPosition.into(),
             b"'}" => ControlFragment::InsertColumns(unwrap_pos(self.code).into()),
             b"'~" => ControlFragment::DeleteColumns(unwrap_pos(self.code).into()),
@@ -617,22 +604,10 @@ impl Interpreter {
         code: u8,
         input: &mut BufferedInput,
     ) -> Option<ControlFragment> {
+        if !self.sequence.is_empty() {
+            return None;
+        }
         match code {
-            b'f' => {
-                let (param, value) = match (&*self.sequence, self.code) {
-                    (&[], None) => {
-                        return Some(ControlFragment::ResetKeyFormat);
-                    }
-                    (&[], Some(param)) => (param, None),
-                    (&[Some(param)], value) => (param, value),
-                    _ => return None,
-                };
-                Some(ControlFragment::SetKeyFormat {
-                    param: param.try_into().ok()?,
-                    value,
-                })
-            }
-            _ if !self.sequence.is_empty() => None,
             b'c' if self.code_or(0) == 0 => {
                 write!(input, "{SecondaryAttributeReport}");
                 None

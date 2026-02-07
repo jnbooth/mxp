@@ -7,7 +7,7 @@ use flagset::FlagSet;
 use mxp::escape::{ansi, telnet};
 use mxp::responses::{SupportResponse, VersionResponse};
 
-use super::config::{TransformerConfig, UseMxp};
+use super::config::{TabBehavior, TransformerConfig, UseMxp};
 use super::cursor::ReceiveCursor;
 use super::phase::Phase;
 use super::state::StateLock;
@@ -18,7 +18,7 @@ use crate::output::{
     OutputFragment, TelnetFragment, TelnetSource, TelnetVerb, TextStyle,
 };
 use crate::protocol::{self, Negotiate, charset, mccp, mnes, mssp, mtts, xterm};
-use crate::term::{EraseRange, EraseTarget};
+use crate::term::{CursorEffect, EraseRange, EraseTarget};
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
     if auth.is_empty() {
@@ -521,8 +521,10 @@ impl Transformer {
         }
 
         match self.phase {
+            Phase::Esc if c == ansi::ESC => (),
+
             Phase::Esc => {
-                self.phase = match self.ansi.start(c, &mut self.output) {
+                self.phase = match self.ansi.start(c, &mut self.output, &mut self.input) {
                     xterm::Start::Continue => Phase::Ansi,
                     xterm::Start::BeginString => Phase::AnsiString,
                     xterm::Start::Done => Phase::Normal,
@@ -573,7 +575,7 @@ impl Transformer {
                     }
                     telnet::EC => {
                         self.phase = Phase::Normal;
-                        self.output.append(ControlFragment::EraseCharacter);
+                        self.output.append(CursorEffect::Back(1));
                     }
                     telnet::EL => {
                         self.phase = Phase::Normal;
@@ -876,7 +878,7 @@ impl Transformer {
                     ansi::ESC => self.phase = Phase::Esc,
                     ansi::ENQ => self.input.append(self.ansi.answerback()),
                     ansi::BEL => self.output.append(ControlFragment::Beep),
-                    ansi::BS => self.output.append(ControlFragment::Backspace),
+                    ansi::BS => self.output.append(CursorEffect::Back(1)),
                     ansi::VT => self.output.append(ControlFragment::VerticalTab),
                     ansi::FF => self.output.append(OutputFragment::PageBreak),
                     b'\r' => (),
@@ -885,6 +887,11 @@ impl Transformer {
                             self.output.append_text(" ");
                         }
                     }
+                    b'\t' => match self.config.tab {
+                        TabBehavior::Control => self.output.append(CursorEffect::TabForward(1)),
+                        TabBehavior::NextMultipleOf8 => self.output.append_tab(),
+                        tab => self.output.append_text(tab.string()),
+                    },
                     b' ' if last_char == b' ' && self.in_paragraph => {}
                     b'\n' => {
                         if self.mxp_active {
@@ -914,16 +921,15 @@ impl Transformer {
                         self.mxp_entity_string.clear();
                         self.phase = Phase::MxpEntity;
                     }
-                    0..32 => (),
+                    32..=126 => self.output.append_text(
+                        // SAFETY: `utf8` is valid UTF-8, since it is a single ASCII byte.
+                        unsafe { str::from_utf8_unchecked(slice::from_ref(&c)) },
+                    ),
                     128.. => {
                         self.utf8_sequence.push(c);
                         self.phase = Phase::Utf8Character;
                     }
-                    _ => self.output.append_text(
-                        // SAFETY: `utf8` is valid UTF8, since it is a single ASCII byte.
-                        // Tracking: https://github.com/rust-lang/rust/issues/110998
-                        unsafe { str::from_utf8_unchecked(slice::from_ref(&c)) },
-                    ),
+                    ..32 | ansi::DEL => (),
                 }
             }
         }

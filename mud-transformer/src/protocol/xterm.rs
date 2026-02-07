@@ -6,12 +6,9 @@ use mxp::escape::ansi;
 pub(crate) use super::ansi::Outcome;
 use crate::input::BufferedInput;
 use crate::output::{BufferedOutput, ControlFragment};
-use crate::responses::{
-    CursorInformationReport, HMarginsReport, TabStopReport, UnknownSettingReport, VMarginsReport,
-};
+use crate::responses::{CursorInformationReport, TabStopReport, UnknownSettingReport};
 use crate::term::{
-    ControlStringType, CursorEffect, DynamicColor, Line, Mode, Rect, Reset, SelectionData,
-    TabEffect,
+    ControlStringType, CursorEffect, DynamicColor, Line, Mode, Reset, SelectionData, TabEffect,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -27,8 +24,6 @@ enum Phase {
     Normal,
     /// CSI (Control Sequence Introducer)
     Csi,
-    /// SCS (Select Character Set)
-    Charset,
     /// DCS (Device Control String),
     /// SOS (Start of String),
     /// OSC (Operating System Command),
@@ -45,8 +40,7 @@ pub(crate) struct Interpreter {
     phase: Phase,
     answerback: Vec<u8>,
     code: u8,
-    extension: Option<u8>,
-    control_string: BytesMut,
+    string: BytesMut,
 }
 
 impl Interpreter {
@@ -58,16 +52,37 @@ impl Interpreter {
         &self.answerback
     }
 
-    pub fn start(&mut self, code: u8, output: &mut BufferedOutput) -> Start {
+    pub fn start(
+        &mut self,
+        code: u8,
+        output: &mut BufferedOutput,
+        input: &mut BufferedInput,
+    ) -> Start {
         output.append(match code {
-            b'[' => {
+            ansi::ESC_CSI => {
                 self.phase = Phase::Csi;
                 self.ansi.reset();
                 return Start::Continue;
             }
+            0x20..0x30 => {
+                self.string.clear();
+                self.code = code;
+                self.phase = Phase::Normal;
+                return Start::Continue;
+            }
+            ansi::ESC_DCS | ansi::ESC_SOS | ansi::ESC_OSC | ansi::ESC_PM | ansi::ESC_APC => {
+                self.string.clear();
+                self.code = code;
+                self.phase = Phase::ControlString;
+                return Start::BeginString;
+            }
+            ansi::ESC_ST if self.phase == Phase::ControlString => {
+                self.finish_control_string(output, input);
+                return Start::Done;
+            }
             b'6' => CursorEffect::BackIndex.into(),
             b'7' => CursorEffect::Save { dec: true }.into(),
-            b'8' => CursorEffect::Restore { dec: false }.into(),
+            b'8' => CursorEffect::Restore { dec: true }.into(),
             b'9' => CursorEffect::ForwardIndex.into(),
             b'=' => ControlFragment::ModeSet(Mode::NUMERIC_KEYPAD, false),
             b'>' => ControlFragment::ModeSet(Mode::NUMERIC_KEYPAD, true),
@@ -76,29 +91,16 @@ impl Interpreter {
             b'H' => TabEffect::SetStop.into(),
             b'M' => CursorEffect::ReverseIndex.into(),
             b'Q' => {
+                self.string.clear();
+                self.code = 0;
                 self.phase = Phase::FunctionKey;
-                return Start::Continue;
+                return Start::BeginString;
             }
             b'V' => ControlFragment::GuardedAreaStart,
             b'W' => ControlFragment::GuardedAreaEnd,
             b'c' => ControlFragment::ResetTerminal(Reset::Hard),
             b'l' => ControlFragment::SetMemoryLock(true),
             b'm' => ControlFragment::SetMemoryLock(false),
-            b' ' | b'%' | b'#' => {
-                self.phase = Phase::Normal;
-                self.code = code;
-                return Start::Continue;
-            }
-            b'P' | b']' | b'X' | b'^' | b'_' => {
-                self.code = code;
-                self.phase = Phase::ControlString;
-                return Start::BeginString;
-            }
-            b'(' | b')' | b'*' | b'+' | b'-' | b'.' | b'/' => {
-                self.code = code;
-                self.phase = Phase::Charset;
-                return Start::Continue;
-            }
             _ => return Start::Done,
         });
         Start::Done
@@ -111,8 +113,12 @@ impl Interpreter {
         input: &mut BufferedInput,
     ) -> Outcome {
         match code {
-            ansi::CAN => return Outcome::Done,
+            ansi::CAN => {
+                self.phase = Phase::Normal;
+                return Outcome::Done;
+            }
             ansi::SUB => {
+                self.phase = Phase::Normal;
                 output.append_text("⸮");
                 return Outcome::Fail;
             }
@@ -121,18 +127,24 @@ impl Interpreter {
         match self.phase {
             Phase::Csi => self.ansi.interpret(code, output, input),
             Phase::Normal => {
+                if (0x20..0x30).contains(&code) {
+                    self.string.extend_from_slice(&[code]);
+                    return Outcome::Continue;
+                }
                 if let Some(fragment) = self.interpret_code(code) {
                     output.append(fragment);
                 }
                 Outcome::Done
             }
             Phase::ControlString => self.interpret_control_string(code, output, input),
-            Phase::Charset => self.interpret_charset(code),
             Phase::FunctionKey => self.interpret_function_key(code),
         }
     }
 
     fn interpret_code(&self, code: u8) -> Option<ControlFragment> {
+        if !self.string.is_empty() {
+            return None;
+        }
         match &[self.code, code] {
             b"#3" => Some(Line::DoubleHeightTop.into()),
             b"#4" => Some(Line::DoubleHeightBottom.into()),
@@ -148,26 +160,12 @@ impl Interpreter {
             self.code = code;
             return Outcome::Continue;
         }
-        let Some(delim) = self.extension else {
-            self.extension = Some(code);
-            return Outcome::Continue;
-        };
-        if code != delim {
-            return Outcome::Continue;
+        if self.string.first() == Some(&code) {
+            self.phase = Phase::Normal;
+            return Outcome::Done;
         }
-        self.code = 0;
-        self.extension = None;
-        Outcome::Done
-    }
-
-    fn interpret_charset(&mut self, code: u8) -> Outcome {
-        if self.extension.is_none() && matches!(code, b'%' | b'"' | b'&') {
-            self.extension = Some(code);
-            return Outcome::Continue;
-        }
-        self.code = 0;
-        self.extension = None;
-        Outcome::Done
+        self.string.extend_from_slice(&[code]);
+        Outcome::Continue
     }
 
     fn interpret_control_string(
@@ -180,12 +178,7 @@ impl Interpreter {
             self.finish_control_string(output, input);
             return Outcome::Done;
         }
-        if code == ansi::ESC_ST && self.control_string.last() == Some(&ansi::ESC) {
-            self.control_string.truncate(self.control_string.len() - 1);
-            self.finish_control_string(output, input);
-            return Outcome::Done;
-        }
-        self.control_string.extend_from_slice(&[code]);
+        self.string.extend_from_slice(&[code]);
         Outcome::Continue
     }
 
@@ -194,7 +187,8 @@ impl Interpreter {
         output: &mut BufferedOutput,
         input: &mut BufferedInput,
     ) -> Option<()> {
-        let control_string = self.control_string.split().freeze();
+        self.phase = Phase::Normal;
+        let control_string = self.string.split().freeze();
         let code = self.code;
         self.code = 0;
         let string_type = match code {
@@ -223,34 +217,25 @@ impl Interpreter {
             }
             b"$t" => process_restore_presentation_state(code.unwrap_or(0), rest, output),
             _ if code.is_some() => None,
-            b"$q" => self.process_request_status(rest, output, input),
+            b"$q" => process_request_status(rest, output, input),
             b"+q" => process_request_term(rest, input),
             _ => None,
         }?;
         Some(())
     }
+}
 
-    fn process_request_status(
-        &self,
-        control_string: &[u8],
-        output: &mut BufferedOutput,
-        input: &mut BufferedInput,
-    ) -> Option<()> {
-        let control_string = str::from_utf8(control_string).ok()?;
-        match control_string {
-            "m" => write!(input, "{}", output.ansi_mode()),
-            "r" => {
-                let Rect { top, bottom, .. } = self.ansi.margins;
-                write!(input, "{}", VMarginsReport { top, bottom });
-            }
-            "s" => {
-                let Rect { left, right, .. } = self.ansi.margins;
-                write!(input, "{}", HMarginsReport { left, right });
-            }
-            _ => write!(input, "{UnknownSettingReport}"),
-        }
-        Some(())
+fn process_request_status(
+    control_string: &[u8],
+    output: &mut BufferedOutput,
+    input: &mut BufferedInput,
+) -> Option<()> {
+    let control_string = str::from_utf8(control_string).ok()?;
+    match control_string {
+        "m" => write!(input, "{}", output.ansi_mode()),
+        _ => write!(input, "{UnknownSettingReport}"),
     }
+    Some(())
 }
 
 /// Request Termcap/Terminfo String

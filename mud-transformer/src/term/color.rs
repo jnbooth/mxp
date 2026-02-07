@@ -58,14 +58,23 @@ impl fmt::Display for TermColor {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum DynamicColor {
+    /// OSC 10 (Set Text Foreground Color)
     TextForeground = 10,
+    /// OSC 11 (Set Text Background Color)
     TextBackground,
+    /// OSC 12 (Set Text Cursor Color)
     TextCursor,
+    /// OSC 13 (Set Mouse Foreground Color)
     MouseForeground,
+    /// OSC 14 (Set Mouse Background Color)
     MouseBackground,
+    /// OSC 15 (Set Tektronix Foreground Color)
     TektronixForeground,
+    /// OSC 16 (Set Tektronix Background Color)
     TektronixBackground,
+    /// OSC 17 (Set Highlight Color)
     Highlight,
+    /// OSC 18 (Set Tetronix Cursor Color)
     TektronixCursor,
 }
 

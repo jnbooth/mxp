@@ -34,12 +34,8 @@ pub enum AttributeRequest {
     DisplayedExtent,
     /// DECLRP (Report Locator Position) with [`LocatorPositionReport`](crate::responses::LocatorPositionReport)
     LocatorPosition,
-    /// DECRQUPSS
-    PreferredSupplementalSet,
     /// DECTABSR (Tab Stop Report) with [`TabStopReport`](crate::responses::TabStopReport)
     TabStop,
-    /// DECTSR (Terminal State Report)
-    TerminalState,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
