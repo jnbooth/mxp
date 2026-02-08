@@ -12,10 +12,10 @@ pub enum TelnetSource {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TelnetVerb {
-    Will = telnet::WILL as isize,
-    Wont = telnet::WONT as isize,
-    Do = telnet::DO as isize,
-    Dont = telnet::DONT as isize,
+    Will = telnet::WILL as _,
+    Wont = telnet::WONT as _,
+    Do = telnet::DO as _,
+    Dont = telnet::DONT as _,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

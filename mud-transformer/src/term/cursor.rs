@@ -98,8 +98,8 @@ impl EraseRange {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum EraseTarget {
-    Display = b'J' as isize,
-    Line = b'K' as isize,
+    Display = b'J' as _,
+    Line = b'K' as _,
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

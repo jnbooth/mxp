@@ -43,11 +43,11 @@ pub enum AttributeRequest {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ControlStringType {
     /// SOS (Start of String)
-    Sos = ansi::ESC_SOS as isize,
+    Sos = ansi::ESC_SOS as _,
     /// PM (Private Message)
-    Pm = ansi::ESC_PM as isize,
+    Pm = ansi::ESC_PM as _,
     /// APC (Application Program Command)
-    Apc = ansi::ESC_APC as isize,
+    Apc = ansi::ESC_APC as _,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

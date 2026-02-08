@@ -32,8 +32,8 @@ impl FromStr for Align {
 pub enum DimensionUnit {
     #[default]
     Pixel,
-    Percentage = b'%' as isize,
-    CharacterHeight = b'c' as isize,
+    Percentage = b'%' as _,
+    CharacterHeight = b'c' as _,
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
