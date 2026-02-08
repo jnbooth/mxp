@@ -423,7 +423,7 @@ fn decode_hex(sequence: &[u8], buf: &mut Vec<u8>) -> Option<()> {
 fn mslp_send(text: &str) -> mxp::Link {
     mxp::Link {
         action: text.to_owned(),
-        sendto: mxp::SendTo::World,
+        send_to: mxp::SendTo::World,
         ..Default::default()
     }
 }
@@ -441,7 +441,7 @@ fn mslp_menu(text: &str) -> Option<mxp::Link> {
         });
     }
     Some(mxp::Link {
-        sendto: mxp::SendTo::World,
+        send_to: mxp::SendTo::World,
         prompts,
         ..Default::default()
     })

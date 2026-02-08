@@ -50,7 +50,7 @@ pub struct Link {
     /// Right-click prompts for actions.
     pub prompts: Vec<LinkPrompt>,
     /// Where to send the result of clicking on the link.
-    pub sendto: SendTo,
+    pub send_to: SendTo,
     /// Optional scope for the link.
     pub expires: Option<String>,
 }
@@ -58,14 +58,19 @@ pub struct Link {
 impl Link {
     pub const EMBED_ENTITY: &'static str = "&text;";
 
-    pub fn new(action: &str, hints: Option<&str>, sendto: SendTo, expires: Option<String>) -> Self {
+    pub fn new(
+        action: &str,
+        hints: Option<&str>,
+        send_to: SendTo,
+        expires: Option<String>,
+    ) -> Self {
         let (action, actions) = split_list(action);
         match hints {
             None => Self {
                 action,
                 hint: None,
                 prompts: actions,
-                sendto,
+                send_to,
                 expires,
             },
             Some(hints) => {
@@ -74,7 +79,7 @@ impl Link {
                     action,
                     hint: Some(hint),
                     prompts: if prompts.is_empty() { actions } else { prompts },
-                    sendto,
+                    send_to,
                     expires,
                 }
             }
@@ -98,7 +103,7 @@ impl Link {
                 .iter()
                 .map(|prompt| prompt.with_text(text))
                 .collect(),
-            sendto: self.sendto,
+            send_to: self.send_to,
             expires: self.expires.clone(),
         }
     }
@@ -155,7 +160,7 @@ where
 pub(crate) struct SendArgs<S> {
     pub href: Option<S>,
     pub hint: Option<S>,
-    pub sendto: SendTo,
+    pub send_to: SendTo,
     pub expire: Option<S>,
 }
 
@@ -172,7 +177,7 @@ where
             href: scanner.next_or("href")?,
             hint: scanner.next_or("hint")?,
             expire: scanner.next_or("expire")?,
-            sendto: if scanner.into_keywords().contains(SendKeyword::Prompt) {
+            send_to: if scanner.into_keywords().contains(SendKeyword::Prompt) {
                 SendTo::Input
             } else {
                 SendTo::World
@@ -192,7 +197,7 @@ where
                 .as_ref()
                 .map_or(Link::EMBED_ENTITY, AsRef::as_ref),
             value.hint.as_ref().map(AsRef::as_ref),
-            value.sendto,
+            value.send_to,
             value.expire.map(|expire| expire.as_ref().to_owned()),
         )
     }
