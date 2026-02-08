@@ -25,7 +25,6 @@ impl Drain<'_> {
     }
 
     pub fn write_all_to<W: Write>(&mut self, mut writer: W) -> io::Result<()> {
-        self.cursor = self.buf.len();
         let mut slice = &self.buf[self.cursor..];
         while !slice.is_empty() {
             let n = writer.write(slice)?;
