@@ -17,7 +17,7 @@ use crate::output::{
     BufferedOutput, ControlFragment, EntityFragment, EntitySetter, MxpFragment, OutputDrain,
     OutputFragment, TelnetFragment, TelnetSource, TelnetVerb, TextStyle,
 };
-use crate::protocol::{self, Negotiate, charset, mccp, mnes, mssp, mtts, xterm};
+use crate::protocol::{self, Negotiate, charset, mccp, mnes, msdp, mssp, mtts, xterm};
 use crate::term::{CursorEffect, EraseRange, EraseTarget};
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
@@ -767,8 +767,10 @@ impl Transformer {
                             self.mxp_on();
                         }
                     }
-                    protocol::MTTS if !self.config.terminal_identification.is_empty() => {
-                        if data.first() == Some(&mtts::SEND) {
+                    protocol::MTTS => {
+                        if !self.config.terminal_identification.is_empty()
+                            && data.first() == Some(&mtts::SEND)
+                        {
                             self.subnegotiate(self.ttype_negotiator);
                             self.ttype_negotiator.advance();
                         }
@@ -777,6 +779,11 @@ impl Transformer {
                         self.charsets = charset::Charsets::from(&data);
                         self.subnegotiate(self.charsets);
                     }
+                    protocol::MSDP => {
+                        if let Some((name, value)) = msdp::MsdpValue::parse(&data) {
+                            self.output.append(TelnetFragment::Msdp { name, value });
+                        }
+                    }
                     protocol::MSSP => {
                         for (variable, value) in mssp::iter(&data) {
                             self.output
@@ -784,8 +791,10 @@ impl Transformer {
                         }
                     }
                     protocol::MNES => {
-                        self.mnes_variables = mnes::Variables::from(&data);
-                        self.subnegotiate(self.mnes_variables);
+                        if data.first() == Some(&mnes::SEND) {
+                            self.mnes_variables = mnes::Variables::from(&data);
+                            self.subnegotiate(self.mnes_variables);
+                        }
                     }
                     _ => (),
                 }

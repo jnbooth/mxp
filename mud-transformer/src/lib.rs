@@ -7,6 +7,7 @@ pub use mxp;
 pub use mxp::escape;
 
 pub mod protocol;
+pub use protocol::msdp::MsdpValue;
 pub use protocol::naws::subnegotiate as naws;
 
 mod output;

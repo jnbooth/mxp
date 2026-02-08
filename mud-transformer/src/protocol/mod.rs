@@ -9,6 +9,9 @@ pub use mccp::CODE as MCCP2;
 pub(crate) mod mnes;
 pub use mnes::CODE as MNES;
 
+pub(crate) mod msdp;
+pub use msdp::CODE as MSDP;
+
 pub(crate) mod mssp;
 pub use mssp::CODE as MSSP;
 

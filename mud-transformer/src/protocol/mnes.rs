@@ -9,8 +9,18 @@ use crate::transformer::TransformerConfig;
 /// https://tintin.mudhalla.net/protocols/mnes/
 pub const CODE: u8 = 39;
 
+#[allow(unused)]
+pub const IS: u8 = 0;
+pub const SEND: u8 = 1;
+#[allow(unused)]
+pub const INFO: u8 = 2;
+
+pub const VAR: u8 = 0;
+#[allow(unused)]
+pub const VAL: u8 = 1;
+
 flags! {
-    enum Variable: u8 {
+    enum KnownVariable: u8 {
         Charset,
         ClientName,
         ClientVersion,
@@ -19,7 +29,7 @@ flags! {
     }
 }
 
-impl Variable {
+impl KnownVariable {
     pub const fn parse(bytes: &[u8]) -> Option<Self> {
         match bytes {
             b"CHARSET" => Some(Self::Charset),
@@ -35,22 +45,22 @@ impl Variable {
         match self {
             Self::Charset => {
                 if config.disable_utf8 {
-                    f.write_str("\x00CHARSET\x01ASCII")
+                    f.write_str("\0CHARSET\x01ASCII")
                 } else {
-                    f.write_str("\x00CHARSET\x01UTF-8")
+                    f.write_str("\0CHARSET\x01UTF-8")
                 }
             }
-            Self::ClientName => write!(f, "\x00CLIENT_NAME\x01{}", config.terminal_identification),
-            Self::ClientVersion => write!(f, "\x00CLIENT_VERSION\x01{}", config.version),
-            Self::Mtts => write!(f, "\x00MTTS\x01{}", mtts::bitmask(config)),
-            Self::TerminalType => write!(f, "\x00TERMINAL_TYPE\x01{}", mtts::ttype(config)),
+            Self::ClientName => write!(f, "\0CLIENT_NAME\x01{}", config.terminal_identification),
+            Self::ClientVersion => write!(f, "\0CLIENT_VERSION\x01{}", config.version),
+            Self::Mtts => write!(f, "\0MTTS\x01{}", mtts::bitmask(config)),
+            Self::TerminalType => write!(f, "\0TERMINAL_TYPE\x01{}", mtts::ttype(config)),
         }
     }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Variables {
-    inner: FlagSet<Variable>,
+    inner: FlagSet<KnownVariable>,
     prefix: &'static str,
 }
 
@@ -68,10 +78,10 @@ where
         // Reduce monomorphization
         fn inner(value: &[u8]) -> Variables {
             let mut inner = FlagSet::default();
-            inner.extend(value.split(|&c| c == 0).filter_map(Variable::parse));
+            inner.extend(value.split(|&c| c == VAR).filter_map(KnownVariable::parse));
             Variables {
                 inner,
-                prefix: "\0",
+                prefix: "\0", // IS
             }
         }
 
@@ -98,27 +108,27 @@ impl Variables {
     pub fn changes(self, a: &TransformerConfig, b: &TransformerConfig) -> Self {
         let mut changes = FlagSet::default();
 
-        if self.inner.contains(Variable::Charset) && a.disable_utf8 != b.disable_utf8 {
-            changes |= Variable::Charset;
+        if self.inner.contains(KnownVariable::Charset) && a.disable_utf8 != b.disable_utf8 {
+            changes |= KnownVariable::Charset;
         }
-        if self.inner.contains(Variable::ClientName)
+        if self.inner.contains(KnownVariable::ClientName)
             && a.terminal_identification != b.terminal_identification
         {
-            changes |= Variable::ClientName;
+            changes |= KnownVariable::ClientName;
         }
-        if self.inner.contains(Variable::ClientVersion) && a.version != b.version {
-            changes |= Variable::ClientVersion;
+        if self.inner.contains(KnownVariable::ClientVersion) && a.version != b.version {
+            changes |= KnownVariable::ClientVersion;
         }
-        if self.inner.contains(Variable::Mtts) && mtts::bitmask(a) != mtts::bitmask(b) {
-            changes |= Variable::Mtts;
+        if self.inner.contains(KnownVariable::Mtts) && mtts::bitmask(a) != mtts::bitmask(b) {
+            changes |= KnownVariable::Mtts;
         }
-        if self.inner.contains(Variable::TerminalType) && mtts::ttype(a) != mtts::ttype(b) {
-            changes |= Variable::TerminalType;
+        if self.inner.contains(KnownVariable::TerminalType) && mtts::ttype(a) != mtts::ttype(b) {
+            changes |= KnownVariable::TerminalType;
         }
 
         Self {
             inner: changes,
-            prefix: "\x02",
+            prefix: "\x02", // INFO
         }
     }
 }

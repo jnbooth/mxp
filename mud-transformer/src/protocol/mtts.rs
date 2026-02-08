@@ -8,6 +8,8 @@ use crate::transformer::TransformerConfig;
 /// https://tintin.mudhalla.net/protocols/mtts/
 pub const CODE: u8 = 24;
 
+#[allow(unused)]
+pub const IS: u8 = 0;
 pub const SEND: u8 = 1;
 
 /// Client supports all ANSI color codes. Supporting blink and underline is optional.

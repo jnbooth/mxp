@@ -5,13 +5,16 @@ use bytes::{Buf, Bytes};
 /// https://tintin.mudhalla.net/protocols/mssp/
 pub const CODE: u8 = 70;
 
+pub const VAR: u8 = 1;
+pub const VAL: u8 = 2;
+
 #[derive(Clone, Debug)]
 pub(crate) struct Iter {
     data: Bytes,
 }
 
 pub fn iter(data: &Bytes) -> Iter {
-    let data = match data.iter().position(|&c| c == 1) {
+    let data = match data.iter().position(|&c| c == VAR) {
         Some(i) => data.slice(i + 1..),
         None => Bytes::new(),
     };
@@ -29,8 +32,8 @@ impl Iterator for Iter {
     type Item = (Bytes, Bytes);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let before = split_until(&mut self.data, b'\x02')?;
-        match split_until(&mut self.data, b'\x01') {
+        let before = split_until(&mut self.data, VAL)?;
+        match split_until(&mut self.data, VAR) {
             Some(after) => Some((before, after)),
             None => Some((before, self.data.split_off(0))),
         }

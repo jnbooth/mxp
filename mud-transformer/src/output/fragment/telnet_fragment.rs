@@ -1,6 +1,7 @@
 use bytes::Bytes;
 
 use super::OutputFragment;
+use crate::protocol::msdp::MsdpValue;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TelnetSource {
@@ -19,6 +20,10 @@ pub enum TelnetVerb {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TelnetFragment {
     GoAhead,
+    Msdp {
+        name: Bytes,
+        value: MsdpValue,
+    },
     Mxp {
         enabled: bool,
     },
