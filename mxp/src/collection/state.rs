@@ -30,7 +30,7 @@ impl State {
     pub fn populated() -> Self {
         Self {
             elements: ElementMap::well_known(),
-            entities: EntityMap::new(),
+            entities: EntityMap::with_globals(),
             line_tags: LineTags::new(),
         }
     }
