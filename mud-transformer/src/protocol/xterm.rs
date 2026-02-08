@@ -36,7 +36,7 @@ enum Phase {
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Interpreter {
-    ansi: super::ansi::Interpreter,
+    csi: super::ansi::Interpreter,
     phase: Phase,
     answerback: Vec<u8>,
     code: u8,
@@ -86,7 +86,7 @@ impl Interpreter {
         output.append(match code {
             ansi::ESC_CSI => {
                 self.phase = Phase::Csi;
-                self.ansi.reset();
+                self.csi.reset();
                 return Start::Continue;
             }
             0x20..0x30 => {
@@ -148,7 +148,7 @@ impl Interpreter {
         }
         match self.phase {
             Phase::Csi => {
-                let outcome = self.ansi.interpret(code, output, input);
+                let outcome = self.csi.interpret(code, output, input);
                 if !matches!(outcome, Outcome::Continue | Outcome::Link) {
                     self.mslp_link = None;
                 }
