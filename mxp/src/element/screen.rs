@@ -5,12 +5,12 @@ use crate::parser::UnrecognizedVariant;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum Align {
-    Left,
-    Right,
     #[default]
     Top,
-    Middle,
     Bottom,
+    Left,
+    Right,
+    Middle,
 }
 
 impl FromStr for Align {
@@ -18,11 +18,11 @@ impl FromStr for Align {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match_ci! {s,
+            "top" => Self::Top,
+            "bottom" => Self::Bottom,
             "left" => Self::Left,
             "right" => Self::Right,
-            "top" => Self::Top,
             "middle" => Self::Middle,
-            "bottom" => Self::Bottom,
             _ => return Err(Self::Err::new(s))
         })
     }
@@ -32,8 +32,8 @@ impl FromStr for Align {
 pub enum DimensionUnit {
     #[default]
     Pixel,
-    CharacterHeight,
-    Percentage,
+    Percentage = b'%' as isize,
+    CharacterHeight = b'c' as isize,
 }
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]

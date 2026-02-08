@@ -1,3 +1,5 @@
+use mxp::escape::ansi;
+
 mod color;
 pub(crate) use color::TermColor;
 pub use color::{DynamicColor, XTermPalette};
@@ -41,11 +43,11 @@ pub enum AttributeRequest {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ControlStringType {
     /// SOS (Start of String)
-    Sos = b'X' as isize,
+    Sos = ansi::ESC_SOS as isize,
     /// PM (Private Message)
-    Pm = b'^' as isize,
+    Pm = ansi::ESC_PM as isize,
     /// APC (Application Program Command)
-    Apc = b'_' as isize,
+    Apc = ansi::ESC_APC as isize,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -62,7 +64,7 @@ pub enum Line {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum KeyboardLed {
-    All,
+    All = 0,
     NumLock,
     CapsLock,
     ScrollLock,
@@ -81,7 +83,7 @@ pub enum Reset {
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum StatusDisplayType {
     #[default]
-    Hidden,
+    Hidden = 0,
     Indicator,
     HostWritable,
 }

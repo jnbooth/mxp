@@ -80,7 +80,7 @@ pub enum CursorEffect {
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum EraseRange {
     #[default]
-    AfterCursor,
+    AfterCursor = 0,
     BeforeCursor,
     Full,
 }
@@ -98,8 +98,8 @@ impl EraseRange {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum EraseTarget {
-    Line,
-    Display,
+    Display = b'J' as isize,
+    Line = b'K' as isize,
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -113,10 +113,6 @@ pub enum CursorStyle {
 }
 
 impl CursorStyle {
-    pub const fn code(self) -> u8 {
-        self as u8
-    }
-
     pub(crate) const fn from_code(code: Option<u16>) -> Option<Self> {
         match code {
             None | Some(0 | 1) => Some(Self::BlinkBlock),

@@ -6,7 +6,7 @@ use crate::term::Mode;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ModeReportSetting {
-    NotRecognized,
+    NotRecognized = 0,
     Set,
     Reset,
     PermanentlySet,

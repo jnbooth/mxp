@@ -40,17 +40,14 @@ impl FromStr for AudioRepetition {
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub enum AudioContinuation {
-    Restart,
+    Restart = 0,
     #[default]
     Continue,
 }
 
 impl fmt::Display for AudioContinuation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::Restart => (0).fmt(f),
-            Self::Continue => (1).fmt(f),
-        }
+        (*self as u8).fmt(f)
     }
 }
 

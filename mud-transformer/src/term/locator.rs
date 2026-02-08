@@ -1,7 +1,7 @@
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum LocatorReporting {
     #[default]
-    Disabled,
+    Disabled = 0,
     Enabled,
     EnabledOnce,
 }

@@ -66,10 +66,6 @@ pub enum VisualCharacterAttribute {
 }
 
 impl VisualCharacterAttribute {
-    pub const fn code(self) -> u8 {
-        self as u8
-    }
-
     pub(crate) const fn from_code(code: u16) -> Option<Self> {
         match code {
             0 => Some(Self::Reset),

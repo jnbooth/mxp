@@ -1,4 +1,5 @@
 use bytes::Bytes;
+use mxp::escape::telnet;
 
 use super::OutputFragment;
 use crate::protocol::msdp::MsdpValue;
@@ -11,10 +12,10 @@ pub enum TelnetSource {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TelnetVerb {
-    Do,
-    Dont,
-    Will,
-    Wont,
+    Will = telnet::WILL as isize,
+    Wont = telnet::WONT as isize,
+    Do = telnet::DO as isize,
+    Dont = telnet::DONT as isize,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

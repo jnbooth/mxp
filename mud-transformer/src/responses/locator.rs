@@ -6,7 +6,7 @@ use mxp::escape::ansi::CSI;
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum LocatorReportEvent {
     /// Locator unavailable - no other parameters sent
-    Unavailable,
+    Unavailable = 0,
     /// Request - xterm received a DECRQLP
     Request,
     LeftDown,
@@ -22,12 +22,13 @@ pub enum LocatorReportEvent {
 }
 
 flags! {
-pub enum LocatorReportButton: u8 {
-    Right,
-    Middle,
-    Left,
-    M4,
-}}
+    pub enum LocatorReportButton: u8 {
+        Right,
+        Middle,
+        Left,
+        M4,
+    }
+}
 
 #[derive(Copy, Clone, Debug)]
 pub struct LocatorReport {
