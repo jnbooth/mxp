@@ -619,9 +619,7 @@ impl Transformer {
                     code: c,
                 });
                 let supported = match c {
-                    protocol::MCCP1 | protocol::MCCP2 => {
-                        !self.config.disable_compression && self.decompress.will(c)
-                    }
+                    protocol::MCCP2 => !self.config.disable_compression,
                     protocol::SGA
                     | protocol::MUD_SPECIFIC
                     | protocol::CHARSET
@@ -742,7 +740,6 @@ impl Transformer {
                 });
             }
 
-            Phase::Sb if c == protocol::MCCP1 => self.phase = Phase::Compress,
             Phase::Sb => {
                 self.subnegotiation_type = c;
                 self.subnegotiation_data.clear();
@@ -751,12 +748,6 @@ impl Transformer {
 
             Phase::Subnegotiation if c == telnet::IAC => self.phase = Phase::SubnegotiationIac,
             Phase::Subnegotiation => self.subnegotiation_data.extend_from_slice(&[c]),
-
-            Phase::Compress if c == telnet::WILL => self.phase = Phase::CompressWill,
-            Phase::Compress => self.phase = Phase::Normal,
-
-            Phase::CompressWill if c == telnet::SE => self.decompress.set_active(true),
-            Phase::CompressWill => self.phase = Phase::Normal,
 
             Phase::SubnegotiationIac if c == telnet::IAC => {
                 self.subnegotiation_data.extend_from_slice(&[c]);

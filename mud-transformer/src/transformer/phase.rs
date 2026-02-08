@@ -27,10 +27,6 @@ pub(crate) enum Phase {
     Subnegotiation,
     /// Received TELNET IAC SB c <data> IAC (awaiting IAC or SE)
     SubnegotiationIac,
-    /// Received TELNET IAC COMPRESS
-    Compress,
-    /// Received TELNET IAC COMPRESS WILL
-    CompressWill,
 
     /// Received 110 xxxxx, 1110 xxxx, or 11110 xxx
     Utf8Character,
