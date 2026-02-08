@@ -60,16 +60,25 @@ impl Default for Charsets {
     }
 }
 
-impl Negotiate for Charsets {
-    const CODE: u8 = CODE;
-
-    fn negotiate<W: fmt::Write>(self, mut f: W, config: &TransformerConfig) -> fmt::Result {
-        if !config.disable_utf8 && self.inner.contains(Charset::Utf8) {
+impl fmt::Display for Charsets {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.inner.contains(Charset::Utf8) {
             f.write_str("\x02UTF-8")
         } else if self.inner.contains(Charset::Ascii) {
             f.write_str("\x02US-ASCII")
         } else {
             f.write_str("\x03")
         }
+    }
+}
+
+impl Negotiate for Charsets {
+    const CODE: u8 = CODE;
+
+    fn negotiate<W: fmt::Write>(mut self, mut f: W, config: &TransformerConfig) -> fmt::Result {
+        if config.disable_utf8 {
+            self.inner -= Charset::Utf8;
+        }
+        write!(f, "{self}")
     }
 }
