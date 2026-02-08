@@ -804,17 +804,6 @@ impl Transformer {
                 });
             }
 
-            Phase::MxpElement | Phase::MxpComment | Phase::MxpQuote | Phase::MxpEntity
-                if c == ansi::ESC =>
-            {
-                self.handle_mxp_error(mxp::Error::new(
-                    &self.mxp_entity_string,
-                    mxp::ErrorKind::UnterminatedElement,
-                ));
-                self.mxp_entity_string.clear();
-                self.phase = Phase::Esc;
-            }
-
             Phase::MxpElement => match c {
                 b'>' => {
                     if let Err(e) = self.mxp_collected_element() {
