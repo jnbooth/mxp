@@ -534,6 +534,68 @@ impl Transformer {
         }
 
         match self.phase {
+            Phase::Normal => {
+                let last_char = self.last_char;
+                self.last_char = c;
+                match c {
+                    b' ' if self.in_paragraph && last_char == b' ' => (),
+                    b'<' if self.mxp_active && self.mxp_mode.is_mxp() => {
+                        self.mxp_entity_string.clear();
+                        self.phase = Phase::MxpElement;
+                    }
+                    b'&' if self.mxp_active && self.mxp_mode.is_mxp() => {
+                        self.mxp_entity_string.clear();
+                        self.phase = Phase::MxpEntity;
+                    }
+                    32..=126 => self.output.append_text(
+                        // SAFETY: `utf8` is valid UTF-8, since it is a single ASCII byte.
+                        unsafe { str::from_utf8_unchecked(slice::from_ref(&c)) },
+                    ),
+                    ansi::ESC => self.phase = Phase::Esc,
+                    telnet::IAC => self.phase = Phase::Iac,
+                    b'\n' => {
+                        if self.mxp_active {
+                            self.mxp_mode_change(None);
+                        }
+                        if self.in_paragraph {
+                            match last_char {
+                                b'\n' => {
+                                    self.output.start_line();
+                                    self.output.start_line();
+                                }
+                                b'.' => self.output.append_text("  "),
+                                b' ' | b'\t' | 0x0C => (),
+                                _ => self.output.append_text(" "),
+                            }
+                        } else if self.ignore_next_newline {
+                            self.ignore_next_newline = false;
+                        } else {
+                            self.output.start_line();
+                        }
+                    }
+                    b'\t' if self.in_paragraph => {
+                        if last_char != b' ' {
+                            self.output.append_text(" ");
+                        }
+                    }
+                    b'\t' => match self.config.tab {
+                        TabBehavior::Control => self.output.append(CursorEffect::TabForward(1)),
+                        TabBehavior::NextMultipleOf8 => self.output.append_tab(),
+                        tab => self.output.append_text(tab.string()),
+                    },
+                    ansi::ENQ => self.input.append(self.ansi.answerback()),
+                    ansi::BEL => self.output.append(ControlFragment::Beep),
+                    ansi::BS => self.output.append(CursorEffect::Back(1)),
+                    ansi::VT => self.output.append(ControlFragment::VerticalTab),
+                    ansi::FF => self.output.append(OutputFragment::PageBreak),
+                    128.. => {
+                        self.utf8_sequence.push(c);
+                        self.phase = Phase::Utf8Character;
+                    }
+                    ..32 | ansi::DEL => (),
+                }
+            }
+
             Phase::Esc if c == ansi::ESC => (),
 
             Phase::Esc => {
@@ -880,69 +942,6 @@ impl Transformer {
                 }
                 _ => self.mxp_entity_string.push(c),
             },
-
-            Phase::Normal => {
-                let last_char = self.last_char;
-                self.last_char = c;
-                match c {
-                    telnet::IAC => self.phase = Phase::Iac,
-                    ansi::ESC => self.phase = Phase::Esc,
-                    ansi::ENQ => self.input.append(self.ansi.answerback()),
-                    ansi::BEL => self.output.append(ControlFragment::Beep),
-                    ansi::BS => self.output.append(CursorEffect::Back(1)),
-                    ansi::VT => self.output.append(ControlFragment::VerticalTab),
-                    ansi::FF => self.output.append(OutputFragment::PageBreak),
-                    b'\r' => (),
-                    b'\t' if self.in_paragraph => {
-                        if last_char != b' ' {
-                            self.output.append_text(" ");
-                        }
-                    }
-                    b'\t' => match self.config.tab {
-                        TabBehavior::Control => self.output.append(CursorEffect::TabForward(1)),
-                        TabBehavior::NextMultipleOf8 => self.output.append_tab(),
-                        tab => self.output.append_text(tab.string()),
-                    },
-                    b' ' if last_char == b' ' && self.in_paragraph => {}
-                    b'\n' => {
-                        if self.mxp_active {
-                            self.mxp_mode_change(None);
-                        }
-                        if self.in_paragraph {
-                            match last_char {
-                                b'\n' => {
-                                    self.output.start_line();
-                                    self.output.start_line();
-                                }
-                                b'.' => self.output.append_text("  "),
-                                b' ' | b'\t' | 0x0C => (),
-                                _ => self.output.append_text(" "),
-                            }
-                        } else if self.ignore_next_newline {
-                            self.ignore_next_newline = false;
-                        } else {
-                            self.output.start_line();
-                        }
-                    }
-                    b'<' if self.mxp_active && self.mxp_mode.is_mxp() => {
-                        self.mxp_entity_string.clear();
-                        self.phase = Phase::MxpElement;
-                    }
-                    b'&' if self.mxp_active && self.mxp_mode.is_mxp() => {
-                        self.mxp_entity_string.clear();
-                        self.phase = Phase::MxpEntity;
-                    }
-                    32..=126 => self.output.append_text(
-                        // SAFETY: `utf8` is valid UTF-8, since it is a single ASCII byte.
-                        unsafe { str::from_utf8_unchecked(slice::from_ref(&c)) },
-                    ),
-                    128.. => {
-                        self.utf8_sequence.push(c);
-                        self.phase = Phase::Utf8Character;
-                    }
-                    ..32 | ansi::DEL => (),
-                }
-            }
         }
     }
 }

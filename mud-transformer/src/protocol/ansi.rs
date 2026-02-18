@@ -171,6 +171,7 @@ impl Interpreter {
         }
         let n = unwrap_pos(self.code);
         output.append(match code {
+            b'm' => return self.interpret_mode(output),
             b'@' => {
                 output.append_repeated(" ", n.into());
                 return Some(Outcome::Done);
@@ -224,7 +225,6 @@ impl Interpreter {
             b'h' => return self.set_modes(true, output),
             b'i' => ControlFragment::MediaCopy(PrintFunction::new(self.code_u8()?, false)),
             b'l' => return self.set_modes(false, output),
-            b'm' => return self.interpret_mode(output),
             b'n' => {
                 if self.code == Some(5) {
                     write!(input, "{OkReport}");
@@ -278,6 +278,7 @@ impl Interpreter {
 
     fn interpret_sequence(&mut self, code: u8, output: &mut BufferedOutput) -> Option<Outcome> {
         output.append(match code {
+            b'm' => return self.interpret_mode(output),
             b'H' | b'f' => {
                 let &[row] = self.exact_sequence()?;
                 CursorEffect::Position {
@@ -299,7 +300,6 @@ impl Interpreter {
             }
             b'h' => return self.set_modes(true, output),
             b'l' => return self.set_modes(false, output),
-            b'm' => return self.interpret_mode(output),
             b'r' => {
                 let &[top] = self.exact_sequence()?;
                 ControlFragment::VMargins {
