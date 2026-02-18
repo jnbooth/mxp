@@ -62,15 +62,11 @@ impl EntityMap {
 
     pub fn published(&self) -> PublishedIter<'_> {
         self.inner.iter().filter_map(|(k, v)| {
-            if v.published {
-                Some(super::EntityInfo {
-                    name: k,
-                    description: &v.description,
-                    value: &v.value,
-                })
-            } else {
-                None
-            }
+            v.published.then_some(super::EntityInfo {
+                name: k,
+                description: &v.description,
+                value: &v.value,
+            })
         })
     }
 
