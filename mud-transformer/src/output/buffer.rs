@@ -1,10 +1,10 @@
 use std::str;
 
-use bytes::BytesMut;
 use bytestring::ByteString;
 use flagset::FlagSet;
 use mxp::RgbColor;
 
+use super::ByteStringMut;
 use super::fragment::{
     ControlFragment, EntityFragment, Output, OutputDrain, OutputFragment, TelnetFragment,
     TextFragment,
@@ -21,7 +21,7 @@ fn last_printable_char(s: &str) -> Option<char> {
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct BufferedOutput {
-    text_buf: BytesMut,
+    text_buf: ByteStringMut,
     fragments: Vec<Output>,
     spans: SpanList,
     variables: mxp::EntityMap,
@@ -114,7 +114,7 @@ impl BufferedOutput {
             self.spans.set_populated();
         }
         for _ in 0..times {
-            self.text_buf.extend_from_slice(text.as_bytes());
+            self.text_buf.push_str(text);
             if self.in_variable {
                 self.variable.push_str(text);
             }
@@ -126,7 +126,7 @@ impl BufferedOutput {
     }
 
     pub fn last_printed_character(&self) -> Option<char> {
-        if let Some(c) = last_printable_char(self.view_buf()) {
+        if let Some(c) = last_printable_char(&self.text_buf) {
             return Some(c);
         }
         self.last_char
@@ -187,22 +187,16 @@ impl BufferedOutput {
     }
 
     pub fn append_tab(&mut self) {
-        const TABS: &[u8] = b"        ";
+        const TABS: &[&str; 8] = &[
+            "        ", " ", "  ", "   ", "    ", "     ", "      ", "       ",
+        ];
         let text_cursor = self.cursor + self.text_buf.len();
-        let spacing = text_cursor % TABS.len();
-        let spaces = if spacing == 0 { TABS } else { &TABS[..spacing] };
-        self.text_buf.extend_from_slice(spaces);
+        let spacing = text_cursor & 7;
+        self.text_buf.push_str(TABS[spacing]);
     }
 
     fn take_buf(&mut self) -> ByteString {
-        let buf = self.text_buf.split().freeze();
-        // SAFETY: `self.text_buf` contains only valid UTF-8.
-        unsafe { ByteString::from_bytes_unchecked(buf) }
-    }
-
-    fn view_buf(&self) -> &str {
-        // SAFETY: `self.text_buf` contains only valid UTF-8.
-        unsafe { str::from_utf8_unchecked(&self.text_buf) }
+        self.text_buf.split().freeze()
     }
 
     fn flush_last(&mut self, i: usize) {
@@ -267,7 +261,7 @@ impl BufferedOutput {
         if self.text_buf.is_empty() {
             self.spans.set_populated();
         }
-        self.text_buf.extend_from_slice(output.as_bytes());
+        self.text_buf.push_str(output);
         if self.in_variable {
             self.variable.push_str(output);
         }

@@ -2,7 +2,6 @@
 use std::num::NonZero;
 use std::ops::Index;
 
-use bytes::BytesMut;
 use bytestring::ByteString;
 use flagset::{FlagSet, flags};
 use mxp::Heading;
@@ -10,6 +9,7 @@ use mxp::escape::ansi;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+use super::ByteStringMut;
 use crate::term::TermColor;
 
 flags! {
@@ -171,7 +171,7 @@ macro_rules! set_string_prop {
 #[derive(Clone, Debug, Default)]
 pub(crate) struct SpanList {
     spans: Vec<Span>,
-    buf: BytesMut,
+    buf: ByteStringMut,
 }
 
 impl<I> Index<I> for SpanList
@@ -267,9 +267,7 @@ impl SpanList {
     }
 }
 
-fn share_string(buf: &mut BytesMut, s: &str) -> ByteString {
-    buf.extend_from_slice(s.as_bytes());
-    let bytes = buf.split().freeze();
-    // SAFETY: `bytes` is valid UTF-8.
-    unsafe { ByteString::from_bytes_unchecked(bytes) }
+fn share_string(buf: &mut ByteStringMut, s: &str) -> ByteString {
+    buf.push_str(s);
+    buf.split().freeze()
 }
