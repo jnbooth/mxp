@@ -1,6 +1,6 @@
 mod common;
 use common::transform;
-use mud_transformer::TextFragment;
+use mud_transformer::{TextFragment, interpret_ansi};
 use mxp::RgbColor;
 
 #[test]
@@ -29,6 +29,20 @@ fn xterm_color() {
         }
         .into(),
         TextFragment::from(",").into(),
+    ];
+    assert_eq!(output, expected);
+}
+
+#[test]
+fn xterm_color_interpreted() {
+    let output = interpret_ansi("\x1B[38;5;34m DarkGreen\x1B[39;49m\x1B[0m,");
+    let expected = &[
+        TextFragment {
+            text: " DarkGreen".into(),
+            foreground: Some(RgbColor::hex(0x00AF00)),
+            ..Default::default()
+        },
+        TextFragment::from(","),
     ];
     assert_eq!(output, expected);
 }

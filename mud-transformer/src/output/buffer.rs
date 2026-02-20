@@ -106,6 +106,11 @@ impl BufferedOutput {
         }
     }
 
+    pub fn into_output(mut self) -> Vec<Output> {
+        self.flush();
+        self.fragments
+    }
+
     pub fn append_repeated(&mut self, text: &str, times: usize) {
         if times == 0 {
             return;
@@ -258,6 +263,9 @@ impl BufferedOutput {
     }
 
     pub fn append_text(&mut self, output: &str) {
+        if output.is_empty() {
+            return;
+        }
         if self.text_buf.is_empty() {
             self.spans.set_populated();
         }

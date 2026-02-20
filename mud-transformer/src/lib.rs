@@ -6,6 +6,9 @@ pub use input::Drain as InputDrain;
 pub use mxp;
 pub use mxp::escape;
 
+mod interpret_ansi;
+pub use interpret_ansi::interpret_ansi;
+
 pub mod protocol;
 pub use protocol::msdp::MsdpValue;
 pub use protocol::naws::subnegotiate as naws;
