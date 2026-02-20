@@ -1,11 +1,20 @@
 use crate::input::BufferedInput;
-use crate::output::{BufferedOutput, OutputFragment, TextFragment};
+use crate::output::{BufferedOutput, Output, OutputFragment, TextFragment};
 use crate::protocol::ansi::Interpreter;
 
-pub fn interpret_ansi(input: &str) -> Vec<TextFragment> {
+fn iter_ansi(output: Vec<Output>) -> impl Iterator<Item = TextFragment> {
+    output
+        .into_iter()
+        .filter_map(|output| match output.fragment {
+            OutputFragment::Text(text) => Some(text),
+            _ => None,
+        })
+}
+
+pub fn interpret_ansi(input: &str) -> impl Iterator<Item = TextFragment> {
     let mut iter = input.split("\x1B[");
     let Some(start) = iter.next() else {
-        return Vec::new();
+        return iter_ansi(Vec::new());
     };
     let mut ignored = BufferedInput::new();
     let mut interpreter = Interpreter::new();
@@ -24,12 +33,5 @@ pub fn interpret_ansi(input: &str) -> Vec<TextFragment> {
         }
         output.append_text(rest);
     }
-    output
-        .into_output()
-        .into_iter()
-        .filter_map(|output| match output.fragment {
-            OutputFragment::Text(text) => Some(text),
-            _ => None,
-        })
-        .collect()
+    iter_ansi(output.into_output())
 }

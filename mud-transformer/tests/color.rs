@@ -35,7 +35,7 @@ fn xterm_color() {
 
 #[test]
 fn xterm_color_interpreted() {
-    let output = interpret_ansi("\x1B[38;5;34m DarkGreen\x1B[39;49m\x1B[0m,");
+    let output = interpret_ansi("\x1B[38;5;34m DarkGreen\x1B[39;49m\x1B[0m,").collect::<Vec<_>>();
     let expected = &[
         TextFragment {
             text: " DarkGreen".into(),
