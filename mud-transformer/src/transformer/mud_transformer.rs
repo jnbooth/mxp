@@ -121,6 +121,10 @@ impl Transformer {
         self.input.append([telnet::IAC, telnet::SE]);
     }
 
+    pub fn config(&self) -> &TransformerConfig {
+        &self.config
+    }
+
     pub fn set_config(&mut self, mut config: TransformerConfig) {
         mem::swap(&mut self.config, &mut config);
         if self.config.ignore_mxp_colors {
@@ -141,6 +145,22 @@ impl Transformer {
             return;
         }
         self.subnegotiate(mnes_updates);
+    }
+
+    pub fn xterm_color(&self, i: u8) -> mxp::RgbColor {
+        self.output.get_xterm_color(i)
+    }
+
+    pub fn set_xterm_color(&mut self, i: u8, color: mxp::RgbColor) {
+        self.output.set_xterm_color(i, color);
+    }
+
+    pub fn xterm_colors(&self) -> &[mxp::RgbColor; 256] {
+        self.output.xterm_colors()
+    }
+
+    pub fn xterm_colors_mut(&mut self) -> &mut [mxp::RgbColor; 256] {
+        self.output.xterm_colors_mut()
     }
 
     pub fn has_output(&self) -> bool {

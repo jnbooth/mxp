@@ -117,6 +117,18 @@ impl XTermPalette {
         &mut self.palette[i as usize]
     }
 
+    /// Borrows RGB colors as an array.
+    #[inline]
+    pub const fn as_slice(&self) -> &[RgbColor; 256] {
+        &self.palette
+    }
+
+    /// Mutably borrows RGB colors as an array.
+    #[inline]
+    pub const fn as_slice_mut(&mut self) -> &mut [RgbColor; 256] {
+        &mut self.palette
+    }
+
     /// Iterates over the palette.
     #[inline]
     pub fn iter(&self) -> array::IntoIter<RgbColor, 256> {

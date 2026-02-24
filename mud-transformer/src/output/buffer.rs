@@ -55,6 +55,14 @@ impl BufferedOutput {
         self.xterm_palette.set_defaults(colors);
     }
 
+    pub fn xterm_colors(&self) -> &[RgbColor; 256] {
+        self.xterm_palette.as_slice()
+    }
+
+    pub fn xterm_colors_mut(&mut self) -> &mut [RgbColor; 256] {
+        self.xterm_palette.as_slice_mut()
+    }
+
     pub fn get_xterm_color(&self, code: u8) -> RgbColor {
         self.xterm_palette[code]
     }
