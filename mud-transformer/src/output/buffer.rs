@@ -60,7 +60,7 @@ impl BufferedOutput {
     }
 
     pub fn xterm_colors_mut(&mut self) -> &mut [RgbColor; 256] {
-        self.xterm_palette.as_slice_mut()
+        self.xterm_palette.as_mut_slice()
     }
 
     pub fn get_xterm_color(&self, code: u8) -> RgbColor {

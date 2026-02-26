@@ -125,7 +125,7 @@ impl XTermPalette {
 
     /// Mutably borrows RGB colors as an array.
     #[inline]
-    pub const fn as_slice_mut(&mut self) -> &mut [RgbColor; 256] {
+    pub const fn as_mut_slice(&mut self) -> &mut [RgbColor; 256] {
         &mut self.palette
     }
 
