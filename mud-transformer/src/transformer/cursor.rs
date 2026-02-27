@@ -15,6 +15,10 @@ impl<'a> ReceiveCursor<'a> {
     pub const fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }
+
+    pub const fn as_slice(&self) -> &'a [u8] {
+        self.inner
+    }
 }
 
 impl Read for ReceiveCursor<'_> {
@@ -68,6 +72,19 @@ impl Iterator for ReceiveCursor<'_> {
             None
         }
     }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let exact = self.len();
+        (exact, Some(exact))
+    }
 }
 
 impl FusedIterator for ReceiveCursor<'_> {}
+
+impl ExactSizeIterator for ReceiveCursor<'_> {
+    #[inline]
+    fn len(&self) -> usize {
+        self.inner.len()
+    }
+}

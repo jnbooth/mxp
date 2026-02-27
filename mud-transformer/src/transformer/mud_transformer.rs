@@ -504,10 +504,11 @@ impl Transformer {
         self.mxp_state.set(mxp_state);
     }
 
-    pub fn receive(&mut self, bytes: &[u8], buf: &mut [u8]) -> io::Result<()> {
+    pub fn receive(&mut self, bytes: &[u8], buf: &mut [u8]) -> io::Result<usize> {
         if bytes.is_empty() {
-            return Ok(());
+            return Ok(0);
         }
+        let mut received = 0;
         let mut cursor = ReceiveCursor::new(bytes);
         if !self.decompress.active() {
             for byte in &mut cursor {
@@ -516,6 +517,7 @@ impl Transformer {
                     break;
                 }
             }
+            received += bytes.len() - cursor.len();
         }
         while !cursor.is_empty() {
             let n = self.decompress.decompress(&mut cursor, buf)?;
@@ -525,13 +527,16 @@ impl Transformer {
                 if !self.decompress.active() {
                     self.decompress.reset();
                     let remainder = iter.as_slice().to_vec();
-                    self.receive(&remainder, buf)?;
-                    return self.receive(bytes, buf);
+                    received += n - remainder.len();
+                    received += self.receive(&remainder, buf)?;
+                    received += self.receive(cursor.as_slice(), buf)?;
+                    return Ok(received);
                 }
             }
+            received += n;
         }
 
-        Ok(())
+        Ok(received)
     }
 
     #[allow(clippy::match_same_arms)]
