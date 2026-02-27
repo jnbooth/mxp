@@ -369,7 +369,7 @@ impl Interpreter {
             b"$r" => {
                 self.sequence.push(self.code);
                 let (rect, attributes) = self.sequence_rect()?;
-                for &attribute in attributes {
+                for attribute in attributes.iter().copied() {
                     let attribute = VisualCharacterAttribute::from_code(attribute?)?;
                     output.append(RectEffect::SetAttributes(attribute).with(rect));
                 }
@@ -378,7 +378,7 @@ impl Interpreter {
             b"$t" => {
                 self.sequence.push(self.code);
                 let (rect, attributes) = self.sequence_rect()?;
-                for &attribute in attributes {
+                for attribute in attributes.iter().copied() {
                     let attribute = ReverseVisualCharacterAttribute::from_code(attribute?)?;
                     output.append(RectEffect::ReverseAttributes(attribute).with(rect));
                 }

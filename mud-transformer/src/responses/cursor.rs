@@ -78,8 +78,8 @@ impl CursorInformation {
 
     fn flags(bytes: &str, targets: &[Self]) -> FlagSet<Self> {
         let mut flags = FlagSet::empty();
-        for &c in bytes.as_bytes() {
-            for &info in targets {
+        for c in bytes.as_bytes().iter().copied() {
+            for info in targets.iter().copied() {
                 if (c & info.bit()) != 0 {
                     flags |= info;
                 }
