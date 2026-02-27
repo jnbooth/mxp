@@ -9,3 +9,6 @@ pub use iter::{EntityInfo, PublishedIter};
 
 mod map;
 pub use map::{EntityEntry, EntityMap};
+
+mod visibility;
+pub use visibility::EntityVisibility;

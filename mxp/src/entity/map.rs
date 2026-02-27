@@ -36,7 +36,7 @@ impl EntityMap {
     pub fn with_globals() -> Self {
         Self {
             inner: HashMap::new(),
-            globals: html_escape::NAMED_ENTITIES.iter().copied().collect(),
+            globals: Entity::globals(),
         }
     }
 
@@ -62,7 +62,7 @@ impl EntityMap {
 
     pub fn published(&self) -> PublishedIter<'_> {
         self.inner.iter().filter_map(|(k, v)| {
-            v.published.then_some(super::EntityInfo {
+            v.is_published().then_some(super::EntityInfo {
                 name: k,
                 description: &v.description,
                 value: &v.value,
@@ -96,7 +96,7 @@ impl EntityMap {
                 Entry::Vacant(_) if keywords.contains(EntityKeyword::Remove) => return Ok(None),
                 Entry::Vacant(entry) => entry.insert(Entity {
                     value: value.to_owned(),
-                    published: keywords.contains(EntityKeyword::Publish),
+                    visibility: keywords.into(),
                     description: description.unwrap_or_default(),
                 }),
                 Entry::Occupied(entry) if keywords.contains(EntityKeyword::Remove) => {
@@ -128,9 +128,9 @@ impl EntityMap {
                         _ => true,
                     };
                     if description_unchanged && entity.value == value {
-                        let old_published = entity.published;
+                        let old_visibility = entity.visibility;
                         entity.apply_keywords(keywords);
-                        if entity.published == old_published {
+                        if entity.visibility == old_visibility {
                             return Ok(None);
                         }
                     } else {
@@ -149,8 +149,24 @@ impl EntityMap {
         inner(self, key, value, description, keywords.into())
     }
 
+    pub fn get(&self, key: &str) -> Option<&str> {
+        let entity = self.inner.get(key)?;
+        if entity.is_private() {
+            return None;
+        }
+        Some(entity.value.as_str())
+    }
+
+    pub fn insert(&mut self, key: String, value: String) -> bool {
+        if self.globals.contains_key(key.as_bytes()) {
+            return false;
+        }
+        self.inner.insert(key, value.into());
+        true
+    }
+
     #[inline]
-    fn get(&self, key: &str) -> Option<DecodedEntity<'_>> {
+    fn get_inner(&self, key: &str) -> Option<DecodedEntity<'_>> {
         if let Some(&global) = self.globals.get(key.as_bytes()) {
             return Some(global.into());
         }
@@ -161,7 +177,7 @@ impl EntityMap {
         let (start, radix) = match key.as_bytes() {
             [b'#', b'x', ..] => (2, 16),
             [b'#', ..] => (1, 10),
-            _ => return Ok(self.get(key)),
+            _ => return Ok(self.get_inner(key)),
         };
         let Ok(code) = u32::from_str_radix(&key[start..], radix) else {
             return Err(Error::new(key, ErrorKind::InvalidEntityNumber));
@@ -178,6 +194,7 @@ impl EntityMap {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::EntityVisibility;
 
     #[test]
     fn set_new() {
@@ -204,7 +221,7 @@ mod tests {
             map.inner.get("key"),
             Some(&Entity {
                 value: String::new(),
-                published: true,
+                visibility: EntityVisibility::Published,
                 description: "desc2".to_owned()
             })
         );

@@ -10,7 +10,7 @@ use crate::argument::{Arguments, Decoder, ElementDecoder};
 use crate::element::{
     Action, ActionKind, CollectedDefinition, DefinitionKind, Element, ElementItem, Mode, Tag,
 };
-use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
+use crate::entity::{DecodedEntity, EntityEntry, EntityMap};
 use crate::parser::{Error, ErrorKind, Words};
 use crate::responses::SupportResponse;
 
@@ -49,14 +49,14 @@ impl State {
         self.entities.is_global(key)
     }
 
+    /// Borrows the map of defined MXP entities.
+    pub fn entities(&self) -> &EntityMap {
+        &self.entities
+    }
+
     /// Mutably borrows the map of defined MXP entities.
     pub fn entities_mut(&mut self) -> &mut EntityMap {
         &mut self.entities
-    }
-
-    /// Iterates through published entities.
-    pub fn published_entities(&self) -> PublishedIter<'_> {
-        self.entities.published()
     }
 
     /// Retrieves a tag or element by name.
@@ -72,11 +72,6 @@ impl State {
     /// Returns the number of custom MXP elements that have been stored.
     pub fn count_custom_elements(&self) -> usize {
         self.elements.custom_count()
-    }
-
-    /// Returns the number of custom MXP entities that have been stored.
-    pub fn count_custom_entities(&self) -> usize {
-        self.entities.len()
     }
 
     /// Creates a formatting `struct` that outputs a [`<SUPPORT>`] response.

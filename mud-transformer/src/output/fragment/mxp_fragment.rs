@@ -43,7 +43,7 @@ impl EntityFragment {
             Some(entity) => Self::Set {
                 name: entry.name.to_owned(),
                 value: entity.value.clone(),
-                publish: entity.published,
+                publish: entity.is_published(),
                 is_variable,
             },
             None => Self::Unset {

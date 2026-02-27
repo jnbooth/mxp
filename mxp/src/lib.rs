@@ -14,7 +14,9 @@ mod element;
 pub use element::*;
 
 mod entity;
-pub use entity::{DecodedEntity, Entity, EntityEntry, EntityInfo, EntityMap, PublishedIter};
+pub use entity::{
+    DecodedEntity, Entity, EntityEntry, EntityInfo, EntityMap, EntityVisibility, PublishedIter,
+};
 
 pub mod escape;
 

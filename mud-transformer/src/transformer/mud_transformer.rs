@@ -115,6 +115,14 @@ impl Transformer {
         self.mxp_active
     }
 
+    pub fn get_mxp_entity(&self, name: &str) -> Option<&str> {
+        self.mxp_state.entities().get(name)
+    }
+
+    pub fn set_mxp_entity(&mut self, name: String, value: String) -> bool {
+        self.mxp_state.entities_mut().insert(name, value)
+    }
+
     fn subnegotiate<T: Negotiate>(&mut self, negotiator: T) {
         self.input.append([telnet::IAC, telnet::SB, T::CODE]);
         negotiator.negotiate(&mut self.input, &self.config).unwrap();
@@ -181,7 +189,7 @@ impl Transformer {
     }
 
     pub fn published_entities(&self) -> mxp::PublishedIter<'_> {
-        self.mxp_state.published_entities()
+        self.mxp_state.entities().published()
     }
 
     pub fn published_variables(&self) -> mxp::PublishedIter<'_> {
@@ -193,7 +201,7 @@ impl Transformer {
     }
 
     pub fn count_custom_mxp_entities(&self) -> usize {
-        self.mxp_state.count_custom_entities()
+        self.mxp_state.entities().len()
     }
 
     fn handle_mxp_error(&mut self, err: mxp::Error) {

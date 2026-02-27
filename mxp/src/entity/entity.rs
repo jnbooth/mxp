@@ -1,29 +1,52 @@
+use std::collections::HashMap;
+use std::sync::LazyLock;
+
 use flagset::FlagSet;
 
+use super::visibility::EntityVisibility;
 use crate::EntityKeyword;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Entity {
     pub value: String,
-    pub published: bool,
+    pub visibility: EntityVisibility,
     pub description: String,
 }
 
 impl Entity {
+    pub(super) fn globals() -> HashMap<&'static [u8], &'static str> {
+        html_escape::NAMED_ENTITIES.iter().copied().collect()
+    }
+
+    pub fn global(name: &str) -> Option<&'static str> {
+        static GLOBALS: LazyLock<HashMap<&'static [u8], &'static str>> =
+            LazyLock::new(Entity::globals);
+
+        GLOBALS.get(name.as_bytes()).copied()
+    }
+
     pub const fn new(value: String) -> Self {
         Self {
             value,
-            published: false,
+            visibility: EntityVisibility::Default,
             description: String::new(),
         }
+    }
+
+    pub const fn is_private(&self) -> bool {
+        matches!(self.visibility, EntityVisibility::Private)
+    }
+
+    pub const fn is_published(&self) -> bool {
+        matches!(self.visibility, EntityVisibility::Published)
     }
 
     pub fn apply_keywords<T: Into<FlagSet<EntityKeyword>>>(&mut self, keywords: T) {
         let keywords = keywords.into();
         if keywords.contains(EntityKeyword::Private) {
-            self.published = false;
+            self.visibility = EntityVisibility::Private;
         } else if keywords.contains(EntityKeyword::Publish) {
-            self.published = true;
+            self.visibility = EntityVisibility::Published;
         }
     }
 
@@ -43,6 +66,12 @@ impl Entity {
     }
 }
 
+impl From<String> for Entity {
+    fn from(value: String) -> Self {
+        Self::new(value)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -52,7 +81,7 @@ mod tests {
         let mut entity = Entity::new(String::new());
         entity.apply_keywords(EntityKeyword::Publish);
         entity.apply_keywords(None);
-        assert!(entity.published);
+        assert_eq!(entity.visibility, EntityVisibility::Published);
     }
 
     #[test]
@@ -62,7 +91,7 @@ mod tests {
         entity.apply_keywords(None);
         entity.apply_keywords(EntityKeyword::Private);
         entity.apply_keywords(None);
-        assert!(!entity.published);
+        assert_eq!(entity.visibility, EntityVisibility::Private);
     }
 
     #[test]
