@@ -18,11 +18,41 @@ impl Entity {
         html_escape::NAMED_ENTITIES.iter().copied().collect()
     }
 
-    pub fn global(name: &str) -> Option<&'static str> {
+    pub fn global<S: AsRef<[u8]>>(name: S) -> Option<&'static str> {
         static GLOBALS: LazyLock<HashMap<&'static [u8], &'static str>> =
             LazyLock::new(Entity::globals);
 
-        GLOBALS.get(name.as_bytes()).copied()
+        GLOBALS.get(name.as_ref()).copied()
+    }
+
+    pub const fn const_global(name: &str) -> Option<&'static str> {
+        const fn const_eq(mut a: &[u8], mut b: &[u8]) -> bool {
+            if a.len() != b.len() {
+                return false;
+            }
+
+            while let ([first_a, rest_a @ ..], [first_b, rest_b @ ..]) = (a, b) {
+                if *first_a == *first_b {
+                    a = rest_a;
+                    b = rest_b;
+                } else {
+                    return false;
+                }
+            }
+
+            true
+        }
+
+        let name = name.as_bytes();
+        let mut i = 0;
+        while i < html_escape::NAMED_ENTITIES.len() {
+            let (key, value) = html_escape::NAMED_ENTITIES[i];
+            if const_eq(key, name) {
+                return Some(value);
+            }
+            i += 1;
+        }
+        None
     }
 
     pub const fn new(value: String) -> Self {
