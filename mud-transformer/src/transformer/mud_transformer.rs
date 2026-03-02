@@ -222,7 +222,7 @@ impl Transformer {
     }
 
     fn mxp_off(&mut self, completely: bool) {
-        self.output.reset();
+        self.output.reset_mxp();
         if !self.mxp_active {
             return;
         }
@@ -502,6 +502,14 @@ impl Transformer {
             self.handle_mxp_error(e);
         }
         self.mxp_state.set(mxp_state);
+    }
+
+    pub fn reset_ansi(&mut self) {
+        self.output.reset_ansi();
+    }
+
+    pub fn reset_mxp(&mut self) {
+        self.output.reset_mxp();
     }
 
     pub fn receive(&mut self, bytes: &[u8], buf: &mut [u8]) -> io::Result<usize> {

@@ -327,13 +327,8 @@ impl BufferedOutput {
     }
 
     pub fn reset_mxp(&mut self) {
-        self.flush();
-        self.spans.clear();
-    }
-
-    pub fn reset(&mut self) {
         self.reset_ansi();
-        self.reset_mxp();
+        self.spans.clear();
     }
 
     pub fn span_len(&self) -> usize {
