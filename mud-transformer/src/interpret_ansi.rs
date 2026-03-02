@@ -28,7 +28,7 @@ pub fn interpret_ansi(input: &str) -> impl Iterator<Item = TextFragment> {
             continue;
         };
         interpreter.reset();
-        for c in escape.as_bytes().iter().copied() {
+        for &c in escape.as_bytes() {
             interpreter.interpret(c, &mut output, &mut ignored);
         }
         output.append_text(rest);

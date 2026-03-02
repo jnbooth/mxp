@@ -346,8 +346,8 @@ fn process_restore_presentation_state(
 fn parse_dcs(control_string: &[u8]) -> Option<(Option<u8>, &[u8], &[u8])> {
     let (code, rest) = if control_string.first()?.is_ascii_digit() {
         let mut code = 0u8;
-        let mut iter = control_string.iter().copied();
-        for c in &mut iter {
+        let mut iter = control_string.iter();
+        for &c in &mut iter {
             if !c.is_ascii_digit() {
                 break;
             }
@@ -408,7 +408,7 @@ fn decode_hex(sequence: &[u8], buf: &mut Vec<u8>) -> Option<()> {
 
     buf.reserve(sequence.len() / 2);
 
-    for [high, low] in chunks.iter().copied() {
+    for &[high, low] in chunks {
         let high = hex_digit(high);
         let low = hex_digit(low);
         if high >= 16 || low >= 16 {
