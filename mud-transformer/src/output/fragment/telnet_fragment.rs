@@ -1,22 +1,8 @@
 use bytes::Bytes;
-use mxp::escape::telnet;
 
 use super::OutputFragment;
 use crate::protocol::msdp::MsdpValue;
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum TelnetSource {
-    Client,
-    Server,
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum TelnetVerb {
-    Will = telnet::WILL as _,
-    Wont = telnet::WONT as _,
-    Do = telnet::DO as _,
-    Dont = telnet::DONT as _,
-}
+use crate::protocol::negotiate::{TelnetSource, TelnetVerb};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TelnetFragment {

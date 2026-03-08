@@ -2,7 +2,7 @@ use std::fmt;
 
 use flagset::{FlagSet, flags};
 
-use super::Negotiate;
+use super::negotiate::Negotiate;
 use crate::transformer::TransformerConfig;
 
 /// Negotiate About Character Set

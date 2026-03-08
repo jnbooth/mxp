@@ -7,9 +7,13 @@ use byte_string_mut::ByteStringMut;
 mod fragment;
 pub use fragment::{
     ControlFragment, EntityFragment, MxpFragment, Output, OutputDrain, OutputFragment,
-    TelnetFragment, TelnetSource, TelnetVerb, TextFragment, TextFragmentANSI, TextFragmentHtml,
+    TelnetFragment, TextFragment, TextFragmentANSI, TextFragmentHtml,
 };
+
+mod interpret_ansi;
+pub use interpret_ansi::interpret_ansi;
 
 mod span;
 pub(crate) use span::EntitySetter;
+pub(super) use span::SpanList;
 pub use span::TextStyle;

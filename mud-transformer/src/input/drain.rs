@@ -1,13 +1,13 @@
 use std::io::{self, BufRead, IoSliceMut, Read, Write};
 
 #[must_use = "if the output is unused, use self.clear() instead"]
-pub struct Drain<'a> {
+pub struct InputDrain<'a> {
     pub(super) external_cursor: &'a mut usize,
     pub(super) cursor: usize,
     pub(super) buf: &'a mut Vec<u8>,
 }
 
-impl Drain<'_> {
+impl InputDrain<'_> {
     #[inline]
     pub const fn is_empty(&self) -> bool {
         self.cursor >= self.buf.len()
@@ -35,7 +35,7 @@ impl Drain<'_> {
     }
 }
 
-impl bytes::Buf for Drain<'_> {
+impl bytes::Buf for InputDrain<'_> {
     fn remaining(&self) -> usize {
         self.buf.len().saturating_sub(self.cursor)
     }
@@ -49,7 +49,7 @@ impl bytes::Buf for Drain<'_> {
     }
 }
 
-impl Drop for Drain<'_> {
+impl Drop for InputDrain<'_> {
     fn drop(&mut self) {
         *self.external_cursor = 0;
         if self.is_empty() {
@@ -61,7 +61,7 @@ impl Drop for Drain<'_> {
     }
 }
 
-impl Read for Drain<'_> {
+impl Read for InputDrain<'_> {
     #[inline]
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let n = self.slice().read(buf)?;
@@ -98,7 +98,7 @@ impl Read for Drain<'_> {
     }
 }
 
-impl BufRead for Drain<'_> {
+impl BufRead for InputDrain<'_> {
     #[inline]
     fn fill_buf(&mut self) -> io::Result<&[u8]> {
         Ok(self.slice())

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::drain::Drain;
+use super::drain::InputDrain;
 
 #[derive(Clone, Debug)]
 pub(crate) struct BufferedInput {
@@ -27,11 +27,11 @@ impl BufferedInput {
         self.buf.extend_from_slice(bytes.as_ref());
     }
 
-    pub fn drain(&mut self) -> Option<Drain<'_>> {
+    pub fn drain(&mut self) -> Option<InputDrain<'_>> {
         if self.buf.is_empty() {
             return None;
         }
-        Some(Drain {
+        Some(InputDrain {
             cursor: self.cursor,
             external_cursor: &mut self.cursor,
             buf: &mut self.buf,

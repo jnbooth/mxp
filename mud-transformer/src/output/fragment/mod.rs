@@ -7,7 +7,7 @@ mod mxp_fragment;
 pub use mxp_fragment::{EntityFragment, MxpFragment};
 
 mod telnet_fragment;
-pub use telnet_fragment::{TelnetFragment, TelnetSource, TelnetVerb};
+pub use telnet_fragment::TelnetFragment;
 
 mod text_fragment;
 pub use text_fragment::{TextFragment, TextFragmentANSI, TextFragmentHtml};

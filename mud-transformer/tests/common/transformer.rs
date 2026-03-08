@@ -1,7 +1,8 @@
 use std::io::Read;
 use std::ops::{Deref, DerefMut};
 
-use mud_transformer::{OutputFragment, Transformer, TransformerConfig, UseMxp};
+use mud_transformer::output::OutputFragment;
+use mud_transformer::{Transformer, TransformerConfig, UseMxp};
 
 pub fn transform<S: AsRef<[u8]>>(s: S) -> TestTransformer {
     let config = TransformerConfig {

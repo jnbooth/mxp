@@ -2,7 +2,8 @@ mod common;
 use std::collections::HashMap;
 
 use common::transform;
-use mud_transformer::{MsdpValue, TelnetFragment};
+use mud_transformer::MsdpValue;
+use mud_transformer::output::TelnetFragment;
 use mxp::escape::telnet;
 
 fn subnegotiate(bytes: &[u8]) -> Vec<u8> {

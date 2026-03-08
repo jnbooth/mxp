@@ -1,6 +1,7 @@
 use std::io::{self, IoSlice, Read, Write};
 
-use mud_transformer::{OutputDrain, Transformer, TransformerConfig};
+use mud_transformer::output::OutputDrain;
+use mud_transformer::{Transformer, TransformerConfig};
 
 use crate::config::DEFAULT_BUFFER_SIZE;
 

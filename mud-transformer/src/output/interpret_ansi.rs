@@ -1,6 +1,6 @@
+use super::{BufferedOutput, Output, OutputFragment, TextFragment};
 use crate::input::BufferedInput;
-use crate::output::{BufferedOutput, Output, OutputFragment, TextFragment};
-use crate::protocol::ansi::Interpreter;
+use crate::protocol::ansi;
 
 fn iter_ansi(output: Vec<Output>) -> impl Iterator<Item = TextFragment> {
     output
@@ -17,7 +17,7 @@ pub fn interpret_ansi(input: &str) -> impl Iterator<Item = TextFragment> {
         return iter_ansi(Vec::new());
     };
     let mut ignored = BufferedInput::new();
-    let mut interpreter = Interpreter::new();
+    let mut interpreter = ansi::Interpreter::new();
     let mut output = BufferedOutput::new();
     output.append_text(start);
     for sequence in iter {

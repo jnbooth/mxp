@@ -1,6 +1,6 @@
 mod common;
 use common::transform;
-use mud_transformer::TextFragment;
+use mud_transformer::output::TextFragment;
 
 #[test]
 fn basic_entity() {

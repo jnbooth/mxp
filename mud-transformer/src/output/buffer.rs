@@ -4,12 +4,10 @@ use bytestring::ByteString;
 use flagset::FlagSet;
 use mxp::RgbColor;
 
-use super::ByteStringMut;
-use super::fragment::{
-    ControlFragment, EntityFragment, Output, OutputDrain, OutputFragment, TelnetFragment,
-    TextFragment,
+use super::{
+    ByteStringMut, ControlFragment, EntityFragment, EntitySetter, Output, OutputDrain,
+    OutputFragment, SpanList, TelnetFragment, TextFragment, TextStyle,
 };
-use super::span::{EntitySetter, SpanList, TextStyle};
 use crate::responses::SgrReport;
 use crate::term::{TermColor, XTermPalette};
 

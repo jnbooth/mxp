@@ -1,6 +1,7 @@
 mod common;
 use common::{transform, transform_with};
-use mud_transformer::{TextFragment, TextStyle, TransformerConfig, UseMxp};
+use mud_transformer::output::{TextFragment, TextStyle};
+use mud_transformer::{TransformerConfig, UseMxp};
 
 fn prompt(label: &str, action: &str) -> mxp::LinkPrompt {
     mxp::LinkPrompt {

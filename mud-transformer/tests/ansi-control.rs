@@ -2,7 +2,7 @@ mod common;
 use std::fmt::Write as _;
 
 use common::transform;
-use mud_transformer::ControlFragment;
+use mud_transformer::output::ControlFragment;
 
 #[test]
 fn set_title() {

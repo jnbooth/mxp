@@ -12,12 +12,13 @@ use super::cursor::ReceiveCursor;
 use super::phase::Phase;
 use super::state::StateLock;
 use super::tag::{Tag, TagList};
-use crate::input::{BufferedInput, Drain as InputDrain};
+use crate::input::{BufferedInput, InputDrain};
 use crate::output::{
     BufferedOutput, ControlFragment, EntityFragment, EntitySetter, MxpFragment, OutputDrain,
-    OutputFragment, TelnetFragment, TelnetSource, TelnetVerb, TextStyle,
+    OutputFragment, TelnetFragment, TextStyle,
 };
-use crate::protocol::{self, Negotiate, charset, mccp, mnes, msdp, mssp, mtts, xterm};
+use crate::protocol::negotiate::{Negotiate, TelnetSource, TelnetVerb};
+use crate::protocol::{self, charset, mccp, mnes, msdp, mssp, mtts, xterm};
 use crate::term::{CursorEffect, EraseRange, EraseTarget};
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {

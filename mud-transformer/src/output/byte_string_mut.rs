@@ -4,7 +4,7 @@ use bytes::BytesMut;
 use bytestring::ByteString;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct ByteStringMut {
+pub(super) struct ByteStringMut {
     inner: BytesMut,
 }
 

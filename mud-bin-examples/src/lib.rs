@@ -1,6 +1,7 @@
 use std::io::{self, Write};
 
-use mud_transformer::{MxpFragment, Output, OutputFragment, Tag, TransformerConfig};
+use mud_transformer::output::{MxpFragment, Output, OutputFragment};
+use mud_transformer::{Tag, TransformerConfig};
 
 pub fn get_config() -> TransformerConfig {
     TransformerConfig {

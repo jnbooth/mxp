@@ -1,6 +1,6 @@
 mod common;
 use common::transform;
-use mud_transformer::{TextFragment, interpret_ansi};
+use mud_transformer::output::{TextFragment, interpret_ansi};
 use mxp::RgbColor;
 
 #[test]

@@ -2,9 +2,8 @@ use std::fmt;
 
 use flagset::{FlagSet, flags};
 
-use crate::ControlFragment;
 use crate::escape::ansi::{DCS, ST};
-use crate::output::{BufferedOutput, TextStyle};
+use crate::output::{BufferedOutput, ControlFragment, TextStyle};
 use crate::term::{CursorEffect, Mode};
 
 const BIT_7: u8 = 0b1000000;

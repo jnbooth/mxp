@@ -2,7 +2,8 @@ use std::fmt;
 
 use flagset::{FlagSet, flags};
 
-use super::{Negotiate, mtts};
+use super::mtts;
+use super::negotiate::Negotiate;
 use crate::transformer::TransformerConfig;
 
 /// MUD New-Environ Standard

@@ -1,4 +1,4 @@
-use crate::ControlFragment;
+use crate::output::ControlFragment;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Rect {
