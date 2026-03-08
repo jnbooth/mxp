@@ -1,12 +1,13 @@
 use std::str;
 
 use bytestring::ByteString;
+use bytestringmut::ByteStringMut;
 use flagset::FlagSet;
 use mxp::RgbColor;
 
 use super::{
-    ByteStringMut, ControlFragment, EntityFragment, EntitySetter, Output, OutputDrain,
-    OutputFragment, SpanList, TelnetFragment, TextFragment, TextStyle,
+    ControlFragment, EntityFragment, EntitySetter, Output, OutputDrain, OutputFragment, SpanList,
+    TelnetFragment, TextFragment, TextStyle,
 };
 use crate::responses::SgrReport;
 use crate::term::{TermColor, XTermPalette};

@@ -3,13 +3,13 @@ use std::num::NonZero;
 use std::ops::Index;
 
 use bytestring::ByteString;
+use bytestringmut::ByteStringMut;
 use flagset::{FlagSet, flags};
 use mxp::Heading;
 use mxp::escape::ansi;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::ByteStringMut;
 use crate::term::TermColor;
 
 flags! {
