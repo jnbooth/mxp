@@ -4,8 +4,9 @@ use std::str::FromStr;
 
 use super::mode::Mode;
 use super::tag::Tag;
-use crate::argument::{Arguments, Decoder, Scan};
+use crate::argument::Arguments;
 use crate::color::RgbColor;
+use crate::entity::EntityMap;
 use crate::keyword::ElementKeyword;
 use crate::parser::{Error, ErrorKind, StringVariant, UnrecognizedVariant, Words};
 
@@ -181,6 +182,15 @@ impl FromStr for ParseAs {
     }
 }
 
+/// Result of [`Element::parse`].
+#[derive(Debug)]
+pub enum ElementCommand {
+    /// The server is commanding the client to define an element.
+    Define(Element),
+    /// The server is commanding the client to delete an element with the specified name.
+    Delete(String),
+}
+
 /// User-defined MXP tags that we recognise, e.g. <boldcolor>.
 /// For example: <!ELEMENT boldtext '<COLOR &col;><B>' ATT='col=red'>
 ///
@@ -264,12 +274,13 @@ impl Element {
         }
     }
 
-    pub(crate) fn parse<D, S>(name: String, scanner: Scan<D, S>) -> crate::Result<Option<Self>>
-    where
-        D: Decoder,
-        S: AsRef<str>,
-    {
-        let mut scanner = scanner.with_keywords();
+    /// Parses an element from an MXP definition, using the specified entity map for decoding.
+    pub fn parse(definition: &str, entities: &EntityMap) -> crate::Result<ElementCommand> {
+        let mut words = Words::new(definition);
+        let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
+        let args = words.parse_args::<String>()?;
+
+        let mut scanner = args.scan(entities).with_keywords();
         let items = Self::parse_items(scanner.next()?)?;
 
         let attributes = match scanner.next_or("att")? {
@@ -294,11 +305,11 @@ impl Element {
         let keywords = scanner.into_keywords();
 
         if keywords.contains(ElementKeyword::Delete) {
-            return Ok(None);
+            return Ok(ElementCommand::Delete(name.to_owned()));
         }
 
-        Ok(Some(Self {
-            name,
+        Ok(ElementCommand::Define(Self {
+            name: name.to_owned(),
             open: keywords.contains(ElementKeyword::Open),
             command: keywords.contains(ElementKeyword::Empty),
             items,

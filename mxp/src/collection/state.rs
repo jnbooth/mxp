@@ -8,7 +8,8 @@ use super::element_map::{ElementComponent, ElementMap};
 use super::line_tags::{LineTagUpdate, LineTags};
 use crate::argument::{Arguments, Decoder, ElementDecoder};
 use crate::element::{
-    Action, ActionKind, CollectedDefinition, DefinitionKind, Element, ElementItem, Mode, Tag,
+    Action, ActionKind, CollectedDefinition, DefinitionKind, Element, ElementCommand, ElementItem,
+    Mode, Tag,
 };
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap};
 use crate::parser::{Error, ErrorKind, Words};
@@ -138,17 +139,17 @@ impl State {
     }
 
     fn define_element(&mut self, definition: &str) -> crate::Result<()> {
-        let mut words = Words::new(definition);
-        let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
-        let args = words.parse_args::<String>()?;
-        let Some(el) = Element::parse(name.to_owned(), args.scan(&self.entities))? else {
-            self.elements.remove(name);
-            return Ok(());
+        let el = match Element::parse(definition, &self.entities)? {
+            ElementCommand::Define(el) => el,
+            ElementCommand::Delete(name) => {
+                self.elements.remove(&name);
+                return Ok(());
+            }
         };
         if let Some(tag) = el.tag {
             self.line_tags.set(usize::from(tag.get()), el.name.clone());
         }
-        self.elements.insert(name.to_owned(), el);
+        self.elements.insert(el.name.clone(), el);
         Ok(())
     }
 
