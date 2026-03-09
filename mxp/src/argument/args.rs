@@ -94,3 +94,22 @@ where
         })
     }
 }
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) struct VersionArgs<S> {
+    pub styleversion: Option<S>,
+}
+
+impl<'a, D, S> TryFrom<Scan<'a, D, S>> for VersionArgs<Cow<'a, str>>
+where
+    D: Decoder,
+    S: AsRef<str>,
+{
+    type Error = Error;
+
+    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+        Ok(Self {
+            styleversion: scanner.next()?,
+        })
+    }
+}

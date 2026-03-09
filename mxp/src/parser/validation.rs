@@ -12,35 +12,21 @@ fn is_valid(target: &str) -> bool {
 
 /// If the specified target is valid to use as an MXP identifier or value, returns `Ok(())`.
 /// Otherwise, returns an [`mxp::Error`](Error) for the target with the specified error kind.
+///
+/// # Examples
+///
+/// ```
+/// let err = mxp::ErrorKind::InvalidEntityName;
+/// assert!(mxp::validate("abc", err).is_ok());
+/// assert!(mxp::validate("aBc_-.", err).is_ok());
+/// assert!(mxp::validate("", err).is_err());
+/// assert!(mxp::validate("_test", err).is_err());
+/// assert!(mxp::validate("abc!", err).is_err());
+/// ```
 pub fn validate(target: &str, error: ErrorKind) -> crate::Result<()> {
     if is_valid(target) {
         Ok(())
     } else {
         Err(Error::new(target, error))
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn empty_string_is_invalid() {
-        assert!(!is_valid(""));
-    }
-
-    #[test]
-    fn non_alphabetic_first_char_is_invalid() {
-        assert!(!is_valid("_test"));
-    }
-
-    #[test]
-    fn special_characters_are_invalid() {
-        assert!(!is_valid("abc!"));
-    }
-
-    #[test]
-    fn valid_string_is_valid() {
-        assert!(is_valid("aBc_-."));
     }
 }

@@ -13,6 +13,16 @@ pub enum DecodedEntity<'a> {
 
 impl DecodedEntity<'_> {
     /// Appends the decoded entity to a string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut buf = String::new();
+    /// mxp::DecodedEntity::Standard('>').push_to(&mut buf);
+    /// mxp::DecodedEntity::Custom("Warrior").push_to(&mut buf);
+    /// mxp::DecodedEntity::Standard('<').push_to(&mut buf);
+    /// assert_eq!(buf, ">Warrior<");
+    /// ```
     #[inline]
     pub fn push_to(self, buf: &mut String) {
         match self {
@@ -51,5 +61,35 @@ impl fmt::Display for DecodedEntity<'_> {
             Self::Standard(c) => c.fmt(f),
             Self::Custom(s) => s.fmt(f),
         }
+    }
+}
+
+impl PartialEq<char> for DecodedEntity<'_> {
+    fn eq(&self, other: &char) -> bool {
+        match self {
+            Self::Standard(ch) => ch == other,
+            Self::Custom(_) => false,
+        }
+    }
+}
+
+impl<'a> PartialEq<DecodedEntity<'a>> for char {
+    fn eq(&self, other: &DecodedEntity<'a>) -> bool {
+        *other == *self
+    }
+}
+
+impl PartialEq<str> for DecodedEntity<'_> {
+    fn eq(&self, other: &str) -> bool {
+        match self {
+            Self::Standard(_) => false,
+            Self::Custom(s) => **s == *other,
+        }
+    }
+}
+
+impl<'a> PartialEq<DecodedEntity<'a>> for str {
+    fn eq(&self, other: &DecodedEntity<'a>) -> bool {
+        *other == *self
     }
 }

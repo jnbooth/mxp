@@ -53,7 +53,3 @@ pub(super) const XTERM_COLORS: [RgbColor; 256] = {
     }
     colors
 };
-
-pub(super) const fn first_xterm_colors<const N: usize>() -> [RgbColor; N] {
-    *XTERM_COLORS.first_chunk().unwrap()
-}

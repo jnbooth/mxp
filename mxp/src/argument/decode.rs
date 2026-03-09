@@ -38,7 +38,7 @@ where
 
 impl Decoder for EntityMap {
     fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Cow<'a, str>> {
-        decode_amps(s, |entity| self.decode_entity(entity))
+        decode_amps(s, |entity| self.decode(entity))
     }
 }
 
@@ -72,7 +72,7 @@ impl<S: AsRef<str>> Decoder for ElementDecoder<'_, S> {
                 .find_from_attributes::<F, _>(entity, &self.element.attributes)
             {
                 Some(attr) => Ok(Some(attr.into())),
-                None => self.entities.decode_entity(entity),
+                None => self.entities.decode(entity),
             }
         })
     }

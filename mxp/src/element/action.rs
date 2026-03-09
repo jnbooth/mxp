@@ -10,7 +10,7 @@ use super::image::Image;
 use super::link::{ExpireArgs, HyperlinkArgs, Link, SendArgs};
 use super::relocate::Relocate;
 use super::sound::{Music, Sound};
-use crate::argument::args::{ColorArgs, MxpArgs, SupportArgs, VarArgs};
+use crate::argument::args::{ColorArgs, MxpArgs, SupportArgs, VarArgs, VersionArgs};
 use crate::argument::{Decoder, Scan};
 use crate::color::RgbColor;
 use crate::keyword::{EntityKeyword, MxpKeyword};
@@ -109,12 +109,19 @@ pub enum Heading {
 }
 
 impl Heading {
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(mxp::Heading::H1.level(), 1);
+    /// assert_eq!(mxp::Heading::H5.level(), 5);
+    /// ```
     pub const fn level(self) -> u8 {
         self as u8
     }
 }
 
 impl ActionKind {
+    /// Returns `true` if this is a command tag, i.e. a tag with no closing tag.
     pub const fn is_command(self) -> bool {
         matches!(
             self,
@@ -140,6 +147,7 @@ impl ActionKind {
         )
     }
 
+    /// Returns `true` if the action can be used if the MXP [`Mode`](crate::Mode) is "open".
     pub const fn is_open(self) -> bool {
         matches!(
             self,
@@ -268,8 +276,11 @@ pub enum Action<S> {
         keywords: FlagSet<EntityKeyword>,
     },
     /// [`<VERSION>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control):
-    /// Prompt client to respond with its client and version of MXP.
-    Version,
+    /// If `styleversion` is `None`, prompt client to respond with its client and version of MXP.
+    /// Per the specification, the MUD server can alternatively send `<VERSION styleversion>`.
+    /// In this case, the client should cache this style-sheet version number and return it when
+    /// requested by a plain `<VERSION>` request.
+    Version { styleversion: Option<S> },
 }
 
 impl<'a> Action<Cow<'a, str>> {
@@ -349,7 +360,10 @@ impl<'a> Action<Cow<'a, str>> {
                 let VarArgs { variable, keywords } = scanner.try_into()?;
                 Self::Var { variable, keywords }
             }
-            ActionKind::Version => Self::Version,
+            ActionKind::Version => {
+                let VersionArgs { styleversion } = scanner.try_into()?;
+                Self::Version { styleversion }
+            }
         })
     }
 }

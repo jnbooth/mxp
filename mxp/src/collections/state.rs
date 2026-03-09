@@ -2,18 +2,14 @@ use std::borrow::Cow;
 use std::iter::FusedIterator;
 use std::slice;
 
-use flagset::FlagSet;
-
 use super::element_map::{ElementComponent, ElementMap};
 use super::line_tags::{LineTagUpdate, LineTags};
 use crate::argument::{Arguments, Decoder, ElementDecoder};
 use crate::element::{
-    Action, ActionKind, CollectedDefinition, DefinitionKind, Element, ElementCommand, ElementItem,
-    Mode, Tag,
+    Action, CollectedDefinition, DefinitionKind, Element, ElementCommand, ElementItem, Mode, Tag,
 };
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap};
 use crate::parser::{Error, ErrorKind, Words};
-use crate::responses::SupportResponse;
 
 /// A store of MXP state: elements, entities, and line tags.
 #[derive(Clone, Debug, Default)]
@@ -48,6 +44,14 @@ impl State {
 
     /// Returns `true` if the specified name belongs to a global entity as predefined by the MXP
     /// protocol specifications.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let state = mxp::State::populated();
+    /// assert!(state.is_global_entity("lt"));
+    /// assert!(!state.is_global_entity("thomas"));
+    /// ```
     pub fn is_global_entity(&self, key: &str) -> bool {
         self.entities.is_global(key)
     }
@@ -62,7 +66,8 @@ impl State {
         &mut self.entities
     }
 
-    /// Retrieves a tag or element by name.
+    /// Retrieves a tag or element by name. Returns an error if no tag or element is defined by
+    /// that name, or if the name is not a valid MXP identifier.
     pub fn get_component(&self, name: &str) -> crate::Result<ElementComponent<'_>> {
         self.elements.get_component(name)
     }
@@ -75,17 +80,6 @@ impl State {
     /// Returns the number of custom MXP elements that have been stored.
     pub fn count_custom_elements(&self) -> usize {
         self.elements.len()
-    }
-
-    /// Creates a formatting `struct` that outputs a `<SUPPORT>` response.
-    ///
-    /// See [MXP specification: `<SUPPORT>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control).
-    pub fn supported_tags<I>(&self, iter: I, supported: FlagSet<ActionKind>) -> SupportResponse<I>
-    where
-        I: IntoIterator + Copy,
-        I::Item: AsRef<str>,
-    {
-        SupportResponse::new(iter, supported)
     }
 
     /// Decodes the actions of an element, using the specified arguments.
@@ -106,7 +100,7 @@ impl State {
 
     /// Decodes the value of an entity.
     pub fn decode_entity(&self, name: &str) -> crate::Result<Option<DecodedEntity<'_>>> {
-        self.entities.decode_entity(name)
+        self.entities.decode(name)
     }
 
     /// Decodes the action of a predefined tag.

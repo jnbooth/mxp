@@ -3,7 +3,7 @@ use std::str::{self, FromStr};
 
 use super::error::{HexOutOfRangeError, ParseHexColorError};
 use super::named::{NAMED_COLORS, NamedColorIter, get_named_color};
-use super::xterm::{XTERM_COLORS, first_xterm_colors};
+use super::xterm::XTERM_COLORS;
 use crate::case_insensitive::to_ascii_lowercase;
 
 /// A 24-bit color consisting of a red, green, and blue value.
@@ -19,15 +19,26 @@ impl RgbColor {
     pub const WHITE: Self = Self::hex(0xFFFFFF);
 
     /// Standard definitions for 3-bit color.
-    pub const XTERM_8: [Self; 8] = first_xterm_colors();
+    pub const XTERM_8: [Self; 8] = *XTERM_COLORS.first_chunk().unwrap();
 
     /// Standard definitions for 4-bit color.
-    pub const XTERM_16: [Self; 16] = first_xterm_colors();
+    pub const XTERM_16: [Self; 16] = *XTERM_COLORS.first_chunk().unwrap();
 
     /// Standard definitions for 8-bit color.
     pub const XTERM_256: [Self; 256] = XTERM_COLORS;
 
     /// Constructs an `RgbColor` from a red, green, and blue value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::RgbColor;
+    ///
+    /// let color = RgbColor::rgb(10, 20, 30);
+    /// assert_eq!(color.r, 10);
+    /// assert_eq!(color.g, 20);
+    /// assert_eq!(color.b, 30);
+    /// ```
     #[inline]
     pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b }
@@ -41,6 +52,17 @@ impl RgbColor {
     /// This function is mainly intended for creating `const` `RgbColor`s. For other cases,
     /// `RgbColor` implements `TryFrom<u32>`, which performs a check to ensure the value does not
     /// exceed the maximum possible value rather than silently discarding the highest byte.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::RgbColor;
+    ///
+    /// const COLOR: RgbColor = RgbColor::hex(0x123456);
+    /// assert_eq!(COLOR.r, 0x12);
+    /// assert_eq!(COLOR.g, 0x34);
+    /// assert_eq!(COLOR.b, 0x56);
+    /// ```
     #[inline]
     pub const fn hex(code: u32) -> Self {
         debug_assert!(code <= 0xFFFFFF);
@@ -54,6 +76,15 @@ impl RgbColor {
 
     /// Encodes an RGB triple as a 32-bit number, where the last three bytes correspond to the red,
     /// green, and blue values respectively, and the highest byte is zeroed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::RgbColor;
+    ///
+    /// let color = RgbColor::rgb(0x12, 0x34, 0x56);
+    /// assert_eq!(color.code(), 0x123456);
+    /// ```
     #[inline]
     pub const fn code(self) -> u32 {
         #[cfg(target_endian = "big")]
@@ -64,11 +95,33 @@ impl RgbColor {
     }
 
     /// Translates an 8-bit integer into an 8-bit color.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::RgbColor;
+    ///
+    /// let teal = RgbColor::xterm(6);
+    /// assert_eq!(teal.code(), 0x008080);
+    /// ```
     #[inline]
     pub const fn xterm(code: u8) -> Self {
         RgbColor::XTERM_256[code as usize]
     }
 
+    /// Returns a color by its hex code or name in the standard list of [148 CSS colors].
+    /// Case-insensitive.
+    ///
+    /// [148 CSS colors]: https://www.w3.org/wiki/CSS/Properties/color/keywords
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::RgbColor;
+    ///
+    /// assert_eq!(RgbColor::named("darkblue").unwrap().code(), 0x00008B);
+    /// assert_eq!(RgbColor::named("#F23456").unwrap().code(), 0xF23456);
+    /// ```
     pub const fn named(name: &str) -> Option<RgbColor> {
         const fn hex_digit(byte: u8) -> u8 {
             if byte > b'9' {
@@ -121,6 +174,16 @@ impl RgbColor {
     /// Iterates through colors in the standard list of [148 CSS colors].
     ///
     /// [148 CSS colors]: https://www.w3.org/wiki/CSS/Properties/color/keywords
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::RgbColor;
+    ///
+    /// let (name, color) = RgbColor::iter_named().next().unwrap();
+    /// assert_eq!(name, "aliceblue");
+    /// assert_eq!(color.code(), 0xF0F8FF);
+    /// ```
     pub fn iter_named() -> NamedColorIter {
         NAMED_COLORS.iter().copied()
     }
@@ -168,7 +231,16 @@ impl FromStr for RgbColor {
     type Err = ParseHexColorError;
 
     /// Parses a color from a color hex code string. The string must be a six-digit hexadecimal
-    /// string prefixed by `#`.
+    /// string prefixed by `#`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::RgbColor;
+    ///
+    /// let color = "#123456".parse();
+    /// assert_eq!(color, Ok(RgbColor::rgb(0x12, 0x34, 0x56)));
+    /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if s.len() != 7 || !s.starts_with('#') {
             return Err(ParseHexColorError::NotHex(s.to_owned()));
@@ -181,42 +253,6 @@ impl FromStr for RgbColor {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn rgb_from_triple() {
-        assert_eq!(RgbColor::rgb(1, 2, 3), RgbColor { r: 1, g: 2, b: 3 });
-    }
-
-    #[test]
-    fn rgb_from_hex() {
-        assert_eq!(RgbColor::hex(0x123456), RgbColor::rgb(0x12, 0x34, 0x56));
-    }
-
-    #[test]
-    fn rgb_from_str() {
-        assert_eq!("#123456".parse(), Ok(RgbColor::rgb(0x12, 0x34, 0x56)));
-    }
-
-    #[test]
-    fn rgb_from_name() {
-        assert_eq!(
-            RgbColor::named("DARKblue"),
-            Some(RgbColor::rgb(0x00, 0x00, 0x8B))
-        );
-    }
-
-    #[test]
-    fn rgb_from_hex_code() {
-        assert_eq!(
-            RgbColor::named("#F23456"),
-            Some(RgbColor::rgb(0xF2, 0x34, 0x56))
-        );
-    }
-
-    #[test]
-    fn rgb_code() {
-        assert_eq!(RgbColor::rgb(0x12, 0x34, 0x56).code(), 0x123456);
-    }
 
     #[test]
     fn rgb_ord() {

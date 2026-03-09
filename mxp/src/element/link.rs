@@ -121,6 +121,16 @@ impl Link {
     }
 
     /// Returns a copy of the link, replacing `"&text;"` with the supplied text.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let link_template = mxp::Link::from("do &text;|(&text;)|&text;|other");
+    /// let link = link_template.with_text("some text");
+    /// assert_eq!(link.action, "do some text");
+    /// let prompts: Vec<_> = link.prompts.iter().map(|prompt| prompt.action.as_str()).collect();
+    /// assert_eq!(prompts, &["(some text)", "some text", "other"]);
+    /// ```
     #[must_use = "function returns a new link"]
     pub fn with_text(&self, text: &str) -> Self {
         Self {
@@ -134,6 +144,13 @@ impl Link {
             send_to: self.send_to,
             expires: self.expires.clone(),
         }
+    }
+}
+
+impl<'a> From<&'a str> for Link {
+    /// Equivalent to `Self::new(action, None, mxp::SendTo::World, None)`.
+    fn from(action: &'a str) -> Self {
+        Self::new(action, None, SendTo::World, None)
     }
 }
 
@@ -256,16 +273,6 @@ mod tests {
 
     fn strings(strs: &[&str]) -> Vec<LinkPrompt> {
         strs.iter().map(|&s| LinkPrompt::from(s)).collect()
-    }
-
-    #[test]
-    fn link_embedding() {
-        let link = Link::new("do &text;|(&text;)|&text;|other", None, SendTo::World, None)
-            .with_text("input");
-        assert_eq!(
-            (link.action.as_str(), link.prompts),
-            ("do input", strings(&["(input)", "input", "other"]))
-        );
     }
 
     #[test]

@@ -224,57 +224,12 @@ pub struct Element {
 }
 
 impl Element {
-    /// Parses an element from text.
+    /// Parses an element tag.
     pub fn collect(text: &str) -> crate::Result<CollectedElement<'_>> {
         CollectedElement::from_str(text)
     }
 
-    fn parse_items<S: AsRef<str>>(argument: Option<S>) -> crate::Result<Vec<ElementItem<String>>> {
-        // Reduce monomorphization
-        fn inner(argument: &str) -> crate::Result<Vec<ElementItem<String>>> {
-            let size_guess = argument.bytes().filter(|&c| c == b'<').count();
-            let mut items = Vec::with_capacity(size_guess);
-
-            let mut iter = argument.char_indices();
-            while let Some((start, startc)) = iter.next() {
-                if startc != '<' {
-                    return Err(Error::new(argument, ErrorKind::NoTagInDefinition));
-                }
-                loop {
-                    let (end, endc) = iter
-                        .next()
-                        .ok_or_else(|| Error::new(argument, ErrorKind::NoClosingDefinitionQuote))?;
-                    if endc == '>' {
-                        let definition = &argument[start + 1..end];
-                        items.push(ElementItem::parse(definition)?);
-                        break;
-                    }
-                    if (endc == '\'' || endc == '"') && !iter.any(|(_, c)| c == endc) {
-                        return Err(Error::new(argument, ErrorKind::NoClosingDefinitionQuote));
-                    }
-                }
-            }
-
-            Ok(items)
-        }
-        let Some(argument) = argument else {
-            return Ok(Vec::new());
-        };
-
-        inner(argument.as_ref())
-    }
-
-    fn parse_tag(tag: Option<Cow<str>>) -> crate::Result<Option<NonZero<u8>>> {
-        let Some(tag) = tag else {
-            return Ok(None);
-        };
-        match tag.as_ref().parse::<NonZero<u8>>() {
-            Ok(tag) if Mode(tag.get()).is_user_defined() => Ok(Some(tag)),
-            _ => Err(crate::Error::new(tag, ErrorKind::InvalidLineTag)),
-        }
-    }
-
-    /// Parses an element from an MXP definition, using the specified entity map for decoding.
+    /// Parses an MXP element from a definition, using the specified entity map for decoding.
     pub fn parse(definition: &str, entities: &EntityMap) -> crate::Result<ElementCommand> {
         let mut words = Words::new(definition);
         let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
@@ -322,5 +277,50 @@ impl Element {
             gag: false,
             window: None,
         }))
+    }
+
+    fn parse_items<S: AsRef<str>>(argument: Option<S>) -> crate::Result<Vec<ElementItem<String>>> {
+        // Reduce monomorphization
+        fn inner(argument: &str) -> crate::Result<Vec<ElementItem<String>>> {
+            let size_guess = argument.bytes().filter(|&c| c == b'<').count();
+            let mut items = Vec::with_capacity(size_guess);
+
+            let mut iter = argument.char_indices();
+            while let Some((start, startc)) = iter.next() {
+                if startc != '<' {
+                    return Err(Error::new(argument, ErrorKind::NoTagInDefinition));
+                }
+                loop {
+                    let (end, endc) = iter
+                        .next()
+                        .ok_or_else(|| Error::new(argument, ErrorKind::NoClosingDefinitionQuote))?;
+                    if endc == '>' {
+                        let definition = &argument[start + 1..end];
+                        items.push(ElementItem::parse(definition)?);
+                        break;
+                    }
+                    if (endc == '\'' || endc == '"') && !iter.any(|(_, c)| c == endc) {
+                        return Err(Error::new(argument, ErrorKind::NoClosingDefinitionQuote));
+                    }
+                }
+            }
+
+            Ok(items)
+        }
+        let Some(argument) = argument else {
+            return Ok(Vec::new());
+        };
+
+        inner(argument.as_ref())
+    }
+
+    fn parse_tag(tag: Option<Cow<str>>) -> crate::Result<Option<NonZero<u8>>> {
+        let Some(tag) = tag else {
+            return Ok(None);
+        };
+        match tag.as_ref().parse::<NonZero<u8>>() {
+            Ok(tag) if Mode(tag.get()).is_user_defined() => Ok(Some(tag)),
+            _ => Err(crate::Error::new(tag, ErrorKind::InvalidLineTag)),
+        }
     }
 }

@@ -2,7 +2,7 @@ use super::element_map::ElementMap;
 use crate::argument::{Decoder, ExpectArg};
 use crate::color::RgbColor;
 use crate::element::{Element, Mode};
-use crate::keyword::TagKeyword;
+use crate::keyword::LineTagKeyword;
 use crate::parser::{Error, ErrorKind, Words};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -130,14 +130,14 @@ impl LineTagUpdate {
             .and_then(|color| RgbColor::named(color.as_ref()));
 
         let keywords = scanner.into_keywords();
-        let gag = if keywords.contains(TagKeyword::Gag) {
+        let gag = if keywords.contains(LineTagKeyword::Gag) {
             Some(true)
         } else {
             None
         };
-        let enable = if keywords.contains(TagKeyword::Disable) {
+        let enable = if keywords.contains(LineTagKeyword::Disable) {
             Some(false)
-        } else if keywords.contains(TagKeyword::Enable) {
+        } else if keywords.contains(LineTagKeyword::Enable) {
             Some(true)
         } else {
             None

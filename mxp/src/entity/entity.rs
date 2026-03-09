@@ -30,7 +30,8 @@ impl Entity {
     /// # Examples
     ///
     /// ```
-    /// assert_eq!(mxp::Entity::global("lt"), "<");
+    /// assert_eq!(mxp::Entity::global("lt"), Some("<"));
+    /// assert_eq!(mxp::Entity::global("HP"), None);
     /// ```
     pub fn global<S: AsRef<[u8]>>(name: S) -> Option<&'static str> {
         static GLOBALS: LazyLock<HashMap<&'static [u8], &'static str>> =
@@ -46,7 +47,7 @@ impl Entity {
     /// # Examples
     ///
     /// ```
-    /// const LESS_THAN: &str = mxp::Entity::global("lt");
+    /// const LESS_THAN: &str = mxp::Entity::const_global("lt").unwrap();
     /// assert_eq!(LESS_THAN, "<");
     /// ```
     pub const fn const_global(name: &str) -> Option<&'static str> {
@@ -140,7 +141,7 @@ impl Entity {
     /// # Examples
     ///
     /// ```
-    /// let mut entity = mxp::Entity::new("1|2|3|2||4");
+    /// let mut entity = mxp::Entity::new("1|2|3|2||4".to_owned());
     /// entity.remove("2");
     /// assert_eq!(entity.value, "1|3||4");
     /// ```

@@ -1,5 +1,3 @@
-pub use uncased::UncasedStr;
-
 #[macro_use]
 mod case_insensitive;
 
@@ -33,8 +31,6 @@ pub mod responses;
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub use flagset::FlagSet;
-
-pub const VERSION: &str = "0.5";
 
 #[cfg(test)]
 mod test_utils;

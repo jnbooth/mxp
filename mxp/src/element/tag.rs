@@ -1,5 +1,3 @@
-use uncased::UncasedStr;
-
 use super::action::ActionKind;
 use crate::case_insensitive::to_ascii_lowercase;
 
@@ -11,7 +9,7 @@ pub struct Tag {
     /// Action applied by the tag.
     pub action: ActionKind,
     /// Arguments supported by the tag, such as `"href"`.
-    pub args: &'static [&'static UncasedStr],
+    pub args: &'static [&'static str],
 }
 
 macro_rules! tag {
@@ -26,18 +24,32 @@ macro_rules! tag {
         Self {
             name: $l,
             action: ActionKind::$i,
-            args: &[$(UncasedStr::new($a)),+],
+            args: &[$($a),+],
         }
     };
 }
 
 impl Tag {
-    pub(crate) const fn new(
-        name: &'static str,
-        action: ActionKind,
-        args: &'static [&'static UncasedStr],
-    ) -> Self {
-        Self { name, action, args }
+    /// Returns `true` if this library's definition of the tag supports a specific argument.
+    ///
+    /// Case-insensitive.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// const COLOR: &mxp::Tag = mxp::Tag::well_known("color").unwrap();
+    /// assert!(COLOR.supports("fore"));
+    /// assert!(!COLOR.supports("invalid_arg"));
+    /// ```
+    pub const fn supports(&self, arg: &str) -> bool {
+        let mut i = 0;
+        while i < self.args.len() {
+            if self.args[i].eq_ignore_ascii_case(arg) {
+                return true;
+            }
+            i += 1;
+        }
+        false
     }
 
     /// Lists all tags supported by the `mxp` crate.
@@ -50,6 +62,7 @@ impl Tag {
     /// Case-insensitive.
     ///
     /// # Examples
+    ///
     /// ```
     /// let em = mxp::Tag::well_known("em").unwrap();
     /// assert_eq!(em.action, mxp::ActionKind::Italic);

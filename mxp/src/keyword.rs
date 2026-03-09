@@ -5,12 +5,14 @@ use flagset::flags;
 use crate::parser::UnrecognizedVariant;
 
 flags! {
+    /// Keywords for `<!ELEMENT>` tags.
     pub(crate) enum ElementKeyword: u8 {
         Open,
         Empty,
         Delete,
     }
 
+    /// Keywords for `<!ENTITY>` tags.
     pub enum EntityKeyword: u8 {
         Private,
         Publish,
@@ -19,15 +21,25 @@ flags! {
         Remove,
     }
 
+    /// Keywords for `<FRAME>` tags.
     pub(crate) enum FrameKeyword: u8 {
         Floating,
         Internal,
     }
 
+    /// Keywords for `<IMAGE>` tags.
     pub(crate) enum ImageKeyword: u8 {
         IsMap,
     }
 
+    /// Keywords for line tag updates.
+    pub(crate) enum LineTagKeyword: u8 {
+        Gag,
+        Enable,
+        Disable,
+    }
+
+    /// Keywords for `<MXP>` tags.
     pub enum MxpKeyword: u8 {
         Off,
         DefaultLocked,
@@ -37,14 +49,9 @@ flags! {
         UseNewlines,
     }
 
+    /// Keywords for `<SEND>` tags.
     pub(crate) enum SendKeyword: u8 {
         Prompt
-    }
-
-    pub(crate) enum TagKeyword: u8 {
-        Gag,
-        Enable,
-        Disable,
     }
 }
 
@@ -126,7 +133,7 @@ impl FromStr for SendKeyword {
     }
 }
 
-impl FromStr for TagKeyword {
+impl FromStr for LineTagKeyword {
     type Err = UnrecognizedVariant<Self>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {

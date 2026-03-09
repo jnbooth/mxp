@@ -61,7 +61,7 @@ where
     pub fn with_keywords<E: Flags + FromStr>(self) -> KeywordScan<'a, D, S, E> {
         KeywordScan {
             inner: self.with_filter(),
-            keywords: FlagSet::default(),
+            keywords: FlagSet::empty(),
         }
     }
 

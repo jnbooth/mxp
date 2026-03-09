@@ -27,11 +27,29 @@ pub struct EntityMap {
 
 impl EntityMap {
     /// Constructs a new map with no predefined entities.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::EntityMap;
+    ///
+    /// let map = EntityMap::new();
+    /// assert_eq!(map.decode("lt"), Ok(None));
+    /// ```
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Constructs a new map with all global XML entities predefined.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::EntityMap;
+    ///
+    /// let map = EntityMap::with_globals();
+    /// assert_eq!(map.decode("lt"), Ok(Some("<".into())));
+    /// ```
     pub fn with_globals() -> Self {
         Self {
             inner: HashMap::new(),
@@ -40,42 +58,175 @@ impl EntityMap {
     }
 
     /// Returns `true` if the map contains no custom entities.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::EntityMap;
+    ///
+    /// let mut map = EntityMap::with_globals();
+    /// assert!(map.is_empty());
+    /// map.insert("HP".to_owned(), "150".to_owned());
+    /// assert!(!map.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }
 
     /// Returns the number of custom entities in the map.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::EntityMap;
+    ///
+    /// let mut map = EntityMap::with_globals();
+    /// assert!(map.is_empty());
+    /// map.insert("HP".to_owned(), "150".to_owned());
+    /// map.insert("MP".to_owned(), "100".to_owned());
+    /// map.insert("HP".to_owned(), "125".to_owned());
+    /// assert_eq!(map.len(), 2);
+    /// ```
     pub fn len(&self) -> usize {
         self.inner.len()
     }
 
     /// Clears all custom entities.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::EntityMap;
+    ///
+    /// let mut map = EntityMap::with_globals();
+    /// map.insert("HP".to_owned(), "150".to_owned());
+    /// map.clear();
+    /// assert_eq!(map.decode("HP"), Ok(None)); // custom entities cleared
+    /// assert_eq!(map.decode("lt"), Ok(Some("<".into()))); // global entities not cleared
+    /// ```
     pub fn clear(&mut self) {
         self.inner.clear();
     }
 
-    fn guard_global(&self, key: &str) -> crate::Result<()> {
-        if self.is_global(key) {
-            return Err(crate::Error::new(key, ErrorKind::CannotRedefineEntity));
+    /// Decodes an entity by name.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::EntityMap;
+    ///
+    /// let mut map = EntityMap::with_globals();
+    ///
+    /// // Decoding a global entity
+    /// assert_eq!(map.decode("lt"), Ok(Some("<".into())));
+    ///
+    /// // Decoding a custom entity
+    /// assert_eq!(map.decode("HP"), Ok(None));
+    /// map.insert("HP".to_owned(), "150".to_owned());
+    /// assert_eq!(map.decode("HP"), Ok(Some("150".into())));
+    ///
+    /// // Decoding a decimal character code
+    /// assert_eq!(map.decode("#32"), Ok(Some(' '.into())));
+    ///
+    /// // Decoding a hexadecimal character code
+    /// assert_eq!(map.decode("#x20"), Ok(Some(' '.into())));
+    ///
+    /// // Decoding an invalid character code
+    /// assert!(map.decode("#xQ").is_err());
+    /// ```
+    pub fn decode(&self, key: &str) -> crate::Result<Option<DecodedEntity<'_>>> {
+        let (start, radix) = match key.as_bytes() {
+            [b'#', b'x', ..] => (2, 16),
+            [b'#', ..] => (1, 10),
+            _ => return Ok(self.get_inner(key)),
+        };
+        let Ok(code) = u32::from_str_radix(&key[start..], radix) else {
+            return Err(Error::new(key, ErrorKind::InvalidEntityNumber));
+        };
+        match char::from_u32(code) {
+            Some('\0'..='\x08' | '\x0a'..='\x1f' | '\x7f'..='\u{9f}') | None => {
+                Err(Error::new(key, ErrorKind::DisallowedEntityNumber))
+            }
+            Some(c) => Ok(Some(c.into())),
         }
-        Ok(())
     }
 
     /// Removes a key from the map, returning the value at the key if the key was previously in the
     /// map. Returns an error if the key is associated with a global XML entity, since those cannot
     /// be changed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::EntityMap;
+    ///
+    /// let mut map = EntityMap::with_globals();
+    /// map.insert("HP".to_owned(), "150".to_owned());
+    /// assert!(map.remove("HP").unwrap().is_some());
+    /// assert!(map.remove("HP").unwrap().is_none());
+    /// assert!(map.remove("lt").is_err()); // cannot modify global entity
+    /// ```
     pub fn remove(&mut self, key: &str) -> crate::Result<Option<Entity>> {
         self.guard_global(key)?;
         Ok(self.inner.remove(key))
     }
 
-    /// Returns true if there is a global XML entity associated with the specified key.
+    /// Returns `true` if there is a global XML entity associated with the specified key.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::EntityMap;
+    ///
+    /// let mut map = EntityMap::with_globals();
+    /// assert!(map.is_global("lt"));
+    /// map.insert("HP".to_owned(), "150".to_owned());
+    /// assert!(!map.is_global("HP"));
+    /// ```
     pub fn is_global(&self, key: &str) -> bool {
         key.starts_with('#') || self.globals.contains_key(key.as_bytes())
     }
 
     /// Iterates through all entities which have been marked as PUBLISH by the server, in the form
     /// of [`EntityInfo`](super::EntityInfo) entries.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::{EntityInfo, EntityKeyword, EntityMap};
+    ///
+    /// let mut map = EntityMap::new();
+    /// map.set("k1", "v1", Some("desc1".to_owned()), None).unwrap();
+    /// map.set("k2", "v2", Some("desc2".to_owned()), EntityKeyword::Publish)
+    ///     .unwrap();
+    /// map.set("k3", "v3", Some("desc3".to_owned()), EntityKeyword::Publish)
+    ///     .unwrap();
+    /// map.set("k4", "v4", Some("desc4".to_owned()), None).unwrap();
+    /// map.set("k5", "v5", None, EntityKeyword::Publish).unwrap();
+    ///
+    /// let mut published = map.published().collect::<Vec<_>>();
+    /// published.sort_unstable_by_key(|i| i.name);
+    /// assert_eq!(
+    ///     published,
+    ///     &[
+    ///         EntityInfo {
+    ///             name: "k2",
+    ///             value: "v2",
+    ///             description: "desc2",
+    ///         },
+    ///         EntityInfo {
+    ///             name: "k3",
+    ///             value: "v3",
+    ///             description: "desc3",
+    ///         },
+    ///         EntityInfo {
+    ///             name: "k5",
+    ///             value: "v5",
+    ///             description: "",
+    ///         },
+    ///     ]
+    /// );
+    /// ```
     pub fn published(&self) -> PublishedIter<'_> {
         self.inner.iter().filter_map(|(k, v)| {
             v.is_published().then_some(super::EntityInfo {
@@ -84,6 +235,51 @@ impl EntityMap {
                 value: &v.value,
             })
         })
+    }
+
+    /// Returns the value of a custom MXP entity, or `None` if there is no entity with the specified
+    /// name or the entity with the specified name was marked as PRIVATE by the server.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::EntityMap;
+    ///
+    /// let mut map = EntityMap::with_globals();
+    /// assert_eq!(map.decode("HP"), Ok(None));
+    /// map.insert("HP".to_owned(), "150".to_owned());
+    /// assert_eq!(map.get("HP"), Some("150"));
+    /// assert_eq!(map.get("lt"), None); // global entities are not queried
+    /// ```
+    pub fn get(&self, key: &str) -> Option<&str> {
+        let entity = self.inner.get(key)?;
+        if entity.is_private() {
+            return None;
+        }
+        Some(entity.value.as_str())
+    }
+
+    /// Inserts a custom entity with the specified key and value. Returns `false` if the specified
+    /// key is already associated with a global XML entity. Otherwise, performs the insertion and
+    /// returns `true`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::EntityMap;
+    ///
+    /// let mut map = EntityMap::with_globals();
+    /// assert_eq!(map.get("HP"), None);
+    /// assert!(map.insert("HP".to_owned(), "150".to_owned()));
+    /// assert_eq!(map.get("HP"), Some("150"));
+    /// assert!(!map.insert("lt".to_owned(), "!".to_owned())); // cannot modify global entity
+    /// ```
+    pub fn insert(&mut self, key: String, value: String) -> bool {
+        if self.globals.contains_key(key.as_bytes()) {
+            return false;
+        }
+        self.inner.insert(key, value.into());
+        true
     }
 
     /// Applies an MXP entity definition with the specified key, value, description and set of
@@ -97,6 +293,7 @@ impl EntityMap {
     /// changed.
     ///
     /// See [MXP specification: `<!ENTITY>`](https://www.zuggsoft.com/zmud/mxp.htm#ENTITY).
+    /// ```
     pub fn set<'a, T: Into<FlagSet<EntityKeyword>>>(
         &'a mut self,
         key: &'a str,
@@ -176,27 +373,6 @@ impl EntityMap {
         inner(self, key, value, description, keywords.into())
     }
 
-    /// Returns the value of a custom MXP entity, or `None` if there is no entity with the specified
-    /// name or the entity with the specified name was marked as PRIVATE by the server.
-    pub fn get(&self, key: &str) -> Option<&str> {
-        let entity = self.inner.get(key)?;
-        if entity.is_private() {
-            return None;
-        }
-        Some(entity.value.as_str())
-    }
-
-    /// Inserts a custom entity with the specified key and value. Returns `false` if the specified
-    /// key is already associated with a global XML entity. Otherwise, performs the insertion and
-    /// returns `true`.
-    pub fn insert(&mut self, key: String, value: String) -> bool {
-        if self.globals.contains_key(key.as_bytes()) {
-            return false;
-        }
-        self.inner.insert(key, value.into());
-        true
-    }
-
     #[inline]
     fn get_inner(&self, key: &str) -> Option<DecodedEntity<'_>> {
         if let Some(&global) = self.globals.get(key.as_bytes()) {
@@ -205,21 +381,11 @@ impl EntityMap {
         Some(self.inner.get(key)?.value.as_str().into())
     }
 
-    pub(crate) fn decode_entity(&self, key: &str) -> crate::Result<Option<DecodedEntity<'_>>> {
-        let (start, radix) = match key.as_bytes() {
-            [b'#', b'x', ..] => (2, 16),
-            [b'#', ..] => (1, 10),
-            _ => return Ok(self.get_inner(key)),
-        };
-        let Ok(code) = u32::from_str_radix(&key[start..], radix) else {
-            return Err(Error::new(key, ErrorKind::InvalidEntityNumber));
-        };
-        match char::from_u32(code) {
-            Some('\0'..='\x08' | '\x0a'..='\x1f' | '\x7f'..='\u{9f}') | None => {
-                Err(Error::new(key, ErrorKind::DisallowedEntityNumber))
-            }
-            Some(c) => Ok(Some(c.into())),
+    fn guard_global(&self, key: &str) -> crate::Result<()> {
+        if self.is_global(key) {
+            return Err(crate::Error::new(key, ErrorKind::CannotRedefineEntity));
         }
+        Ok(())
     }
 }
 
@@ -232,7 +398,7 @@ mod tests {
     fn set_new() {
         let mut map = EntityMap::new();
         map.set("key", "value", None, None).ok();
-        assert_eq!(map.decode_entity("key"), Ok(Some("value".into())));
+        assert_eq!(map.decode("key"), Ok(Some("value".into())));
     }
 
     #[test]
@@ -240,7 +406,7 @@ mod tests {
         let mut map = EntityMap::new();
         map.set("key", "value", None, None).ok();
         map.set("key", "", None, EntityKeyword::Delete).ok();
-        assert_eq!(map.decode_entity("key"), Ok(None));
+        assert_eq!(map.decode("key"), Ok(None));
     }
 
     #[test]
@@ -267,7 +433,7 @@ mod tests {
         map.set("key", "value3", None, EntityKeyword::Add).ok();
         map.set("key", "value2", None, EntityKeyword::Remove).ok();
         map.set("key", "x", None, EntityKeyword::Remove).ok();
-        assert_eq!(map.decode_entity("key"), Ok(Some("value1|value3".into())));
+        assert_eq!(map.decode("key"), Ok(Some("value1|value3".into())));
     }
 
     #[test]
@@ -288,36 +454,30 @@ mod tests {
         let mut map = EntityMap::new();
         map.set("key1", "value1", None, None).ok();
         map.set("key2", "value2", None, None).ok();
-        assert_eq!(map.decode_entity("key1"), Ok(Some("value1".into())));
+        assert_eq!(map.decode("key1"), Ok(Some("value1".into())));
     }
 
     #[test]
     fn decode_entity_unmatched() {
         let mut map = EntityMap::new();
         map.set("key2", "value2", None, None).ok();
-        assert_eq!(map.decode_entity("key1"), Ok(None));
+        assert_eq!(map.decode("key1"), Ok(None));
     }
 
     #[test]
     fn decode_decimal() {
-        assert_eq!(
-            EntityMap::new().decode_entity("#32"),
-            Ok(Some('\x20'.into()))
-        );
+        assert_eq!(EntityMap::new().decode("#32"), Ok(Some('\x20'.into())));
     }
 
     #[test]
     fn decode_hex() {
-        assert_eq!(
-            EntityMap::new().decode_entity("#x7E"),
-            Ok(Some('\x7e'.into()))
-        );
+        assert_eq!(EntityMap::new().decode("#x7E"), Ok(Some('\x7e'.into())));
     }
 
     #[test]
     fn decode_invalid_number() {
         assert_eq!(
-            EntityMap::new().decode_entity("#x7z"),
+            EntityMap::new().decode("#x7z"),
             Err(Error::new("#x7z", ErrorKind::InvalidEntityNumber))
         );
     }
@@ -325,7 +485,7 @@ mod tests {
     #[test]
     fn decode_below_range() {
         assert_eq!(
-            EntityMap::new().decode_entity("#10"),
+            EntityMap::new().decode("#10"),
             Err(Error::new("#10", ErrorKind::DisallowedEntityNumber))
         );
     }
@@ -333,7 +493,7 @@ mod tests {
     #[test]
     fn decode_above_range() {
         assert_eq!(
-            EntityMap::new().decode_entity("#x90"),
+            EntityMap::new().decode("#x90"),
             Err(Error::new("#x90", ErrorKind::DisallowedEntityNumber))
         );
     }

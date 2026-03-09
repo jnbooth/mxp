@@ -315,7 +315,7 @@ impl Transformer {
                 if let Some(variable) = &el.variable {
                     self.output.set_mxp_entity(EntitySetter {
                         name: variable.clone(),
-                        flags: FlagSet::default(),
+                        flags: FlagSet::empty(),
                         is_variable: true,
                     });
                 }
@@ -424,13 +424,15 @@ impl Transformer {
             Action::Var { variable, keywords } => {
                 self.mxp_set_entity(variable.into_owned(), keywords, mxp_state);
             }
-            Action::Version => {
+            Action::Version { styleversion: None } => {
                 let response = VersionResponse {
-                    name: &self.config.app_name,
+                    client: &self.config.app_name,
                     version: &self.config.version,
+                    ..Default::default()
                 };
                 writeln!(self.input, "{response}\r");
             }
+            Action::Version { .. } => (),
         }
     }
 
