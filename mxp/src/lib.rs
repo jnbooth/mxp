@@ -6,8 +6,8 @@ mod case_insensitive;
 mod argument;
 pub use argument::Arguments;
 
-mod collection;
-pub use collection::{DecodeElement, ElementComponent, State};
+mod collections;
+pub use collections::{DecodeElement, ElementComponent, State};
 
 mod color;
 pub use color::{HexOutOfRangeError, NamedColorIter, ParseHexColorError, RgbColor};

@@ -1,6 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use crate::collection::CaseFoldMap;
+use crate::collections::CaseFoldMap;
 use crate::element::{Element, Tag};
 use crate::parser::{Error, ErrorKind, validate};
 

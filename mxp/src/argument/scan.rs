@@ -8,7 +8,7 @@ use std::{slice, str};
 use flagset::{FlagSet, Flags};
 
 use super::keyword_filter::{KeywordFilter, NoKeywords};
-use crate::collection::CaseFoldMap;
+use crate::collections::CaseFoldMap;
 use crate::parser::{Error, ErrorKind};
 
 pub trait Decoder {

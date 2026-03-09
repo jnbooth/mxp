@@ -1,6 +1,6 @@
 use super::keyword_filter::KeywordFilter;
 use super::scan::{Decoder, Scan};
-use crate::collection::CaseFoldMap;
+use crate::collections::CaseFoldMap;
 use crate::parser::{Error, ErrorKind, Words, validate};
 
 /// Parsed arguments of an MXP command.
