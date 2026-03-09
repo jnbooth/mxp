@@ -134,18 +134,18 @@ impl EntityMap {
     /// // Decoding an invalid character code
     /// assert!(map.decode("#xQ").is_err());
     /// ```
-    pub fn decode(&self, key: &str) -> crate::Result<Option<DecodedEntity<'_>>> {
-        let (start, radix) = match key.as_bytes() {
+    pub fn decode(&self, name: &str) -> crate::Result<Option<DecodedEntity<'_>>> {
+        let (start, radix) = match name.as_bytes() {
             [b'#', b'x', ..] => (2, 16),
             [b'#', ..] => (1, 10),
-            _ => return Ok(self.get_inner(key)),
+            _ => return Ok(self.get_inner(name)),
         };
-        let Ok(code) = u32::from_str_radix(&key[start..], radix) else {
-            return Err(Error::new(key, ErrorKind::InvalidEntityNumber));
+        let Ok(code) = u32::from_str_radix(&name[start..], radix) else {
+            return Err(Error::new(name, ErrorKind::InvalidEntityNumber));
         };
         match char::from_u32(code) {
             Some('\0'..='\x08' | '\x0a'..='\x1f' | '\x7f'..='\u{9f}') | None => {
-                Err(Error::new(key, ErrorKind::DisallowedEntityNumber))
+                Err(Error::new(name, ErrorKind::DisallowedEntityNumber))
             }
             Some(c) => Ok(Some(c.into())),
         }
@@ -166,12 +166,12 @@ impl EntityMap {
     /// assert!(map.remove("HP").unwrap().is_none());
     /// assert!(map.remove("lt").is_err()); // cannot modify global entity
     /// ```
-    pub fn remove(&mut self, key: &str) -> crate::Result<Option<Entity>> {
-        self.guard_global(key)?;
-        Ok(self.inner.remove(key))
+    pub fn remove(&mut self, name: &str) -> crate::Result<Option<Entity>> {
+        self.guard_global(name)?;
+        Ok(self.inner.remove(name))
     }
 
-    /// Returns `true` if there is a global XML entity associated with the specified key.
+    /// Returns `true` if there is a global XML entity associated with the specified name.
     ///
     /// # Examples
     ///
@@ -183,8 +183,8 @@ impl EntityMap {
     /// map.insert("HP".to_owned(), "150".to_owned());
     /// assert!(!map.is_global("HP"));
     /// ```
-    pub fn is_global(&self, key: &str) -> bool {
-        key.starts_with('#') || self.globals.contains_key(key.as_bytes())
+    pub fn is_global(&self, name: &str) -> bool {
+        name.starts_with('#') || self.globals.contains_key(name.as_bytes())
     }
 
     /// Iterates through all entities which have been marked as PUBLISH by the server, in the form
@@ -251,16 +251,16 @@ impl EntityMap {
     /// assert_eq!(map.get("HP"), Some("150"));
     /// assert_eq!(map.get("lt"), None); // global entities are not queried
     /// ```
-    pub fn get(&self, key: &str) -> Option<&str> {
-        let entity = self.inner.get(key)?;
+    pub fn get(&self, name: &str) -> Option<&str> {
+        let entity = self.inner.get(name)?;
         if entity.is_private() {
             return None;
         }
         Some(entity.value.as_str())
     }
 
-    /// Inserts a custom entity with the specified key and value. Returns `false` if the specified
-    /// key is already associated with a global XML entity. Otherwise, performs the insertion and
+    /// Inserts a custom entity with the specified name and value. Returns `false` if the specified
+    /// name is already associated with a global XML entity. Otherwise, performs the insertion and
     /// returns `true`.
     ///
     /// # Examples
@@ -274,29 +274,29 @@ impl EntityMap {
     /// assert_eq!(map.get("HP"), Some("150"));
     /// assert!(!map.insert("lt".to_owned(), "!".to_owned())); // cannot modify global entity
     /// ```
-    pub fn insert(&mut self, key: String, value: String) -> bool {
-        if self.globals.contains_key(key.as_bytes()) {
+    pub fn insert(&mut self, name: String, value: String) -> bool {
+        if self.globals.contains_key(name.as_bytes()) {
             return false;
         }
-        self.inner.insert(key, value.into());
+        self.inner.insert(name, value.into());
         true
     }
 
-    /// Applies an MXP entity definition with the specified key, value, description and set of
-    /// keywords, as provided by `<!ENTITY>` declarations from the server.
+    /// Applies an MXP entity definition with the specified name, value, description and keywords,
+    /// as provided by `<!ENTITY>` declarations from the server.
     /// Depending on the keywords provided, this may cause an entity to be inserted, removed,
     /// updated, or replaced.
     ///
     /// If a new entity is defined, returns an occupied entry referencing the entity in this map.
     /// If an entity is removed, returns a vacant entry, i.e. `entry.value == None`.
-    /// Returns an error if the key is associated with a global XML entity, since those cannot be
+    /// Returns an error if the name is associated with a global XML entity, since those cannot be
     /// changed.
     ///
     /// See [MXP specification: `<!ENTITY>`](https://www.zuggsoft.com/zmud/mxp.htm#ENTITY).
     /// ```
     pub fn set<'a, T: Into<FlagSet<EntityKeyword>>>(
         &'a mut self,
-        key: &'a str,
+        name: &'a str,
         value: &str,
         description: Option<String>,
         keywords: T,
@@ -370,20 +370,20 @@ impl EntityMap {
                 value: Some(entity),
             }))
         }
-        inner(self, key, value, description, keywords.into())
+        inner(self, name, value, description, keywords.into())
     }
 
     #[inline]
-    fn get_inner(&self, key: &str) -> Option<DecodedEntity<'_>> {
-        if let Some(&global) = self.globals.get(key.as_bytes()) {
+    fn get_inner(&self, name: &str) -> Option<DecodedEntity<'_>> {
+        if let Some(&global) = self.globals.get(name.as_bytes()) {
             return Some(global.into());
         }
-        Some(self.inner.get(key)?.value.as_str().into())
+        Some(self.inner.get(name)?.value.as_str().into())
     }
 
-    fn guard_global(&self, key: &str) -> crate::Result<()> {
-        if self.is_global(key) {
-            return Err(crate::Error::new(key, ErrorKind::CannotRedefineEntity));
+    fn guard_global(&self, name: &str) -> crate::Result<()> {
+        if self.is_global(name) {
+            return Err(crate::Error::new(name, ErrorKind::CannotRedefineEntity));
         }
         Ok(())
     }
