@@ -1,4 +1,5 @@
 mod error;
+pub(crate) use error::StringVariant;
 pub use error::{Error, ErrorKind, ParseErrorTarget, UnrecognizedVariant};
 
 mod validation;

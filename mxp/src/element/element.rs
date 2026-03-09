@@ -7,7 +7,7 @@ use super::tag::Tag;
 use crate::argument::{Arguments, Decoder, Scan};
 use crate::color::RgbColor;
 use crate::keyword::ElementKeyword;
-use crate::parser::{Error, ErrorKind, UnrecognizedVariant, Words};
+use crate::parser::{Error, ErrorKind, StringVariant, UnrecognizedVariant, Words};
 
 /// List of arguments to an MXP tag.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -48,6 +48,11 @@ pub enum DefinitionKind {
     Element,
     Entity,
     LineTag,
+}
+
+impl StringVariant for DefinitionKind {
+    type Variant = &'static str;
+    const VARIANTS: &[&str] = &["ATTLIST", "ATT", "ELEMENT", "EL", "ENTITY", "EN", "TAG"];
 }
 
 impl FromStr for DefinitionKind {
@@ -125,6 +130,17 @@ pub enum ParseAs {
     RoomNum,
     /// The text for the element is parsed by as a MUD Prompt
     Prompt,
+}
+
+impl StringVariant for ParseAs {
+    type Variant = Self;
+    const VARIANTS: &[Self] = &[
+        Self::RoomName,
+        Self::RoomDesc,
+        Self::RoomExit,
+        Self::RoomNum,
+        Self::Prompt,
+    ];
 }
 
 impl FromStr for ParseAs {

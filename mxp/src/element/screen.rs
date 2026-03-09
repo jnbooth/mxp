@@ -1,7 +1,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::parser::UnrecognizedVariant;
+use crate::parser::{StringVariant, UnrecognizedVariant};
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum Align {
@@ -11,6 +11,17 @@ pub enum Align {
     Left,
     Right,
     Middle,
+}
+
+impl StringVariant for Align {
+    type Variant = Self;
+    const VARIANTS: &[Self] = &[
+        Self::Top,
+        Self::Bottom,
+        Self::Left,
+        Self::Right,
+        Self::Middle,
+    ];
 }
 
 impl FromStr for Align {

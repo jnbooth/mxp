@@ -164,14 +164,28 @@ impl ParseErrorTarget for &Vec<u8> {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub(crate) trait StringVariant: Sized + 'static {
+    type Variant: fmt::Debug;
+    const VARIANTS: &[Self::Variant];
+}
+
+impl<T: Flags + fmt::Debug> StringVariant for T {
+    type Variant = Self;
+    const VARIANTS: &[Self] = Self::LIST;
+}
+
+/// Error caused by attempting to parse a string that did not match any variant of a string-like
+/// type.
 pub struct UnrecognizedVariant<T> {
     input: String,
     phantom: PhantomData<T>,
 }
 
 impl<T> UnrecognizedVariant<T> {
-    pub fn new(input: &str) -> Self {
+    pub(crate) fn new(input: &str) -> Self
+    where
+        T: StringVariant,
+    {
         Self {
             input: input.to_owned(),
             phantom: PhantomData,
@@ -179,10 +193,35 @@ impl<T> UnrecognizedVariant<T> {
     }
 }
 
-impl<T: fmt::Debug + Flags> fmt::Display for UnrecognizedVariant<T> {
+impl<T> Clone for UnrecognizedVariant<T> {
+    fn clone(&self) -> Self {
+        Self {
+            input: self.input.clone(),
+            phantom: self.phantom,
+        }
+    }
+}
+
+impl<T> PartialEq<UnrecognizedVariant<T>> for UnrecognizedVariant<T> {
+    fn eq(&self, other: &UnrecognizedVariant<T>) -> bool {
+        self.input == other.input
+    }
+}
+
+impl<T> Eq for UnrecognizedVariant<T> {}
+
+impl<T> fmt::Debug for UnrecognizedVariant<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut range = T::LIST.iter();
-        let first_variant = range.next().expect("flags type has no variants");
+        f.debug_tuple("UnrecognizedVariant")
+            .field(&self.input)
+            .finish()
+    }
+}
+
+impl<T: StringVariant> fmt::Display for UnrecognizedVariant<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut range = T::VARIANTS.iter();
+        let first_variant = range.next().unwrap();
         write!(f, "got {}, expected one of: {first_variant:?}", self.input)?;
         for variant in range {
             write!(f, ", {variant:?}")?;
@@ -191,4 +230,4 @@ impl<T: fmt::Debug + Flags> fmt::Display for UnrecognizedVariant<T> {
     }
 }
 
-impl<T: fmt::Debug + Flags> std::error::Error for UnrecognizedVariant<T> {}
+impl<T: StringVariant> std::error::Error for UnrecognizedVariant<T> {}

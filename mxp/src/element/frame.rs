@@ -5,7 +5,7 @@ use super::screen::Align;
 use crate::Dimension;
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::keyword::FrameKeyword;
-use crate::parser::{Error, UnrecognizedVariant};
+use crate::parser::{Error, StringVariant, UnrecognizedVariant};
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum FrameAction {
@@ -13,6 +13,11 @@ pub enum FrameAction {
     Open,
     Close,
     Redirect,
+}
+
+impl StringVariant for FrameAction {
+    type Variant = Self;
+    const VARIANTS: &[Self] = &[Self::Open, Self::Close, Self::Redirect];
 }
 
 impl FromStr for FrameAction {

@@ -4,7 +4,7 @@ use std::num::NonZero;
 use std::str::FromStr;
 
 use crate::argument::{Decoder, ExpectArg, Scan};
-use crate::parser::{Error, UnrecognizedVariant};
+use crate::parser::{Error, StringVariant, UnrecognizedVariant};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum AudioRepetition {
@@ -55,6 +55,11 @@ impl fmt::Debug for AudioContinuation {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::Display::fmt(self, f)
     }
+}
+
+impl StringVariant for AudioContinuation {
+    type Variant = &'static str;
+    const VARIANTS: &[&'static str] = &["0", "1"];
 }
 
 impl FromStr for AudioContinuation {
