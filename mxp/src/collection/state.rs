@@ -28,8 +28,10 @@ impl State {
     /// Unlike `State::default()`, this function populates the state with elements and entities
     /// defined by the MXP protocol specification, allocating memory in the process.
     pub fn populated() -> Self {
+        let mut elements = ElementMap::new();
+        elements.add_well_known();
         Self {
-            elements: ElementMap::well_known(),
+            elements,
             entities: EntityMap::with_globals(),
             line_tags: LineTags::new(),
         }
@@ -71,12 +73,12 @@ impl State {
 
     /// Returns the number of custom MXP elements that have been stored.
     pub fn count_custom_elements(&self) -> usize {
-        self.elements.custom_count()
+        self.elements.len()
     }
 
-    /// Creates a formatting `struct` that outputs a [`<SUPPORT>`] response.
+    /// Creates a formatting `struct` that outputs a `<SUPPORT>` response.
     ///
-    /// [`<SUPPORT>`]: https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control
+    /// See [MXP specification: `<SUPPORT>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control).
     pub fn supported_tags<I>(&self, iter: I, supported: FlagSet<ActionKind>) -> SupportResponse<I>
     where
         I: IntoIterator + Copy,
@@ -202,6 +204,20 @@ where
         let item = self.items.next()?;
         let scanner = item.arguments.scan(self.decoder);
         Some(Action::parse(item.tag.action, scanner))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let exact = self.len();
+        (exact, Some(exact))
+    }
+}
+
+impl<D> ExactSizeIterator for DecodeElement<'_, D>
+where
+    D: Decoder + Copy,
+{
+    fn len(&self) -> usize {
+        self.items.len()
     }
 }
 

@@ -3,14 +3,14 @@ use uncased::UncasedStr;
 use super::action::ActionKind;
 use crate::case_insensitive::to_ascii_lowercase;
 
-/// Atomic MXP tags that we recognise, e.g. <b>.
+/// Atomic MXP tags, such as `<A>`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Tag {
-    /// Tag name, e.g. bold
+    /// Tag name, such as `"A"`.
     pub name: &'static str,
-    /// Its action.
+    /// Action applied by the tag.
     pub action: ActionKind,
-    /// Supported arguments, e.g. href, hint
+    /// Arguments supported by the tag, such as `"href"`.
     pub args: &'static [&'static UncasedStr],
 }
 
@@ -40,10 +40,20 @@ impl Tag {
         Self { name, action, args }
     }
 
+    /// Lists all tags supported by the `mxp` crate.
     pub const fn supported() -> &'static [Self] {
         Self::SUPPORTED
     }
 
+    /// Returns a `Tag` if `name` is a well-known MXP tag, such as `"A"` or `"image"`.
+    ///
+    /// Case-insensitive.
+    ///
+    /// # Examples
+    /// ```
+    /// let em = mxp::Tag::well_known("em").unwrap();
+    /// assert_eq!(em.action, mxp::ActionKind::Italic);
+    /// ```
     pub const fn well_known(name: &str) -> Option<&'static Self> {
         const MAX_LEN: usize = {
             let tags = Tag::SUPPORTED;

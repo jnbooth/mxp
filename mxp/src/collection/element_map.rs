@@ -4,7 +4,9 @@ use crate::collection::CaseFoldMap;
 use crate::element::{Element, Tag};
 use crate::parser::{Error, ErrorKind, validate};
 
-/// A component in an [element definition](https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT).
+/// A component in an element definition.
+///
+/// See [MXP specification: Elements](https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT).
 #[derive(Copy, Clone, Debug)]
 pub enum ElementComponent<'a> {
     /// A user-defined custom tag element.
@@ -72,14 +74,12 @@ impl DerefMut for ElementMap {
 }
 
 impl ElementMap {
-    pub fn well_known() -> Self {
-        Self {
-            inner: well_known_elements().into_iter().collect(),
-        }
+    pub fn new() -> Self {
+        Self::default()
     }
 
-    pub fn custom_count(&self) -> usize {
-        self.len().saturating_sub(NUM_WELL_KNOWN)
+    pub fn add_well_known(&mut self) {
+        self.inner.extend(well_known_elements());
     }
 
     pub fn get_component(&self, key: &str) -> crate::Result<ElementComponent<'_>> {
@@ -95,9 +95,7 @@ impl ElementMap {
     }
 }
 
-const NUM_WELL_KNOWN: usize = 8;
-
-fn well_known_elements() -> [(String, Element); NUM_WELL_KNOWN] {
+fn well_known_elements() -> [(String, Element); 8] {
     fn color_el(name: &'static str, hex: u32) -> (String, Element) {
         (
             name.to_owned(),

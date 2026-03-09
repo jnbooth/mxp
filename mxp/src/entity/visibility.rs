@@ -2,6 +2,9 @@ use flagset::FlagSet;
 
 use crate::EntityKeyword;
 
+/// Visibility of an [`Entity`](crate::Entity), as defined by the server.
+///
+/// See [MXP specification: Entities](https://www.zuggsoft.com/zmud/mxp.htm#ENTITY).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum EntityVisibility {
     /// By default, MXP entities can be queried, but are not listed.

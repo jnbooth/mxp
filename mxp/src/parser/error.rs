@@ -5,6 +5,7 @@ use std::str;
 
 use flagset::Flags;
 
+/// Type associated with an [`mxp::Error`](Error).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ErrorKind {
     /// eg. < ... \n
@@ -101,6 +102,7 @@ pub enum ErrorKind {
     InvalidLineTag,
 }
 
+/// Error caused by attempting to parse malformed MXP data from the server.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Error {
     target: String,
@@ -116,6 +118,7 @@ impl fmt::Display for Error {
 impl std::error::Error for Error {}
 
 impl Error {
+    /// Constructs an error of the specified kind from a stringlike target being parsed.
     pub fn new<T: ParseErrorTarget>(target: T, error: ErrorKind) -> Self {
         Self {
             target: target.into_target(),
@@ -124,6 +127,7 @@ impl Error {
     }
 }
 
+/// Types that can be used to construct an [`mxp::Error`](Error).
 pub trait ParseErrorTarget {
     fn into_target(self) -> String;
 }

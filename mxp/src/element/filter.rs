@@ -3,6 +3,10 @@ use std::borrow::Cow;
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::parser::Error;
 
+/// Defines a graphics format and provides a client plugin module that converts the MUD-specific
+/// format to a standard GIF or BMP format.
+///
+/// See [MXP specification: `<FILTER>`](https://www.zuggsoft.com/zmud/mxp.htm#File%20Filters).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Filter<S = String> {
     pub src: S,
@@ -11,7 +15,7 @@ pub struct Filter<S = String> {
 }
 
 impl Filter<&str> {
-    pub fn into_owned(self) -> Filter {
+    pub fn into_owned(self) -> Filter<String> {
         Filter {
             src: self.src.to_owned(),
             dest: self.dest.to_owned(),
@@ -21,7 +25,7 @@ impl Filter<&str> {
 }
 
 impl Filter<Cow<'_, str>> {
-    pub fn into_owned(self) -> Filter {
+    pub fn into_owned(self) -> Filter<String> {
         Filter {
             src: self.src.into_owned(),
             dest: self.dest.into_owned(),

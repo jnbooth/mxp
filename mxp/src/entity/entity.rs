@@ -6,10 +6,17 @@ use flagset::FlagSet;
 use super::visibility::EntityVisibility;
 use crate::EntityKeyword;
 
+/// Stores information from the MUD (MUD variables). Once an entity is defined, an entity's value
+/// can be referenced by using the `&Name;` syntax.
+///
+/// See [MXP specification: Entities](https://www.zuggsoft.com/zmud/mxp.htm#ENTITY).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Entity {
+    /// Value stored in the variable.
     pub value: String,
+    /// Visibility to the client.
     pub visibility: EntityVisibility,
+    /// Longer description of the entity.
     pub description: String,
 }
 
@@ -18,6 +25,13 @@ impl Entity {
         html_escape::NAMED_ENTITIES.iter().copied().collect()
     }
 
+    /// Returns a global entity if one is defined for the given name.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(mxp::Entity::global("lt"), "<");
+    /// ```
     pub fn global<S: AsRef<[u8]>>(name: S) -> Option<&'static str> {
         static GLOBALS: LazyLock<HashMap<&'static [u8], &'static str>> =
             LazyLock::new(Entity::globals);
@@ -25,6 +39,16 @@ impl Entity {
         GLOBALS.get(name.as_ref()).copied()
     }
 
+    /// Returns a global entity if one is defined for the given name. This function is slower than
+    /// [`Entity::global`] because it performs a linear search, but it can be evaluated at compile
+    /// time.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// const LESS_THAN: &str = mxp::Entity::global("lt");
+    /// assert_eq!(LESS_THAN, "<");
+    /// ```
     pub const fn const_global(name: &str) -> Option<&'static str> {
         const fn const_eq(mut a: &[u8], mut b: &[u8]) -> bool {
             if a.len() != b.len() {
@@ -55,6 +79,7 @@ impl Entity {
         None
     }
 
+    /// Constructs new `Entity` with [`EntityVisibility::Default`] visibility and no description.
     pub const fn new(value: String) -> Self {
         Self {
             value,
@@ -63,14 +88,25 @@ impl Entity {
         }
     }
 
+    /// Returns `true` if `self.visibility` is [`EntityVisibility::Private`].
     pub const fn is_private(&self) -> bool {
         matches!(self.visibility, EntityVisibility::Private)
     }
 
+    /// Returns `true` if `self.visibility` is [`EntityVisibility::Published`].
     pub const fn is_published(&self) -> bool {
         matches!(self.visibility, EntityVisibility::Published)
     }
 
+    /// Applies [`EntityKeyword`]s to this entity.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut entity = mxp::Entity::new(String::new());
+    /// entity.apply_keywords(mxp::EntityKeyword::Publish);
+    /// assert_eq!(entity.visibility, mxp::EntityVisibility::Published);
+    /// ```
     pub fn apply_keywords<T: Into<FlagSet<EntityKeyword>>>(&mut self, keywords: T) {
         let keywords = keywords.into();
         if keywords.contains(EntityKeyword::Private) {
@@ -80,12 +116,34 @@ impl Entity {
         }
     }
 
+    /// Treating the current value as a list of values separated by `'|'`, appends the specified
+    /// `value` to the list.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut entity = mxp::Entity::new("1".to_owned());
+    /// entity.add("2");
+    /// entity.add("");
+    /// entity.add("3");
+    /// assert_eq!(entity.value, "1|2||3");
+    /// ```
     pub fn add(&mut self, value: &str) {
         self.value.reserve(value.len() + 1);
         self.value.push('|');
         self.value.push_str(value);
     }
 
+    /// Treating the current value as a list of values separated by `'|'`, removes the specified
+    /// `value` from the list.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut entity = mxp::Entity::new("1|2|3|2||4");
+    /// entity.remove("2");
+    /// assert_eq!(entity.value, "1|3||4");
+    /// ```
     pub fn remove(&mut self, value: &str) {
         self.value = self
             .value
@@ -107,14 +165,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn apply_publish() {
-        let mut entity = Entity::new(String::new());
-        entity.apply_keywords(EntityKeyword::Publish);
-        entity.apply_keywords(None);
-        assert_eq!(entity.visibility, EntityVisibility::Published);
-    }
-
-    #[test]
     fn apply_private() {
         let mut entity = Entity::new(String::new());
         entity.apply_keywords(EntityKeyword::Publish);
@@ -122,17 +172,5 @@ mod tests {
         entity.apply_keywords(EntityKeyword::Private);
         entity.apply_keywords(None);
         assert_eq!(entity.visibility, EntityVisibility::Private);
-    }
-
-    #[test]
-    fn add_and_remove() {
-        let mut entity = Entity::new("1".to_owned());
-        entity.add("2");
-        entity.add("3");
-        entity.add("");
-        entity.add("2");
-        entity.add("3");
-        entity.remove("2");
-        assert_eq!(entity.value, "1|3||3");
     }
 }

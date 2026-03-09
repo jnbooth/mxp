@@ -4,14 +4,24 @@ use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::keyword::SendKeyword;
 use crate::parser::Error;
 
+/// Destination for a [`Link`] element.
+///
+/// See [`MXP specification: Links`](https://www.zuggsoft.com/zmud/mxp.htm#Links).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum SendTo {
+    /// `<SEND href="...">`.
+    /// When clicked, the link href should be sent to the server as if typed by the user.
     #[default]
     World = 1,
+    /// `<SEND PROMPT href="...">`.
+    /// When clicked, the link text should be sent to the client's command line.
     Input,
+    /// `<A href="..."`>`.
+    /// When clicked, the link text should be opened in a browser as a web URL.
     Internet,
 }
 
+/// Prompts displayed in a menu when the user right-clicks on a [`Link`].
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct LinkPrompt {
     /// Action to send.
@@ -21,6 +31,7 @@ pub struct LinkPrompt {
 }
 
 impl LinkPrompt {
+    /// `self.label`, or `self.action` if `self.label` is `None`.
     pub fn label(&self) -> &str {
         self.label.as_deref().unwrap_or(&self.action)
     }
@@ -42,8 +53,20 @@ impl From<&str> for LinkPrompt {
     }
 }
 
+/// Specifies that a span of text can be clicked on to cause an action, and optionally can be
+/// right-clicked on to display a menu of choices.
+///
+/// This struct encompasses two MXP tags: `<A>` and `<SEND>`. If `send_to` is
+/// [`SendTo::Internet`], this value was parsed from an `<A>` tag. Otherwise, it was parsed from a
+/// `<SEND>` tag.
+///
+/// See [`MXP specification: Links`](https://www.zuggsoft.com/zmud/mxp.htm#Links).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Link {
+    /// Text to supply to the destination. Depending on the value of `send_to`, this is a URL, a
+    /// MUD command, or text to display in the command line.
+    ///
+    /// If this value is `"&text;"`, the text under the link should be used as the action instead.
     pub action: String,
     /// Flyover hint.
     pub hint: Option<String>,
@@ -51,13 +74,14 @@ pub struct Link {
     pub prompts: Vec<LinkPrompt>,
     /// Where to send the result of clicking on the link.
     pub send_to: SendTo,
-    /// Optional scope for the link.
+    /// Optional scope for the link. If defined, an `<EXPIRE>` command can invalidate the link.
     pub expires: Option<String>,
 }
 
 impl Link {
     pub const EMBED_ENTITY: &'static str = "&text;";
 
+    /// Constructs a new `Link`.
     pub fn new(
         action: &str,
         hints: Option<&str>,
@@ -86,6 +110,9 @@ impl Link {
         }
     }
 
+    /// A simple link that sends the text under it to the server as a command when clicked.
+    ///
+    /// This is equivalent to `<SEND href="&text;">`.
     pub fn for_text() -> Self {
         Self {
             action: Self::EMBED_ENTITY.to_owned(),
@@ -93,6 +120,7 @@ impl Link {
         }
     }
 
+    /// Returns a copy of the link, replacing `"&text;"` with the supplied text.
     #[must_use = "function returns a new link"]
     pub fn with_text(&self, text: &str) -> Self {
         Self {

@@ -42,11 +42,20 @@ impl<S: AsRef<str>> ElementItem<S> {
     }
 }
 
+/// Type of MXP definition sent by the server.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum DefinitionKind {
+    /// [`<!ATTLIST>`](https://www.zuggsoft.com/zmud/mxp.htm#ATTLIST):
+    /// Add attributes to elements.
     AttributeList,
+    /// [`<!ELEMENT>`](https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT):
+    /// Define a new [`Element`](crate::Element).
     Element,
+    /// [`<!ENTITY>`](https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT):
+    /// Define a new [`Entity`](crate::Entity).
     Entity,
+    /// [`<!TAG>`](https://www.zuggsoft.com/zmud/mxp.htm#User-defined%20Line%20Tags):
+    /// Change properties for a line tag.
     LineTag,
 }
 
@@ -59,16 +68,23 @@ impl FromStr for DefinitionKind {
     type Err = UnrecognizedVariant<Self>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match_ci! {s,
-            "attlist" | "att" => Self::AttributeList,
-            "element" | "el" => Self::Element,
-            "entity" | "en" => Self::Entity,
-            "tag" => Self::LineTag,
-            _ => return Err(Self::Err::new(s))
-        })
+        match_ci! {s,
+            "attlist" | "att" => Ok(Self::AttributeList),
+            "element" | "el" => Ok(Self::Element),
+            "entity" | "en" => Ok(Self::Entity),
+            "tag" => Ok(Self::LineTag),
+            _ => Err(Self::Err::new(s))
+        }
     }
 }
 
+/// MXP definition sent by the server, which may define an [attribute list], [element], [entity],
+/// or [line tag].
+///
+/// [attribute list]: https://www.zuggsoft.com/zmud/mxp.htm#ATTLIST
+/// [element]: https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT
+/// [entity]: https://www.zuggsoft.com/zmud/mxp.htm#ENTITY
+/// [line tag]: https://www.zuggsoft.com/zmud/mxp.htm#User-defined%20Line%20Tags
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct CollectedDefinition<'a> {
     pub(crate) kind: DefinitionKind,
@@ -95,10 +111,14 @@ impl<'a> CollectedDefinition<'a> {
     }
 }
 
+/// The three types of MXP tag elements sent by the server.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum CollectedElement<'a> {
+    /// A definition, e.g. [`<!ELEMENT>`].
     Definition(CollectedDefinition<'a>),
+    /// A closing tag, e.g. [`</BOLD>`].
     TagClose(&'a str),
+    /// An opening tag, e.g. [`<BOLD>`].
     TagOpen(&'a str),
 }
 
@@ -118,17 +138,20 @@ impl<'a> CollectedElement<'a> {
     }
 }
 
+/// The MUD server can tag a line to be parsed in a specific way by the client.
+///
+/// See [MXP specification: MXP Line Tags](https://www.zuggsoft.com/zmud/mxp.htm#MXP%20Line%20Tags).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ParseAs {
-    /// The text for the element is parsed by the automapper as the name of a room
+    /// The text for the element is parsed by the automapper as the name of a room.
     RoomName,
-    /// he text for the element is parsed by the automapper as the description of a room
+    /// he text for the element is parsed by the automapper as the description of a room.
     RoomDesc,
-    /// The text for the element is parsed by the automapper as exits for the room
+    /// The text for the element is parsed by the automapper as exits for the room.
     RoomExit,
-    /// The text for the element is parsed by the automapper as a room number
+    /// The text for the element is parsed by the automapper as a room number.
     RoomNum,
-    /// The text for the element is parsed by as a MUD Prompt
+    /// The text for the element is parsed by as a MUD Prompt.
     Prompt,
 }
 
@@ -147,19 +170,21 @@ impl FromStr for ParseAs {
     type Err = UnrecognizedVariant<Self>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match_ci! {s,
-            "roomname" => Self::RoomName,
-            "roomdesc" => Self::RoomDesc,
-            "roomexit" => Self::RoomExit,
-            "roomnum" => Self::RoomNum,
-            "prompt" => Self::Prompt,
-            _ => return Err(Self::Err::new(s)),
-        })
+        match_ci! {s,
+            "roomname" => Ok(Self::RoomName),
+            "roomdesc" => Ok(Self::RoomDesc),
+            "roomexit" => Ok(Self::RoomExit),
+            "roomnum" => Ok(Self::RoomNum),
+            "prompt" => Ok(Self::Prompt),
+            _ => Err(Self::Err::new(s)),
+        }
     }
 }
 
 /// User-defined MXP tags that we recognise, e.g. <boldcolor>.
 /// For example: <!ELEMENT boldtext '<COLOR &col;><B>' ATT='col=red'>
+///
+/// See [MXP specification: Elements](https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Element {
     /// Tag name
@@ -189,6 +214,7 @@ pub struct Element {
 }
 
 impl Element {
+    /// Parses an element from text.
     pub fn collect(text: &str) -> crate::Result<CollectedElement<'_>> {
         CollectedElement::from_str(text)
     }

@@ -9,11 +9,16 @@ use super::iter::PublishedIter;
 use crate::keyword::EntityKeyword;
 use crate::parser::{Error, ErrorKind};
 
+/// Entry in an [`EntityMap`].
 pub struct EntityEntry<'a> {
+    /// Entity name.
     pub name: &'a str,
+    /// Entity value, or `None` if no entity matching `name` exists in the map.
     pub value: Option<&'a Entity>,
 }
 
+/// Stores all entities for the current environment, both MXP-defined entities ([`Entity`]) and
+/// global XML entities (static string slices).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct EntityMap {
     inner: HashMap<String, Entity>,
@@ -21,18 +26,12 @@ pub struct EntityMap {
 }
 
 impl EntityMap {
+    /// Constructs a new map with no predefined entities.
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.inner.is_empty()
-    }
-
-    pub fn len(&self) -> usize {
-        self.inner.len()
-    }
-
+    /// Constructs a new map with all global XML entities predefined.
     pub fn with_globals() -> Self {
         Self {
             inner: HashMap::new(),
@@ -40,6 +39,17 @@ impl EntityMap {
         }
     }
 
+    /// Returns `true` if the map contains no custom entities.
+    pub fn is_empty(&self) -> bool {
+        self.inner.is_empty()
+    }
+
+    /// Returns the number of custom entities in the map.
+    pub fn len(&self) -> usize {
+        self.inner.len()
+    }
+
+    /// Clears all custom entities.
     pub fn clear(&mut self) {
         self.inner.clear();
     }
@@ -51,15 +61,21 @@ impl EntityMap {
         Ok(())
     }
 
+    /// Removes a key from the map, returning the value at the key if the key was previously in the
+    /// map. Returns an error if the key is associated with a global XML entity, since those cannot
+    /// be changed.
     pub fn remove(&mut self, key: &str) -> crate::Result<Option<Entity>> {
         self.guard_global(key)?;
         Ok(self.inner.remove(key))
     }
 
+    /// Returns true if there is a global XML entity associated with the specified key.
     pub fn is_global(&self, key: &str) -> bool {
         key.starts_with('#') || self.globals.contains_key(key.as_bytes())
     }
 
+    /// Iterates through all entities which have been marked as PUBLISH by the server, in the form
+    /// of [`EntityInfo`](super::EntityInfo) entries.
     pub fn published(&self) -> PublishedIter<'_> {
         self.inner.iter().filter_map(|(k, v)| {
             v.is_published().then_some(super::EntityInfo {
@@ -70,6 +86,17 @@ impl EntityMap {
         })
     }
 
+    /// Applies an MXP entity definition with the specified key, value, description and set of
+    /// keywords, as provided by `<!ENTITY>` declarations from the server.
+    /// Depending on the keywords provided, this may cause an entity to be inserted, removed,
+    /// updated, or replaced.
+    ///
+    /// If a new entity is defined, returns an occupied entry referencing the entity in this map.
+    /// If an entity is removed, returns a vacant entry, i.e. `entry.value == None`.
+    /// Returns an error if the key is associated with a global XML entity, since those cannot be
+    /// changed.
+    ///
+    /// See [MXP specification: `<!ENTITY>`](https://www.zuggsoft.com/zmud/mxp.htm#ENTITY).
     pub fn set<'a, T: Into<FlagSet<EntityKeyword>>>(
         &'a mut self,
         key: &'a str,
@@ -149,6 +176,8 @@ impl EntityMap {
         inner(self, key, value, description, keywords.into())
     }
 
+    /// Returns the value of a custom MXP entity, or `None` if there is no entity with the specified
+    /// name or the entity with the specified name was marked as PRIVATE by the server.
     pub fn get(&self, key: &str) -> Option<&str> {
         let entity = self.inner.get(key)?;
         if entity.is_private() {
@@ -157,6 +186,9 @@ impl EntityMap {
         Some(entity.value.as_str())
     }
 
+    /// Inserts a custom entity with the specified key and value. Returns `false` if the specified
+    /// key is already associated with a global XML entity. Otherwise, performs the insertion and
+    /// returns `true`.
     pub fn insert(&mut self, key: String, value: String) -> bool {
         if self.globals.contains_key(key.as_bytes()) {
             return false;

@@ -466,8 +466,8 @@ impl Transformer {
         let name = mxp_string.trim();
         mxp::validate(name, mxp::ErrorKind::InvalidEntityName)?;
         match self.mxp_state.decode_entity(name)? {
-            Some(mxp::DecodedEntity::Char(c)) => self.output.append_char(c),
-            Some(mxp::DecodedEntity::Str(s)) => self.output.append_text(s),
+            Some(mxp::DecodedEntity::Standard(c)) => self.output.append_char(c),
+            Some(mxp::DecodedEntity::Custom(s)) => self.output.append_text(s),
             None => (),
         }
         Ok(())

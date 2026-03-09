@@ -12,6 +12,7 @@ use crate::parser::Error;
 use crate::parser::UnrecognizedVariant;
 
 flags! {
+    /// Font modifier applied by the [`color`] argument of a [`Font`] tag.
     pub enum FontStyle: u8 {
         Blink,
         Bold,
@@ -25,20 +26,23 @@ impl FromStr for FontStyle {
     type Err = UnrecognizedVariant<Self>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match_ci! {s,
-            "blink" => Self::Blink,
-            "bold" => Self::Bold,
-            "italic" => Self::Italic,
-            "underline" => Self::Underline,
-            "inverse" => Self::Inverse,
-            _ => return Err(Self::Err::new(s)),
-        })
+        match_ci! {s,
+            "blink" => Ok(Self::Blink),
+            "bold" => Ok(Self::Bold),
+            "italic" => Ok(Self::Italic),
+            "underline" => Ok(Self::Underline),
+            "inverse" => Ok(Self::Inverse),
+            _ => Err(Self::Err::new(s)),
+        }
     }
 }
 
+/// Font effect applied by the [`color`] argument of a [`Font`] tag.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum FontEffect {
+    /// Change foreground color.
     Color(RgbColor),
+    /// Change text style.
     Style(FontStyle),
 }
 
@@ -51,6 +55,9 @@ impl FontEffect {
     }
 }
 
+/// [`color`] argument of a font tag, e.g. `<FONT color=red,bold,italic>`.
+///
+/// `FgColor` is an iterator over [`FontEffect`]s.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct FgColor<S> {
     pub(crate) inner: S,
@@ -72,16 +79,23 @@ impl<'a, S: AsRef<str>> IntoIterator for &'a FgColor<S> {
     }
 }
 
+/// Changes the font for subsequent text.
+///
+/// See [MXP specification: `<FONT>`](https://www.zuggsoft.com/zmud/mxp.htm#MXP%20Tags).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Font<S = String> {
+    /// Font family.
     pub face: Option<S>,
+    /// Font size.
     pub size: Option<NonZero<u8>>,
+    /// Foreground color and style effects.
     pub color: Option<FgColor<S>>,
+    /// Background color.
     pub back: Option<RgbColor>,
 }
 
 impl Font<&str> {
-    pub fn into_owned(self) -> Font {
+    pub fn into_owned(self) -> Font<String> {
         Font {
             face: self.face.map(ToOwned::to_owned),
             size: self.size,
@@ -94,7 +108,7 @@ impl Font<&str> {
 }
 
 impl Font<Cow<'_, str>> {
-    pub fn into_owned(self) -> Font {
+    pub fn into_owned(self) -> Font<String> {
         Font {
             face: self.face.map(Cow::into_owned),
             size: self.size,

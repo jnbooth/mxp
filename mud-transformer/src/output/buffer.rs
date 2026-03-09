@@ -343,7 +343,7 @@ impl BufferedOutput {
         let variables = if entity.is_variable {
             &mut self.variables
         } else {
-            &mut *entities
+            entities
         };
         if entity.flags.contains(mxp::EntityKeyword::Delete) {
             self.variable.clear();

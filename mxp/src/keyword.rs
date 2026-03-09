@@ -5,7 +5,7 @@ use flagset::flags;
 use crate::parser::UnrecognizedVariant;
 
 flags! {
-    pub enum ElementKeyword: u8 {
+    pub(crate) enum ElementKeyword: u8 {
         Open,
         Empty,
         Delete,
@@ -19,12 +19,12 @@ flags! {
         Remove,
     }
 
-    pub enum FrameKeyword: u8 {
+    pub(crate) enum FrameKeyword: u8 {
         Floating,
         Internal,
     }
 
-    pub enum ImageKeyword: u8 {
+    pub(crate) enum ImageKeyword: u8 {
         IsMap,
     }
 
@@ -37,11 +37,11 @@ flags! {
         UseNewlines,
     }
 
-    pub enum SendKeyword: u8 {
+    pub(crate) enum SendKeyword: u8 {
         Prompt
     }
 
-    pub enum TagKeyword: u8 {
+    pub(crate) enum TagKeyword: u8 {
         Gag,
         Enable,
         Disable,
@@ -52,12 +52,12 @@ impl FromStr for ElementKeyword {
     type Err = UnrecognizedVariant<Self>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match_ci! {s,
-            "open" => Self::Open,
-            "empty" => Self::Empty,
-            "delete" => Self::Delete,
-            _ => return Err(Self::Err::new(s)),
-        })
+        match_ci! {s,
+            "open" => Ok(Self::Open),
+            "empty" => Ok(Self::Empty),
+            "delete" => Ok(Self::Delete),
+            _ => Err(Self::Err::new(s)),
+        }
     }
 }
 
@@ -65,14 +65,14 @@ impl FromStr for EntityKeyword {
     type Err = UnrecognizedVariant<Self>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match_ci! {s,
-            "private" => Self::Private,
-            "publish" => Self::Publish,
-            "delete" => Self::Delete,
-            "add" => Self::Add,
-            "remove" => Self::Remove,
-            _ => return Err(Self::Err::new(s)),
-        })
+        match_ci! {s,
+            "private" => Ok(Self::Private),
+            "publish" => Ok(Self::Publish),
+            "delete" => Ok(Self::Delete),
+            "add" => Ok(Self::Add),
+            "remove" => Ok(Self::Remove),
+            _ => Err(Self::Err::new(s)),
+        }
     }
 }
 
@@ -80,11 +80,11 @@ impl FromStr for FrameKeyword {
     type Err = UnrecognizedVariant<Self>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match_ci! {s,
-            "floating" => Self::Floating,
-            "internal" => Self::Internal,
-            _ => return Err(Self::Err::new(s))
-        })
+        match_ci! {s,
+            "floating" => Ok(Self::Floating),
+            "internal" => Ok(Self::Internal),
+            _ => Err(Self::Err::new(s))
+        }
     }
 }
 
@@ -92,10 +92,10 @@ impl FromStr for ImageKeyword {
     type Err = UnrecognizedVariant<Self>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match_ci! {s,
-            "ismap" => Self::IsMap,
-            _ => return Err(Self::Err::new(s))
-        })
+        match_ci! {s,
+            "ismap" => Ok(Self::IsMap),
+            _ =>  Err(Self::Err::new(s))
+        }
     }
 }
 
@@ -103,15 +103,15 @@ impl FromStr for MxpKeyword {
     type Err = UnrecognizedVariant<Self>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match_ci! {s,
-            "off" => Self::Off,
-            "defaultopen" => Self::DefaultOpen,
-            "defaultsecure" => Self::DefaultSecure,
-            "defaultlocked" => Self::DefaultLocked,
-            "usenewlines" => Self::UseNewlines,
-            "ignorenewlines" => Self::IgnoreNewlines,
-            _ => return Err(Self::Err::new(s)),
-        })
+        match_ci! {s,
+            "off" => Ok(Self::Off),
+            "defaultopen" => Ok(Self::DefaultOpen),
+            "defaultsecure" => Ok(Self::DefaultSecure),
+            "defaultlocked" => Ok(Self::DefaultLocked),
+            "usenewlines" => Ok(Self::UseNewlines),
+            "ignorenewlines" => Ok(Self::IgnoreNewlines),
+            _ =>  Err(Self::Err::new(s)),
+        }
     }
 }
 
@@ -119,10 +119,10 @@ impl FromStr for SendKeyword {
     type Err = UnrecognizedVariant<Self>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match_ci! {s,
-            "prompt" => Self::Prompt,
-            _ => return Err(Self::Err::new(s))
-        })
+        match_ci! {s,
+            "prompt" => Ok(Self::Prompt),
+            _ => Err(Self::Err::new(s)),
+        }
     }
 }
 
@@ -130,11 +130,11 @@ impl FromStr for TagKeyword {
     type Err = UnrecognizedVariant<Self>;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match_ci! {s,
-            "gag" => Self::Gag,
-            "enable" => Self::Enable,
-            "disable" => Self::Disable,
-            _ => return Err(Self::Err::new(s))
-        })
+        match_ci! {s,
+            "gag" => Ok(Self::Gag),
+            "enable" => Ok(Self::Enable),
+            "disable" => Ok(Self::Disable),
+            _ => Err(Self::Err::new(s))
+        }
     }
 }

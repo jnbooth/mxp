@@ -6,13 +6,19 @@ use std::str::FromStr;
 use crate::argument::{Decoder, ExpectArg, Scan};
 use crate::parser::{Error, StringVariant, UnrecognizedVariant};
 
+/// Specifies the number of times a sound/music file should be played.
+///
+/// See [MSP specification: L parameter](https://www.zuggsoft.com/zmud/msp.htm#MSP%20Specification).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum AudioRepetition {
+    /// The file should be played infinitely, until instructed otherwise.
     Forever,
+    /// The file should play this many times.
     Count(NonZero<u32>),
 }
 
 impl Default for AudioRepetition {
+    /// A single play, i.e. `AudioRepetition::Count(1)`.
     fn default() -> Self {
         Self::Count(NonZero::new(1).unwrap())
     }
@@ -38,10 +44,15 @@ impl FromStr for AudioRepetition {
     }
 }
 
+/// Specifies file behavior if the server requests it should play again while it is already playing.
+///
+/// See [MSP specification: C parameter](https://www.zuggsoft.com/zmud/msp.htm#MSP%20Specification).
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub enum AudioContinuation {
+    /// If requested again, the file should restart.
     Restart = 0,
     #[default]
+    /// If requested again, the file should simply continue playing.
     Continue,
 }
 
@@ -98,24 +109,59 @@ impl<'a> SoundOrMusic<Cow<'a, str>> {
     }
 }
 
+#[allow(clippy::ref_option)]
+fn form_uri<'a, S: AsRef<str>>(fname: &'a S, url: &Option<S>) -> Cow<'a, str> {
+    let fname = fname.as_ref();
+    let Some(url) = url else {
+        return Cow::Borrowed(fname);
+    };
+    let url = url.as_ref();
+    let infix = if url.ends_with('/') { "" } else { "/" };
+    let uri = format!("{url}{infix}{fname}");
+    Cow::Owned(uri)
+}
+
+/// Sound triggers are WAV format files intended for sound effects.
+///
+/// See [MXP specification: `<SOUND>`](https://www.zuggsoft.com/zmud/mxp.htm#MSP%20Compatibility)
+/// and the [MSP (Mud Sound Protocol) specification](https://www.zuggsoft.com/zmud/msp.htm).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Sound<S = String> {
+    /// File name. May contain wildcards. If no extension is specified, ".wav" should be assumed.
     pub fname: S,
+    /// Volume between 0 and 100.
     pub volume: u8,
+    /// Repeat behavior.
     pub repeats: AudioRepetition,
+    /// Type of sound, e.g. combat, zone, death, clan. Case-insensitive. This parameter was
+    /// intended to provide a way to group sounds into subfolders within the main sound directory.
     pub class: Option<S>,
+    /// Specifies the URL of the sound file. This allows downloading files from the MUD server.
+    /// Client should always look in local directories first, and only download the file if it's
+    /// not available locally.
     pub url: Option<S>,
+    /// This parameter applies when some sound is playing and another request arrives. Then, if new
+    /// request has higher (but NOT equal) priority than the one that's currently being played, old
+    /// sound must be stopped and the new sound starts playing instead. In the case of a tie, the
+    /// sound that is already playing wins.
     pub priority: u8,
 }
 
 impl<S: AsRef<str>> Sound<S> {
+    /// Returns `true` if this command is a `<SOUND OFF>` command, causing sounds to stop rather
+    /// than triggering a sound.
     pub fn is_off(&self) -> bool {
         self.fname.as_ref().eq_ignore_ascii_case("off")
+    }
+
+    /// Combines `self.url` and `self.fname` into a single URI.
+    pub fn uri(&self) -> Cow<'_, str> {
+        form_uri(&self.fname, &self.url)
     }
 }
 
 impl Sound<&str> {
-    pub fn into_owned(self) -> Sound {
+    pub fn into_owned(self) -> Sound<String> {
         Sound {
             fname: self.fname.to_owned(),
             volume: self.volume,
@@ -128,7 +174,7 @@ impl Sound<&str> {
 }
 
 impl Sound<Cow<'_, str>> {
-    pub fn into_owned(self) -> Sound {
+    pub fn into_owned(self) -> Sound<String> {
         Sound {
             fname: self.fname.into_owned(),
             volume: self.volume,
@@ -160,24 +206,45 @@ where
     }
 }
 
+/// Music triggers are typically background MID (MIDI) files. Only one music trigger can be active
+/// at once.
+///
+/// See [MXP specification: `<MUSIC>`](https://www.zuggsoft.com/zmud/mxp.htm#MSP%20Compatibility)
+/// and the [MSP (Mud Sound Protocol) specification](https://www.zuggsoft.com/zmud/msp.htm).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Music<S = String> {
+    /// File name. May contain wildcards. If no extension is specified, ".midi" should be assumed.
     pub fname: S,
+    /// Volume between 0 and 100.
     pub volume: u8,
+    /// Repeat behavior.
     pub repeats: AudioRepetition,
+    /// Type of music, e.g. combat, zone, death, clan. Case-insensitive. This parameter was
+    /// intended to provide a way to group music into subfolders within the main music directory.
     pub class: Option<S>,
+    /// Specifies the URL of the music file. This allows downloading files from the MUD server.
+    /// Client should always look in local directories first, and only download the file if it's
+    /// not available locally.
     pub url: Option<S>,
+    /// File behavior if the server requests it should play again while it is already playing.
     pub continuation: AudioContinuation,
 }
 
 impl<S: AsRef<str>> Music<S> {
+    /// Returns `true` if this command is a `<MUSIC OFF>` command, causing sounds to stop rather
+    /// than triggering a sound.
     pub fn is_off(&self) -> bool {
         self.fname.as_ref().eq_ignore_ascii_case("off")
+    }
+
+    /// Combines `self.url` and `self.fname` into a single URI.
+    pub fn uri(&self) -> Cow<'_, str> {
+        form_uri(&self.fname, &self.url)
     }
 }
 
 impl Music<&str> {
-    pub fn into_owned(self) -> Music {
+    pub fn into_owned(self) -> Music<String> {
         Music {
             fname: self.fname.to_owned(),
             volume: self.volume,
@@ -190,7 +257,7 @@ impl Music<&str> {
 }
 
 impl Music<Cow<'_, str>> {
-    pub fn into_owned(self) -> Music {
+    pub fn into_owned(self) -> Music<String> {
         Music {
             fname: self.fname.into_owned(),
             volume: self.volume,
