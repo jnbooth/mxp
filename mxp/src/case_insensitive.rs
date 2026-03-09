@@ -1,3 +1,12 @@
+pub const fn to_ascii_lowercase<'a>(text: &[u8], buf: &'a mut [u8]) -> Option<&'a [u8]> {
+    let Some((lower_buf, _)) = buf.split_at_mut_checked(text.len()) else {
+        return None;
+    };
+    lower_buf.copy_from_slice(text);
+    lower_buf.make_ascii_lowercase();
+    Some(lower_buf)
+}
+
 macro_rules! match_ci {
     (
         $s:expr,

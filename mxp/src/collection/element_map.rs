@@ -1,7 +1,6 @@
 use std::ops::{Deref, DerefMut};
 
-use casefold::ascii::CaseFoldMap;
-
+use crate::collection::CaseFoldMap;
 use crate::element::{Element, Tag};
 use crate::parser::{Error, ErrorKind, validate};
 
@@ -55,11 +54,11 @@ impl ElementComponent<'_> {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct ElementMap {
-    inner: CaseFoldMap<String, Element>,
+    inner: CaseFoldMap<Element>,
 }
 
 impl Deref for ElementMap {
-    type Target = CaseFoldMap<String, Element>;
+    type Target = CaseFoldMap<Element>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner

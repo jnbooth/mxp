@@ -1,3 +1,6 @@
+mod case_fold_map;
+pub(crate) use case_fold_map::CaseFoldMap;
+
 mod element_map;
 pub use element_map::ElementComponent;
 

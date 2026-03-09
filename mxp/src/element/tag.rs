@@ -1,6 +1,7 @@
-use casefold::ascii::CaseFold;
+use uncased::UncasedStr;
 
 use super::action::ActionKind;
+use crate::case_insensitive::to_ascii_lowercase;
 
 /// Atomic MXP tags that we recognise, e.g. <b>.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -10,7 +11,7 @@ pub struct Tag {
     /// Its action.
     pub action: ActionKind,
     /// Supported arguments, e.g. href, hint
-    pub args: &'static [&'static CaseFold<str>],
+    pub args: &'static [&'static UncasedStr],
 }
 
 macro_rules! tag {
@@ -25,7 +26,7 @@ macro_rules! tag {
         Self {
             name: $l,
             action: ActionKind::$i,
-            args: &[$(CaseFold::borrow($a)),+],
+            args: &[$(UncasedStr::new($a)),+],
         }
     };
 }
@@ -34,7 +35,7 @@ impl Tag {
     pub(crate) const fn new(
         name: &'static str,
         action: ActionKind,
-        args: &'static [&'static CaseFold<str>],
+        args: &'static [&'static UncasedStr],
     ) -> Self {
         Self { name, action, args }
     }
@@ -59,15 +60,11 @@ impl Tag {
         };
 
         let mut buf = [0; MAX_LEN];
-
-        let Some((name_lower, _)) = buf.split_at_mut_checked(name.len()) else {
+        let Some(name_lower) = to_ascii_lowercase(name.as_bytes(), &mut buf) else {
             return None;
         };
 
-        name_lower.copy_from_slice(name.as_bytes());
-        name_lower.make_ascii_lowercase();
-
-        match &*name_lower {
+        match name_lower {
             b"a" => Some(&Self::A),
             b"b" => Some(&Self::B),
             b"bold" => Some(&Self::BOLD),

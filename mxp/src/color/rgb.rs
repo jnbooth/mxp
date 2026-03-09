@@ -4,6 +4,7 @@ use std::str::{self, FromStr};
 use super::error::{HexOutOfRangeError, ParseHexColorError};
 use super::named::{NAMED_COLORS, NamedColorIter, get_named_color};
 use super::xterm::{XTERM_COLORS, first_xterm_colors};
+use crate::case_insensitive::to_ascii_lowercase;
 
 /// A 24-bit color consisting of a red, green, and blue value.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -111,13 +112,9 @@ impl RgbColor {
         }
 
         let mut buf = [0; MAX_COLOR_LEN];
-
-        let Some((name_lower, _)) = buf.split_at_mut_checked(name.len()) else {
+        let Some(name_lower) = to_ascii_lowercase(name.as_bytes(), &mut buf) else {
             return None;
         };
-
-        name_lower.copy_from_slice(name.as_bytes());
-        name_lower.make_ascii_lowercase();
         get_named_color(name_lower)
     }
 

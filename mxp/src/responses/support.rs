@@ -1,7 +1,7 @@
 use std::fmt;
 
-use casefold::ascii::CaseFold;
 use flagset::FlagSet;
+use uncased::UncasedStr;
 
 use crate::element::{ActionKind, Tag};
 
@@ -44,7 +44,7 @@ where
         const SIMPLE_FONT_TAG: &Tag = &Tag::new(
             "font",
             ActionKind::Font,
-            &[CaseFold::borrow("color"), CaseFold::borrow("back")],
+            &[UncasedStr::new("color"), UncasedStr::new("back")],
         );
 
         for tag in Tag::supported() {

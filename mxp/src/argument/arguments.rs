@@ -1,7 +1,6 @@
-use casefold::ascii::CaseFoldMap;
-
 use super::keyword_filter::KeywordFilter;
 use super::scan::{Decoder, Scan};
+use crate::collection::CaseFoldMap;
 use crate::parser::{Error, ErrorKind, Words, validate};
 
 /// Parsed arguments of an MXP command.
@@ -14,7 +13,7 @@ use crate::parser::{Error, ErrorKind, Words, validate};
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Arguments<S: AsRef<str>> {
     positional: Vec<S>,
-    named: CaseFoldMap<String, S>,
+    named: CaseFoldMap<S>,
 }
 
 impl<S: AsRef<str>> Arguments<S> {

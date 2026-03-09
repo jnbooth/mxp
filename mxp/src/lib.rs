@@ -1,5 +1,7 @@
+pub use uncased::UncasedStr;
+
 #[macro_use]
-mod macros;
+mod case_insensitive;
 
 mod argument;
 pub use argument::Arguments;

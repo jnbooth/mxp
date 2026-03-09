@@ -5,10 +5,10 @@ use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 use std::{slice, str};
 
-use casefold::ascii::CaseFoldMap;
 use flagset::{FlagSet, Flags};
 
 use super::keyword_filter::{KeywordFilter, NoKeywords};
+use crate::collection::CaseFoldMap;
 use crate::parser::{Error, ErrorKind};
 
 pub trait Decoder {
@@ -30,7 +30,7 @@ impl<D: Decoder> Decoder for &D {
 pub(crate) struct Scan<'a, D, S, F = NoKeywords> {
     decoder: D,
     inner: slice::Iter<'a, S>,
-    named: &'a CaseFoldMap<String, S>,
+    named: &'a CaseFoldMap<S>,
     phantom: PhantomData<F>,
 }
 
@@ -40,7 +40,7 @@ where
     S: AsRef<str>,
     F: KeywordFilter,
 {
-    pub fn new(decoder: D, positional: &'a [S], named: &'a CaseFoldMap<String, S>) -> Self {
+    pub fn new(decoder: D, positional: &'a [S], named: &'a CaseFoldMap<S>) -> Self {
         Self {
             decoder,
             inner: positional.iter(),

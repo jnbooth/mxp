@@ -140,7 +140,7 @@ impl State {
         let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
         let args = words.parse_args::<String>()?;
         let Some(el) = Element::parse(name.to_owned(), args.scan(&self.entities))? else {
-            self.elements.remove(&name);
+            self.elements.remove(name);
             return Ok(());
         };
         if let Some(tag) = el.tag {

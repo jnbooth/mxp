@@ -9,10 +9,10 @@ edition = { workspace = true }
 workspace = true
 
 [dependencies]
-casefold = { git = "https://github.com/jnbooth/casefold", version = "0.4.0" }
 flagset = { workspace = true }
 html-escape = { workspace = true }
 serde = { workspace = true, optional = true }
+uncased = "0.9.10"
 
 [features]
 serde = ["dep:serde", "flagset/serde"]
