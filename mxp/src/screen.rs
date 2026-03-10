@@ -25,20 +25,7 @@ impl StringVariant for Align {
     ];
 }
 
-impl FromStr for Align {
-    type Err = UnrecognizedVariant<Self>;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match_ci! {s,
-            "top" => Ok(Self::Top),
-            "bottom" => Ok(Self::Bottom),
-            "left" => Ok(Self::Left),
-            "right" => Ok(Self::Right),
-            "middle" => Ok(Self::Middle),
-            _ => Err(Self::Err::new(s))
-        }
-    }
-}
+impl_parse_enum!(Align, Top, Bottom, Left, Right, Middle);
 
 /// Specifies the units of a [`Dimension`].
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]

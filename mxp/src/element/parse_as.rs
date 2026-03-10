@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use crate::parser::{StringVariant, UnrecognizedVariant};
 
 /// The MUD server can tag a line to be parsed in a specific way by the client.
@@ -30,17 +28,4 @@ impl StringVariant for ParseAs {
     ];
 }
 
-impl FromStr for ParseAs {
-    type Err = UnrecognizedVariant<Self>;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match_ci! {s,
-            "roomname" => Ok(Self::RoomName),
-            "roomdesc" => Ok(Self::RoomDesc),
-            "roomexit" => Ok(Self::RoomExit),
-            "roomnum" => Ok(Self::RoomNum),
-            "prompt" => Ok(Self::Prompt),
-            _ => Err(Self::Err::new(s)),
-        }
-    }
-}
+impl_parse_enum!(ParseAs, RoomName, RoomDesc, RoomExit, RoomNum, Prompt);

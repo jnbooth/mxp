@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::str::FromStr;
 
 use crate::argument::{Decoder, ExpectArg as _, Scan};
 use crate::keyword::FrameKeyword;
@@ -27,18 +26,7 @@ impl StringVariant for FrameAction {
     const VARIANTS: &[Self] = &[Self::Open, Self::Close, Self::Redirect];
 }
 
-impl FromStr for FrameAction {
-    type Err = UnrecognizedVariant<Self>;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match_ci! {s,
-            "open" => Ok(Self::Open),
-            "close" => Ok(Self::Close),
-            "redirect" => Ok(Self::Redirect),
-            _ => Err(Self::Err::new(s)),
-        }
-    }
-}
+impl_parse_enum!(FrameAction, Open, Close, Redirect);
 
 /// Alignment and position of a [`Frame`], which may either be an external (floating) frame or
 /// an internal (docked) frame.

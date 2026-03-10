@@ -1,3 +1,25 @@
+macro_rules! impl_parse_enum {
+    ($t:ty, $v1:ident $(, $v:ident)* $(,)?) => {
+        impl std::str::FromStr for $t {
+            type Err = UnrecognizedVariant<Self>;
+
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                if s.eq_ignore_ascii_case(stringify!($v1)) {
+                    Ok(Self::$v1)
+                }
+                $(
+                    else if s.eq_ignore_ascii_case(stringify!($v)) {
+                        Ok(Self::$v)
+                    }
+                )*
+                else {
+                    Err(Self::Err::new(s))
+                }
+            }
+        }
+    };
+}
+
 pub const fn to_ascii_lowercase<'a>(text: &[u8], buf: &'a mut [u8]) -> Option<&'a [u8]> {
     let Some((lower_buf, _)) = buf.split_at_mut_checked(text.len()) else {
         return None;

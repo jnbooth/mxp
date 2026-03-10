@@ -1,5 +1,3 @@
-use std::str::FromStr;
-
 use flagset::flags;
 
 use crate::parser::UnrecognizedVariant;
@@ -55,93 +53,24 @@ flags! {
     }
 }
 
-impl FromStr for ElementKeyword {
-    type Err = UnrecognizedVariant<Self>;
+impl_parse_enum!(ElementKeyword, Open, Empty, Delete);
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match_ci! {s,
-            "open" => Ok(Self::Open),
-            "empty" => Ok(Self::Empty),
-            "delete" => Ok(Self::Delete),
-            _ => Err(Self::Err::new(s)),
-        }
-    }
-}
+impl_parse_enum!(EntityKeyword, Private, Publish, Delete, Add, Remove);
 
-impl FromStr for EntityKeyword {
-    type Err = UnrecognizedVariant<Self>;
+impl_parse_enum!(FrameKeyword, Floating, Internal);
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match_ci! {s,
-            "private" => Ok(Self::Private),
-            "publish" => Ok(Self::Publish),
-            "delete" => Ok(Self::Delete),
-            "add" => Ok(Self::Add),
-            "remove" => Ok(Self::Remove),
-            _ => Err(Self::Err::new(s)),
-        }
-    }
-}
+impl_parse_enum!(ImageKeyword, IsMap);
 
-impl FromStr for FrameKeyword {
-    type Err = UnrecognizedVariant<Self>;
+impl_parse_enum!(
+    MxpKeyword,
+    Off,
+    DefaultOpen,
+    DefaultSecure,
+    DefaultLocked,
+    UseNewlines,
+    IgnoreNewlines
+);
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match_ci! {s,
-            "floating" => Ok(Self::Floating),
-            "internal" => Ok(Self::Internal),
-            _ => Err(Self::Err::new(s))
-        }
-    }
-}
+impl_parse_enum!(SendKeyword, Prompt);
 
-impl FromStr for ImageKeyword {
-    type Err = UnrecognizedVariant<Self>;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match_ci! {s,
-            "ismap" => Ok(Self::IsMap),
-            _ =>  Err(Self::Err::new(s))
-        }
-    }
-}
-
-impl FromStr for MxpKeyword {
-    type Err = UnrecognizedVariant<Self>;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match_ci! {s,
-            "off" => Ok(Self::Off),
-            "defaultopen" => Ok(Self::DefaultOpen),
-            "defaultsecure" => Ok(Self::DefaultSecure),
-            "defaultlocked" => Ok(Self::DefaultLocked),
-            "usenewlines" => Ok(Self::UseNewlines),
-            "ignorenewlines" => Ok(Self::IgnoreNewlines),
-            _ =>  Err(Self::Err::new(s)),
-        }
-    }
-}
-
-impl FromStr for SendKeyword {
-    type Err = UnrecognizedVariant<Self>;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match_ci! {s,
-            "prompt" => Ok(Self::Prompt),
-            _ => Err(Self::Err::new(s)),
-        }
-    }
-}
-
-impl FromStr for LineTagKeyword {
-    type Err = UnrecognizedVariant<Self>;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match_ci! {s,
-            "gag" => Ok(Self::Gag),
-            "enable" => Ok(Self::Enable),
-            "disable" => Ok(Self::Disable),
-            _ => Err(Self::Err::new(s))
-        }
-    }
-}
+impl_parse_enum!(LineTagKeyword, Gag, Enable, Disable);

@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::iter::FilterMap;
 use std::num::NonZero;
-use std::str::FromStr;
 use std::str::{self, Split};
 
 use flagset::flags;
@@ -22,20 +21,7 @@ flags! {
     }
 }
 
-impl FromStr for FontStyle {
-    type Err = UnrecognizedVariant<Self>;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match_ci! {s,
-            "blink" => Ok(Self::Blink),
-            "bold" => Ok(Self::Bold),
-            "italic" => Ok(Self::Italic),
-            "underline" => Ok(Self::Underline),
-            "inverse" => Ok(Self::Inverse),
-            _ => Err(Self::Err::new(s)),
-        }
-    }
-}
+impl_parse_enum!(FontStyle, Blink, Bold, Italic, Underline, Inverse);
 
 /// Font effect applied by the [`color`] argument of a [`Font`] tag.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
