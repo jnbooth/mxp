@@ -31,6 +31,18 @@ impl<S> Stat<S> {
 
 impl_into_owned!(Stat);
 
+impl<S: AsRef<str>> Stat<S> {
+    pub fn borrow_text(&self) -> Stat<&str> {
+        Stat {
+            entity: self.entity.as_ref(),
+            max: self.max.as_ref().map(AsRef::as_ref),
+            caption: self.caption.as_ref().map(AsRef::as_ref),
+        }
+    }
+}
+
+impl_partial_eq!(Stat);
+
 impl<'a, D> TryFrom<Scan<'a, D>> for Stat<Cow<'a, str>>
 where
     D: Decoder,

@@ -35,6 +35,19 @@ impl<S> Gauge<S> {
 
 impl_into_owned!(Gauge);
 
+impl<S: AsRef<str>> Gauge<S> {
+    pub fn borrow_text(&self) -> Gauge<&str> {
+        Gauge {
+            entity: self.entity.as_ref(),
+            max: self.max.as_ref().map(AsRef::as_ref),
+            caption: self.caption.as_ref().map(AsRef::as_ref),
+            color: self.color,
+        }
+    }
+}
+
+impl_partial_eq!(Gauge);
+
 impl<'a, D> TryFrom<Scan<'a, D>> for Gauge<Cow<'a, str>>
 where
     D: Decoder,

@@ -23,6 +23,16 @@ impl<S> Expire<S> {
 
 impl_into_owned!(Expire);
 
+impl<S: AsRef<str>> Expire<S> {
+    pub fn borrow_text(&self) -> Expire<&str> {
+        Expire {
+            name: self.name.as_ref().map(AsRef::as_ref),
+        }
+    }
+}
+
+impl_partial_eq!(Expire);
+
 impl<'a, D> TryFrom<Scan<'a, D>> for Expire<Cow<'a, str>>
 where
     D: Decoder,

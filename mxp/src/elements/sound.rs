@@ -178,6 +178,21 @@ impl<S> Sound<S> {
 
 impl_into_owned!(Sound);
 
+impl<S: AsRef<str>> Sound<S> {
+    pub fn borrow_text(&self) -> Sound<&str> {
+        Sound {
+            fname: self.fname.as_ref(),
+            volume: self.volume,
+            repeats: self.repeats,
+            class: self.class.as_ref().map(AsRef::as_ref),
+            url: self.url.as_ref().map(AsRef::as_ref),
+            priority: self.priority,
+        }
+    }
+}
+
+impl_partial_eq!(Sound);
+
 impl<'a, D> TryFrom<Scan<'a, D>> for Sound<Cow<'a, str>>
 where
     D: Decoder,
@@ -251,6 +266,21 @@ impl<S> Music<S> {
 }
 
 impl_into_owned!(Music);
+
+impl<S: AsRef<str>> Music<S> {
+    pub fn borrow_text(&self) -> Music<&str> {
+        Music {
+            fname: self.fname.as_ref(),
+            volume: self.volume,
+            repeats: self.repeats,
+            class: self.class.as_ref().map(AsRef::as_ref),
+            url: self.url.as_ref().map(AsRef::as_ref),
+            continuation: self.continuation,
+        }
+    }
+}
+
+impl_partial_eq!(Music);
 
 impl<'a, D> TryFrom<Scan<'a, D>> for Music<Cow<'a, str>>
 where

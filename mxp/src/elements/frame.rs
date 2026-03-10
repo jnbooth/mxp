@@ -107,6 +107,20 @@ impl<S> Frame<S> {
 
 impl_into_owned!(Frame);
 
+impl<S: AsRef<str>> Frame<S> {
+    pub fn borrow_text(&self) -> Frame<&str> {
+        Frame {
+            name: self.name.as_ref(),
+            action: self.action,
+            title: self.title.as_ref().map(AsRef::as_ref),
+            layout: self.layout,
+            scrolling: self.scrolling,
+        }
+    }
+}
+
+impl_partial_eq!(Frame);
+
 impl<'a, D> TryFrom<Scan<'a, D>> for Frame<Cow<'a, str>>
 where
     D: Decoder,

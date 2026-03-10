@@ -29,6 +29,18 @@ impl<S> Filter<S> {
 
 impl_into_owned!(Filter);
 
+impl<S: AsRef<str>> Filter<S> {
+    pub fn borrow_text(&self) -> Filter<&str> {
+        Filter {
+            src: self.src.as_ref(),
+            dest: self.dest.as_ref(),
+            name: self.name.as_ref(),
+        }
+    }
+}
+
+impl_partial_eq!(Filter);
+
 impl<'a, D> TryFrom<Scan<'a, D>> for Filter<Cow<'a, str>>
 where
     D: Decoder,

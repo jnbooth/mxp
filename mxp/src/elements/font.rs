@@ -98,6 +98,21 @@ impl<S> Font<S> {
 
 impl_into_owned!(Font);
 
+impl<S: AsRef<str>> Font<S> {
+    pub fn borrow_text(&self) -> Font<&str> {
+        Font {
+            face: self.face.as_ref().map(AsRef::as_ref),
+            size: self.size,
+            color: self.color.as_ref().map(|color| FgColor {
+                inner: color.inner.as_ref(),
+            }),
+            back: self.back,
+        }
+    }
+}
+
+impl_partial_eq!(Font);
+
 impl<'a, D> TryFrom<Scan<'a, D>> for Font<Cow<'a, str>>
 where
     D: Decoder,

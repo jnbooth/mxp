@@ -26,6 +26,17 @@ impl<S> Var<S> {
 
 impl_into_owned!(Var);
 
+impl<S: AsRef<str>> Var<S> {
+    pub fn borrow_text(&self) -> Var<&str> {
+        Var {
+            variable: self.variable.as_ref(),
+            keywords: self.keywords,
+        }
+    }
+}
+
+impl_partial_eq!(Var);
+
 impl<'a, D> TryFrom<Scan<'a, D>> for Var<Cow<'a, str>>
 where
     D: Decoder,

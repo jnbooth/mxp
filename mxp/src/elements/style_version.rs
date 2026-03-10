@@ -17,3 +17,13 @@ impl<S> StyleVersion<S> {
 }
 
 impl_into_owned!(StyleVersion);
+
+impl<S: AsRef<str>> StyleVersion<S> {
+    pub fn borrow_text(&self) -> StyleVersion<&str> {
+        StyleVersion {
+            styleversion: self.styleversion.as_ref(),
+        }
+    }
+}
+
+impl_partial_eq!(StyleVersion);

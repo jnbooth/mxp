@@ -28,6 +28,17 @@ impl<S> Relocate<S> {
 
 impl_into_owned!(Relocate);
 
+impl<S: AsRef<str>> Relocate<S> {
+    pub fn borrow_text(&self) -> Relocate<&str> {
+        Relocate {
+            hostname: self.hostname.as_ref(),
+            port: self.port,
+        }
+    }
+}
+
+impl_partial_eq!(Relocate);
+
 impl<'a, D> TryFrom<Scan<'a, D>> for Relocate<Cow<'a, str>>
 where
     D: Decoder,

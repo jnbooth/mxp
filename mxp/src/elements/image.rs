@@ -56,6 +56,24 @@ impl<S> Image<S> {
 
 impl_into_owned!(Image);
 
+impl<S: AsRef<str>> Image<S> {
+    pub fn borrow_text(&self) -> Image<&str> {
+        Image {
+            fname: self.fname.as_ref().map(AsRef::as_ref),
+            url: self.url.as_ref().map(AsRef::as_ref),
+            class: self.class.as_ref().map(AsRef::as_ref),
+            height: self.height,
+            width: self.width,
+            hspace: self.hspace,
+            vspace: self.vspace,
+            align: self.align,
+            is_map: self.is_map,
+        }
+    }
+}
+
+impl_partial_eq!(Image);
+
 impl<'a, D> TryFrom<Scan<'a, D>> for Image<Cow<'a, str>>
 where
     D: Decoder,
