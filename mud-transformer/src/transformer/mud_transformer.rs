@@ -117,11 +117,11 @@ impl Transformer {
     }
 
     pub fn get_mxp_entity(&self, name: &str) -> Option<&str> {
-        self.mxp_state.entities().get(name)
+        self.mxp_state.get_entity(name)
     }
 
     pub fn set_mxp_entity(&mut self, name: String, value: String) -> bool {
-        self.mxp_state.entities_mut().insert(name, value)
+        self.mxp_state.insert_entity(name, value)
     }
 
     fn subnegotiate<T: Negotiate>(&mut self, negotiator: T) {
@@ -190,7 +190,7 @@ impl Transformer {
     }
 
     pub fn published_entities(&self) -> mxp::PublishedIter<'_> {
-        self.mxp_state.entities().published()
+        self.mxp_state.published_entities()
     }
 
     pub fn published_variables(&self) -> mxp::PublishedIter<'_> {
@@ -198,11 +198,11 @@ impl Transformer {
     }
 
     pub fn count_custom_mxp_elements(&self) -> usize {
-        self.mxp_state.count_custom_elements()
+        self.mxp_state.custom_elements_len()
     }
 
     pub fn count_custom_mxp_entities(&self) -> usize {
-        self.mxp_state.entities().len()
+        self.mxp_state.custom_entities_len()
     }
 
     fn handle_mxp_error(&mut self, err: mxp::Error) {

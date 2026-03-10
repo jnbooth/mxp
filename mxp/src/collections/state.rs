@@ -8,7 +8,7 @@ use crate::collections::CaseFoldMap;
 use crate::element::{
     Action, CollectedDefinition, DefinitionKind, Element, ElementCommand, ElementItem, Mode, Tag,
 };
-use crate::entity::{DecodedEntity, EntityEntry, EntityMap};
+use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
 use crate::parser::{Error, ErrorKind, Words};
 use crate::validate;
 
@@ -67,6 +67,24 @@ impl State {
         &mut self.entities
     }
 
+    /// Alias for `self.entities().get(name)`.
+    /// See [`EntityMap::get`].
+    pub fn get_entity(&self, name: &str) -> Option<&str> {
+        self.entities.get(name)
+    }
+
+    /// Alias for `self.entities_mut().insert(name, value)`.
+    /// See [`EntityMap::insert`].
+    pub fn insert_entity(&mut self, name: String, value: String) -> bool {
+        self.entities.insert(name, value)
+    }
+
+    /// Alias for `self.entities().published()`.
+    /// See [`EntityMap::published`].
+    pub fn published_entities(&self) -> PublishedIter<'_> {
+        self.entities.published()
+    }
+
     /// Retrieves a tag or element by name. Returns an error if no tag or element is defined by
     /// that name, or if the name is not a valid MXP identifier.
     pub fn get_component(&self, name: &str) -> crate::Result<Component<'_>> {
@@ -86,8 +104,15 @@ impl State {
     }
 
     /// Returns the number of custom MXP elements that have been stored.
-    pub fn count_custom_elements(&self) -> usize {
+    pub fn custom_elements_len(&self) -> usize {
         self.elements.len()
+    }
+
+    /// Returns the number of custom MXP entities that have been stored.
+    /// Alias for `self.entities().len()`.
+    /// See [`EntityMap::len`].
+    pub fn custom_entities_len(&self) -> usize {
+        self.entities.len()
     }
 
     /// Decodes the actions of an element, using the specified arguments.
@@ -107,6 +132,8 @@ impl State {
     }
 
     /// Decodes the value of an entity.
+    /// Alias for `self.entities().decode(name)`.
+    /// See [`EntityMap::decode`].
     pub fn decode_entity(&self, name: &str) -> crate::Result<Option<DecodedEntity<'_>>> {
         self.entities.decode(name)
     }
