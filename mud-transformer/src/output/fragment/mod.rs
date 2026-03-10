@@ -18,7 +18,7 @@ pub type OutputDrain<'a> = std::vec::Drain<'a, Output>;
 pub struct Output {
     pub fragment: OutputFragment,
     pub gag: bool,
-    pub window: Option<ByteString>,
+    pub window: Option<mxp::Dest<ByteString>>,
 }
 
 impl<T> From<T> for Output

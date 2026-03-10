@@ -352,7 +352,7 @@ impl Transformer {
             self.output.set_mxp_gag();
         }
         if let Some(window) = &el.window {
-            self.output.set_mxp_window(window);
+            self.output.set_mxp_window(window.into());
         }
         for action in el.decode(args, mxp_state) {
             self.mxp_open_tag(action?, mxp_state);
@@ -373,7 +373,7 @@ impl Transformer {
             Action::Bold => self.output.set_mxp_flag(TextStyle::Bold),
             Action::Br => self.output.start_line(),
             Action::Color(color) => self.output.set_mxp_color(color),
-            Action::Dest(dest) => self.output.set_mxp_window(&dest.name),
+            Action::Dest(dest) => self.output.set_mxp_window(dest),
             Action::Expire(expire) => self
                 .output
                 .append(MxpFragment::ExpireLinks(expire.into_owned().name)),

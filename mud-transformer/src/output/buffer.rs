@@ -450,7 +450,7 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_mxp_window(&mut self, window: &str) {
+    pub fn set_mxp_window<S: AsRef<str>>(&mut self, window: mxp::Dest<S>) {
         if self.spans.set_window(window) {
             self.flush_mxp();
         }

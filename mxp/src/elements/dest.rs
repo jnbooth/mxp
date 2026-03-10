@@ -1,25 +1,79 @@
 use std::borrow::Cow;
+use std::num::NonZero;
 
 use crate::Error;
 use crate::argument::{Decoder, ExpectArg as _, Scan};
+use crate::keyword::DestKeyword;
 
+/// Positions text at a certain position in a frame.
+///
+/// Note that when text in a frame or window scrolls, the text is no longer at the same X or Y position. So, for status windows, ensure that you set the frame to be unscrollable.
+///
+/// See [MXP specification: `<DEST>`](https://www.zuggsoft.com/zmud/mxp.htm#Cursor%20Control).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Dest<S = String> {
-    pub name: S,
+    /// Name of [frame](crate::Frame) to use as the destination for text.
+    /// If unspecified, the text is sent to the main MUD window.
+    pub name: Option<S>,
+    /// Optional column in the frame to use as the position.
+    pub column: Option<NonZero<u32>>,
+    /// Optional line in the frame to use as the position.
+    pub line: Option<NonZero<u32>>,
+    /// Causes the rest of the frame to be erased after displaying the text.
+    pub eof: bool,
+    /// Causes the rest of the line to be erased after displaying the text.
+    pub eol: bool,
 }
 
-impl Dest<&str> {
-    pub fn into_owned(self) -> Dest<String> {
+impl<S> Dest<S> {
+    pub fn map_text<T, F>(self, f: F) -> Dest<T>
+    where
+        F: FnOnce(S) -> T,
+    {
         Dest {
-            name: self.name.to_owned(),
+            name: self.name.map(f),
+            column: self.column,
+            line: self.line,
+            eof: self.eof,
+            eol: self.eol,
         }
     }
 }
 
-impl Dest<Cow<'_, str>> {
-    pub fn into_owned(self) -> Dest<String> {
+impl_into_owned!(Dest);
+
+impl<S: AsRef<str>> Dest<S> {
+    pub fn borrow_text(&self) -> Dest<&str> {
         Dest {
-            name: self.name.into_owned(),
+            name: self.name.as_ref().map(AsRef::as_ref),
+            column: self.column,
+            line: self.line,
+            eof: self.eof,
+            eol: self.eol,
+        }
+    }
+}
+
+impl_partial_eq!(Dest);
+
+impl<S> From<Option<S>> for Dest<S> {
+    fn from(name: Option<S>) -> Self {
+        Self {
+            name,
+            column: None,
+            line: None,
+            eof: false,
+            eol: false,
+        }
+    }
+}
+
+impl<S: AsRef<str>> From<S> for Dest<S> {
+    fn from(name: S) -> Self {
+        if name.as_ref().is_empty() {
+            Self::from(None)
+        } else {
+            Self::from(Some(name))
         }
     }
 }
@@ -30,9 +84,24 @@ where
 {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
+        let mut scanner = scanner.with_keywords::<DestKeyword>();
+        let name = scanner.next()?;
+        let column = scanner
+            .next_or("x")?
+            .expect_number()?
+            .and_then(NonZero::new);
+        let line = scanner
+            .next_or("y")?
+            .expect_number()?
+            .and_then(NonZero::new);
+        let keywords = scanner.into_keywords();
         Ok(Self {
-            name: scanner.next()?.expect_some("name")?,
+            name,
+            column,
+            line,
+            eof: keywords.contains(DestKeyword::Eof),
+            eol: keywords.contains(DestKeyword::Eol),
         })
     }
 }

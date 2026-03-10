@@ -77,7 +77,7 @@ pub(crate) struct Span {
     pub(super) action: Option<mxp::Link>,
     pub(super) heading: Option<Heading>,
     pub(super) gag: bool,
-    pub(super) window: Option<ByteString>,
+    pub(super) window: Option<mxp::Dest<ByteString>>,
     pub(super) entity: Option<EntitySetter>,
 }
 
@@ -262,12 +262,13 @@ impl SpanList {
         set_prop!(self, gag);
     }
 
-    pub fn set_window(&mut self, window: &str) -> bool {
-        set_string_prop!(self, window);
+    pub fn set_window<S: AsRef<str>>(&mut self, window: mxp::Dest<S>) -> bool {
+        let window = window.map_text(|text| share_string(&mut self.buf, text));
+        set_opt_prop!(self, window);
     }
 }
 
-fn share_string(buf: &mut ByteStringMut, s: &str) -> ByteString {
-    buf.push_str(s);
+fn share_string<S: AsRef<str>>(buf: &mut ByteStringMut, s: S) -> ByteString {
+    buf.push_str(s.as_ref());
     buf.split().freeze()
 }
