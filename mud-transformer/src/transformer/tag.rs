@@ -9,38 +9,6 @@ pub(crate) struct Tag {
     pub span_index: usize,
 }
 
-impl Tag {
-    pub fn new(
-        component: mxp::ElementComponent,
-        secure: bool,
-        span_index: usize,
-    ) -> mxp::Result<Self> {
-        let name = component.name().to_owned();
-        if !component.is_open() && !secure {
-            return Err(mxp::Error::new(name, mxp::ErrorKind::ElementWhenNotSecure));
-        }
-        Ok(Self {
-            name,
-            secure,
-            span_index,
-        })
-    }
-
-    pub fn parse_closing_tag(tag_body: &str) -> mxp::Result<&str> {
-        let mut words = mxp::Words::new(tag_body);
-        let name = words.validate_next_or(mxp::ErrorKind::InvalidElementName)?;
-
-        if words.next().is_some() {
-            return Err(mxp::Error::new(
-                tag_body,
-                mxp::ErrorKind::ArgumentsToClosingTag,
-            ));
-        }
-
-        Ok(name)
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct TagList {
     inner: Vec<Tag>,
