@@ -14,25 +14,20 @@ pub struct Filter<S = String> {
     pub name: S,
 }
 
-impl Filter<&str> {
-    pub fn into_owned(self) -> Filter<String> {
+impl<S> Filter<S> {
+    pub fn map_text<T, F>(self, mut f: F) -> Filter<T>
+    where
+        F: FnMut(S) -> T,
+    {
         Filter {
-            src: self.src.to_owned(),
-            dest: self.dest.to_owned(),
-            name: self.name.to_owned(),
+            src: f(self.src),
+            dest: f(self.dest),
+            name: f(self.name),
         }
     }
 }
 
-impl Filter<Cow<'_, str>> {
-    pub fn into_owned(self) -> Filter<String> {
-        Filter {
-            src: self.src.into_owned(),
-            dest: self.dest.into_owned(),
-            name: self.name.into_owned(),
-        }
-    }
-}
+impl_into_owned!(Filter);
 
 impl<'a, D> TryFrom<Scan<'a, D>> for Filter<Cow<'a, str>>
 where

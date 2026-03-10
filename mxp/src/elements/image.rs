@@ -35,12 +35,15 @@ pub struct Image<S = String> {
     pub is_map: bool,
 }
 
-impl Image<&str> {
-    pub fn into_owned(self) -> Image<String> {
+impl<S> Image<S> {
+    pub fn map_text<T, F>(self, mut f: F) -> Image<T>
+    where
+        F: FnMut(S) -> T,
+    {
         Image {
-            fname: self.fname.map(ToOwned::to_owned),
-            url: self.url.map(ToOwned::to_owned),
-            class: self.class.map(ToOwned::to_owned),
+            fname: self.fname.map(&mut f),
+            url: self.url.map(&mut f),
+            class: self.class.map(f),
             height: self.height,
             width: self.width,
             hspace: self.hspace,
@@ -51,21 +54,7 @@ impl Image<&str> {
     }
 }
 
-impl Image<Cow<'_, str>> {
-    pub fn into_owned(self) -> Image<String> {
-        Image {
-            fname: self.fname.map(Cow::into_owned),
-            url: self.url.map(Cow::into_owned),
-            class: self.class.map(Cow::into_owned),
-            height: self.height,
-            width: self.width,
-            hspace: self.hspace,
-            vspace: self.vspace,
-            align: self.align,
-            is_map: self.is_map,
-        }
-    }
-}
+impl_into_owned!(Image);
 
 impl<'a, D> TryFrom<Scan<'a, D>> for Image<Cow<'a, str>>
 where

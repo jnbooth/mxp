@@ -1,3 +1,19 @@
+macro_rules! impl_into_owned {
+    ($t:ident) => {
+        impl $t<&str> {
+            pub fn into_owned(self) -> $t<String> {
+                self.map_text(ToOwned::to_owned)
+            }
+        }
+
+        impl $t<std::borrow::Cow<'_, str>> {
+            pub fn into_owned(self) -> $t<String> {
+                self.map_text(Cow::into_owned)
+            }
+        }
+    };
+}
+
 mod color;
 pub use color::Color;
 

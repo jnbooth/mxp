@@ -160,31 +160,23 @@ impl<S: AsRef<str>> Sound<S> {
     }
 }
 
-impl Sound<&str> {
-    pub fn into_owned(self) -> Sound<String> {
+impl<S> Sound<S> {
+    pub fn map_text<T, F>(self, mut f: F) -> Sound<T>
+    where
+        F: FnMut(S) -> T,
+    {
         Sound {
-            fname: self.fname.to_owned(),
+            fname: f(self.fname),
             volume: self.volume,
             repeats: self.repeats,
-            class: self.class.map(ToOwned::to_owned),
-            url: self.url.map(ToOwned::to_owned),
+            class: self.class.map(&mut f),
+            url: self.url.map(f),
             priority: self.priority,
         }
     }
 }
 
-impl Sound<Cow<'_, str>> {
-    pub fn into_owned(self) -> Sound<String> {
-        Sound {
-            fname: self.fname.into_owned(),
-            volume: self.volume,
-            repeats: self.repeats,
-            class: self.class.map(Cow::into_owned),
-            url: self.url.map(Cow::into_owned),
-            priority: self.priority,
-        }
-    }
-}
+impl_into_owned!(Sound);
 
 impl<'a, D> TryFrom<Scan<'a, D>> for Sound<Cow<'a, str>>
 where
@@ -242,31 +234,23 @@ impl<S: AsRef<str>> Music<S> {
     }
 }
 
-impl Music<&str> {
-    pub fn into_owned(self) -> Music<String> {
+impl<S> Music<S> {
+    pub fn map_text<T, F>(self, mut f: F) -> Music<T>
+    where
+        F: FnMut(S) -> T,
+    {
         Music {
-            fname: self.fname.to_owned(),
+            fname: f(self.fname),
             volume: self.volume,
             repeats: self.repeats,
-            class: self.class.map(ToOwned::to_owned),
-            url: self.url.map(ToOwned::to_owned),
+            class: self.class.map(&mut f),
+            url: self.url.map(f),
             continuation: self.continuation,
         }
     }
 }
 
-impl Music<Cow<'_, str>> {
-    pub fn into_owned(self) -> Music<String> {
-        Music {
-            fname: self.fname.into_owned(),
-            volume: self.volume,
-            repeats: self.repeats,
-            class: self.class.map(Cow::into_owned),
-            url: self.url.map(Cow::into_owned),
-            continuation: self.continuation,
-        }
-    }
-}
+impl_into_owned!(Music);
 
 impl<'a, D> TryFrom<Scan<'a, D>> for Music<Cow<'a, str>>
 where

@@ -12,23 +12,19 @@ pub struct Var<S = String> {
     pub keywords: FlagSet<EntityKeyword>,
 }
 
-impl Var<&str> {
-    pub fn into_owned(self) -> Var<String> {
+impl<S> Var<S> {
+    pub fn map_text<T, F>(self, f: F) -> Var<T>
+    where
+        F: FnOnce(S) -> T,
+    {
         Var {
-            variable: self.variable.to_owned(),
+            variable: f(self.variable),
             keywords: self.keywords,
         }
     }
 }
 
-impl Var<Cow<'_, str>> {
-    pub fn into_owned(self) -> Var<String> {
-        Var {
-            variable: self.variable.into_owned(),
-            keywords: self.keywords,
-        }
-    }
-}
+impl_into_owned!(Var);
 
 impl<'a, D> TryFrom<Scan<'a, D>> for Var<Cow<'a, str>>
 where

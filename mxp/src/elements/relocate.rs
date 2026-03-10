@@ -14,23 +14,19 @@ pub struct Relocate<S = String> {
     pub port: u16,
 }
 
-impl Relocate<&str> {
-    pub fn into_owned(self) -> Relocate<String> {
+impl<S> Relocate<S> {
+    pub fn map_text<T, F>(self, f: F) -> Relocate<T>
+    where
+        F: FnOnce(S) -> T,
+    {
         Relocate {
-            hostname: self.hostname.to_owned(),
+            hostname: f(self.hostname),
             port: self.port,
         }
     }
 }
 
-impl Relocate<Cow<'_, str>> {
-    pub fn into_owned(self) -> Relocate<String> {
-        Relocate {
-            hostname: self.hostname.into_owned(),
-            port: self.port,
-        }
-    }
-}
+impl_into_owned!(Relocate);
 
 impl<'a, D> TryFrom<Scan<'a, D>> for Relocate<Cow<'a, str>>
 where

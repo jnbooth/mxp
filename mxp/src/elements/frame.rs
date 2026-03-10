@@ -90,31 +90,22 @@ impl<S> Frame<S> {
     pub fn title(&self) -> &S {
         self.title.as_ref().unwrap_or(&self.name)
     }
-}
 
-impl Frame<&str> {
-    pub fn into_owned(self) -> Frame<String> {
+    pub fn map_text<T, F>(self, mut f: F) -> Frame<T>
+    where
+        F: FnMut(S) -> T,
+    {
         Frame {
-            name: self.name.to_owned(),
+            name: f(self.name),
             action: self.action,
-            title: self.title.map(ToOwned::to_owned),
+            title: self.title.map(f),
             layout: self.layout,
             scrolling: self.scrolling,
         }
     }
 }
 
-impl Frame<Cow<'_, str>> {
-    pub fn into_owned(self) -> Frame<String> {
-        Frame {
-            name: self.name.into_owned(),
-            action: self.action,
-            title: self.title.map(Cow::into_owned),
-            layout: self.layout,
-            scrolling: self.scrolling,
-        }
-    }
-}
+impl_into_owned!(Frame);
 
 impl<'a, D> TryFrom<Scan<'a, D>> for Frame<Cow<'a, str>>
 where

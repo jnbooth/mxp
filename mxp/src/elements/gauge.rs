@@ -19,27 +19,21 @@ pub struct Gauge<S = String> {
     pub color: Option<RgbColor>,
 }
 
-impl Gauge<&str> {
-    pub fn into_owned(self) -> Gauge<String> {
+impl<S> Gauge<S> {
+    pub fn map_text<T, F>(self, mut f: F) -> Gauge<T>
+    where
+        F: FnMut(S) -> T,
+    {
         Gauge {
-            entity: self.entity.to_owned(),
-            max: self.max.map(ToOwned::to_owned),
-            caption: self.caption.map(ToOwned::to_owned),
+            entity: f(self.entity),
+            max: self.max.map(&mut f),
+            caption: self.caption.map(f),
             color: self.color,
         }
     }
 }
 
-impl Gauge<Cow<'_, str>> {
-    pub fn into_owned(self) -> Gauge<String> {
-        Gauge {
-            entity: self.entity.into_owned(),
-            max: self.max.map(Cow::into_owned),
-            caption: self.caption.map(Cow::into_owned),
-            color: self.color,
-        }
-    }
-}
+impl_into_owned!(Gauge);
 
 impl<'a, D> TryFrom<Scan<'a, D>> for Gauge<Cow<'a, str>>
 where

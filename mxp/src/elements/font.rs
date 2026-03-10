@@ -80,31 +80,23 @@ pub struct Font<S = String> {
     pub back: Option<RgbColor>,
 }
 
-impl Font<&str> {
-    pub fn into_owned(self) -> Font<String> {
+impl<S> Font<S> {
+    pub fn map_text<T, F>(self, mut f: F) -> Font<T>
+    where
+        F: FnMut(S) -> T,
+    {
         Font {
-            face: self.face.map(ToOwned::to_owned),
+            face: self.face.map(&mut f),
             size: self.size,
             color: self.color.map(|color| FgColor {
-                inner: color.inner.to_owned(),
+                inner: f(color.inner),
             }),
             back: self.back,
         }
     }
 }
 
-impl Font<Cow<'_, str>> {
-    pub fn into_owned(self) -> Font<String> {
-        Font {
-            face: self.face.map(Cow::into_owned),
-            size: self.size,
-            color: self.color.map(|color| FgColor {
-                inner: color.inner.into_owned(),
-            }),
-            back: self.back,
-        }
-    }
-}
+impl_into_owned!(Font);
 
 impl<'a, D> TryFrom<Scan<'a, D>> for Font<Cow<'a, str>>
 where

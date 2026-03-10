@@ -5,18 +5,15 @@ pub struct StyleVersion<S = String> {
     pub styleversion: S,
 }
 
-impl StyleVersion<&str> {
-    pub fn into_owned(self) -> StyleVersion<String> {
+impl<S> StyleVersion<S> {
+    pub fn map_text<T, F>(self, f: F) -> StyleVersion<T>
+    where
+        F: FnOnce(S) -> T,
+    {
         StyleVersion {
-            styleversion: self.styleversion.to_owned(),
+            styleversion: f(self.styleversion),
         }
     }
 }
 
-impl StyleVersion<Cow<'_, str>> {
-    pub fn into_owned(self) -> StyleVersion<String> {
-        StyleVersion {
-            styleversion: self.styleversion.into_owned(),
-        }
-    }
-}
+impl_into_owned!(StyleVersion);

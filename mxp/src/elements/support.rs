@@ -8,21 +8,18 @@ pub struct Support<S = String> {
     pub questions: Vec<S>,
 }
 
-impl Support<&str> {
-    pub fn into_owned(self) -> Support<String> {
+impl<S> Support<S> {
+    pub fn map_text<T, F>(self, f: F) -> Support<T>
+    where
+        F: FnMut(S) -> T,
+    {
         Support {
-            questions: self.questions.into_iter().map(ToOwned::to_owned).collect(),
+            questions: self.questions.into_iter().map(f).collect(),
         }
     }
 }
 
-impl Support<Cow<'_, str>> {
-    pub fn into_owned(self) -> Support<String> {
-        Support {
-            questions: self.questions.into_iter().map(Cow::into_owned).collect(),
-        }
-    }
-}
+impl_into_owned!(Support);
 
 impl<'a, D> TryFrom<Scan<'a, D>> for Support<Cow<'a, str>>
 where

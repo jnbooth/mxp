@@ -16,25 +16,20 @@ pub struct Stat<S = String> {
     pub caption: Option<S>,
 }
 
-impl Stat<&str> {
-    pub fn into_owned(self) -> Stat<String> {
+impl<S> Stat<S> {
+    pub fn map_text<T, F>(self, mut f: F) -> Stat<T>
+    where
+        F: FnMut(S) -> T,
+    {
         Stat {
-            entity: self.entity.to_owned(),
-            max: self.max.map(ToOwned::to_owned),
-            caption: self.caption.map(ToOwned::to_owned),
+            entity: f(self.entity),
+            max: self.max.map(&mut f),
+            caption: self.caption.map(f),
         }
     }
 }
 
-impl Stat<Cow<'_, str>> {
-    pub fn into_owned(self) -> Stat<String> {
-        Stat {
-            entity: self.entity.into_owned(),
-            max: self.max.map(Cow::into_owned),
-            caption: self.caption.map(Cow::into_owned),
-        }
-    }
-}
+impl_into_owned!(Stat);
 
 impl<'a, D> TryFrom<Scan<'a, D>> for Stat<Cow<'a, str>>
 where
