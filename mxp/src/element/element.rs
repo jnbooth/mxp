@@ -129,7 +129,15 @@ impl<'a> CollectedElement<'a> {
 
         match tag {
             b'!' => Ok(Self::Definition(CollectedDefinition::from_str(&text[1..])?)),
-            b'/' => Ok(Self::TagClose(&text[1..])),
+            b'/' => {
+                let body = &text[1..];
+                let mut words = Words::new(body);
+                let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
+                if words.next().is_some() {
+                    return Err(Error::new(body, ErrorKind::ArgumentsToClosingTag));
+                }
+                Ok(Self::TagClose(name))
+            }
             _ => Ok(Self::TagOpen(text)),
         }
     }
@@ -272,6 +280,31 @@ impl Element {
             gag: false,
             window: None,
         }))
+    }
+
+    pub(crate) fn well_known() -> [(String, Element); 8] {
+        fn color_el(name: &'static str, hex: u32) -> (String, Element) {
+            (
+                name.to_owned(),
+                Element {
+                    name: name.to_owned(),
+                    open: true,
+                    fore: hex.try_into().ok(),
+                    ..Default::default()
+                },
+            )
+        }
+
+        [
+            color_el("BlackMXP", 0x000000),
+            color_el("RedMXP", 0xFF0000),
+            color_el("GreenMXP", 0x008000),
+            color_el("YellowMXP", 0xFFFF00),
+            color_el("BlueMXP", 0x0000FF),
+            color_el("MagentaMXP", 0xFF00FF),
+            color_el("CyanMXP", 0x00FFFF),
+            color_el("WhiteMXP", 0xFFFFFF),
+        ]
     }
 
     fn parse_items(argument: Option<&str>) -> crate::Result<Vec<ElementItem<'static>>> {

@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 
-use super::element_map::ElementMap;
 use crate::argument::{Decoder, ExpectArg};
+use crate::collections::CaseFoldMap;
 use crate::color::RgbColor;
 use crate::element::{Element, Mode};
 use crate::keyword::LineTagKeyword;
@@ -50,7 +50,7 @@ impl LineTags {
         self.inner.clear();
     }
 
-    pub fn get<'a>(&self, mode: usize, elements: &'a ElementMap) -> Option<&'a Element> {
+    pub fn get<'a>(&self, mode: usize, elements: &'a CaseFoldMap<Element>) -> Option<&'a Element> {
         let i = mode.checked_sub(OFFSET)?;
         let tag = self.inner.get(i)?;
         if !tag.enabled {
@@ -74,7 +74,7 @@ impl LineTags {
     pub fn update<'a>(
         &mut self,
         update: LineTagUpdate,
-        elements: &'a mut ElementMap,
+        elements: &'a mut CaseFoldMap<Element>,
     ) -> Option<&'a mut Element> {
         let i = usize::from(update.index).checked_sub(OFFSET)?;
         let tag = self.inner.get_mut(i)?;

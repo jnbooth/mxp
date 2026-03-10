@@ -5,7 +5,7 @@ mod argument;
 pub use argument::Arguments;
 
 mod collections;
-pub use collections::{DecodeElement, ElementComponent, State};
+pub use collections::{Component, DecodeElement, State};
 
 mod color;
 pub use color::{HexOutOfRangeError, NamedColorIter, ParseHexColorError, RgbColor};

@@ -318,12 +318,12 @@ impl Transformer {
         let args = words.parse_args()?;
 
         match component {
-            mxp::ElementComponent::Tag(tag) => {
+            mxp::Component::Tag(tag) => {
                 self.mxp_open_tag(mxp_state.decode_tag(tag, &args)?, mxp_state);
                 Ok(())
             }
 
-            mxp::ElementComponent::Element(el) => {
+            mxp::Component::Element(el) => {
                 if let Some(variable) = &el.variable {
                     self.output.set_mxp_entity(EntitySetter {
                         name: variable.clone(),

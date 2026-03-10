@@ -1,10 +1,7 @@
 mod case_fold_map;
 pub(crate) use case_fold_map::CaseFoldMap;
 
-mod element_map;
-pub use element_map::ElementComponent;
-
 mod line_tags;
 
 mod state;
-pub use state::{DecodeElement, State};
+pub use state::{Component, DecodeElement, State};
