@@ -17,6 +17,7 @@ pub struct Stat<S = String> {
 }
 
 impl<S> Stat<S> {
+    /// Applies a type transformation to the text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Stat<T>
     where
         F: FnMut(S) -> T,
@@ -32,6 +33,7 @@ impl<S> Stat<S> {
 impl_into_owned!(Stat);
 
 impl<S: AsRef<str>> Stat<S> {
+    /// Returns a new struct that borrows text from this one.
     pub fn borrow_text(&self) -> Stat<&str> {
         Stat {
             entity: self.entity.as_ref(),

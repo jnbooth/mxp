@@ -26,6 +26,7 @@ pub struct Dest<S = String> {
 }
 
 impl<S> Dest<S> {
+    /// Applies a type transformation to the text, returning a new struct.
     pub fn map_text<T, F>(self, f: F) -> Dest<T>
     where
         F: FnOnce(S) -> T,
@@ -43,6 +44,7 @@ impl<S> Dest<S> {
 impl_into_owned!(Dest);
 
 impl<S: AsRef<str>> Dest<S> {
+    /// Returns a new struct that borrows text from this one.
     pub fn borrow_text(&self) -> Dest<&str> {
         Dest {
             name: self.name.as_ref().map(AsRef::as_ref),

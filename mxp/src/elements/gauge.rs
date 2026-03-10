@@ -20,6 +20,7 @@ pub struct Gauge<S = String> {
 }
 
 impl<S> Gauge<S> {
+    /// Applies a type transformation to the text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Gauge<T>
     where
         F: FnMut(S) -> T,
@@ -36,6 +37,7 @@ impl<S> Gauge<S> {
 impl_into_owned!(Gauge);
 
 impl<S: AsRef<str>> Gauge<S> {
+    /// Returns a new struct that borrows text from this one.
     pub fn borrow_text(&self) -> Gauge<&str> {
         Gauge {
             entity: self.entity.as_ref(),

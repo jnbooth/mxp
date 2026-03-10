@@ -9,6 +9,7 @@ pub struct Support<S = String> {
 }
 
 impl<S> Support<S> {
+    /// Applies a type transformation to the text, returning a new struct.
     pub fn map_text<T, F>(self, f: F) -> Support<T>
     where
         F: FnMut(S) -> T,

@@ -11,6 +11,7 @@ pub struct Expire<S = String> {
 }
 
 impl<S> Expire<S> {
+    /// Applies a type transformation to the text, returning a new struct.
     pub fn map_text<T, F>(self, f: F) -> Expire<T>
     where
         F: FnOnce(S) -> T,
@@ -24,6 +25,7 @@ impl<S> Expire<S> {
 impl_into_owned!(Expire);
 
 impl<S: AsRef<str>> Expire<S> {
+    /// Returns a new struct that borrows text from this one.
     pub fn borrow_text(&self) -> Expire<&str> {
         Expire {
             name: self.name.as_ref().map(AsRef::as_ref),

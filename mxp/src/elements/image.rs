@@ -36,6 +36,7 @@ pub struct Image<S = String> {
 }
 
 impl<S> Image<S> {
+    /// Applies a type transformation to the text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Image<T>
     where
         F: FnMut(S) -> T,
@@ -57,6 +58,7 @@ impl<S> Image<S> {
 impl_into_owned!(Image);
 
 impl<S: AsRef<str>> Image<S> {
+    /// Returns a new struct that borrows text from this one.
     pub fn borrow_text(&self) -> Image<&str> {
         Image {
             fname: self.fname.as_ref().map(AsRef::as_ref),

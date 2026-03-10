@@ -15,6 +15,7 @@ pub struct Filter<S = String> {
 }
 
 impl<S> Filter<S> {
+    /// Applies a type transformation to the text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Filter<T>
     where
         F: FnMut(S) -> T,
@@ -30,6 +31,7 @@ impl<S> Filter<S> {
 impl_into_owned!(Filter);
 
 impl<S: AsRef<str>> Filter<S> {
+    /// Returns a new struct that borrows text from this one.
     pub fn borrow_text(&self) -> Filter<&str> {
         Filter {
             src: self.src.as_ref(),

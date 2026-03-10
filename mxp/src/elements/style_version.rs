@@ -6,6 +6,7 @@ pub struct StyleVersion<S = String> {
 }
 
 impl<S> StyleVersion<S> {
+    /// Applies a type transformation to the text, returning a new struct.
     pub fn map_text<T, F>(self, f: F) -> StyleVersion<T>
     where
         F: FnOnce(S) -> T,
@@ -19,6 +20,7 @@ impl<S> StyleVersion<S> {
 impl_into_owned!(StyleVersion);
 
 impl<S: AsRef<str>> StyleVersion<S> {
+    /// Returns a new struct that borrows text from this one.
     pub fn borrow_text(&self) -> StyleVersion<&str> {
         StyleVersion {
             styleversion: self.styleversion.as_ref(),

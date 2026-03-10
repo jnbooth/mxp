@@ -91,6 +91,7 @@ impl<S> Frame<S> {
         self.title.as_ref().unwrap_or(&self.name)
     }
 
+    /// Applies a type transformation to the text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Frame<T>
     where
         F: FnMut(S) -> T,
@@ -108,6 +109,7 @@ impl<S> Frame<S> {
 impl_into_owned!(Frame);
 
 impl<S: AsRef<str>> Frame<S> {
+    /// Returns a new struct that borrows text from this one.
     pub fn borrow_text(&self) -> Frame<&str> {
         Frame {
             name: self.name.as_ref(),

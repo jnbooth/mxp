@@ -13,6 +13,7 @@ pub struct Var<S = String> {
 }
 
 impl<S> Var<S> {
+    /// Applies a type transformation to the text, returning a new struct.
     pub fn map_text<T, F>(self, f: F) -> Var<T>
     where
         F: FnOnce(S) -> T,
@@ -27,6 +28,7 @@ impl<S> Var<S> {
 impl_into_owned!(Var);
 
 impl<S: AsRef<str>> Var<S> {
+    /// Returns a new struct that borrows text from this one.
     pub fn borrow_text(&self) -> Var<&str> {
         Var {
             variable: self.variable.as_ref(),

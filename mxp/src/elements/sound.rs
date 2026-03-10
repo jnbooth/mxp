@@ -161,6 +161,7 @@ impl<S: AsRef<str>> Sound<S> {
 }
 
 impl<S> Sound<S> {
+    /// Applies a type transformation to the text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Sound<T>
     where
         F: FnMut(S) -> T,
@@ -179,6 +180,7 @@ impl<S> Sound<S> {
 impl_into_owned!(Sound);
 
 impl<S: AsRef<str>> Sound<S> {
+    /// Returns a new struct that borrows text from this one.
     pub fn borrow_text(&self) -> Sound<&str> {
         Sound {
             fname: self.fname.as_ref(),
@@ -250,6 +252,7 @@ impl<S: AsRef<str>> Music<S> {
 }
 
 impl<S> Music<S> {
+    /// Applies a type transformation to the text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Music<T>
     where
         F: FnMut(S) -> T,
@@ -268,6 +271,7 @@ impl<S> Music<S> {
 impl_into_owned!(Music);
 
 impl<S: AsRef<str>> Music<S> {
+    /// Returns a new struct that borrows text from this one.
     pub fn borrow_text(&self) -> Music<&str> {
         Music {
             fname: self.fname.as_ref(),

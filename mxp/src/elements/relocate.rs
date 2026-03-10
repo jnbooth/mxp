@@ -15,6 +15,7 @@ pub struct Relocate<S = String> {
 }
 
 impl<S> Relocate<S> {
+    /// Applies a type transformation to the text, returning a new struct.
     pub fn map_text<T, F>(self, f: F) -> Relocate<T>
     where
         F: FnOnce(S) -> T,
@@ -29,6 +30,7 @@ impl<S> Relocate<S> {
 impl_into_owned!(Relocate);
 
 impl<S: AsRef<str>> Relocate<S> {
+    /// Returns a new struct that borrows text from this one.
     pub fn borrow_text(&self) -> Relocate<&str> {
         Relocate {
             hostname: self.hostname.as_ref(),
