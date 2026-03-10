@@ -2,7 +2,7 @@ use std::{cmp, fmt};
 
 use flagset::FlagSet;
 
-use super::element::ParseAs;
+use crate::element::ParseAs;
 use crate::keyword::MxpKeyword;
 
 /// Mode defined by a line tag.

@@ -25,9 +25,6 @@ pub use image::Image;
 mod link;
 pub use link::{Link, LinkPrompt, SendTo};
 
-mod mode;
-pub use mode::{Mode, ModeRangeError, ModeState};
-
 mod relocate;
 pub use relocate::Relocate;
 

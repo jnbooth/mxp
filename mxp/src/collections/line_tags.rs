@@ -3,8 +3,9 @@ use std::borrow::Cow;
 use crate::argument::{Decoder, ExpectArg};
 use crate::collections::CaseFoldMap;
 use crate::color::RgbColor;
-use crate::element::{Element, Mode};
+use crate::element::Element;
 use crate::keyword::LineTagKeyword;
+use crate::mode::Mode;
 use crate::parser::{Error, ErrorKind, Words};
 
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -5,12 +5,12 @@ use std::slice;
 use std::str::FromStr;
 
 use super::action::Action;
-use super::mode::Mode;
 use super::tag::Tag;
 use crate::argument::{Arguments, Decoder, KeywordFilter};
 use crate::color::RgbColor;
 use crate::entity::DecodedEntity;
 use crate::keyword::ElementKeyword;
+use crate::mode::Mode;
 use crate::parser::{Error, ErrorKind, StringVariant, UnrecognizedVariant, Words};
 
 /// List of arguments to an MXP tag.

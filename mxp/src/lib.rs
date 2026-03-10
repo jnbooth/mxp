@@ -23,6 +23,9 @@ pub mod escape;
 mod keyword;
 pub use keyword::{EntityKeyword, MxpKeyword};
 
+mod mode;
+pub use mode::{Mode, ModeRangeError, ModeState};
+
 mod parser;
 pub use parser::{Error, ErrorKind, ParseErrorTarget, Words, is_valid, validate};
 

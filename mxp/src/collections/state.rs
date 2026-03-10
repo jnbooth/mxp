@@ -5,9 +5,10 @@ use crate::argument::KeywordFilter;
 use crate::argument::{Arguments, Decoder};
 use crate::collections::CaseFoldMap;
 use crate::element::{
-    Action, CollectedDefinition, DecodeElement, DefinitionKind, Element, ElementCommand, Mode, Tag,
+    Action, CollectedDefinition, DecodeElement, DefinitionKind, Element, ElementCommand, Tag,
 };
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
+use crate::mode::Mode;
 use crate::parser::{Error, ErrorKind, Words};
 use crate::validate;
 
