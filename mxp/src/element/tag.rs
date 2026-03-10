@@ -1,5 +1,9 @@
+use std::borrow::Cow;
+
 use super::action::ActionKind;
+use crate::argument::{Arguments, Decoder};
 use crate::case_insensitive::to_ascii_lowercase;
+use crate::element::Action;
 
 /// Atomic MXP tags, such as `<A>`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -30,6 +34,14 @@ macro_rules! tag {
 }
 
 impl Tag {
+    pub fn decode<'a, D: Decoder>(
+        &self,
+        args: &'a Arguments<'a>,
+        decoder: D,
+    ) -> crate::Result<Action<Cow<'a, str>>> {
+        Action::decode(self.action, args.scan(decoder))
+    }
+
     /// Returns `true` if this library's definition of the tag supports a specific argument.
     ///
     /// Case-insensitive.

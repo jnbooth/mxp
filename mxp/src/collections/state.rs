@@ -1,12 +1,11 @@
 use std::borrow::Cow;
-use std::iter::FusedIterator;
-use std::slice;
 
 use super::line_tags::{LineTagUpdate, LineTags};
-use crate::argument::{Arguments, Decoder, ElementDecoder};
+use crate::argument::KeywordFilter;
+use crate::argument::{Arguments, Decoder};
 use crate::collections::CaseFoldMap;
 use crate::element::{
-    Action, CollectedDefinition, DefinitionKind, Element, ElementCommand, ElementItem, Mode, Tag,
+    Action, CollectedDefinition, DecodeElement, DefinitionKind, Element, ElementCommand, Mode, Tag,
 };
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
 use crate::parser::{Error, ErrorKind, Words};
@@ -120,15 +119,8 @@ impl State {
         &'a self,
         element: &'a Element,
         args: &'a Arguments<'a>,
-    ) -> DecodeElement<'a, ElementDecoder<'a>> {
-        DecodeElement {
-            items: element.items.iter(),
-            decoder: ElementDecoder {
-                element,
-                args,
-                entities: &self.entities,
-            },
-        }
+    ) -> DecodeElement<'a, &'a State> {
+        element.decode(args, self)
     }
 
     /// Decodes the value of an entity.
@@ -144,7 +136,7 @@ impl State {
         tag: &Tag,
         args: &'a Arguments<'a>,
     ) -> crate::Result<Action<Cow<'a, str>>> {
-        Action::parse(tag.action, args.scan(&self.entities))
+        tag.decode(args, self)
     }
 
     /// Handles an MXP definition from the server, which may define an [attribute list], [element],
@@ -216,6 +208,15 @@ impl State {
     }
 }
 
+impl Decoder for State {
+    fn decode_entity<F: KeywordFilter>(
+        &self,
+        entity: &str,
+    ) -> crate::Result<Option<DecodedEntity<'_>>> {
+        self.decode_entity(entity)
+    }
+}
+
 /// This struct is created by [`State::get_component`]. See its documentation for more.
 #[derive(Copy, Clone, Debug)]
 pub enum Component<'a> {
@@ -263,39 +264,3 @@ impl Component<'_> {
         }
     }
 }
-
-/// This `struct` is created by [`State::decode_element`]. See its documentation for more.
-#[must_use = "iterators are lazy and do nothing unless consumed"]
-pub struct DecodeElement<'a, D> {
-    decoder: D,
-    items: slice::Iter<'a, ElementItem<'a>>,
-}
-
-impl<'a, D> Iterator for DecodeElement<'a, D>
-where
-    D: Decoder + Copy,
-{
-    type Item = crate::Result<Action<Cow<'a, str>>>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let item = self.items.next()?;
-        let scanner = item.arguments.scan(self.decoder);
-        Some(Action::parse(item.tag.action, scanner))
-    }
-
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let exact = self.len();
-        (exact, Some(exact))
-    }
-}
-
-impl<D> ExactSizeIterator for DecodeElement<'_, D>
-where
-    D: Decoder + Copy,
-{
-    fn len(&self) -> usize {
-        self.items.len()
-    }
-}
-
-impl<D> FusedIterator for DecodeElement<'_, D> where D: Decoder + Copy {}

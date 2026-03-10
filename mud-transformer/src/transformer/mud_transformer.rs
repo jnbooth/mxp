@@ -38,9 +38,7 @@ pub struct Transformer {
 
     mxp_active: bool,
     mxp_entity_string: Vec<u8>,
-    mxp_mode_default: mxp::Mode,
-    mxp_mode_previous: mxp::Mode,
-    mxp_mode: mxp::Mode,
+    mxp_mode: mxp::ModeState,
     mxp_quote_terminator: Option<NonZero<u8>>,
     mxp_state: StateLock,
     mxp_tags: TagList,
@@ -81,9 +79,7 @@ impl Transformer {
 
             in_paragraph: false,
             ignore_next_newline: false,
-            mxp_mode_default: mxp::Mode::OPEN,
-            mxp_mode: mxp::Mode::OPEN,
-            mxp_mode_previous: mxp::Mode::OPEN,
+            mxp_mode: mxp::ModeState::new(),
             mxp_quote_terminator: None,
             mxp_entity_string: Vec::new(),
             mxp_tags: TagList::new(),
@@ -237,9 +233,7 @@ impl Transformer {
             return;
         }
         self.output.append(TelnetFragment::Mxp { enabled: true });
-        self.mxp_active = true;
-        self.mxp_mode_default = mxp::Mode::OPEN;
-        self.mxp_mode = mxp::Mode::OPEN;
+        self.mxp_mode.set(mxp::Mode::OPEN);
         self.mxp_tags.clear();
         self.mxp_state.clear();
     }
@@ -270,12 +264,7 @@ impl Transformer {
     }
 
     fn mxp_collected_element(&mut self) -> mxp::Result<()> {
-        let secure = if self.mxp_mode == mxp::Mode::SECURE_ONCE {
-            self.mxp_mode = self.mxp_mode_previous;
-            true
-        } else {
-            self.mxp_mode.is_secure()
-        };
+        let secure = self.mxp_mode.use_secure();
 
         let text = self.take_mxp_string()?;
 
@@ -319,7 +308,7 @@ impl Transformer {
 
         match component {
             mxp::Component::Tag(tag) => {
-                self.mxp_open_tag(mxp_state.decode_tag(tag, &args)?, mxp_state);
+                self.mxp_open_tag(tag.decode(&args, mxp_state)?, mxp_state);
                 Ok(())
             }
 
@@ -368,7 +357,7 @@ impl Transformer {
         if let Some(window) = &el.window {
             self.output.set_mxp_window(window);
         }
-        for action in mxp_state.decode_element(el, args) {
+        for action in el.decode(args, mxp_state) {
             self.mxp_open_tag(action?, mxp_state);
         }
         if let Some(fore) = el.fore {
@@ -446,17 +435,11 @@ impl Transformer {
     }
 
     fn mxp_set_keywords(&mut self, keywords: FlagSet<mxp::MxpKeyword>) {
-        use mxp::{Mode, MxpKeyword};
+        use mxp::MxpKeyword;
         if keywords.contains(MxpKeyword::Off) {
             self.mxp_off(true);
         }
-        if keywords.contains(MxpKeyword::DefaultLocked) {
-            self.mxp_mode_default = Mode::LOCKED;
-        } else if keywords.contains(MxpKeyword::DefaultSecure) {
-            self.mxp_mode_default = Mode::SECURE;
-        } else if keywords.contains(MxpKeyword::DefaultOpen) {
-            self.mxp_mode_default = Mode::OPEN;
-        }
+        self.mxp_mode.apply_keywords(keywords);
 
         if keywords.contains(MxpKeyword::IgnoreNewlines) {
             self.in_paragraph = true;
@@ -485,29 +468,15 @@ impl Transformer {
     }
 
     fn mxp_mode_change(&mut self, newmode: Option<mxp::Mode>) {
-        let oldmode = self.mxp_mode;
-        let newmode = newmode.unwrap_or(self.mxp_mode_default);
-        let closing = oldmode.is_open() && !newmode.is_open();
-        if closing {
+        if self.mxp_mode.update(newmode) {
             let closed = self.mxp_tags.last_unsecure_index();
             self.mxp_close_tags_from(closed);
         }
-        match newmode {
-            mxp::Mode::OPEN | mxp::Mode::SECURE | mxp::Mode::LOCKED => {
-                self.mxp_mode_default = mxp::Mode::OPEN;
-            }
-            mxp::Mode::SECURE_ONCE => self.mxp_mode_previous = self.mxp_mode,
-            mxp::Mode::PERM_OPEN | mxp::Mode::PERM_SECURE | mxp::Mode::PERM_LOCKED => {
-                self.mxp_mode_default = newmode;
-            }
-            _ => (),
-        }
-        self.mxp_mode = newmode;
-        if !newmode.is_user_defined() {
+        if !self.mxp_mode.is_user_defined() {
             return;
         }
         let mxp_state = self.mxp_state.take();
-        if let Some(element) = mxp_state.get_line_tag(newmode)
+        if let Some(element) = mxp_state.get_line_tag(self.mxp_mode.get())
             && let Err(e) = self.mxp_open_element(element, &mxp::Arguments::new(), &mxp_state)
         {
             self.handle_mxp_error(e);

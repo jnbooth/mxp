@@ -2,10 +2,10 @@
 mod case_insensitive;
 
 mod argument;
-pub use argument::Arguments;
+pub use argument::{Arguments, KeywordFilter, NoKeywords};
 
 mod collections;
-pub use collections::{Component, DecodeElement, State};
+pub use collections::{Component, State};
 
 mod color;
 pub use color::{HexOutOfRangeError, NamedColorIter, ParseHexColorError, RgbColor};
@@ -24,7 +24,7 @@ mod keyword;
 pub use keyword::{EntityKeyword, MxpKeyword};
 
 mod parser;
-pub use parser::{Error, ErrorKind, ParseErrorTarget, Words, validate};
+pub use parser::{Error, ErrorKind, ParseErrorTarget, Words, is_valid, validate};
 
 pub mod responses;
 

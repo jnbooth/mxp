@@ -9,20 +9,21 @@ use flagset::{FlagSet, Flags};
 
 use super::keyword_filter::{KeywordFilter, NoKeywords};
 use crate::collections::CaseFoldMap;
+use crate::entity::DecodedEntity;
 use crate::parser::{Error, ErrorKind};
 
 pub trait Decoder {
-    fn decode<'a, F>(&self, s: &'a str) -> crate::Result<Cow<'a, str>>
+    fn decode_entity<F>(&self, entity: &str) -> crate::Result<Option<DecodedEntity<'_>>>
     where
         F: KeywordFilter;
 }
 
 impl<D: Decoder> Decoder for &D {
-    fn decode<'a, F>(&self, s: &'a str) -> crate::Result<Cow<'a, str>>
+    fn decode_entity<F>(&self, entity: &str) -> crate::Result<Option<DecodedEntity<'_>>>
     where
         F: KeywordFilter,
     {
-        D::decode::<F>(self, s)
+        D::decode_entity::<F>(self, entity)
     }
 }
 
@@ -72,10 +73,32 @@ where
     where
         S: AsRef<str> + ?Sized,
     {
-        match s {
-            Some(s) => self.decoder.decode::<F>(s.as_ref()).map(Option::Some),
-            None => Ok(None),
+        let Some(s) = s else {
+            return Ok(None);
+        };
+        let mut s = s.as_ref();
+        let mut res = String::new();
+        while let Some(start) = s.find('&') {
+            if start > 0 {
+                res.push_str(&s[..start]);
+            }
+            s = &s[start..];
+            let end = s
+                .find(';')
+                .ok_or_else(|| Error::new(s, ErrorKind::NoClosingSemicolon))?;
+            match self.decoder.decode_entity::<F>(&s[1..end])? {
+                Some(decoded) => decoded.push_to(&mut res),
+                None => res.push_str(&s[..=end]),
+            }
+            s = &s[end + 1..];
         }
+        if res.is_empty() {
+            return Ok(Some(Cow::Borrowed(s)));
+        }
+        if !s.is_empty() {
+            res.push_str(s);
+        }
+        Ok(Some(Cow::Owned(res)))
     }
 
     pub fn len(&self) -> usize {

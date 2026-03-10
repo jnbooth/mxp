@@ -6,8 +6,8 @@ pub use bar::{Gauge, Stat};
 
 mod element;
 pub use element::{
-    CollectedDefinition, CollectedElement, DefinitionKind, Element, ElementCommand, ElementItem,
-    ParseAs,
+    CollectedDefinition, CollectedElement, DecodeElement, DefinitionKind, Element, ElementCommand,
+    ElementItem, ParseAs,
 };
 
 mod filter;
@@ -26,7 +26,7 @@ mod link;
 pub use link::{Link, LinkPrompt, SendTo};
 
 mod mode;
-pub use mode::{Mode, ModeRangeError};
+pub use mode::{Mode, ModeRangeError, ModeState};
 
 mod relocate;
 pub use relocate::Relocate;

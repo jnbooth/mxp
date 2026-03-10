@@ -1,11 +1,15 @@
 use std::borrow::Cow;
+use std::iter::FusedIterator;
 use std::num::NonZero;
+use std::slice;
 use std::str::FromStr;
 
+use super::action::Action;
 use super::mode::Mode;
 use super::tag::Tag;
-use crate::argument::{Arguments, Decoder};
+use crate::argument::{Arguments, Decoder, KeywordFilter};
 use crate::color::RgbColor;
+use crate::entity::DecodedEntity;
 use crate::keyword::ElementKeyword;
 use crate::parser::{Error, ErrorKind, StringVariant, UnrecognizedVariant, Words};
 
@@ -145,7 +149,7 @@ impl<'a> CollectedElement<'a> {
 
 /// The MUD server can tag a line to be parsed in a specific way by the client.
 ///
-/// See [MXP specification: MXP Line Tags](https://www.zuggsoft.com/zmud/mxp.htm#MXP%20Line%20Tags).
+/// See [MXP specification: Tag Properties](https://www.zuggsoft.com/zmud/mxp.htm#Tag%20Properties).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ParseAs {
     /// The text for the element is parsed by the automapper as the name of a room.
@@ -231,6 +235,20 @@ impl Element {
     /// Parses an element tag.
     pub fn collect(text: &str) -> crate::Result<CollectedElement<'_>> {
         CollectedElement::from_str(text)
+    }
+
+    pub fn decode<'a, D>(&'a self, args: &'a Arguments<'a>, decoder: D) -> DecodeElement<'a, D>
+    where
+        D: Decoder + Copy,
+    {
+        DecodeElement {
+            decoder: ElementDecoder {
+                element: self,
+                decoder,
+                args,
+            },
+            items: self.items.iter(),
+        }
     }
 
     /// Parses an MXP element from a definition, using the specified entity map for decoding.
@@ -347,3 +365,61 @@ impl Element {
         }
     }
 }
+
+#[derive(Copy, Clone, Debug)]
+struct ElementDecoder<'a, D: Decoder> {
+    decoder: D,
+    element: &'a Element,
+    args: &'a Arguments<'a>,
+}
+
+impl<D: Decoder> Decoder for ElementDecoder<'_, D> {
+    fn decode_entity<F: KeywordFilter>(
+        &self,
+        entity: &str,
+    ) -> crate::Result<Option<DecodedEntity<'_>>> {
+        if entity == "text" {
+            return Ok(None);
+        }
+        match self
+            .args
+            .find_from_attributes::<F>(entity, &self.element.attributes)
+        {
+            Some(attr) => Ok(Some(attr.into())),
+            None => self.decoder.decode_entity::<F>(entity),
+        }
+    }
+}
+
+/// This `struct` is created by [`State::decode_element`]. See its documentation for more.
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+pub struct DecodeElement<'a, D: Decoder> {
+    decoder: ElementDecoder<'a, D>,
+    items: slice::Iter<'a, ElementItem<'a>>,
+}
+
+impl<'a, D: Decoder + Copy> Iterator for DecodeElement<'a, D> {
+    type Item = crate::Result<Action<Cow<'a, str>>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let item = self.items.next()?;
+        let scanner = item.arguments.scan(self.decoder);
+        Some(Action::decode(item.tag.action, scanner))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let exact = self.len();
+        (exact, Some(exact))
+    }
+}
+
+impl<D> ExactSizeIterator for DecodeElement<'_, D>
+where
+    D: Decoder + Copy,
+{
+    fn len(&self) -> usize {
+        self.items.len()
+    }
+}
+
+impl<D> FusedIterator for DecodeElement<'_, D> where D: Decoder + Copy {}

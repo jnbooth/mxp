@@ -284,7 +284,7 @@ pub enum Action<S> {
 }
 
 impl<'a> Action<Cow<'a, str>> {
-    pub(crate) fn parse<D>(action: ActionKind, scanner: Scan<'a, D>) -> crate::Result<Self>
+    pub(crate) fn decode<D>(action: ActionKind, scanner: Scan<'a, D>) -> crate::Result<Self>
     where
         D: Decoder,
     {

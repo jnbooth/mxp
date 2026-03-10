@@ -3,10 +3,8 @@ pub mod args;
 mod arguments;
 pub use arguments::Arguments;
 
-mod decode;
-pub use decode::ElementDecoder;
-
 mod keyword_filter;
+pub use keyword_filter::{KeywordFilter, NoKeywords};
 
 mod scan;
 pub(crate) use scan::{Decoder, ExpectArg, Scan};

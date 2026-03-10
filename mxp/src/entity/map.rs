@@ -6,6 +6,7 @@ use flagset::FlagSet;
 use super::decoded::DecodedEntity;
 use super::entity::Entity;
 use super::iter::PublishedIter;
+use crate::argument::{Decoder, KeywordFilter};
 use crate::keyword::EntityKeyword;
 use crate::parser::{Error, ErrorKind};
 
@@ -386,6 +387,15 @@ impl EntityMap {
             return Err(crate::Error::new(name, ErrorKind::CannotRedefineEntity));
         }
         Ok(())
+    }
+}
+
+impl Decoder for EntityMap {
+    fn decode_entity<F: KeywordFilter>(
+        &self,
+        entity: &str,
+    ) -> crate::Result<Option<DecodedEntity<'_>>> {
+        EntityMap::decode(self, entity)
     }
 }
 
