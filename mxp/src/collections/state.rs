@@ -43,18 +43,16 @@ impl State {
         self.line_tags.clear();
     }
 
-    /// Returns `true` if the specified name belongs to a global entity as predefined by the MXP
-    /// protocol specifications.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let state = mxp::State::populated();
-    /// assert!(state.is_global_entity("lt"));
-    /// assert!(!state.is_global_entity("thomas"));
-    /// ```
-    pub fn is_global_entity(&self, key: &str) -> bool {
-        self.entities.is_global(key)
+    /// Alias for `self.entities().guard_global(name)`.
+    /// See [`EntityMap::guard_global`]
+    pub fn guard_global_entity(&self, name: &str) -> crate::Result<()> {
+        self.entities.guard_global(name)
+    }
+
+    /// Alias for `self.entities().is_global(name)`.
+    /// See [`EntityMap::is_global`].
+    pub fn is_global_entity(&self, name: &str) -> bool {
+        self.entities.is_global(name)
     }
 
     /// Borrows the map of defined MXP entities.

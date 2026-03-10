@@ -331,11 +331,8 @@ impl Transformer {
         keywords: FlagSet<mxp::EntityKeyword>,
         mxp_state: &mxp::State,
     ) {
-        if mxp_state.is_global_entity(&variable) {
-            self.handle_mxp_error(mxp::Error::new(
-                variable,
-                mxp::ErrorKind::CannotRedefineEntity,
-            ));
+        if let Err(e) = mxp_state.guard_global_entity(&variable) {
+            self.handle_mxp_error(e);
             return;
         }
         self.output.set_mxp_entity(EntitySetter {
@@ -375,20 +372,13 @@ impl Transformer {
         match action {
             Action::Bold => self.output.set_mxp_flag(TextStyle::Bold),
             Action::Br => self.output.start_line(),
-            Action::Color(color) => {
-                if let Some(fg) = color.fore {
-                    self.output.set_mxp_foreground(fg);
-                }
-                if let Some(bg) = color.back {
-                    self.output.set_mxp_background(bg);
-                }
-            }
+            Action::Color(color) => self.output.set_mxp_color(color),
             Action::Dest(dest) => self.output.set_mxp_window(&dest.name),
             Action::Expire(expire) => self
                 .output
-                .append(MxpFragment::ExpireLinks(expire.name.map(Cow::into_owned))),
+                .append(MxpFragment::ExpireLinks(expire.into_owned().name)),
             Action::Filter(filter) => self.output.append(filter.into_owned()),
-            Action::Font(font) => self.output.set_mxp_font(font.into_owned()),
+            Action::Font(font) => self.output.set_mxp_font(font),
             Action::Frame(frame) => self.output.append(frame.into_owned()),
             Action::Gauge(gauge) => self.output.append(gauge.into_owned()),
             Action::Heading(heading) => self.output.set_mxp_heading(heading),
@@ -396,7 +386,7 @@ impl Transformer {
             Action::Hr => self.output.append(OutputFragment::Hr),
             Action::Image(image) => self.output.append(image.into_owned()),
             Action::Italic => self.output.set_mxp_flag(TextStyle::Italic),
-            Action::Link(link) => self.output.set_mxp_action(link.clone()),
+            Action::Link(link) => self.output.set_mxp_action(link),
             Action::Music(music) => self.output.append(music.into_owned()),
             Action::MusicOff => self.output.append(MxpFragment::MusicOff),
             Action::Mxp(mxp) => self.mxp_set_keywords(mxp.keywords),

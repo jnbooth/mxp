@@ -181,6 +181,7 @@ impl EntityMap {
     ///
     /// let mut map = EntityMap::with_globals();
     /// assert!(map.is_global("lt"));
+    /// assert!(map.is_global("#031"));
     /// map.insert("HP".to_owned(), "150".to_owned());
     /// assert!(!map.is_global("HP"));
     /// ```
@@ -258,6 +259,25 @@ impl EntityMap {
             return None;
         }
         Some(entity.value.as_str())
+    }
+
+    /// Fails if `name` is a global entity, that is, if `self.is_global(name)`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::EntityMap;
+    ///
+    /// let map = EntityMap::with_globals();
+    /// assert!(map.guard_global("HP").is_ok());
+    /// assert!(map.guard_global("lt").is_err());
+    /// assert!(map.guard_global("#031").is_err());
+    /// ```
+    pub fn guard_global(&self, name: &str) -> crate::Result<()> {
+        if self.is_global(name) {
+            return Err(crate::Error::new(name, ErrorKind::CannotRedefineEntity));
+        }
+        Ok(())
     }
 
     /// Inserts a custom entity with the specified name and value. Returns `false` if the specified
@@ -380,13 +400,6 @@ impl EntityMap {
             return Some(global.into());
         }
         Some(self.inner.get(name)?.value.as_str().into())
-    }
-
-    fn guard_global(&self, name: &str) -> crate::Result<()> {
-        if self.is_global(name) {
-            return Err(crate::Error::new(name, ErrorKind::CannotRedefineEntity));
-        }
-        Ok(())
     }
 }
 

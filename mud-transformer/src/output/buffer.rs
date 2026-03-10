@@ -367,6 +367,22 @@ impl BufferedOutput {
         }
     }
 
+    pub fn set_mxp_color(&mut self, color: mxp::Color) {
+        let set_foreground = if let Some(fg) = color.fore {
+            self.spans.set_foreground(fg.into())
+        } else {
+            false
+        };
+        let set_background = if let Some(bg) = color.back {
+            self.spans.set_background(bg.into())
+        } else {
+            false
+        };
+        if set_foreground || set_background {
+            self.flush_mxp();
+        }
+    }
+
     pub fn set_mxp_foreground<C: Into<TermColor>>(&mut self, foreground: C) {
         if self.spans.set_foreground(foreground.into()) {
             self.flush_mxp();
@@ -388,7 +404,7 @@ impl BufferedOutput {
         } = font;
         let mut changed = false;
         if let Some(face) = face {
-            changed = self.spans.set_font(&face) || changed;
+            changed = self.spans.set_font(face.as_ref()) || changed;
         }
         if let Some(size) = size {
             changed = self.spans.set_size(size) || changed;
