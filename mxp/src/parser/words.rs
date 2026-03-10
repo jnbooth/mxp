@@ -85,9 +85,9 @@ impl<'a> Iterator for Words<'a> {
             // signed number e.g. -3,100.5
             '+' | '-' => self.iter.find(|&(_, c)| is_non_decimal(c)),
             // unsigned number e.g. 3,100.5
-            _ if first.is_ascii_digit() => self.iter.find(|&(_, c)| is_non_decimal(c)),
+            '0'..='9' => self.iter.find(|&(_, c)| is_non_decimal(c)),
             // word e.g. foo
-            _ if first.is_ascii_alphabetic() => self.iter.find(|&(_, c)| is_non_alphabet(c)),
+            'A'..='Z' | 'a'..='z' => self.iter.find(|&(_, c)| is_non_alphabet(c)),
             // single character, e.g. = or ,
             _ => self.iter.next(),
         };
