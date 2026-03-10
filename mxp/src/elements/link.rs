@@ -1,8 +1,4 @@
-use std::borrow::Cow;
-
-use crate::argument::{Decoder, ExpectArg, Scan};
-use crate::keyword::SendKeyword;
-use crate::parser::Error;
+use super::{Hyperlink, Send};
 
 /// Destination for a [`Link`] element.
 ///
@@ -164,33 +160,11 @@ fn split_list(list: &str) -> (String, Vec<LinkPrompt>) {
     (first, iter.map(LinkPrompt::from).collect())
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct HyperlinkArgs<S> {
-    pub href: S,
-    pub hint: Option<S>,
-    pub expire: Option<S>,
-}
-
-impl<'a, D> TryFrom<Scan<'a, D>> for HyperlinkArgs<Cow<'a, str>>
-where
-    D: Decoder,
-{
-    type Error = Error;
-
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
-        Ok(Self {
-            href: scanner.next_or("href")?.expect_some("href")?,
-            hint: scanner.next_or("hint")?,
-            expire: scanner.next_or("expire")?,
-        })
-    }
-}
-
-impl<S> From<HyperlinkArgs<S>> for Link
+impl<S> From<Hyperlink<S>> for Link
 where
     S: AsRef<str>,
 {
-    fn from(value: HyperlinkArgs<S>) -> Self {
+    fn from(value: Hyperlink<S>) -> Self {
         Self::new(
             value.href.as_ref(),
             value.hint.as_ref().map(AsRef::as_ref),
@@ -200,40 +174,11 @@ where
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct SendArgs<S> {
-    pub href: Option<S>,
-    pub hint: Option<S>,
-    pub send_to: SendTo,
-    pub expire: Option<S>,
-}
-
-impl<'a, D> TryFrom<Scan<'a, D>> for SendArgs<Cow<'a, str>>
-where
-    D: Decoder,
-{
-    type Error = Error;
-
-    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
-        let mut scanner = scanner.with_keywords();
-        Ok(Self {
-            href: scanner.next_or("href")?,
-            hint: scanner.next_or("hint")?,
-            expire: scanner.next_or("expire")?,
-            send_to: if scanner.into_keywords().contains(SendKeyword::Prompt) {
-                SendTo::Input
-            } else {
-                SendTo::World
-            },
-        })
-    }
-}
-
-impl<S> From<SendArgs<S>> for Link
+impl<S> From<Send<S>> for Link
 where
     S: AsRef<str>,
 {
-    fn from(value: SendArgs<S>) -> Self {
+    fn from(value: Send<S>) -> Self {
         Self::new(
             value
                 .href
@@ -243,24 +188,6 @@ where
             value.send_to,
             value.expire.map(|expire| expire.as_ref().to_owned()),
         )
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct ExpireArgs<S> {
-    pub name: Option<S>,
-}
-
-impl<'a, D> TryFrom<Scan<'a, D>> for ExpireArgs<Cow<'a, str>>
-where
-    D: Decoder,
-{
-    type Error = Error;
-
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
-        Ok(Self {
-            name: scanner.next()?,
-        })
     }
 }
 

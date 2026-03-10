@@ -379,7 +379,7 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_mxp_font(&mut self, font: mxp::Font) {
+    pub fn set_mxp_font<S: AsRef<str>>(&mut self, font: mxp::Font<S>) {
         let mxp::Font {
             face,
             size,

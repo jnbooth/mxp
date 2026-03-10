@@ -11,7 +11,13 @@ mod color;
 pub use color::{HexOutOfRangeError, NamedColorIter, ParseHexColorError, RgbColor};
 
 mod element;
-pub use element::*;
+pub use element::{
+    Action, ActionKind, CollectedDefinition, CollectedElement, DecodeElement, DefinitionKind,
+    Element, ElementCommand, ElementItem, ParseAs, Tag,
+};
+
+mod elements;
+pub use elements::*;
 
 mod entity;
 pub use entity::{
@@ -30,6 +36,9 @@ mod parser;
 pub use parser::{Error, ErrorKind, ParseErrorTarget, Words, is_valid, validate};
 
 pub mod responses;
+
+mod screen;
+pub use screen::{Align, Dimension, DimensionUnit};
 
 pub type Result<T> = std::result::Result<T, Error>;
 

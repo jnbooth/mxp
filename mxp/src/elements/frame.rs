@@ -1,11 +1,10 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
-use super::screen::Align;
-use crate::Dimension;
-use crate::argument::{Decoder, ExpectArg, Scan};
+use crate::argument::{Decoder, ExpectArg as _, Scan};
 use crate::keyword::FrameKeyword;
 use crate::parser::{Error, StringVariant, UnrecognizedVariant};
+use crate::screen::{Align, Dimension};
 
 /// Action to apply to a [`Frame`].
 ///
@@ -175,24 +174,6 @@ where
             title,
             layout,
             scrolling,
-        })
-    }
-}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct DestArgs<S> {
-    pub name: S,
-}
-
-impl<'a, D> TryFrom<Scan<'a, D>> for DestArgs<Cow<'a, str>>
-where
-    D: Decoder,
-{
-    type Error = Error;
-
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
-        Ok(Self {
-            name: scanner.next()?.expect_some("name")?,
         })
     }
 }

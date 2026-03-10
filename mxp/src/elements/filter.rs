@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::argument::{Decoder, ExpectArg, Scan};
+use crate::argument::{Decoder, ExpectArg as _, Scan};
 use crate::parser::Error;
 
 /// Defines a graphics format and provides a client plugin module that converts the MUD-specific

@@ -9,7 +9,6 @@ use crate::keyword::MxpKeyword;
 /// State tracker for [`mxp::Mode`](crate::Mode).
 ///
 /// See [MXP specification: MXP Line Tags](https://www.zuggsoft.com/zmud/mxp.htm#MXP%20Line%20Tags).
-#[allow(clippy::struct_field_names)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ModeState {
     active_mode: Mode,

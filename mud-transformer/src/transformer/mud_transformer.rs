@@ -375,18 +375,18 @@ impl Transformer {
         match action {
             Action::Bold => self.output.set_mxp_flag(TextStyle::Bold),
             Action::Br => self.output.start_line(),
-            Action::Color { fore, back } => {
-                if let Some(fg) = fore {
+            Action::Color(color) => {
+                if let Some(fg) = color.fore {
                     self.output.set_mxp_foreground(fg);
                 }
-                if let Some(bg) = back {
+                if let Some(bg) = color.back {
                     self.output.set_mxp_background(bg);
                 }
             }
-            Action::Dest { name } => self.output.set_mxp_window(&name),
-            Action::Expire { name } => self
+            Action::Dest(dest) => self.output.set_mxp_window(&dest.name),
+            Action::Expire(expire) => self
                 .output
-                .append(MxpFragment::ExpireLinks(name.map(Cow::into_owned))),
+                .append(MxpFragment::ExpireLinks(expire.name.map(Cow::into_owned))),
             Action::Filter(filter) => self.output.append(filter.into_owned()),
             Action::Font(font) => self.output.set_mxp_font(font.into_owned()),
             Action::Frame(frame) => self.output.append(frame.into_owned()),
@@ -399,7 +399,7 @@ impl Transformer {
             Action::Link(link) => self.output.set_mxp_action(link.clone()),
             Action::Music(music) => self.output.append(music.into_owned()),
             Action::MusicOff => self.output.append(MxpFragment::MusicOff),
-            Action::Mxp { keywords } => self.mxp_set_keywords(keywords),
+            Action::Mxp(mxp) => self.mxp_set_keywords(mxp.keywords),
             Action::NoBr => self.ignore_next_newline = true,
             Action::P => self.in_paragraph = true,
             Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
@@ -411,18 +411,19 @@ impl Transformer {
             Action::SoundOff => self.output.append(MxpFragment::SoundOff),
             Action::Stat(stat) => self.output.append(stat.into_owned()),
             Action::Strikeout => self.output.set_mxp_flag(TextStyle::Strikeout),
-            Action::Support { questions } => {
+            Action::StyleVersion(styleversion) => self.output.append(styleversion.into_owned()),
+            Action::Support(support) => {
                 let supported_actions = self.config.supported_actions();
-                let supported_tags = SupportResponse::new(&questions, supported_actions);
+                let supported_tags = SupportResponse::new(&support.questions, supported_actions);
                 writeln!(self.input, "{supported_tags}\r");
             }
             Action::Tt => self.output.set_mxp_flag(TextStyle::NonProportional),
             Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
             Action::User => input_mxp_auth(&mut self.input, &self.config.player),
-            Action::Var { variable, keywords } => {
-                self.mxp_set_entity(variable.into_owned(), keywords, mxp_state);
+            Action::Var(var) => {
+                self.mxp_set_entity(var.variable.into_owned(), var.keywords, mxp_state);
             }
-            Action::Version { styleversion: None } => {
+            Action::Version => {
                 let response = VersionResponse {
                     client: &self.config.app_name,
                     version: &self.config.version,
@@ -430,7 +431,6 @@ impl Transformer {
                 };
                 writeln!(self.input, "{response}\r");
             }
-            Action::Version { .. } => (),
         }
     }
 

@@ -1,0 +1,40 @@
+use std::borrow::Cow;
+
+use crate::argument::{Decoder, Scan};
+use crate::parser::Error;
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct Support<S = String> {
+    pub questions: Vec<S>,
+}
+
+impl Support<&str> {
+    pub fn into_owned(self) -> Support<String> {
+        Support {
+            questions: self.questions.into_iter().map(ToOwned::to_owned).collect(),
+        }
+    }
+}
+
+impl Support<Cow<'_, str>> {
+    pub fn into_owned(self) -> Support<String> {
+        Support {
+            questions: self.questions.into_iter().map(Cow::into_owned).collect(),
+        }
+    }
+}
+
+impl<'a, D> TryFrom<Scan<'a, D>> for Support<Cow<'a, str>>
+where
+    D: Decoder,
+{
+    type Error = Error;
+
+    fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, Self::Error> {
+        let mut questions = Vec::with_capacity(scanner.len());
+        while let Some(question) = scanner.next()? {
+            questions.push(question);
+        }
+        Ok(Self { questions })
+    }
+}

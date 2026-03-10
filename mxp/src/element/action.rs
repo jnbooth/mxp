@@ -1,168 +1,11 @@
 use std::borrow::Cow;
 
-use flagset::{FlagSet, flags};
-
-use super::bar::{Gauge, Stat};
-use super::filter::Filter;
-use super::font::Font;
-use super::frame::{DestArgs, Frame};
-use super::image::Image;
-use super::link::{ExpireArgs, HyperlinkArgs, Link, SendArgs};
-use super::relocate::Relocate;
-use super::sound::{Music, Sound};
-use crate::argument::args::{ColorArgs, MxpArgs, SupportArgs, VarArgs, VersionArgs};
+use super::action_kind::ActionKind;
 use crate::argument::{Decoder, Scan};
-use crate::color::RgbColor;
-use crate::keyword::{EntityKeyword, MxpKeyword};
-
-flags! {
-    pub enum ActionKind: u64 {
-        /// bold
-        Bold,
-        /// Hard Line break (secure)
-        Br,
-        /// eg. <color fore=red back=blue>
-        Color,
-        /// destination frame
-        Dest,
-        /// expire
-        Expire,
-        /// sound/image filter
-        Filter,
-        /// Font appearance
-        Font,
-        /// frame
-        Frame,
-        /// gauge
-        Gauge,
-        /// Level 1 heading (secure)
-        H1,
-        /// Level 2 heading (secure)
-        H2,
-        /// Level 3 heading (secure)
-        H3,
-        /// Level 4 heading (secure)
-        H4,
-        /// Level 5 heading (secure)
-        H5,
-        /// Level 6 heading (secure)
-        H6,
-        /// Highlight text
-        Highlight,
-        /// Horizontal rule (secure)
-        Hr,
-        /// Hyperlink (secure)
-        Hyperlink,
-        /// show image
-        Image,
-        /// italic
-        Italic,
-        /// play music
-        Music,
-        /// MXP command (eg. MXP OFF)
-        Mxp,
-        /// ignore next newline
-        NoBr,
-        /// Paragraph break (secure)
-        P,
-        /// send password
-        Password,
-        /// causes a new connect to open
-        Relocate,
-        /// close all open tags
-        Reset,
-        /// Soft line break
-        SBr,
-        /// eg. <send href="go west"> west
-        Send,
-        /// Small text
-        Small,
-        /// play sound
-        Sound,
-        /// status
-        Stat,
-        /// Strikethrough
-        Strikeout,
-        /// what commands we support
-        Support,
-        /// Non-proportional font
-        Tt,
-        /// underline
-        Underline,
-        /// send username
-        User,
-        /// Set variable
-        Var,
-        /// version request
-        Version,
-    }
-}
-
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Heading {
-    H1 = 1,
-    H2,
-    H3,
-    H4,
-    H5,
-    H6,
-}
-
-impl Heading {
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(mxp::Heading::H1.level(), 1);
-    /// assert_eq!(mxp::Heading::H5.level(), 5);
-    /// ```
-    pub const fn level(self) -> u8 {
-        self as u8
-    }
-}
-
-impl ActionKind {
-    /// Returns `true` if this is a command tag, i.e. a tag with no closing tag.
-    pub const fn is_command(self) -> bool {
-        matches!(
-            self,
-            Self::Br
-                | Self::Expire
-                | Self::Filter
-                | Self::Gauge
-                | Self::Hr
-                | Self::Music
-                | Self::Mxp
-                | Self::NoBr
-                | Self::Password
-                | Self::Relocate
-                | Self::Reset
-                | Self::SBr
-                | Self::Stat
-                | Self::Support
-                | Self::User
-                | Self::Version
-                | Self::Frame
-                | Self::Image
-                | Self::Sound
-        )
-    }
-
-    /// Returns `true` if the action can be used if the MXP [`Mode`](crate::Mode) is "open".
-    pub const fn is_open(self) -> bool {
-        matches!(
-            self,
-            Self::Bold
-                | Self::Color
-                | Self::Italic
-                | Self::Highlight
-                | Self::Strikeout
-                | Self::Small
-                | Self::Tt
-                | Self::Underline
-                | Self::Font
-        )
-    }
-}
+use crate::elements::{
+    Color, Dest, Expire, Filter, Font, Frame, Gauge, Heading, Hyperlink, Image, Link, Music, Mxp,
+    Relocate, Send, Sound, Stat, StyleVersion, Support, Var,
+};
 
 /// Effect caused by an [`Element`](crate::Element).
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -175,16 +18,13 @@ pub enum Action<S> {
     Br,
     ///[`<COLOR>`](https://www.zuggsoft.com/zmud/mxp.htm#Text%20Formatting):
     /// Change text color.
-    Color {
-        fore: Option<RgbColor>,
-        back: Option<RgbColor>,
-    },
+    Color(Color),
     /// [`<DEST>`](https://www.zuggsoft.com/zmud/mxp.htm#Cursor%20Control):
     /// Set destination frame.
-    Dest { name: S },
+    Dest(Dest<S>),
     /// [`<EXPIRE>`](https://www.zuggsoft.com/zmud/mxp.htm#Links):
     /// Expire links.
-    Expire { name: Option<S> },
+    Expire(Expire<S>),
     /// [`<FILTER>`](https://www.zuggsoft.com/zmud/mxp.htm#File%20Filters):
     /// Set file filter.
     Filter(Filter<S>),
@@ -223,7 +63,7 @@ pub enum Action<S> {
     MusicOff,
     /// [`<MXP>`](https://gpascal.com/forum/?id=232):
     /// MXP control command. This is an unofficial extension to the MXP protocol.
-    Mxp { keywords: FlagSet<MxpKeyword> },
+    Mxp(Mxp),
     /// [`<NOBR>`](https://www.zuggsoft.com/zmud/mxp.htm#Line%20Spacing):
     /// Ignore next newline.
     NoBr,
@@ -257,9 +97,13 @@ pub enum Action<S> {
     /// [`<STRIKEOUT>`](https://www.zuggsoft.com/zmud/mxp.htm#Text%20Formatting):
     /// Strike-out the text.
     Strikeout,
+    /// [`<VERSION>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control):
+    /// The client should cache this style-sheet version number and return it when
+    /// requested by a plain `<VERSION>` request.
+    StyleVersion(StyleVersion<S>),
     /// [`<SUPPORT>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control):
     /// Prompt client to respond with the commands that it supports.
-    Support { questions: Vec<S> },
+    Support(Support<S>),
     /// [`<TT>`](https://www.zuggsoft.com/zmud/mxp.htm#HTML%20tags):
     /// Display text in a non-proportional font.
     Tt,
@@ -271,38 +115,23 @@ pub enum Action<S> {
     User,
     /// [`<VAR>`](https://www.zuggsoft.com/zmud/mxp.htm#ENTITY):
     /// Set an MXP variable.
-    Var {
-        variable: S,
-        keywords: FlagSet<EntityKeyword>,
-    },
+    Var(Var<S>),
     /// [`<VERSION>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control):
-    /// If `styleversion` is `None`, prompt client to respond with its client and version of MXP.
-    /// Per the specification, the MUD server can alternatively send `<VERSION styleversion>`.
-    /// In this case, the client should cache this style-sheet version number and return it when
-    /// requested by a plain `<VERSION>` request.
-    Version { styleversion: Option<S> },
+    // Prompt client to respond with its client and version of MXP.
+    Version,
 }
 
 impl<'a> Action<Cow<'a, str>> {
-    pub(crate) fn decode<D>(action: ActionKind, scanner: Scan<'a, D>) -> crate::Result<Self>
+    pub(crate) fn decode<D>(action: ActionKind, mut scanner: Scan<'a, D>) -> crate::Result<Self>
     where
         D: Decoder,
     {
         Ok(match action {
             ActionKind::Bold => Self::Bold,
             ActionKind::Br => Self::Br,
-            ActionKind::Color => {
-                let ColorArgs { fore, back } = scanner.try_into()?;
-                Self::Color { fore, back }
-            }
-            ActionKind::Dest => {
-                let DestArgs { name } = scanner.try_into()?;
-                Self::Dest { name }
-            }
-            ActionKind::Expire => {
-                let ExpireArgs { name } = scanner.try_into()?;
-                Self::Expire { name }
-            }
+            ActionKind::Color => Self::Color(scanner.try_into()?),
+            ActionKind::Dest => Self::Dest(scanner.try_into()?),
+            ActionKind::Expire => Self::Expire(scanner.try_into()?),
             ActionKind::Filter => Self::Filter(scanner.try_into()?),
             ActionKind::Font => Self::Font(scanner.try_into()?),
             ActionKind::Frame => Self::Frame(scanner.try_into()?),
@@ -315,13 +144,10 @@ impl<'a> Action<Cow<'a, str>> {
             ActionKind::H6 => Self::Heading(Heading::H6),
             ActionKind::Highlight => Self::Highlight,
             ActionKind::Hr => Self::Hr,
-            ActionKind::Hyperlink => Self::Link(HyperlinkArgs::try_from(scanner)?.into()),
+            ActionKind::Hyperlink => Self::Link(Hyperlink::try_from(scanner)?.into()),
             ActionKind::Image => Self::Image(Image::try_from(scanner)?),
             ActionKind::Italic => Self::Italic,
-            ActionKind::Mxp => {
-                let MxpArgs { keywords } = scanner.try_into()?;
-                Self::Mxp { keywords }
-            }
+            ActionKind::Mxp => Self::Mxp(scanner.try_into()?),
             ActionKind::Music => {
                 let music = Music::try_from(scanner)?;
                 if music.is_off() {
@@ -336,7 +162,7 @@ impl<'a> Action<Cow<'a, str>> {
             ActionKind::Relocate => Self::Relocate(scanner.try_into()?),
             ActionKind::Reset => Self::Reset,
             ActionKind::SBr => Self::SBr,
-            ActionKind::Send => Self::Link(SendArgs::try_from(scanner)?.into()),
+            ActionKind::Send => Self::Link(Send::try_from(scanner)?.into()),
             ActionKind::Small => Self::Small,
             ActionKind::Sound => {
                 let sound = Sound::try_from(scanner)?;
@@ -348,20 +174,17 @@ impl<'a> Action<Cow<'a, str>> {
             }
             ActionKind::Stat => Self::Stat(scanner.try_into()?),
             ActionKind::Strikeout => Self::Strikeout,
-            ActionKind::Support => {
-                let SupportArgs { questions } = scanner.try_into()?;
-                Self::Support { questions }
-            }
+            ActionKind::Support => Self::Support(scanner.try_into()?),
             ActionKind::Tt => Self::Tt,
             ActionKind::Underline => Self::Underline,
             ActionKind::User => Self::User,
-            ActionKind::Var => {
-                let VarArgs { variable, keywords } = scanner.try_into()?;
-                Self::Var { variable, keywords }
-            }
+            ActionKind::Var => Self::Var(scanner.try_into()?),
             ActionKind::Version => {
-                let VersionArgs { styleversion } = scanner.try_into()?;
-                Self::Version { styleversion }
+                if let Some(styleversion) = scanner.next()? {
+                    Self::StyleVersion(StyleVersion { styleversion })
+                } else {
+                    Self::Version
+                }
             }
         })
     }

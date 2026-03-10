@@ -1,0 +1,80 @@
+use std::borrow::Cow;
+use std::iter::FusedIterator;
+use std::slice;
+
+use super::action::Action;
+use super::element::Element;
+use super::item::ElementItem;
+use crate::argument::{Arguments, Decoder, KeywordFilter};
+use crate::entity::DecodedEntity;
+
+#[derive(Copy, Clone, Debug)]
+struct ElementDecoder<'a, D: Decoder> {
+    decoder: D,
+    element: &'a Element,
+    args: &'a Arguments<'a>,
+}
+
+impl<D: Decoder> Decoder for ElementDecoder<'_, D> {
+    fn decode_entity<F: KeywordFilter>(
+        &self,
+        entity: &str,
+    ) -> crate::Result<Option<DecodedEntity<'_>>> {
+        if entity == "text" {
+            return Ok(None);
+        }
+        match self
+            .args
+            .find_from_attributes::<F>(entity, &self.element.attributes)
+        {
+            Some(attr) => Ok(Some(attr.into())),
+            None => self.decoder.decode_entity::<F>(entity),
+        }
+    }
+}
+
+/// This `struct` is created by [`State::decode_element`]. See its documentation for more.
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+pub struct DecodeElement<'a, D: Decoder + Copy> {
+    decoder: ElementDecoder<'a, D>,
+    items: slice::Iter<'a, ElementItem<'a>>,
+}
+
+impl<'a, D: Decoder + Copy> DecodeElement<'a, D> {
+    pub(super) fn new(element: &'a Element, args: &'a Arguments, decoder: D) -> Self {
+        Self {
+            decoder: ElementDecoder {
+                decoder,
+                element,
+                args,
+            },
+            items: element.items.iter(),
+        }
+    }
+}
+
+impl<'a, D: Decoder + Copy> Iterator for DecodeElement<'a, D> {
+    type Item = crate::Result<Action<Cow<'a, str>>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let item = self.items.next()?;
+        let scanner = item.arguments.scan(self.decoder);
+        Some(Action::decode(item.tag.action, scanner))
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let exact = self.len();
+        (exact, Some(exact))
+    }
+}
+
+impl<D> ExactSizeIterator for DecodeElement<'_, D>
+where
+    D: Decoder + Copy,
+{
+    fn len(&self) -> usize {
+        self.items.len()
+    }
+}
+
+impl<D> FusedIterator for DecodeElement<'_, D> where D: Decoder + Copy {}

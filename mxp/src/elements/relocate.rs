@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::argument::{Decoder, ExpectArg, Scan};
+use crate::argument::{Decoder, ExpectArg as _, Scan};
 use crate::parser::Error;
 
 /// Closes the current MUD connection and causes a new connect to open on a new server.

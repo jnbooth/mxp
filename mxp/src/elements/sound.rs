@@ -3,7 +3,7 @@ use std::fmt;
 use std::num::NonZero;
 use std::str::FromStr;
 
-use crate::argument::{Decoder, ExpectArg, Scan};
+use crate::argument::{Decoder, ExpectArg as _, Scan};
 use crate::parser::{Error, StringVariant, UnrecognizedVariant};
 
 /// Specifies the number of times a sound/music file should be played.

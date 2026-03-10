@@ -13,6 +13,7 @@ pub enum MxpFragment {
     Sound(mxp::Sound),
     SoundOff,
     StatusBar(mxp::Stat),
+    StyleVersion(mxp::StyleVersion),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -117,5 +118,11 @@ impl From<mxp::Sound> for OutputFragment {
 impl From<mxp::Stat> for OutputFragment {
     fn from(value: mxp::Stat) -> Self {
         Self::Mxp(MxpFragment::StatusBar(value))
+    }
+}
+
+impl From<mxp::StyleVersion> for OutputFragment {
+    fn from(value: mxp::StyleVersion) -> Self {
+        Self::Mxp(MxpFragment::StyleVersion(value))
     }
 }

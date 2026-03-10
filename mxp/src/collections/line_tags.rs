@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use crate::argument::{Decoder, ExpectArg};
+use crate::argument::{Decoder, ExpectArg as _};
 use crate::collections::CaseFoldMap;
 use crate::color::RgbColor;
 use crate::element::Element;
