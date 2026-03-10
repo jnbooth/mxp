@@ -42,13 +42,14 @@ impl<'a> Words<'a> {
         }
     }
 
-    pub fn parse_args<S>(self) -> crate::Result<Arguments<S>>
-    where
-        S: AsRef<str> + From<&'a str>,
-    {
-        let mut args = Arguments::<S>::new();
-        args.append(self)?;
-        Ok(args)
+    pub fn parse_args(self) -> crate::Result<Arguments<'a>> {
+        self.try_into()
+    }
+
+    pub fn parse_args_to_owned(self) -> crate::Result<Arguments<'static>> {
+        let mut arguments = Arguments::new();
+        arguments.extend::<String>(self)?;
+        Ok(arguments)
     }
 }
 

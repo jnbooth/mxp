@@ -27,20 +27,23 @@ impl<D: Decoder> Decoder for &D {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct Scan<'a, D, S, F = NoKeywords> {
+pub(crate) struct Scan<'a, D, F = NoKeywords> {
     decoder: D,
-    inner: slice::Iter<'a, S>,
-    named: &'a CaseFoldMap<S>,
+    inner: slice::Iter<'a, Cow<'a, str>>,
+    named: &'a CaseFoldMap<'a, Cow<'a, str>>,
     phantom: PhantomData<F>,
 }
 
-impl<'a, D, S, F> Scan<'a, D, S, F>
+impl<'a, D, F> Scan<'a, D, F>
 where
     D: Decoder,
-    S: AsRef<str>,
     F: KeywordFilter,
 {
-    pub fn new(decoder: D, positional: &'a [S], named: &'a CaseFoldMap<S>) -> Self {
+    pub fn new(
+        decoder: D,
+        positional: &'a [Cow<'a, str>],
+        named: &'a CaseFoldMap<'a, Cow<'a, str>>,
+    ) -> Self {
         Self {
             decoder,
             inner: positional.iter(),
@@ -49,7 +52,7 @@ where
         }
     }
 
-    fn with_filter<FNew>(self) -> Scan<'a, D, S, FNew> {
+    fn with_filter<FNew>(self) -> Scan<'a, D, FNew> {
         Scan {
             decoder: self.decoder,
             inner: self.inner,
@@ -58,16 +61,16 @@ where
         }
     }
 
-    pub fn with_keywords<E: Flags + FromStr>(self) -> KeywordScan<'a, D, S, E> {
+    pub fn with_keywords<E: Flags + FromStr>(self) -> KeywordScan<'a, D, E> {
         KeywordScan {
             inner: self.with_filter(),
             keywords: FlagSet::empty(),
         }
     }
 
-    fn decode<SD>(&self, s: Option<&'a SD>) -> crate::Result<Option<Cow<'a, str>>>
+    fn decode<S>(&self, s: Option<&'a S>) -> crate::Result<Option<Cow<'a, str>>>
     where
-        SD: AsRef<str> + ?Sized,
+        S: AsRef<str> + ?Sized,
     {
         match s {
             Some(s) => self.decoder.decode::<F>(s.as_ref()).map(Option::Some),
@@ -80,7 +83,7 @@ where
     }
 
     fn get(&self, name: &str) -> crate::Result<Option<Cow<'a, str>>> {
-        self.decode(self.named.get(name).map(AsRef::as_ref))
+        self.decode(self.named.get(name))
     }
 
     pub fn next(&mut self) -> crate::Result<Option<Cow<'a, str>>> {
@@ -96,34 +99,32 @@ where
     }
 }
 
-pub(crate) struct KeywordScan<'a, D, S, K: Flags> {
-    inner: Scan<'a, D, S, K>,
+pub(crate) struct KeywordScan<'a, D, K: Flags> {
+    inner: Scan<'a, D, K>,
     keywords: FlagSet<K>,
 }
 
-impl<'a, D, S: AsRef<str>, K: Flags> Deref for KeywordScan<'a, D, S, K> {
-    type Target = Scan<'a, D, S, K>;
+impl<'a, D, K: Flags> Deref for KeywordScan<'a, D, K> {
+    type Target = Scan<'a, D, K>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
-impl<D, S: AsRef<str>, K: Flags> DerefMut for KeywordScan<'_, D, S, K> {
+impl<D, K: Flags> DerefMut for KeywordScan<'_, D, K> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
 }
 
-impl<'a, D, S, K> KeywordScan<'a, D, S, K>
+impl<'a, D, K> KeywordScan<'a, D, K>
 where
     D: Decoder,
-    S: AsRef<str>,
     K: Flags + FromStr,
 {
     fn next_non_keyword(&mut self) -> Option<&'a str> {
         for arg in &mut self.inner.inner {
-            let arg = arg.as_ref();
             if let Ok(keyword) = arg.parse::<K>() {
                 self.keywords |= keyword;
             } else {
@@ -147,11 +148,7 @@ where
 
     pub fn into_keywords(self) -> FlagSet<K> {
         let mut keywords = self.keywords;
-        keywords.extend(
-            self.inner
-                .inner
-                .filter_map(|arg| arg.as_ref().parse::<K>().ok()),
-        );
+        keywords.extend(self.inner.inner.filter_map(|arg| arg.parse::<K>().ok()));
         keywords
     }
 }

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use super::keyword_filter::KeywordFilter;
 use super::scan::{Decoder, Scan};
 use crate::collections::CaseFoldMap;
@@ -11,12 +13,12 @@ use crate::parser::{Error, ErrorKind, Words, validate};
 ///
 /// See [MXP specification: Attributes](https://www.zuggsoft.com/zmud/mxp.htm#ATTLIST).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Arguments<S: AsRef<str>> {
-    positional: Vec<S>,
-    named: CaseFoldMap<S>,
+pub struct Arguments<'a> {
+    positional: Vec<Cow<'a, str>>,
+    named: CaseFoldMap<'a, Cow<'a, str>>,
 }
 
-impl<S: AsRef<str>> Arguments<S> {
+impl<'a> Arguments<'a> {
     /// Constructs a new, empty `Arguments<S>`.
     pub fn new() -> Self {
         Self {
@@ -32,36 +34,35 @@ impl<S: AsRef<str>> Arguments<S> {
 
     /// Finds the value of an entity, using an element's attribute list to identify arguments
     /// and provide default values.
-    pub(crate) fn find_from_attributes<'a, F, S2>(
+    pub(crate) fn find_from_attributes<F>(
         &'a self,
         entity: &str,
-        attributes: &'a Arguments<S2>,
+        attributes: &'a Arguments<'a>,
     ) -> Option<&'a str>
     where
         F: KeywordFilter,
-        S2: AsRef<str>,
     {
         if let Some(named) = attributes.named.get(entity) {
             return Some(match self.named.get(entity) {
-                Some(entity) => entity.as_ref(),
-                None => named.as_ref(),
+                Some(entity) => entity,
+                None => named,
             });
         }
-        let position = F::iter(&attributes.positional)
-            .position(|attr| attr.as_ref().eq_ignore_ascii_case(entity))?;
+        let position =
+            F::iter(&attributes.positional).position(|attr| attr.eq_ignore_ascii_case(entity))?;
         match F::iter(&self.positional).nth(position) {
-            Some(attr) => Some(attr.as_ref()),
+            Some(attr) => Some(attr),
             None => Some(""),
         }
     }
 
-    pub(crate) fn scan<D: Decoder>(&self, decoder: D) -> Scan<'_, D, S> {
+    pub(crate) fn scan<D: Decoder>(&self, decoder: D) -> Scan<'_, D> {
         Scan::new(decoder, &self.positional, &self.named)
     }
 
-    pub(crate) fn append<'a>(&mut self, mut iter: Words<'a>) -> crate::Result<()>
+    pub(crate) fn extend<'b, S>(&mut self, mut iter: Words<'b>) -> crate::Result<()>
     where
-        S: From<&'a str>,
+        S: From<&'b str> + Into<Cow<'a, str>>,
     {
         while let Some(name) = iter.next() {
             if name == "/" {
@@ -76,24 +77,21 @@ impl<S: AsRef<str>> Arguments<S> {
                 let val = iter
                     .next()
                     .ok_or_else(|| Error::new(name, ErrorKind::NoArgument))?;
-                self.named.insert(name.to_lowercase(), val.into());
+                self.named.insert(S::from(name).into(), S::from(val).into());
             } else {
-                self.positional.push(name.into());
+                self.positional.push(S::from(name).into());
             }
         }
         Ok(())
     }
 }
 
-impl<'a, S> TryFrom<Words<'a>> for Arguments<S>
-where
-    S: AsRef<str> + From<&'a str>,
-{
+impl<'a> TryFrom<Words<'a>> for Arguments<'a> {
     type Error = crate::Error;
 
     fn try_from(value: Words<'a>) -> crate::Result<Self> {
         let mut this = Self::new();
-        this.append(value)?;
+        this.extend::<&str>(value)?;
         Ok(this)
     }
 }
@@ -105,15 +103,15 @@ mod tests {
     #[test]
     fn arguments() {
         let words = Words::new(r#"EL RName '<FONT COLOR=Red><B>' FLAG="RoomName""#);
-        let args: Arguments<String> = words.try_into().unwrap();
+        let args: Arguments = words.try_into().unwrap();
         let expected = Arguments {
             positional: ["EL", "RName", "<FONT COLOR=Red><B>"]
                 .iter()
-                .map(|&arg| arg.to_owned())
+                .map(|&arg| arg.into())
                 .collect(),
             named: [("flag", "RoomName")]
                 .iter()
-                .map(|&(k, v)| (k.to_owned(), v.to_owned()))
+                .map(|&(k, v)| (k, v.into()))
                 .collect(),
         };
         assert_eq!(args, expected);

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use super::element_map::ElementMap;
 use crate::argument::{Decoder, ExpectArg};
 use crate::color::RgbColor;
@@ -108,26 +110,23 @@ pub(crate) struct LineTagUpdate {
 
 impl LineTagUpdate {
     pub fn parse<D: Decoder>(words: Words, decoder: D) -> crate::Result<Self> {
-        let args = words.parse_args::<&str>()?;
+        let args = words.parse_args_to_owned()?;
         let mut scanner = args.scan(decoder).with_keywords();
 
         let index_arg = scanner.next()?.expect_some("tag")?;
-        let index_str = index_arg.as_ref();
-        let index: u8 = index_str
+        let index: u8 = index_arg
             .parse()
-            .map_err(|_| Error::new(index_str, ErrorKind::InvalidNumber))?;
+            .map_err(|_| Error::new(index_arg, ErrorKind::InvalidNumber))?;
 
-        let window = scanner
-            .next_or("windowname")?
-            .map(|s| s.as_ref().to_owned());
+        let window = scanner.next_or("windowname")?.map(Cow::into_owned);
 
         let fore = scanner
             .next_or("fore")?
-            .and_then(|color| RgbColor::named(color.as_ref()));
+            .and_then(|color| RgbColor::named(&color));
 
         let back = scanner
             .next_or("back")?
-            .and_then(|color| RgbColor::named(color.as_ref()));
+            .and_then(|color| RgbColor::named(&color));
 
         let keywords = scanner.into_keywords();
         let gag = if keywords.contains(LineTagKeyword::Gag) {

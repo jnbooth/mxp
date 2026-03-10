@@ -1,14 +1,15 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
 use uncased::{Uncased, UncasedStr};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct CaseFoldMap<V> {
-    inner: HashMap<Uncased<'static>, V>,
+pub(crate) struct CaseFoldMap<'a, V> {
+    inner: HashMap<Uncased<'a>, V>,
 }
 
-impl<V> CaseFoldMap<V> {
+impl<'a, V> CaseFoldMap<'a, V> {
     pub fn new() -> Self {
         Self {
             inner: HashMap::new(),
@@ -23,8 +24,8 @@ impl<V> CaseFoldMap<V> {
         self.inner.get_mut(UncasedStr::new(key))
     }
 
-    pub fn insert(&mut self, key: String, value: V) -> Option<V> {
-        self.inner.insert(Uncased::from_owned(key), value)
+    pub fn insert<K: Into<Uncased<'a>>>(&mut self, key: K, value: V) -> Option<V> {
+        self.inner.insert(key.into(), value)
     }
 
     pub fn remove(&mut self, key: &str) -> Option<V> {
@@ -32,8 +33,8 @@ impl<V> CaseFoldMap<V> {
     }
 }
 
-impl<V> Deref for CaseFoldMap<V> {
-    type Target = HashMap<Uncased<'static>, V>;
+impl<'a, V> Deref for CaseFoldMap<'a, V> {
+    type Target = HashMap<Uncased<'a>, V>;
 
     #[inline]
     fn deref(&self) -> &Self::Target {
@@ -41,23 +42,29 @@ impl<V> Deref for CaseFoldMap<V> {
     }
 }
 
-impl<V> DerefMut for CaseFoldMap<V> {
+impl<V> DerefMut for CaseFoldMap<'_, V> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
 }
 
-impl<V> Extend<(String, V)> for CaseFoldMap<V> {
-    fn extend<T: IntoIterator<Item = (String, V)>>(&mut self, iter: T) {
+impl<'a, K, V> Extend<(K, V)> for CaseFoldMap<'a, V>
+where
+    K: Into<Cow<'a, str>>,
+{
+    fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
         self.inner.extend(
             iter.into_iter()
-                .map(|(key, value)| (Uncased::from_owned(key), value)),
+                .map(|(key, value)| (Uncased::new(key), value)),
         );
     }
 }
 
-impl<V> FromIterator<(String, V)> for CaseFoldMap<V> {
-    fn from_iter<T: IntoIterator<Item = (String, V)>>(iter: T) -> Self {
+impl<'a, K, V> FromIterator<(K, V)> for CaseFoldMap<'a, V>
+where
+    K: Into<Cow<'a, str>>,
+{
+    fn from_iter<T: IntoIterator<Item = (K, V)>>(iter: T) -> Self {
         let mut map = Self::new();
         map.extend(iter);
         map

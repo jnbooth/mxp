@@ -41,21 +41,20 @@ impl Gauge<Cow<'_, str>> {
     }
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for Gauge<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for Gauge<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             entity: scanner.next()?.expect_some("EntityName")?,
             max: scanner.next_or("max")?,
             caption: scanner.next_or("caption")?,
             color: scanner
                 .next_or("color")?
-                .and_then(|color| RgbColor::named(color.as_ref())),
+                .and_then(|color| RgbColor::named(&color)),
         })
     }
 }
@@ -93,14 +92,13 @@ impl Stat<Cow<'_, str>> {
     }
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for Stat<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for Stat<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             entity: scanner.next()?.expect_some("EntityName")?,
             max: scanner.next_or("max")?,

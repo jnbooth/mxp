@@ -2,14 +2,6 @@ use std::str;
 
 use super::error::{Error, ErrorKind};
 
-fn is_valid(target: &str) -> bool {
-    let s: &[u8] = target.as_ref();
-    !s.is_empty()
-        && s.first().is_some_and(u8::is_ascii_alphabetic)
-        && s.iter()
-            .all(|&c| c.is_ascii_alphanumeric() || c == b'_' || c == b'-' || c == b'.')
-}
-
 /// If the specified target is valid to use as an MXP identifier or value, returns `Ok(())`.
 /// Otherwise, returns an [`mxp::Error`](Error) for the target with the specified error kind.
 ///
@@ -29,4 +21,31 @@ pub fn validate(target: &str, error: ErrorKind) -> crate::Result<()> {
     } else {
         Err(Error::new(target, error))
     }
+}
+
+/// If the specified target is valid to use as an MXP identifier or value, returns `true`.
+/// Otherwise, returns `false`.
+///
+/// # Examples
+///
+/// ```
+/// let err = mxp::ErrorKind::InvalidEntityName;
+/// assert!(mxp::is_valid("abc"));
+/// assert!(mxp::is_valid("aBc_-."));
+/// assert!(!mxp::is_valid(""));
+/// assert!(!mxp::is_valid("_test"));
+/// assert!(!mxp::is_valid("abc!"));
+/// ```
+pub const fn is_valid(target: &str) -> bool {
+    let [b'A'..=b'Z' | b'a'..=b'z', rest @ ..] = target.as_bytes() else {
+        return false;
+    };
+    let mut i = 0;
+    while i < rest.len() {
+        if !matches!(rest[i], b'0'..=b'9' | b'A'..=b'Z' | b'a'..=b'z' | b'_' | b'-'| b'.') {
+            return false;
+        }
+        i += 1;
+    }
+    true
 }

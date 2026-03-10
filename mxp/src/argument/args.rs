@@ -13,21 +13,20 @@ pub(crate) struct ColorArgs {
     pub back: Option<RgbColor>,
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for ColorArgs
+impl<'a, D> TryFrom<Scan<'a, D>> for ColorArgs
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             fore: scanner
                 .next_or("fore")?
-                .and_then(|fore| RgbColor::named(fore.as_ref())),
+                .and_then(|fore| RgbColor::named(&fore)),
             back: scanner
                 .next_or("back")?
-                .and_then(|back| RgbColor::named(back.as_ref())),
+                .and_then(|back| RgbColor::named(&back)),
         })
     }
 }
@@ -37,14 +36,13 @@ pub(crate) struct MxpArgs {
     pub keywords: FlagSet<MxpKeyword>,
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for MxpArgs
+impl<'a, D> TryFrom<Scan<'a, D>> for MxpArgs
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let scanner = scanner.with_keywords();
         Ok(Self {
             keywords: scanner.into_keywords(),
@@ -57,14 +55,13 @@ pub(crate) struct SupportArgs<S> {
     pub questions: Vec<S>,
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for SupportArgs<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for SupportArgs<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D, S>) -> Result<Self, Self::Error> {
+    fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, Self::Error> {
         let mut questions = Vec::with_capacity(scanner.len());
         while let Some(question) = scanner.next()? {
             questions.push(question);
@@ -79,14 +76,13 @@ pub(crate) struct VarArgs<S> {
     pub keywords: FlagSet<EntityKeyword>,
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for VarArgs<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for VarArgs<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         Ok(Self {
             variable: scanner.next()?.expect_some("variable")?,
@@ -100,14 +96,13 @@ pub(crate) struct VersionArgs<S> {
     pub styleversion: Option<S>,
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for VersionArgs<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for VersionArgs<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             styleversion: scanner.next()?,
         })

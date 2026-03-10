@@ -95,7 +95,7 @@ struct SoundOrMusic<S> {
 }
 
 impl<'a> SoundOrMusic<Cow<'a, str>> {
-    fn parse<D, SD: AsRef<str>>(scanner: &mut Scan<'a, D, SD>) -> crate::Result<Self>
+    fn parse<D>(scanner: &mut Scan<'a, D>) -> crate::Result<Self>
     where
         D: Decoder,
     {
@@ -186,14 +186,13 @@ impl Sound<Cow<'_, str>> {
     }
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for Sound<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for Sound<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         let args = SoundOrMusic::parse(&mut scanner)?;
         Ok(Self {
             fname: args.fname,
@@ -269,14 +268,13 @@ impl Music<Cow<'_, str>> {
     }
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for Music<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for Music<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         let args = SoundOrMusic::parse(&mut scanner)?;
         Ok(Self {
             fname: args.fname,
@@ -286,7 +284,7 @@ where
             url: args.url,
             continuation: scanner
                 .next_or("C")?
-                .and_then(|continuation| continuation.as_ref().parse().ok())
+                .and_then(|continuation| continuation.parse().ok())
                 .unwrap_or_default(),
         })
     }

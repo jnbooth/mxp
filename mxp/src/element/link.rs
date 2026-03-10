@@ -171,14 +171,13 @@ pub(crate) struct HyperlinkArgs<S> {
     pub expire: Option<S>,
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for HyperlinkArgs<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for HyperlinkArgs<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             href: scanner.next_or("href")?.expect_some("href")?,
             hint: scanner.next_or("hint")?,
@@ -209,14 +208,13 @@ pub(crate) struct SendArgs<S> {
     pub expire: Option<S>,
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for SendArgs<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for SendArgs<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         Ok(Self {
             href: scanner.next_or("href")?,
@@ -253,14 +251,13 @@ pub(crate) struct ExpireArgs<S> {
     pub name: Option<S>,
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for ExpireArgs<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for ExpireArgs<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             name: scanner.next()?,
         })

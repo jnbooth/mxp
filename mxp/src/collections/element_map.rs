@@ -56,11 +56,11 @@ impl ElementComponent<'_> {
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct ElementMap {
-    inner: CaseFoldMap<Element>,
+    inner: CaseFoldMap<'static, Element>,
 }
 
 impl Deref for ElementMap {
-    type Target = CaseFoldMap<Element>;
+    type Target = CaseFoldMap<'static, Element>;
 
     fn deref(&self) -> &Self::Target {
         &self.inner

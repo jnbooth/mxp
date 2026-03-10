@@ -12,16 +12,13 @@ use crate::parser::{Error, ErrorKind, StringVariant, UnrecognizedVariant, Words}
 
 /// List of arguments to an MXP tag.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ElementItem<S: AsRef<str>> {
+pub struct ElementItem<'a> {
     pub tag: &'static Tag,
-    pub arguments: Arguments<S>,
+    pub arguments: Arguments<'a>,
 }
 
-impl<S: AsRef<str>> ElementItem<S> {
-    pub(crate) fn parse<'a>(tag: &'a str) -> crate::Result<Self>
-    where
-        S: From<&'a str>,
-    {
+impl ElementItem<'static> {
+    pub(crate) fn parse(tag: &str) -> crate::Result<Self> {
         let mut words = Words::new(tag);
         let tag_name = words
             .next()
@@ -38,7 +35,7 @@ impl<S: AsRef<str>> ElementItem<S> {
             .ok_or_else(|| Error::new(tag_name, ErrorKind::NoInbuiltDefinitionTag))?;
         Ok(Self {
             tag,
-            arguments: words.parse_args()?,
+            arguments: words.parse_args_to_owned()?,
         })
     }
 }
@@ -200,9 +197,9 @@ pub struct Element {
     /// Tag name
     pub name: String,
     /// What atomic elements it defines (arg 1)
-    pub items: Vec<ElementItem<String>>,
+    pub items: Vec<ElementItem<'static>>,
     /// List of attributes to this element (ATT="xx")
-    pub attributes: Arguments<String>,
+    pub attributes: Arguments<'static>,
     /// Line tag number (20 - 99) (TAG=n)
     pub tag: Option<NonZero<u8>>,
     /// Parsing flag
@@ -233,13 +230,13 @@ impl Element {
     pub fn parse(definition: &str, entities: &EntityMap) -> crate::Result<ElementCommand> {
         let mut words = Words::new(definition);
         let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
-        let args = words.parse_args::<String>()?;
+        let args: Arguments<'static> = words.parse_args_to_owned()?;
 
         let mut scanner = args.scan(entities).with_keywords();
-        let items = Self::parse_items(scanner.next()?)?;
+        let items = Self::parse_items(scanner.next()?.as_deref())?;
 
-        let attributes = match scanner.next_or("att")? {
-            Some(atts) => Words::new(atts.as_ref()).parse_args()?,
+        let attributes: Arguments<'static> = match scanner.next_or("att")? {
+            Some(atts) => Words::new(&atts).parse_args_to_owned()?,
             None => Arguments::default(),
         };
 
@@ -248,7 +245,6 @@ impl Element {
         let (parse_as, variable) = match scanner.next_or("flag")? {
             None => (None, None),
             Some(flag) => {
-                let flag = flag.as_ref();
                 if flag[.."set ".len()].eq_ignore_ascii_case("set ") {
                     (None, Some(flag["set ".len()..].to_owned()))
                 } else {
@@ -279,46 +275,41 @@ impl Element {
         }))
     }
 
-    fn parse_items<S: AsRef<str>>(argument: Option<S>) -> crate::Result<Vec<ElementItem<String>>> {
-        // Reduce monomorphization
-        fn inner(argument: &str) -> crate::Result<Vec<ElementItem<String>>> {
-            let size_guess = argument.bytes().filter(|&c| c == b'<').count();
-            let mut items = Vec::with_capacity(size_guess);
-
-            let mut iter = argument.char_indices();
-            while let Some((start, startc)) = iter.next() {
-                if startc != '<' {
-                    return Err(Error::new(argument, ErrorKind::NoTagInDefinition));
-                }
-                loop {
-                    let (end, endc) = iter
-                        .next()
-                        .ok_or_else(|| Error::new(argument, ErrorKind::NoClosingDefinitionQuote))?;
-                    if endc == '>' {
-                        let definition = &argument[start + 1..end];
-                        items.push(ElementItem::parse(definition)?);
-                        break;
-                    }
-                    if (endc == '\'' || endc == '"') && !iter.any(|(_, c)| c == endc) {
-                        return Err(Error::new(argument, ErrorKind::NoClosingDefinitionQuote));
-                    }
-                }
-            }
-
-            Ok(items)
-        }
+    fn parse_items(argument: Option<&str>) -> crate::Result<Vec<ElementItem<'static>>> {
         let Some(argument) = argument else {
             return Ok(Vec::new());
         };
+        let size_guess = argument.bytes().filter(|&c| c == b'<').count();
+        let mut items = Vec::with_capacity(size_guess);
 
-        inner(argument.as_ref())
+        let mut iter = argument.char_indices();
+        while let Some((start, startc)) = iter.next() {
+            if startc != '<' {
+                return Err(Error::new(argument, ErrorKind::NoTagInDefinition));
+            }
+            loop {
+                let (end, endc) = iter
+                    .next()
+                    .ok_or_else(|| Error::new(argument, ErrorKind::NoClosingDefinitionQuote))?;
+                if endc == '>' {
+                    let definition = &argument[start + 1..end];
+                    items.push(ElementItem::parse(definition)?);
+                    break;
+                }
+                if (endc == '\'' || endc == '"') && !iter.any(|(_, c)| c == endc) {
+                    return Err(Error::new(argument, ErrorKind::NoClosingDefinitionQuote));
+                }
+            }
+        }
+
+        Ok(items)
     }
 
     fn parse_tag(tag: Option<Cow<str>>) -> crate::Result<Option<NonZero<u8>>> {
         let Some(tag) = tag else {
             return Ok(None);
         };
-        match tag.as_ref().parse::<NonZero<u8>>() {
+        match tag.parse::<NonZero<u8>>() {
             Ok(tag) if Mode(tag.get()).is_user_defined() => Ok(Some(tag)),
             _ => Err(crate::Error::new(tag, ErrorKind::InvalidLineTag)),
         }

@@ -129,24 +129,23 @@ impl Frame<Cow<'_, str>> {
     }
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for Frame<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for Frame<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         let name = scanner.next_or("name")?.expect_some("name")?;
         let action = scanner
             .next_or("action")?
-            .and_then(|action| action.as_ref().parse().ok())
+            .and_then(|action| action.parse().ok())
             .unwrap_or_default();
         let title = scanner.next_or("title")?;
         let align: Align = scanner
             .next_or("align")?
-            .and_then(|align| align.as_ref().parse().ok())
+            .and_then(|align| align.parse().ok())
             .unwrap_or_default();
         let left = scanner
             .next_or("left")?
@@ -157,7 +156,7 @@ where
         let height = scanner.next_or("height")?.expect_number()?;
         let scrolling = scanner
             .next_or("scrolling")?
-            .is_some_and(|scrolling| scrolling.as_ref().eq_ignore_ascii_case("yes"));
+            .is_some_and(|scrolling| scrolling.eq_ignore_ascii_case("yes"));
         let keywords = scanner.into_keywords();
         let layout = if keywords.contains(FrameKeyword::Internal) {
             FrameLayout::Internal { align }
@@ -185,14 +184,13 @@ pub(crate) struct DestArgs<S> {
     pub name: S,
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for DestArgs<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for DestArgs<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             name: scanner.next()?.expect_some("name")?,
         })

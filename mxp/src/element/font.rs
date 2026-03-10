@@ -120,25 +120,22 @@ impl Font<Cow<'_, str>> {
     }
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for Font<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for Font<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             face: scanner.next_or("face")?,
-            size: scanner
-                .next_or("size")?
-                .and_then(|size| size.as_ref().parse().ok()),
+            size: scanner.next_or("size")?.and_then(|size| size.parse().ok()),
             color: scanner
                 .next_or("color")?
                 .map(|color| FgColor { inner: color }),
             back: scanner
                 .next_or("back")?
-                .and_then(|back| RgbColor::named(back.as_ref())),
+                .and_then(|back| RgbColor::named(&back)),
         })
     }
 }

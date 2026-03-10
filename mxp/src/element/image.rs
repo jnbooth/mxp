@@ -67,14 +67,13 @@ impl Image<Cow<'_, str>> {
     }
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for Image<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for Image<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         Ok(Self {
             fname: scanner.next_or("fname")?,
@@ -86,7 +85,7 @@ where
             vspace: scanner.next_or("VSPACE")?.expect_number()?,
             align: scanner
                 .next_or("ALIGN")?
-                .and_then(|align| align.as_ref().parse().ok()),
+                .and_then(|align| align.parse().ok()),
             is_map: scanner.into_keywords().contains(ImageKeyword::IsMap),
         })
     }

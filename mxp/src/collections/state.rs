@@ -83,11 +83,11 @@ impl State {
     }
 
     /// Decodes the actions of an element, using the specified arguments.
-    pub fn decode_element<'a, S: AsRef<str>>(
+    pub fn decode_element<'a>(
         &'a self,
         element: &'a Element,
-        args: &'a Arguments<S>,
-    ) -> DecodeElement<'a, ElementDecoder<'a, S>> {
+        args: &'a Arguments<'a>,
+    ) -> DecodeElement<'a, ElementDecoder<'a>> {
         DecodeElement {
             items: element.items.iter(),
             decoder: ElementDecoder {
@@ -104,10 +104,10 @@ impl State {
     }
 
     /// Decodes the action of a predefined tag.
-    pub fn decode_tag<'a, S: AsRef<str>>(
+    pub fn decode_tag<'a>(
         &self,
         tag: &Tag,
-        args: &'a Arguments<S>,
+        args: &'a Arguments<'a>,
     ) -> crate::Result<Action<Cow<'a, str>>> {
         Action::parse(tag.action, args.scan(&self.entities))
     }
@@ -160,7 +160,7 @@ impl State {
         let mut words = Words::new(definition);
         let key = words.validate_next_or(ErrorKind::InvalidElementName)?;
         let s = words.as_str();
-        let args = words.parse_args::<&str>()?;
+        let args = words.parse_args()?;
         let mut scanner = args.scan(&self.entities).with_keywords();
         let Some(value) = scanner.next()? else {
             return Err(Error::new(s, ErrorKind::NoDefinitionTag));
@@ -178,7 +178,7 @@ impl State {
             .get_mut(key)
             .ok_or_else(|| Error::new(key, ErrorKind::UnknownElementInAttlist))?
             .attributes
-            .append(words)
+            .extend::<String>(words)
     }
 }
 
@@ -186,7 +186,7 @@ impl State {
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct DecodeElement<'a, D> {
     decoder: D,
-    items: slice::Iter<'a, ElementItem<String>>,
+    items: slice::Iter<'a, ElementItem<'a>>,
 }
 
 impl<'a, D> Iterator for DecodeElement<'a, D>

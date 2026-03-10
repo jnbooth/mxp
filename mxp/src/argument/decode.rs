@@ -46,22 +46,14 @@ impl Decoder for EntityMap {
 ///
 /// This `struct` is created by [`State::decode_element`](crate::State::decode_element).
 /// See its documentation for more.
-#[derive(Debug)]
-pub struct ElementDecoder<'a, S: AsRef<str>> {
+#[derive(Copy, Clone, Debug)]
+pub struct ElementDecoder<'a> {
     pub(crate) element: &'a Element,
     pub(crate) entities: &'a EntityMap,
-    pub(crate) args: &'a Arguments<S>,
+    pub(crate) args: &'a Arguments<'a>,
 }
 
-impl<S: AsRef<str>> Copy for ElementDecoder<'_, S> {}
-
-impl<S: AsRef<str>> Clone for ElementDecoder<'_, S> {
-    fn clone(&self) -> Self {
-        *self
-    }
-}
-
-impl<S: AsRef<str>> Decoder for ElementDecoder<'_, S> {
+impl Decoder for ElementDecoder<'_> {
     fn decode<'a, F: KeywordFilter>(&self, s: &'a str) -> crate::Result<Cow<'a, str>> {
         decode_amps(s, |entity| {
             if entity == "text" {
@@ -69,7 +61,7 @@ impl<S: AsRef<str>> Decoder for ElementDecoder<'_, S> {
             }
             match self
                 .args
-                .find_from_attributes::<F, _>(entity, &self.element.attributes)
+                .find_from_attributes::<F>(entity, &self.element.attributes)
             {
                 Some(attr) => Ok(Some(attr.into())),
                 None => self.entities.decode(entity),

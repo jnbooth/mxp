@@ -34,14 +34,13 @@ impl Filter<Cow<'_, str>> {
     }
 }
 
-impl<'a, D, S> TryFrom<Scan<'a, D, S>> for Filter<Cow<'a, str>>
+impl<'a, D> TryFrom<Scan<'a, D>> for Filter<Cow<'a, str>>
 where
     D: Decoder,
-    S: AsRef<str>,
 {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
             src: scanner.next_or("src")?.expect_some("src")?,
             dest: scanner.next_or("dest")?.expect_some("dest")?,
