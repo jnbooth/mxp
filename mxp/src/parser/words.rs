@@ -32,9 +32,13 @@ impl<'a> Words<'a> {
         }
     }
 
+    pub fn source(&self) -> &'a str {
+        self.s
+    }
+
     pub fn validate_next_or(&mut self, e: ErrorKind) -> crate::Result<&'a str> {
         match self.next() {
-            None => Err(Error::new("", e)),
+            None => Err(Error::new(self.source(), e)),
             Some(next) => {
                 validate(next, e)?;
                 Ok(next)

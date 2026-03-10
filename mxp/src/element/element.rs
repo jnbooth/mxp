@@ -4,9 +4,8 @@ use std::str::FromStr;
 
 use super::mode::Mode;
 use super::tag::Tag;
-use crate::argument::Arguments;
+use crate::argument::{Arguments, Decoder};
 use crate::color::RgbColor;
-use crate::entity::EntityMap;
 use crate::keyword::ElementKeyword;
 use crate::parser::{Error, ErrorKind, StringVariant, UnrecognizedVariant, Words};
 
@@ -29,7 +28,7 @@ impl ElementItem<'static> {
             _ => None,
         };
         if let Some(invalid) = invalid_name {
-            return Err(Error::new(words.next().unwrap_or(""), invalid));
+            return Err(Error::new(tag, invalid));
         }
         let tag = Tag::well_known(tag_name)
             .ok_or_else(|| Error::new(tag_name, ErrorKind::NoInbuiltDefinitionTag))?;
@@ -227,12 +226,12 @@ impl Element {
     }
 
     /// Parses an MXP element from a definition, using the specified entity map for decoding.
-    pub fn parse(definition: &str, entities: &EntityMap) -> crate::Result<ElementCommand> {
+    pub fn parse<D: Decoder>(definition: &str, decoder: D) -> crate::Result<ElementCommand> {
         let mut words = Words::new(definition);
         let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
         let args: Arguments<'static> = words.parse_args_to_owned()?;
 
-        let mut scanner = args.scan(entities).with_keywords();
+        let mut scanner = args.scan(decoder).with_keywords();
         let items = Self::parse_items(scanner.next()?.as_deref())?;
 
         let attributes: Arguments<'static> = match scanner.next_or("att")? {

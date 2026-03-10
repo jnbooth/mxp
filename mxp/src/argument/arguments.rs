@@ -76,7 +76,7 @@ impl<'a> Arguments<'a> {
                 iter.next();
                 let val = iter
                     .next()
-                    .ok_or_else(|| Error::new(name, ErrorKind::NoArgument))?;
+                    .ok_or_else(|| Error::new(iter.source(), ErrorKind::NoArgument))?;
                 self.named.insert(S::from(name).into(), S::from(val).into());
             } else {
                 self.positional.push(S::from(name).into());

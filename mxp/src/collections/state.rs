@@ -159,11 +159,10 @@ impl State {
     ) -> crate::Result<Option<EntityEntry<'a>>> {
         let mut words = Words::new(definition);
         let key = words.validate_next_or(ErrorKind::InvalidElementName)?;
-        let s = words.as_str();
         let args = words.parse_args()?;
         let mut scanner = args.scan(&self.entities).with_keywords();
         let Some(value) = scanner.next()? else {
-            return Err(Error::new(s, ErrorKind::NoDefinitionTag));
+            return Err(Error::new(definition, ErrorKind::NoDefinitionTag));
         };
         let desc = scanner.next_or("desc")?;
         let keywords = scanner.into_keywords();
