@@ -88,7 +88,7 @@ where
         let mut style: FlagSet<FontStyle> = FlagSet::empty();
         if let Some(fore) = fore {
             for effect in fore.split(',') {
-                let effect = effect.trim();
+                let effect = effect.trim_ascii();
                 if let Ok(flag) = effect.parse::<FontStyle>() {
                     style |= flag;
                 } else if let Some(rgb) = RgbColor::named(effect) {

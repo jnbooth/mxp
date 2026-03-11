@@ -242,10 +242,13 @@ impl FromStr for RgbColor {
     /// assert_eq!(color, Ok(RgbColor::rgb(0x12, 0x34, 0x56)));
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.len() != 7 || !s.starts_with('#') {
+        if s.len() != 7 {
             return Err(ParseHexColorError::NotHex(s.to_owned()));
         }
-        let code = u32::from_str_radix(&s[1..], 16)?;
+        let Some(("#", code)) = s.split_at_checked(1) else {
+            return Err(ParseHexColorError::NotHex(s.to_owned()));
+        };
+        let code = u32::from_str_radix(code, 16)?;
         Ok(RgbColor::try_from(code)?)
     }
 }

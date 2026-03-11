@@ -21,10 +21,7 @@ pub fn interpret_ansi(input: &str) -> impl Iterator<Item = TextFragment> {
     let mut output = BufferedOutput::new();
     output.append_text(start);
     for sequence in iter {
-        let Some(end) = sequence.find(|c: char| matches!(c, '@'..='z')) else {
-            continue;
-        };
-        let Some((escape, rest)) = sequence.split_at_checked(end + 1) else {
+        let Some((escape, rest)) = sequence.split_once(|c: char| matches!(c, '@'..='z')) else {
             continue;
         };
         interpreter.reset();

@@ -83,13 +83,15 @@ impl<T: FromStr> FromStr for Dimension<T> {
     type Err = T::Err;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let (unit, s) = match s.as_bytes().last() {
-            Some(b'%') => (DimensionUnit::Percentage, &s[..s.len() - 1]),
-            Some(b'c') => (DimensionUnit::CharacterSpacing, &s[..s.len() - 1]),
-            _ => (DimensionUnit::Pixel, s),
+        let (amount, unit) = match s.split_at_checked(s.len().saturating_sub(1)) {
+            Some((amount, "%")) => (amount, DimensionUnit::Percentage),
+            Some((amount, "c")) => (amount, DimensionUnit::CharacterSpacing),
+            _ => (s, DimensionUnit::Pixel),
         };
-        let amount = s.parse()?;
-        Ok(Self { amount, unit })
+        Ok(Self {
+            amount: amount.parse()?,
+            unit,
+        })
     }
 }
 

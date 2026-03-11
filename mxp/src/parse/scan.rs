@@ -112,18 +112,15 @@ where
         };
         let mut s = s.as_ref();
         let mut res = String::new();
-        while let Some(start) = s.find('&') {
-            if start > 0 {
-                res.push_str(&s[..start]);
+        while let Some((before, rest)) = s.split_once('&') {
+            if !before.is_empty() {
+                res.push_str(before);
             }
-            s = &s[start..];
-            let end = s
-                .find(';')
-                .ok_or_else(|| Error::new(s, ErrorKind::NoClosingSemicolon))?;
-            self.decoder
-                .decode_entity::<F>(&s[1..end])?
-                .push_to(&mut res);
-            s = &s[end + 1..];
+            let Some((entity, after)) = rest.split_once(';') else {
+                return Err(Error::new(rest, ErrorKind::NoClosingSemicolon));
+            };
+            self.decoder.decode_entity::<F>(entity)?.push_to(&mut res);
+            s = after;
         }
         if res.is_empty() {
             return Ok(Some(Cow::Borrowed(s)));
