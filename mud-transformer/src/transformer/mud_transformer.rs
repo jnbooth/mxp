@@ -14,8 +14,8 @@ use super::state::StateLock;
 use super::tag::{Tag, TagList};
 use crate::input::{BufferedInput, InputDrain};
 use crate::output::{
-    BufferedOutput, ControlFragment, EntityFragment, EntitySetter, MxpFragment, OutputDrain,
-    OutputFragment, TelnetFragment, TextStyle,
+    BufferedOutput, ControlFragment, EntityFragment, MxpFragment, OutputDrain, OutputFragment,
+    TelnetFragment, TextStyle,
 };
 use crate::protocol::negotiate::{Negotiate, TelnetSource, TelnetVerb};
 use crate::protocol::{self, charset, mccp, mnes, msdp, mssp, mtts, xterm};
@@ -314,11 +314,8 @@ impl Transformer {
 
             mxp::Component::Element(el) => {
                 if let Some(variable) = &el.variable {
-                    self.output.set_mxp_entity(EntitySetter {
-                        name: variable.clone(),
-                        flags: FlagSet::empty(),
-                        is_variable: true,
-                    });
+                    self.output
+                        .set_mxp_entity(variable.clone(), FlagSet::empty(), true);
                 }
                 self.mxp_open_element(el, &args, mxp_state)
             }
@@ -335,11 +332,7 @@ impl Transformer {
             self.handle_mxp_error(e);
             return;
         }
-        self.output.set_mxp_entity(EntitySetter {
-            name: variable,
-            flags: keywords,
-            is_variable: false,
-        });
+        self.output.set_mxp_entity(variable, keywords, false);
     }
 
     fn mxp_open_element(
@@ -387,7 +380,7 @@ impl Transformer {
             Action::Link(link) => self.output.set_mxp_action(link),
             Action::Music(music) => self.output.append(music.into_owned()),
             Action::MusicOff => self.output.append(MxpFragment::MusicOff),
-            Action::Mxp(mxp) => self.mxp_set_keywords(mxp.keywords),
+            Action::MxpOff => self.mxp_off(true),
             Action::NoBr => self.ignore_next_newline = true,
             Action::P => self.in_paragraph = true,
             Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
@@ -419,20 +412,6 @@ impl Transformer {
                 };
                 writeln!(self.input, "{response}\r");
             }
-        }
-    }
-
-    fn mxp_set_keywords(&mut self, keywords: FlagSet<mxp::MxpKeyword>) {
-        use mxp::MxpKeyword;
-        if keywords.contains(MxpKeyword::Off) {
-            self.mxp_off(true);
-        }
-        self.mxp_mode.apply_keywords(keywords);
-
-        if keywords.contains(MxpKeyword::IgnoreNewlines) {
-            self.in_paragraph = true;
-        } else if keywords.contains(MxpKeyword::UseNewlines) {
-            self.in_paragraph = false;
         }
     }
 

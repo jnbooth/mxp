@@ -4,8 +4,14 @@ use std::str::FromStr;
 use crate::Error;
 use crate::parse::{Decoder, ExpectArg as _, Scan};
 
+/// A MUD sets a style-sheet version number by sending the `<VERSION styleversion>` tag to the
+/// client. The client caches this version information and returns it when requested by a plain
+/// `<VERSION>` request.
+///
+/// See [`MXP specification: <VERSION>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct StyleVersion<S = String> {
+    /// Style-sheet version number.
     pub styleversion: S,
 }
 
@@ -38,9 +44,9 @@ impl<'a, D: Decoder> TryFrom<Scan<'a, D>> for StyleVersion<Cow<'a, str>> {
     type Error = Error;
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
-        Ok(Self {
-            styleversion: scanner.next()?.expect_some("styleversion")?,
-        })
+        let styleversion = scanner.next()?.expect_some("styleversion")?;
+        scanner.expect_end()?;
+        Ok(Self { styleversion })
     }
 }
 

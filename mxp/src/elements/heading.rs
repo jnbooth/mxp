@@ -1,5 +1,8 @@
 use std::str::FromStr;
 
+/// Sets text heading level.
+///
+/// See [MXP Specification: HTML tags](https://www.zuggsoft.com/zmud/mxp.htm#HTML%20tags).
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Heading {
     H1 = 1,

@@ -6,9 +6,13 @@ use flagset::FlagSet;
 use crate::keyword::EntityKeyword;
 use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
 
+/// The `<VAR>` tag is just like the `<!ENTITY>` tag, except that the value of the variable is
+/// placed between the `<VAR>` and `</VAR>` tags, and this value is displayed to the user.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Var<S = String> {
+    /// Variable name.
     pub variable: S,
+    /// Keywords.
     pub keywords: FlagSet<EntityKeyword>,
 }
 
@@ -47,10 +51,9 @@ where
 
     fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
-        Ok(Self {
-            variable: scanner.next()?.expect_some("variable")?,
-            keywords: scanner.into_keywords(),
-        })
+        let variable = scanner.next()?.expect_some("variable")?;
+        let keywords = scanner.into_keywords()?;
+        Ok(Self { variable, keywords })
     }
 }
 

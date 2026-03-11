@@ -253,7 +253,17 @@ impl SpanList {
         set_opt_prop!(self, heading);
     }
 
-    pub fn set_entity(&mut self, entity: EntitySetter) -> bool {
+    pub fn set_entity(
+        &mut self,
+        name: String,
+        flags: FlagSet<mxp::EntityKeyword>,
+        is_variable: bool,
+    ) -> bool {
+        let entity = EntitySetter {
+            name,
+            flags,
+            is_variable,
+        };
         set_opt_prop!(self, entity);
     }
 

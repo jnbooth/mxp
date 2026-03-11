@@ -46,9 +46,9 @@ where
     type Error = Error;
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
-        Ok(Self {
-            name: scanner.next()?,
-        })
+        let name = scanner.next()?;
+        scanner.expect_end()?;
+        Ok(Self { name })
     }
 }
 

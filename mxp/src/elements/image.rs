@@ -7,6 +7,10 @@ use crate::screen::{Align, Dimension};
 
 /// Displays an inline graphics image.
 ///
+/// Clients typically treat images as large individual characters.  Images always take up the
+/// entire height of the line; text cannot wrap lines next to an image. Text wrapping to the next
+/// line will wrap at the normal left margin of the screen until the graphics image.
+///
 /// See [MXP specification: `<IMAGE>`](https://www.zuggsoft.com/zmud/mxp.htm#Images).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Image<S = String> {
@@ -27,7 +31,8 @@ pub struct Image<S = String> {
     pub hspace: Option<Dimension<u32>>,
     /// Additional space to add above and below the image.
     pub vspace: Option<Dimension<u32>>,
-    /// Controls the alignment of the image on the line.  For example, if ALIGN=Bottom is used, the rest of the text on the line will align with the bottom of the image.
+    /// Controls the alignment of the image on the line. For example, if `ALIGN=Bottom` is used, the
+    /// rest of the text on the line will align with the bottom of the image.
     pub align: Option<Align>,
     /// Indicates that the image is an image-map. When an image-map is included within a `<SEND>`
     /// tag, the command sent to the MUD is appended with `"?X,Y"` where X,Y is the position clicked
@@ -84,18 +89,26 @@ where
 
     fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
+        let fname = scanner.next_or("fname")?;
+        let url = scanner.next_or("url")?;
+        let class = scanner.next_or("T")?;
+        let height = scanner.next_or("H")?.expect_number()?;
+        let width = scanner.next_or("W")?.expect_number()?;
+        let hspace = scanner.next_or("HSPACE")?.expect_number()?;
+        let vspace = scanner.next_or("VSPACE")?.expect_number()?;
+        let align = scanner.next_or("ALIGN")?.expect_variant()?;
+        let keywords = scanner.into_keywords()?;
+        let is_map = keywords.contains(ImageKeyword::IsMap);
         Ok(Self {
-            fname: scanner.next_or("fname")?,
-            url: scanner.next_or("url")?,
-            class: scanner.next_or("T")?,
-            height: scanner.next_or("H")?.expect_number()?,
-            width: scanner.next_or("W")?.expect_number()?,
-            hspace: scanner.next_or("HSPACE")?.expect_number()?,
-            vspace: scanner.next_or("VSPACE")?.expect_number()?,
-            align: scanner
-                .next_or("ALIGN")?
-                .and_then(|align| align.parse().ok()),
-            is_map: scanner.into_keywords().contains(ImageKeyword::IsMap),
+            fname,
+            url,
+            class,
+            height,
+            width,
+            hspace,
+            vspace,
+            align,
+            is_map,
         })
     }
 }

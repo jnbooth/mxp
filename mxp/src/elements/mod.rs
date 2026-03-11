@@ -14,7 +14,7 @@ mod filter;
 pub use filter::Filter;
 
 mod font;
-pub use font::{FgColor, Font, FontEffect, FontStyle};
+pub use font::{Font, FontStyle};
 
 mod heading;
 pub use heading::Heading;
@@ -33,9 +33,6 @@ pub use image::Image;
 
 mod link;
 pub use link::{Link, LinkPrompt, SendTo};
-
-mod mxp;
-pub use mxp::Mxp;
 
 mod relocate;
 pub use relocate::Relocate;

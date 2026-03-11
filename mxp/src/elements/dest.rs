@@ -98,7 +98,7 @@ where
             .next_or("y")?
             .expect_number()?
             .and_then(NonZero::new);
-        let keywords = scanner.into_keywords();
+        let keywords = scanner.into_keywords()?;
         Ok(Self {
             name,
             column,

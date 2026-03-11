@@ -91,7 +91,7 @@ impl Element {
             }
         };
 
-        let keywords = scanner.into_keywords();
+        let keywords = scanner.into_keywords()?;
 
         if keywords.contains(ElementKeyword::Delete) {
             return Ok(ElementCommand::Delete(name.to_owned()));

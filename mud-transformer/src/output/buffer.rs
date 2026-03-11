@@ -6,8 +6,8 @@ use flagset::FlagSet;
 use mxp::RgbColor;
 
 use super::{
-    ControlFragment, EntityFragment, EntitySetter, Output, OutputDrain, OutputFragment, SpanList,
-    TelnetFragment, TextFragment, TextStyle,
+    ControlFragment, EntityFragment, Output, OutputDrain, OutputFragment, SpanList, TelnetFragment,
+    TextFragment, TextStyle,
 };
 use crate::responses::SgrReport;
 use crate::term::{TermColor, XTermPalette};
@@ -400,6 +400,7 @@ impl BufferedOutput {
             face,
             size,
             color,
+            style,
             back,
         } = font;
         let mut changed = false;
@@ -410,12 +411,10 @@ impl BufferedOutput {
             changed = self.spans.set_size(size) || changed;
         }
         if let Some(color) = color {
-            for fg in &color {
-                changed = match fg {
-                    mxp::FontEffect::Color(fg) => self.spans.set_foreground(fg.into()),
-                    mxp::FontEffect::Style(style) => self.spans.set_flag(style.into()),
-                } || changed;
-            }
+            changed = self.spans.set_foreground(color.into()) || changed;
+        }
+        for flag in style {
+            changed = self.spans.set_flag(flag.into()) || changed;
         }
         if let Some(back) = back {
             changed = self.spans.set_background(back.into()) || changed;
@@ -437,9 +436,14 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_mxp_entity(&mut self, entity: EntitySetter) {
+    pub fn set_mxp_entity(
+        &mut self,
+        name: String,
+        flags: FlagSet<mxp::EntityKeyword>,
+        is_variable: bool,
+    ) {
         self.in_variable = true;
-        if self.spans.set_entity(entity) {
+        if self.spans.set_entity(name, flags, is_variable) {
             self.flush_mxp();
         }
     }

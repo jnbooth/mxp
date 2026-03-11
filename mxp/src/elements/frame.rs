@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::str::FromStr;
 
 use crate::keyword::FrameKeyword;
-use crate::parse::{Decoder, Error, ExpectArg as _, Scan, StringVariant, UnrecognizedVariant};
+use crate::parse::{Decoder, Error, ExpectArg as _, Scan, UnrecognizedVariant};
 use crate::screen::{Align, Dimension};
 
 /// Action to apply to a [`Frame`].
@@ -19,11 +19,6 @@ pub enum FrameAction {
     /// If an action of `REDIRECT` is used and the frame doesn't exist, it is created first as if an
     /// action of `OPEN` was specified, then output is redirected after the frame is created.
     Redirect,
-}
-
-impl StringVariant for FrameAction {
-    type Variant = Self;
-    const VARIANTS: &[Self] = &[Self::Open, Self::Close, Self::Redirect];
 }
 
 impl_parse_enum!(FrameAction, Open, Close, Redirect);
@@ -123,6 +118,14 @@ impl<S: AsRef<str>> Frame<S> {
 
 impl_partial_eq!(Frame);
 
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum YesOrNo {
+    No,
+    Yes,
+}
+
+impl_parse_enum!(YesOrNo, No, Yes);
+
 impl<'a, D> TryFrom<Scan<'a, D>> for Frame<Cow<'a, str>>
 where
     D: Decoder,
@@ -134,12 +137,12 @@ where
         let name = scanner.next_or("name")?.expect_some("name")?;
         let action = scanner
             .next_or("action")?
-            .and_then(|action| action.parse().ok())
+            .expect_variant()?
             .unwrap_or_default();
         let title = scanner.next_or("title")?;
-        let align: Align = scanner
+        let align = scanner
             .next_or("align")?
-            .and_then(|align| align.parse().ok())
+            .expect_variant()?
             .unwrap_or_default();
         let left = scanner
             .next_or("left")?
@@ -148,10 +151,8 @@ where
         let top = scanner.next_or("top")?.expect_number()?.unwrap_or_default();
         let width = scanner.next_or("width")?.expect_number()?;
         let height = scanner.next_or("height")?.expect_number()?;
-        let scrolling = scanner
-            .next_or("scrolling")?
-            .is_some_and(|scrolling| scrolling.eq_ignore_ascii_case("yes"));
-        let keywords = scanner.into_keywords();
+        let scrolling = scanner.next_or("scrolling")?.expect_variant()? == Some(YesOrNo::Yes);
+        let keywords = scanner.into_keywords()?;
         let layout = if keywords.contains(FrameKeyword::Internal) {
             FrameLayout::Internal { align }
         } else {

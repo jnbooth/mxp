@@ -21,10 +21,10 @@ where
     type Error = Error;
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
-        Ok(Self {
-            fore: scanner.next_or("fore")?.color(),
-            back: scanner.next_or("back")?.color(),
-        })
+        let fore = scanner.next_or("fore")?.expect_color()?;
+        let back = scanner.next_or("back")?.expect_color()?;
+        scanner.expect_end()?;
+        Ok(Self { fore, back })
     }
 }
 

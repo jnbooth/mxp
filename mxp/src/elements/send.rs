@@ -20,15 +20,20 @@ where
 
     fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
+        let href = scanner.next_or("href")?;
+        let hint = scanner.next_or("hint")?;
+        let expire = scanner.next_or("expire")?;
+        let keywords = scanner.into_keywords()?;
+        let send_to = if keywords.contains(SendKeyword::Prompt) {
+            SendTo::Input
+        } else {
+            SendTo::World
+        };
         Ok(Self {
-            href: scanner.next_or("href")?,
-            hint: scanner.next_or("hint")?,
-            expire: scanner.next_or("expire")?,
-            send_to: if scanner.into_keywords().contains(SendKeyword::Prompt) {
-                SendTo::Input
-            } else {
-                SendTo::World
-            },
+            href,
+            hint,
+            send_to,
+            expire,
         })
     }
 }

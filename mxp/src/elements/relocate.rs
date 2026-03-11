@@ -48,10 +48,10 @@ where
     type Error = Error;
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
-        Ok(Self {
-            hostname: scanner.next()?.expect_some("hostname")?,
-            port: scanner.next()?.expect_number()?.expect_some("port")?,
-        })
+        let hostname = scanner.next()?.expect_some("hostname")?;
+        let port = scanner.next()?.expect_number()?.expect_some("port")?;
+        scanner.expect_end()?;
+        Ok(Self { hostname, port })
     }
 }
 

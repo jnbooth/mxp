@@ -3,8 +3,6 @@ use std::fmt;
 use std::marker::PhantomData;
 use std::str;
 
-use flagset::Flags;
-
 /// Type associated with an [`mxp::Error`](Error).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ErrorKind {
@@ -42,8 +40,6 @@ pub enum ErrorKind {
     NoInbuiltDefinitionTag,
     /// eg. <!ELEMENT foo '<>' >
     NoDefinitionTag,
-    /// variable name in FLAG does not meet MUSHclient rules
-    BadVariableName,
     /// ATTLIST for undefined element name
     UnknownElementInAttlist,
     /// cannot redefine inbuilt entity
@@ -76,10 +72,6 @@ pub enum ErrorKind {
     NoArgument,
     /// eg. <a>
     IncompleteArguments,
-    /// invalid argument to <support> tag
-    InvalidSupportArgument,
-    /// invalid argument to <option> tag
-    InvalidOptionArgument,
     /// eg. <!ELEMENT foo '</bold>' >
     DefinitionCannotCloseElement,
     /// eg. <!ELEMENT foo '<!ELEMENT>' >
@@ -173,11 +165,6 @@ pub(crate) trait StringVariant: Sized + 'static {
     const VARIANTS: &[Self::Variant];
 }
 
-impl<T: Flags + fmt::Debug> StringVariant for T {
-    type Variant = Self;
-    const VARIANTS: &[Self] = Self::LIST;
-}
-
 /// Error caused by attempting to parse a string that did not match any variant of a string-like
 /// type.
 pub struct UnrecognizedVariant<T> {
@@ -235,3 +222,9 @@ impl<T: StringVariant> fmt::Display for UnrecognizedVariant<T> {
 }
 
 impl<T: StringVariant> std::error::Error for UnrecognizedVariant<T> {}
+
+impl<T: StringVariant> From<UnrecognizedVariant<T>> for Error {
+    fn from(value: UnrecognizedVariant<T>) -> Self {
+        Self::new(value.input, ErrorKind::UnexpectedEntityArguments)
+    }
+}

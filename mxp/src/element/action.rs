@@ -3,12 +3,12 @@ use std::str::FromStr;
 
 use super::action_kind::ActionKind;
 use super::tag::Tag;
-use crate::ErrorKind;
 use crate::elements::{
-    Color, Dest, Expire, Filter, Font, Frame, Gauge, Heading, Hyperlink, Image, Link, Music, Mxp,
+    Color, Dest, Expire, Filter, Font, Frame, Gauge, Heading, Hyperlink, Image, Link, Music,
     Relocate, Send, Sound, Stat, StyleVersion, Support, Var,
 };
-use crate::parse::{Decoder, FromStrError, Scan, Words};
+use crate::parse::{Decoder, ExpectArg, FromStrError, Scan, Words};
+use crate::{Error, ErrorKind};
 
 /// Effect caused by an [`Element`](crate::Element).
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -64,9 +64,9 @@ pub enum Action<S> {
     /// [`<MUSIC OFF>`](https://www.zuggsoft.com/zmud/mxp.htm#MSP%20Compatibility):
     /// Stop music.
     MusicOff,
-    /// [`<MXP>`](https://gpascal.com/forum/?id=232):
+    /// [`<MXP OFF>`](https://gpascal.com/forum/?id=232):
     /// MXP control command. This is an unofficial extension to the MXP protocol.
-    Mxp(Mxp),
+    MxpOff,
     /// [`<NOBR>`](https://www.zuggsoft.com/zmud/mxp.htm#Line%20Spacing):
     /// Ignore next newline.
     NoBr,
@@ -150,7 +150,14 @@ impl<'a> Action<Cow<'a, str>> {
             ActionKind::Hyperlink => Self::Link(Hyperlink::try_from(scanner)?.into()),
             ActionKind::Image => Self::Image(Image::try_from(scanner)?),
             ActionKind::Italic => Self::Italic,
-            ActionKind::Mxp => Self::Mxp(scanner.try_into()?),
+            ActionKind::Mxp => {
+                let command = scanner.next()?.expect_some("off")?;
+                if command.eq_ignore_ascii_case("off") {
+                    Self::MxpOff
+                } else {
+                    return Err(Error::new(command, ErrorKind::UnexpectedEntityArguments));
+                }
+            }
             ActionKind::Music => {
                 let music = Music::try_from(scanner)?;
                 if music.is_off() {
@@ -227,7 +234,7 @@ impl<S> Action<S> {
             Self::Link(link) => Action::Link(link),
             Self::Music(music) => Action::Music(music.map_text(f)),
             Self::MusicOff => Action::MusicOff,
-            Self::Mxp(mxp) => Action::Mxp(mxp),
+            Self::MxpOff => Action::MxpOff,
             Self::NoBr => Action::NoBr,
             Self::P => Action::P,
             Self::Password => Action::Password,

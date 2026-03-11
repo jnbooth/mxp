@@ -1,4 +1,4 @@
-use crate::parse::{StringVariant, UnrecognizedVariant};
+use crate::parse::UnrecognizedVariant;
 
 /// The MUD server can tag a line to be parsed in a specific way by the client.
 ///
@@ -15,17 +15,6 @@ pub enum ParseAs {
     RoomNum,
     /// The text for the element is parsed by as a MUD Prompt.
     Prompt,
-}
-
-impl StringVariant for ParseAs {
-    type Variant = Self;
-    const VARIANTS: &[Self] = &[
-        Self::RoomName,
-        Self::RoomDesc,
-        Self::RoomExit,
-        Self::RoomNum,
-        Self::Prompt,
-    ];
 }
 
 impl_parse_enum!(ParseAs, RoomName, RoomDesc, RoomExit, RoomNum, Prompt);

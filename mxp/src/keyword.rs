@@ -7,7 +7,7 @@ use crate::parse::UnrecognizedVariant;
 
 flags! {
     /// Keywords for [`<DEST>`](crate::DEST) tags.
-    pub enum DestKeyword: u8 {
+    pub(crate) enum DestKeyword: u8 {
         /// Causes the rest of the frame to be erased after displaying the text.
         Eof,
         /// Causes the rest of the line to be erased after displaying the text.
@@ -46,16 +46,6 @@ flags! {
         Gag,
         Enable,
         Disable,
-    }
-
-    /// Keywords for [`<MXP>`](crate::MXP) tags.
-    pub enum MxpKeyword: u8 {
-        Off,
-        DefaultLocked,
-        DefaultSecure,
-        DefaultOpen,
-        IgnoreNewlines,
-        UseNewlines,
     }
 
     /// Keywords for [`<SEND>`](crate::Link) tags.
@@ -112,17 +102,6 @@ impl_keyword_filter!(FrameKeyword);
 
 impl_parse_enum!(ImageKeyword, IsMap);
 impl_keyword_filter!(ImageKeyword);
-
-impl_parse_enum!(
-    MxpKeyword,
-    Off,
-    DefaultOpen,
-    DefaultSecure,
-    DefaultLocked,
-    UseNewlines,
-    IgnoreNewlines
-);
-impl_keyword_filter!(MxpKeyword);
 
 impl_parse_enum!(SendKeyword, Prompt);
 impl_keyword_filter!(SendKeyword);

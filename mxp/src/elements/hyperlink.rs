@@ -16,10 +16,10 @@ where
     type Error = Error;
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
-        Ok(Self {
-            href: scanner.next_or("href")?.expect_some("href")?,
-            hint: scanner.next_or("hint")?,
-            expire: scanner.next_or("expire")?,
-        })
+        let href = scanner.next_or("href")?.expect_some("href")?;
+        let hint = scanner.next_or("hint")?;
+        let expire = scanner.next_or("expire")?;
+        scanner.expect_end()?;
+        Ok(Self { href, hint, expire })
     }
 }

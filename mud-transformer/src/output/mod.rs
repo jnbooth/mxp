@@ -11,6 +11,5 @@ mod interpret_ansi;
 pub use interpret_ansi::interpret_ansi;
 
 mod span;
-pub(crate) use span::EntitySetter;
 pub(super) use span::SpanList;
 pub use span::TextStyle;

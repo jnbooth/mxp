@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 use std::marker::PhantomData;
-use std::num::ParseIntError;
 use std::ops::{Deref, DerefMut};
 use std::str::FromStr;
 use std::{slice, str};
@@ -9,7 +8,6 @@ use flagset::{FlagSet, Flags};
 
 use super::error::{Error, ErrorKind};
 use crate::collections::CaseFoldMap;
-use crate::color::RgbColor;
 use crate::entity::{DecodedEntity, Entity};
 use crate::keyword::KeywordFilter;
 
@@ -151,6 +149,16 @@ where
             None => self.next(),
         }
     }
+
+    pub fn expect_end(mut self) -> crate::Result<()> {
+        if let Some(next) = self.inner.next() {
+            return Err(Error::new(
+                next.clone(),
+                ErrorKind::UnexpectedEntityArguments,
+            ));
+        }
+        Ok(())
+    }
 }
 
 pub(crate) struct KeywordScan<'a, D, K: Flags> {
@@ -200,54 +208,14 @@ where
         }
     }
 
-    pub fn into_keywords(self) -> FlagSet<K> {
+    pub fn into_keywords(self) -> crate::Result<FlagSet<K>>
+    where
+        crate::Error: From<K::Err>,
+    {
         let mut keywords = self.keywords;
-        keywords.extend(self.inner.inner.filter_map(|arg| arg.parse::<K>().ok()));
-        keywords
-    }
-}
-
-pub(crate) trait ExpectArg {
-    type Arg;
-
-    fn color(self) -> Option<RgbColor>
-    where
-        Self::Arg: AsRef<str>;
-    fn expect_some(self, name: &str) -> crate::Result<Self::Arg>;
-    fn expect_number<T>(self) -> crate::Result<Option<T>>
-    where
-        Self::Arg: AsRef<str>,
-        T: FromStr<Err = ParseIntError>;
-}
-
-impl<S> ExpectArg for Option<S> {
-    type Arg = S;
-
-    fn color(self) -> Option<RgbColor>
-    where
-        Self::Arg: AsRef<str>,
-    {
-        RgbColor::named(self?.as_ref())
-    }
-
-    fn expect_some(self, name: &str) -> crate::Result<Self::Arg> {
-        match self {
-            Some(arg) => Ok(arg),
-            None => Err(Error::new(name, ErrorKind::IncompleteArguments)),
+        for keyword in self.inner.inner {
+            keywords |= keyword.parse::<K>()?;
         }
-    }
-
-    fn expect_number<T>(self) -> crate::Result<Option<T>>
-    where
-        Self::Arg: AsRef<str>,
-        T: FromStr<Err = ParseIntError>,
-    {
-        let Some(arg) = self else {
-            return Ok(None);
-        };
-        match arg.as_ref().parse() {
-            Ok(parsed) => Ok(Some(parsed)),
-            Err(_) => Err(Error::new(arg.as_ref(), ErrorKind::InvalidNumber)),
-        }
+        Ok(keywords)
     }
 }

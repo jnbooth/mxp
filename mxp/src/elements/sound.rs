@@ -202,13 +202,15 @@ where
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         let args = SoundOrMusic::parse(&mut scanner)?;
+        let priority = scanner.next_or("P")?.expect_number()?.unwrap_or(50);
+        scanner.expect_end()?;
         Ok(Self {
             fname: args.fname,
             volume: args.volume,
             repeats: args.repeats,
             class: args.class,
             url: args.url,
-            priority: scanner.next_or("P")?.expect_number()?.unwrap_or(50),
+            priority,
         })
     }
 }
@@ -301,16 +303,15 @@ where
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         let args = SoundOrMusic::parse(&mut scanner)?;
+        let continuation = scanner.next_or("C")?.expect_variant()?.unwrap_or_default();
+        scanner.expect_end()?;
         Ok(Self {
             fname: args.fname,
             volume: args.volume,
             repeats: args.repeats,
             class: args.class,
             url: args.url,
-            continuation: scanner
-                .next_or("C")?
-                .and_then(|continuation| continuation.parse().ok())
-                .unwrap_or_default(),
+            continuation,
         })
     }
 }

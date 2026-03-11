@@ -57,11 +57,16 @@ where
     type Error = Error;
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+        let entity = scanner.next()?.expect_some("EntityName")?;
+        let max = scanner.next_or("max")?;
+        let caption = scanner.next_or("caption")?;
+        let color = scanner.next_or("color")?.expect_color()?;
+        scanner.expect_end()?;
         Ok(Self {
-            entity: scanner.next()?.expect_some("EntityName")?,
-            max: scanner.next_or("max")?,
-            caption: scanner.next_or("caption")?,
-            color: scanner.next_or("color")?.color(),
+            entity,
+            max,
+            caption,
+            color,
         })
     }
 }

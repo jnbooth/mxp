@@ -201,14 +201,14 @@ impl FromStr for Link {
         let mut words = crate::parse::Words::new(source);
         let name = words.validate_next_or(crate::ErrorKind::InvalidElementName)?;
         let Some(tag) = crate::element::Tag::well_known(name) else {
-            return Err(crate::parse::FromStrError::UnexpectedTag(name.to_owned()));
+            return Err(Self::Err::UnexpectedTag(name.to_owned()));
         };
         let args = words.parse_args()?;
         let scanner = args.scan(());
         match tag.action {
             crate::ActionKind::Hyperlink => Ok(Hyperlink::try_from(scanner)?.into()),
             crate::ActionKind::Send => Ok(Send::try_from(scanner)?.into()),
-            _ => Err(crate::parse::FromStrError::UnexpectedTag(name.to_owned())),
+            _ => Err(Self::Err::UnexpectedTag(name.to_owned())),
         }
     }
 }

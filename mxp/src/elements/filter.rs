@@ -7,12 +7,17 @@ use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
 /// format to a standard GIF or BMP format.
 ///
 /// See [MXP specification: `<FILTER>`](https://www.zuggsoft.com/zmud/mxp.htm#File%20Filters).
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Filter<S = String> {
     /// File extension of the MUD-specific format.
     pub src: S,
-    pub dest: S,
+    /// Output file extension. Default is BMP.
+    pub dest: Option<S>,
+    /// Name of the plugin to be called.
     pub name: S,
+    /// Numeric parameter that the plugin can use to support multiple conversions as needed.
+    /// Default is 0.
+    pub proc: u32,
 }
 
 impl<S> Filter<S> {
@@ -23,8 +28,9 @@ impl<S> Filter<S> {
     {
         Filter {
             src: f(self.src),
-            dest: f(self.dest),
+            dest: self.dest.map(&mut f),
             name: f(self.name),
+            proc: self.proc,
         }
     }
 }
@@ -36,8 +42,9 @@ impl<S: AsRef<str>> Filter<S> {
     pub fn borrow_text(&self) -> Filter<&str> {
         Filter {
             src: self.src.as_ref(),
-            dest: self.dest.as_ref(),
+            dest: self.dest.as_ref().map(AsRef::as_ref),
             name: self.name.as_ref(),
+            proc: self.proc,
         }
     }
 }
@@ -51,10 +58,16 @@ where
     type Error = Error;
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+        let src = scanner.next_or("src")?.expect_some("src")?;
+        let dest = scanner.next_or("dest")?;
+        let name = scanner.next_or("name")?.expect_some("name")?;
+        let proc = scanner.next_or("proc")?.expect_number()?.unwrap_or(0);
+        scanner.expect_end()?;
         Ok(Self {
-            src: scanner.next_or("src")?.expect_some("src")?,
-            dest: scanner.next_or("dest")?.expect_some("dest")?,
-            name: scanner.next_or("name")?.expect_some("name")?,
+            src,
+            dest,
+            name,
+            proc,
         })
     }
 }

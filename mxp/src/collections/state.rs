@@ -190,7 +190,7 @@ impl State {
             return Err(Error::new(definition, ErrorKind::NoDefinitionTag));
         };
         let desc = scanner.next_or("desc")?;
-        let keywords = scanner.into_keywords();
+        let keywords = scanner.into_keywords()?;
         self.entities
             .set(key, &value, desc.map(Cow::into_owned), keywords)
     }

@@ -1,10 +1,7 @@
 use std::cmp;
 
-use flagset::FlagSet;
-
 use super::mode::Mode;
 use crate::element::ParseAs;
-use crate::keyword::MxpKeyword;
 
 /// State tracker for [`mxp::Mode`](crate::Mode).
 ///
@@ -103,36 +100,6 @@ impl ModeState {
     /// See the documentation for [`update`](Self::update) for more.
     pub const fn revert(&mut self) -> bool {
         self.set(self.default_mode)
-    }
-
-    /// Applies keywords that affect the default mode.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use mxp::ModeState;
-    ///
-    /// let mut mode_state = ModeState::new();
-    /// assert_eq!(mode_state, mxp::Mode::OPEN);
-    /// mode_state.apply_keywords(mxp::MxpKeyword::DefaultLocked);
-    /// mode_state.revert();
-    /// assert_eq!(mode_state, mxp::Mode::LOCKED);
-    /// mode_state.apply_keywords(mxp::MxpKeyword::DefaultSecure);
-    /// mode_state.revert();
-    /// assert_eq!(mode_state, mxp::Mode::SECURE);
-    /// mode_state.apply_keywords(mxp::MxpKeyword::DefaultOpen);
-    /// mode_state.revert();
-    /// assert_eq!(mode_state, mxp::Mode::OPEN);
-    /// ```
-    pub fn apply_keywords<T: Into<FlagSet<MxpKeyword>>>(&mut self, keywords: T) {
-        let keywords = keywords.into();
-        if keywords.contains(MxpKeyword::DefaultLocked) {
-            self.default_mode = Mode::LOCKED;
-        } else if keywords.contains(MxpKeyword::DefaultSecure) {
-            self.default_mode = Mode::SECURE;
-        } else if keywords.contains(MxpKeyword::DefaultOpen) {
-            self.default_mode = Mode::OPEN;
-        }
     }
 
     /// Returns `true` if the active mode is secure. Additionally, if the active mode is

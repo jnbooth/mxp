@@ -24,7 +24,7 @@ pub use entity::{
 pub mod escape;
 
 mod keyword;
-pub use keyword::{DestKeyword, EntityKeyword, KeywordFilter, MxpKeyword};
+pub use keyword::{EntityKeyword, KeywordFilter};
 
 mod mode;
 pub use mode::{Mode, ModeRangeError, ModeState};

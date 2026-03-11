@@ -117,11 +117,11 @@ impl LineTagUpdate {
 
         let window = scanner.next_or("windowname")?.map(Cow::into_owned);
 
-        let fore = scanner.next_or("fore")?.color();
+        let fore = scanner.next_or("fore")?.expect_color()?;
 
-        let back = scanner.next_or("back")?.color();
+        let back = scanner.next_or("back")?.expect_color()?;
 
-        let keywords = scanner.into_keywords();
+        let keywords = scanner.into_keywords()?;
         let gag = if keywords.contains(LineTagKeyword::Gag) {
             Some(true)
         } else {

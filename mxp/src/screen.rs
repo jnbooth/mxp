@@ -1,7 +1,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::parse::{StringVariant, UnrecognizedVariant};
+use crate::parse::UnrecognizedVariant;
 
 /// Alignment of an on-screen item.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
@@ -12,17 +12,6 @@ pub enum Align {
     Left,
     Right,
     Middle,
-}
-
-impl StringVariant for Align {
-    type Variant = Self;
-    const VARIANTS: &[Self] = &[
-        Self::Top,
-        Self::Bottom,
-        Self::Left,
-        Self::Right,
-        Self::Middle,
-    ];
 }
 
 impl_parse_enum!(Align, Top, Bottom, Left, Right, Middle);
