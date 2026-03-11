@@ -83,16 +83,21 @@ impl State {
     }
 
     /// Retrieves a tag or element by name. Returns an error if no tag or element is defined by
-    /// that name, or if the name is not a valid MXP identifier.
-    pub fn get_component(&self, name: &str) -> crate::Result<Component<'_>> {
-        if let Some(tag) = Tag::well_known(name) {
-            Ok(Component::Tag(tag))
+    /// that name, if the name is not a valid MXP identifier, or if the tag or element is not Open
+    /// (see [`Component::is_open`]) and `secure` is false.
+    pub fn get_component(&self, name: &str, secure: bool) -> crate::Result<Component<'_>> {
+        let component = if let Some(tag) = Tag::well_known(name) {
+            Component::Tag(tag)
         } else if let Some(custom) = self.elements.get(name) {
-            Ok(Component::Element(custom))
+            Component::Element(custom)
         } else {
             validate(name, ErrorKind::InvalidElementName)?;
-            Err(Error::new(name, ErrorKind::UnknownElement))
+            return Err(Error::new(name, ErrorKind::UnknownElement));
+        };
+        if !secure && !component.is_open() {
+            return Err(Error::new(name, ErrorKind::ElementWhenNotSecure));
         }
+        Ok(component)
     }
 
     /// Retrieves the element associated with a line tag for a specified mode, if one exists.
@@ -124,7 +129,7 @@ impl State {
     /// Decodes the value of an entity.
     /// Alias for `self.entities().decode(name)`.
     /// See [`EntityMap::decode`].
-    pub fn decode_entity(&self, name: &str) -> crate::Result<Option<DecodedEntity<'_>>> {
+    pub fn decode_entity(&self, name: &str) -> crate::Result<DecodedEntity<'_>> {
         self.entities.decode(name)
     }
 
@@ -157,14 +162,24 @@ impl State {
         Ok(None)
     }
 
+    fn guard_global_element(name: &str) -> crate::Result<()> {
+        if Tag::well_known(name).is_some() {
+            Err(Error::new(name, ErrorKind::CannotRedefineElement))
+        } else {
+            Ok(())
+        }
+    }
+
     fn define_element(&mut self, definition: &str) -> crate::Result<()> {
         let el = match Element::parse(definition, &self.entities)? {
             ElementCommand::Define(el) => el,
             ElementCommand::Delete(name) => {
+                Self::guard_global_element(&name)?;
                 self.elements.remove(&name);
                 return Ok(());
             }
         };
+        Self::guard_global_element(&el.name)?;
         if let Some(tag) = el.tag {
             self.line_tags.set(usize::from(tag.get()), el.name.clone());
         }

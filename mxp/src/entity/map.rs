@@ -34,7 +34,8 @@ impl EntityMap {
     /// use mxp::EntityMap;
     ///
     /// let map = EntityMap::new();
-    /// assert_eq!(map.decode("lt"), Ok(None));
+    /// // global entities not recognized
+    /// assert!(map.decode("lt").is_err());
     /// ```
     pub fn new() -> Self {
         Self::default()
@@ -48,7 +49,7 @@ impl EntityMap {
     /// use mxp::EntityMap;
     ///
     /// let map = EntityMap::with_globals();
-    /// assert_eq!(map.decode("lt"), Ok(Some("<".into())));
+    /// assert_eq!(map.decode("lt"), Ok("<".into()));
     /// ```
     pub fn with_globals() -> Self {
         Self {
@@ -101,8 +102,8 @@ impl EntityMap {
     /// let mut map = EntityMap::with_globals();
     /// map.insert("HP".to_owned(), "150".to_owned());
     /// map.clear();
-    /// assert_eq!(map.decode("HP"), Ok(None)); // custom entities cleared
-    /// assert_eq!(map.decode("lt"), Ok(Some("<".into()))); // global entities not cleared
+    /// assert!(map.decode("HP").is_err()); // custom entities cleared
+    /// assert_eq!(map.decode("lt"), Ok("<".into())); // global entities not cleared
     /// ```
     pub fn clear(&mut self) {
         self.inner.clear();
@@ -118,23 +119,23 @@ impl EntityMap {
     /// let mut map = EntityMap::with_globals();
     ///
     /// // Decoding a global entity
-    /// assert_eq!(map.decode("lt"), Ok(Some("<".into())));
+    /// assert_eq!(map.decode("lt"), Ok("<".into()));
     ///
     /// // Decoding a custom entity
-    /// assert_eq!(map.decode("HP"), Ok(None));
+    /// assert!(map.decode("HP").is_err()); // Not defined yet
     /// map.insert("HP".to_owned(), "150".to_owned());
-    /// assert_eq!(map.decode("HP"), Ok(Some("150".into())));
+    /// assert_eq!(map.decode("HP"), Ok("150".into()));
     ///
     /// // Decoding a decimal character code
-    /// assert_eq!(map.decode("#32"), Ok(Some(' '.into())));
+    /// assert_eq!(map.decode("#32"), Ok(' '.into()));
     ///
     /// // Decoding a hexadecimal character code
-    /// assert_eq!(map.decode("#x20"), Ok(Some(' '.into())));
+    /// assert_eq!(map.decode("#x20"), Ok(' '.into()));
     ///
     /// // Decoding an invalid character code
     /// assert!(map.decode("#xQ").is_err());
     /// ```
-    pub fn decode(&self, name: &str) -> crate::Result<Option<DecodedEntity<'_>>> {
+    pub fn decode(&self, name: &str) -> crate::Result<DecodedEntity<'_>> {
         self.decode_entity::<()>(name)
     }
 
@@ -234,7 +235,7 @@ impl EntityMap {
     /// use mxp::EntityMap;
     ///
     /// let mut map = EntityMap::with_globals();
-    /// assert_eq!(map.decode("HP"), Ok(None));
+    /// assert_eq!(map.get("HP"), None);
     /// map.insert("HP".to_owned(), "150".to_owned());
     /// assert_eq!(map.get("HP"), Some("150"));
     /// assert_eq!(map.get("lt"), None); // global entities are not queried
@@ -402,7 +403,7 @@ mod tests {
     fn set_new() {
         let mut map = EntityMap::new();
         map.set("key", "value", None, None).ok();
-        assert_eq!(map.decode("key"), Ok(Some("value".into())));
+        assert_eq!(map.get("key"), Some("value"));
     }
 
     #[test]
@@ -410,7 +411,7 @@ mod tests {
         let mut map = EntityMap::new();
         map.set("key", "value", None, None).ok();
         map.set("key", "", None, EntityKeyword::Delete).ok();
-        assert_eq!(map.decode("key"), Ok(None));
+        assert_eq!(map.get("key"), None);
     }
 
     #[test]
@@ -437,7 +438,7 @@ mod tests {
         map.set("key", "value3", None, EntityKeyword::Add).ok();
         map.set("key", "value2", None, EntityKeyword::Remove).ok();
         map.set("key", "x", None, EntityKeyword::Remove).ok();
-        assert_eq!(map.decode("key"), Ok(Some("value1|value3".into())));
+        assert_eq!(map.get("key"), Some("value1|value3"));
     }
 
     #[test]
@@ -458,24 +459,24 @@ mod tests {
         let mut map = EntityMap::new();
         map.set("key1", "value1", None, None).ok();
         map.set("key2", "value2", None, None).ok();
-        assert_eq!(map.decode("key1"), Ok(Some("value1".into())));
+        assert_eq!(map.decode("key1"), Ok("value1".into()));
     }
 
     #[test]
     fn decode_entity_unmatched() {
         let mut map = EntityMap::new();
         map.set("key2", "value2", None, None).ok();
-        assert_eq!(map.decode("key1"), Ok(None));
+        assert!(map.decode("key1").is_err());
     }
 
     #[test]
     fn decode_decimal() {
-        assert_eq!(EntityMap::new().decode("#32"), Ok(Some('\x20'.into())));
+        assert_eq!(EntityMap::new().decode("#32"), Ok('\x20'.into()));
     }
 
     #[test]
     fn decode_hex() {
-        assert_eq!(EntityMap::new().decode("#x7E"), Ok(Some('\x7e'.into())));
+        assert_eq!(EntityMap::new().decode("#x7E"), Ok('\x7e'.into()));
     }
 
     #[test]

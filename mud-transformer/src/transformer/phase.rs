@@ -52,7 +52,11 @@ impl Phase {
 
     pub const fn is_phase_reset(self, c: u8) -> bool {
         match self {
-            Self::Sb | Self::Subnegotiation | Self::SubnegotiationIac | Self::AnsiString => false,
+            Self::Normal
+            | Self::Sb
+            | Self::Subnegotiation
+            | Self::SubnegotiationIac
+            | Self::AnsiString => false,
             Self::Iac => matches!(c, b'\r' | b'\n' | ansi::ESC),
             _ => matches!(c, b'\r' | b'\n' | ansi::ESC | telnet::IAC),
         }

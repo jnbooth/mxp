@@ -52,10 +52,6 @@ pub enum ErrorKind {
     UnknownElement,
     /// eg. <send> in open mode
     ElementWhenNotSecure,
-    /// eg. <!ELEMENT foo '<send &bar>'>
-    NoClosingSemicolonInArgument,
-    /// closing tag we don't recognise
-    ClosingUnknownTag,
     /// argument to COLOR or FONT not recognised color
     UnknownColor,
     /// eg. 12d4
@@ -76,10 +72,6 @@ pub enum ErrorKind {
     DefinitionCannotCloseElement,
     /// eg. <!ELEMENT foo '<!ELEMENT>' >
     DefinitionCannotDefineElement,
-    /// cannot change option with <recommend_option>
-    CannotChangeOption,
-    /// option not in acceptable range
-    OptionOutOfRange,
     /// cannot convert bytes into UTF-8
     MalformedBytes,
     /// eg. </send bar >

@@ -53,8 +53,12 @@ pub struct Element {
 
 impl Element {
     /// Parses an element tag.
-    pub fn collect(text: &str) -> crate::Result<CollectedElement<'_>> {
-        CollectedElement::from_str(text)
+    pub fn collect(text: &str, secure: bool) -> crate::Result<CollectedElement<'_>> {
+        let collected = CollectedElement::parse(text)?;
+        if !secure && matches!(collected, CollectedElement::Definition(_)) {
+            return Err(Error::new(text, ErrorKind::DefinitionWhenNotSecure));
+        }
+        Ok(collected)
     }
 
     pub fn decode<'a, D>(&'a self, args: &'a Arguments<'a>, decoder: D) -> DecodeElement<'a, D>
@@ -153,14 +157,18 @@ impl Element {
             loop {
                 let (end, endc) = iter
                     .next()
-                    .ok_or_else(|| Error::new(argument, ErrorKind::NoClosingDefinitionQuote))?;
-                if endc == '>' {
-                    let definition = &argument[start + 1..end];
-                    items.push(ElementItem::parse(definition)?);
-                    break;
-                }
-                if (endc == '\'' || endc == '"') && !iter.any(|(_, c)| c == endc) {
-                    return Err(Error::new(argument, ErrorKind::NoClosingDefinitionQuote));
+                    .ok_or_else(|| Error::new(argument, ErrorKind::NoClosingDefinitionTag))?;
+                match endc {
+                    '<' => return Err(Error::new(argument, ErrorKind::UnexpectedDefinitionSymbol)),
+                    '>' => {
+                        let definition = &argument[start + 1..end];
+                        items.push(ElementItem::parse(definition)?);
+                        break;
+                    }
+                    '\'' | '"' if !iter.any(|(_, c)| c == endc) => {
+                        return Err(Error::new(argument, ErrorKind::NoClosingDefinitionQuote));
+                    }
+                    _ => (),
                 }
             }
         }

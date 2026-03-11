@@ -51,20 +51,10 @@ pub struct CollectedDefinition<'a> {
 }
 
 impl<'a> CollectedDefinition<'a> {
-    #[allow(clippy::should_implement_trait)]
-    fn from_str(text: &'a str) -> crate::Result<Self> {
-        fn fail_definition(text: &str) -> crate::Error {
-            crate::Error::new(text, ErrorKind::InvalidDefinition)
-        }
-
-        let Some((kind, definition)) = text.split_once(' ') else {
-            return Err(fail_definition(text));
-        };
-        let Ok(kind) = DefinitionKind::from_str(kind) else {
-            return Err(fail_definition(text));
-        };
-        Ok(Self {
-            kind,
+    fn parse(text: &'a str) -> Option<Self> {
+        let (kind, definition) = text.split_once(' ')?;
+        Some(Self {
+            kind: kind.parse().ok()?,
             text: definition,
         })
     }
@@ -82,17 +72,27 @@ pub enum CollectedElement<'a> {
 }
 
 impl<'a> CollectedElement<'a> {
-    #[allow(clippy::should_implement_trait)]
-    pub(crate) fn from_str(text: &'a str) -> crate::Result<Self> {
+    pub(crate) fn parse(text: &'a str) -> crate::Result<Self> {
         let tag = *text
             .as_bytes()
             .first()
-            .ok_or_else(|| Error::new("collected element", ErrorKind::EmptyElement))?;
+            .ok_or_else(|| Error::new(text, ErrorKind::EmptyElement))?;
 
         match tag {
-            b'!' => Ok(Self::Definition(CollectedDefinition::from_str(&text[1..])?)),
+            b'!' => {
+                let body = &text[1..];
+                if body.is_empty() {
+                    return Err(Error::new(text, ErrorKind::ElementTooShort));
+                }
+                let definition = CollectedDefinition::parse(body)
+                    .ok_or_else(|| Error::new(body, ErrorKind::InvalidDefinition))?;
+                Ok(Self::Definition(definition))
+            }
             b'/' => {
                 let body = &text[1..];
+                if body.is_empty() {
+                    return Err(Error::new(text, ErrorKind::ElementTooShort));
+                }
                 let mut words = Words::new(body);
                 let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
                 if words.next().is_some() {

@@ -238,44 +238,27 @@ impl Transformer {
         self.mxp_state.clear();
     }
 
-    fn mxp_endtag(&mut self, name: &str, secure: bool) -> mxp::Result<()> {
-        let (closed, _) = self.mxp_tags.find_last(secure, name)?;
-        self.mxp_close_tags_from(closed);
-        Ok(())
-    }
-
-    fn mxp_definition(
-        &mut self,
-        definition: mxp::CollectedDefinition,
-        text: &str,
-        secure: bool,
-    ) -> mxp::Result<()> {
-        if !secure {
-            return Err(mxp::Error::new(
-                text,
-                mxp::ErrorKind::DefinitionWhenNotSecure,
-            ));
-        }
-        let Some(entity) = self.mxp_state.define(definition)? else {
-            return Ok(());
-        };
-        self.output.append(EntityFragment::entity(&entity));
-        Ok(())
-    }
-
     fn mxp_collected_element(&mut self) -> mxp::Result<()> {
         let secure = self.mxp_mode.use_secure();
 
         let text = self.take_mxp_string()?;
 
-        match mxp::Element::collect(&text)? {
+        match mxp::Element::collect(&text, secure)? {
             mxp::CollectedElement::Definition(definition) => {
-                self.mxp_definition(definition, &text, secure)
+                let Some(entity) = self.mxp_state.define(definition)? else {
+                    return Ok(());
+                };
+                self.output.append(EntityFragment::entity(&entity));
+                Ok(())
             }
-            mxp::CollectedElement::TagClose(text) => self.mxp_endtag(text, secure),
-            mxp::CollectedElement::TagOpen(text) => {
+            mxp::CollectedElement::TagClose(name) => {
+                let (closed, _) = self.mxp_tags.find_last(secure, name)?;
+                self.mxp_close_tags_from(closed);
+                Ok(())
+            }
+            mxp::CollectedElement::TagOpen(name) => {
                 let mxp_state = self.mxp_state.take();
-                let result = self.mxp_start_tag(text, secure, &mxp_state);
+                let result = self.mxp_start_tag(name, secure, &mxp_state);
                 self.mxp_state.set(mxp_state);
                 result
             }
@@ -290,15 +273,11 @@ impl Transformer {
     ) -> mxp::Result<()> {
         let mut words = mxp::Words::new(tag);
         let name = words.validate_next_or(mxp::ErrorKind::InvalidElementName)?;
-        let component = mxp_state.get_component(name)?;
+        let component = mxp_state.get_component(name, secure)?;
 
         if !component.is_command() {
-            let name = component.name().to_owned();
-            if !component.is_open() && !secure {
-                return Err(mxp::Error::new(name, mxp::ErrorKind::ElementWhenNotSecure));
-            }
             self.mxp_tags.push(Tag {
-                name,
+                name: component.name().to_owned(),
                 secure,
                 span_index: self.output.span_len(),
             });
@@ -427,9 +406,8 @@ impl Transformer {
         let name = mxp_string.trim();
         mxp::validate(name, mxp::ErrorKind::InvalidEntityName)?;
         match self.mxp_state.decode_entity(name)? {
-            Some(mxp::DecodedEntity::Standard(c)) => self.output.append_char(c),
-            Some(mxp::DecodedEntity::Custom(s)) => self.output.append_text(s),
-            None => (),
+            mxp::DecodedEntity::Standard(c) => self.output.append_char(c),
+            mxp::DecodedEntity::Custom(s) => self.output.append_text(s),
         }
         Ok(())
     }
@@ -449,6 +427,11 @@ impl Transformer {
             self.handle_mxp_error(e);
         }
         self.mxp_state.set(mxp_state);
+    }
+
+    fn mxp_unterminated(&mut self, error: mxp::ErrorKind) {
+        self.handle_mxp_error(mxp::Error::new(&self.mxp_entity_string, error));
+        self.mxp_entity_string.clear();
     }
 
     pub fn reset_ansi(&mut self) {
@@ -516,8 +499,13 @@ impl Transformer {
 
         if self.phase.is_phase_reset(c) {
             self.phase = Phase::Normal;
-            if matches!(self.phase, Phase::Ansi | Phase::AnsiString) {
-                self.ansi.terminate();
+            match self.phase {
+                Phase::Ansi | Phase::AnsiString | Phase::Esc => self.ansi.terminate(),
+                Phase::MxpComment => self.mxp_unterminated(mxp::ErrorKind::UnterminatedComment),
+                Phase::MxpElement => self.mxp_unterminated(mxp::ErrorKind::UnterminatedElement),
+                Phase::MxpEntity => self.mxp_unterminated(mxp::ErrorKind::UnterminatedEntity),
+                Phase::MxpQuote => self.mxp_unterminated(mxp::ErrorKind::UnterminatedQuote),
+                _ => (),
             }
         }
 
@@ -860,21 +848,11 @@ impl Transformer {
                     self.phase = Phase::Normal;
                 }
                 b'<' => {
-                    self.handle_mxp_error(mxp::Error::new(
-                        &self.mxp_entity_string,
-                        mxp::ErrorKind::UnterminatedElement,
-                    ));
-                    self.mxp_entity_string.clear();
-                    self.mxp_entity_string.push(c);
+                    self.mxp_unterminated(mxp::ErrorKind::UnterminatedElement);
                 }
-                b'\'' => {
+                b'\'' | b'"' => {
                     self.mxp_entity_string.push(c);
-                    self.mxp_quote_terminator = NonZero::new(b'\'');
-                    self.phase = Phase::MxpQuote;
-                }
-                b'"' => {
-                    self.mxp_entity_string.push(c);
-                    self.mxp_quote_terminator = NonZero::new(b'"');
+                    self.mxp_quote_terminator = NonZero::new(c);
                     self.phase = Phase::MxpQuote;
                 }
                 b'-' => {
@@ -886,11 +864,10 @@ impl Transformer {
                 _ => self.mxp_entity_string.push(c),
             },
 
-            Phase::MxpComment if c == b'>' && self.mxp_entity_string.ends_with(b"--") => {
-                self.phase = Phase::Normal;
-            }
-
-            Phase::MxpComment => self.mxp_entity_string.push(c),
+            Phase::MxpComment => match c {
+                b'>' if self.mxp_entity_string.ends_with(b"--") => self.phase = Phase::Normal,
+                _ => self.mxp_entity_string.push(c),
+            },
 
             Phase::MxpQuote => {
                 if let Some(terminator) = self.mxp_quote_terminator
@@ -909,21 +886,9 @@ impl Transformer {
                         self.handle_mxp_error(e);
                     }
                 }
-                b'&' => {
-                    self.mxp_entity_string.push(c);
-                    self.handle_mxp_error(mxp::Error::new(
-                        &self.mxp_entity_string,
-                        mxp::ErrorKind::UnterminatedEntity,
-                    ));
-                    self.mxp_entity_string.clear();
-                }
+                b'&' => self.mxp_unterminated(mxp::ErrorKind::UnterminatedEntity),
                 b'<' => {
-                    self.mxp_entity_string.push(c);
-                    self.handle_mxp_error(mxp::Error::new(
-                        &self.mxp_entity_string,
-                        mxp::ErrorKind::UnterminatedEntity,
-                    ));
-                    self.mxp_entity_string.clear();
+                    self.mxp_unterminated(mxp::ErrorKind::UnterminatedEntity);
                     self.phase = Phase::MxpElement;
                 }
                 _ => self.mxp_entity_string.push(c),

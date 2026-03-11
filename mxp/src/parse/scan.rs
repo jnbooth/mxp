@@ -16,14 +16,19 @@ pub trait Decoder {
     where
         F: KeywordFilter;
 
-    fn decode_entity<F>(&self, entity: &str) -> crate::Result<Option<DecodedEntity<'_>>>
+    fn decode_entity<F>(&self, entity: &str) -> crate::Result<DecodedEntity<'_>>
     where
         F: KeywordFilter,
     {
         let (start, radix) = match entity.as_bytes() {
             [b'#', b'x', ..] => (2, 16),
             [b'#', ..] => (1, 10),
-            _ => return Ok(self.get_entity::<F>(entity).map(Into::into)),
+            _ => {
+                return match self.get_entity::<F>(entity) {
+                    Some(entity) => Ok(entity.into()),
+                    None => Err(Error::new(entity, ErrorKind::UnknownEntity)),
+                };
+            }
         };
         let Ok(code) = u32::from_str_radix(&entity[start..], radix) else {
             return Err(Error::new(entity, ErrorKind::InvalidEntityNumber));
@@ -32,7 +37,7 @@ pub trait Decoder {
             Some('\0'..='\x08' | '\x0a'..='\x1f' | '\x7f'..='\u{9f}') | None => {
                 Err(Error::new(entity, ErrorKind::DisallowedEntityNumber))
             }
-            Some(c) => Ok(Some(c.into())),
+            Some(c) => Ok(c.into()),
         }
     }
 }
@@ -42,7 +47,7 @@ impl<D: Decoder> Decoder for &D {
         D::get_entity::<F>(self, name)
     }
 
-    fn decode_entity<F>(&self, entity: &str) -> crate::Result<Option<DecodedEntity<'_>>>
+    fn decode_entity<F>(&self, entity: &str) -> crate::Result<DecodedEntity<'_>>
     where
         F: KeywordFilter,
     {
@@ -115,10 +120,9 @@ where
             let end = s
                 .find(';')
                 .ok_or_else(|| Error::new(s, ErrorKind::NoClosingSemicolon))?;
-            match self.decoder.decode_entity::<F>(&s[1..end])? {
-                Some(decoded) => decoded.push_to(&mut res),
-                None => res.push_str(&s[..=end]),
-            }
+            self.decoder
+                .decode_entity::<F>(&s[1..end])?
+                .push_to(&mut res);
             s = &s[end + 1..];
         }
         if res.is_empty() {
