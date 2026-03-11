@@ -2,26 +2,28 @@ use std::ops::{Deref, DerefMut};
 
 #[derive(Clone, Debug, Default)]
 pub struct StateLock {
-    inner: Option<mxp::State>,
+    inner: Option<Box<mxp::State>>,
 }
 
 impl StateLock {
     #[inline]
     #[track_caller]
-    pub fn take(&mut self) -> mxp::State {
+    pub fn take(&mut self) -> Box<mxp::State> {
         self.inner
             .take()
             .expect("attempted to borrow MXP state during another borrow")
     }
 
-    pub fn set(&mut self, state: mxp::State) {
+    pub fn set(&mut self, state: Box<mxp::State>) {
         self.inner = Some(state);
     }
 }
 
 impl From<mxp::State> for StateLock {
     fn from(value: mxp::State) -> Self {
-        Self { inner: Some(value) }
+        Self {
+            inner: Some(Box::new(value)),
+        }
     }
 }
 
