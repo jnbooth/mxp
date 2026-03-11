@@ -1,15 +1,14 @@
 use std::borrow::Cow;
 
 use super::line_tags::{LineTagUpdate, LineTags};
-use crate::argument::KeywordFilter;
-use crate::argument::{Arguments, Decoder};
 use crate::collections::CaseFoldMap;
 use crate::element::{
     Action, CollectedDefinition, DecodeElement, DefinitionKind, Element, ElementCommand, Tag,
 };
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
+use crate::keyword::KeywordFilter;
 use crate::mode::Mode;
-use crate::parser::{Error, ErrorKind, Words};
+use crate::parse::{Arguments, Decoder, Error, ErrorKind, Words};
 use crate::validate;
 
 /// A store of MXP state: elements, entities, and line tags.
@@ -208,11 +207,8 @@ impl State {
 }
 
 impl Decoder for State {
-    fn decode_entity<F: KeywordFilter>(
-        &self,
-        entity: &str,
-    ) -> crate::Result<Option<DecodedEntity<'_>>> {
-        self.decode_entity(entity)
+    fn get_entity<F: KeywordFilter>(&self, name: &str) -> Option<&str> {
+        self.entities.get_entity::<F>(name)
     }
 }
 

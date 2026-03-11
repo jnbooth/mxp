@@ -1,9 +1,9 @@
 use std::iter::FusedIterator;
 use std::str::{self, CharIndices};
 
+use super::arguments::Arguments;
 use super::error::{Error, ErrorKind};
 use super::validation::validate;
-use crate::argument::Arguments;
 
 /// Iterator over the word units of an MXP string.
 #[must_use = "iterators are lazy and do nothing unless consumed"]

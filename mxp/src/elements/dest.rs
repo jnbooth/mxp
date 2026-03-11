@@ -1,9 +1,10 @@
 use std::borrow::Cow;
 use std::num::NonZero;
+use std::str::FromStr;
 
 use crate::Error;
-use crate::argument::{Decoder, ExpectArg as _, Scan};
 use crate::keyword::DestKeyword;
+use crate::parse::{Decoder, ExpectArg as _, Scan};
 
 /// Positions text at a certain position in a frame.
 ///
@@ -26,7 +27,7 @@ pub struct Dest<S = String> {
 }
 
 impl<S> Dest<S> {
-    /// Applies a type transformation to the text, returning a new struct.
+    /// Applies a type transformation to all text, returning a new struct.
     pub fn map_text<T, F>(self, f: F) -> Dest<T>
     where
         F: FnOnce(S) -> T,
@@ -105,5 +106,13 @@ where
             eof: keywords.contains(DestKeyword::Eof),
             eol: keywords.contains(DestKeyword::Eol),
         })
+    }
+}
+
+impl FromStr for Dest {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element(s, crate::ActionKind::Dest)
     }
 }

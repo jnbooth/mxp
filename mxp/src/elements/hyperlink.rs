@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 
-use crate::argument::{Decoder, ExpectArg as _, Scan};
-use crate::parser::Error;
+use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct Hyperlink<S> {

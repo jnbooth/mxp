@@ -11,6 +11,14 @@ macro_rules! impl_into_owned {
                 self.map_text(Cow::into_owned)
             }
         }
+
+        impl<D: crate::parse::Decoder> TryFrom<crate::parse::Scan<'_, D>> for $t<String> {
+            type Error = crate::Error;
+
+            fn try_from(scanner: crate::parse::Scan<'_, D>) -> crate::Result<Self> {
+                Ok($t::<Cow<'_, str>>::try_from(scanner)?.into_owned())
+            }
+        }
     };
 }
 

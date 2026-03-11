@@ -1,17 +1,21 @@
 use std::borrow::Cow;
+use std::str::FromStr;
 
 use crate::Error;
-use crate::argument::{Decoder, Scan};
+use crate::parse::{Decoder, Scan};
 
-/// [`<EXPIRE>`](https://www.zuggsoft.com/zmud/mxp.htm#Links):
-/// Expire links.
+/// Removes previously displayed [`Link`](crate::Link)s. For example, when moving to a new room,
+/// links from the previous room description are no longer valid and need to e removed.
+///
+/// See [MXP specification: `<EXPIRE>`](https://www.zuggsoft.com/zmud/mxp.htm#Links).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Expire<S = String> {
+    /// Name of the link to remove. If `None`, expire all links with names.
     pub name: Option<S>,
 }
 
 impl<S> Expire<S> {
-    /// Applies a type transformation to the text, returning a new struct.
+    /// Applies a type transformation to all text, returning a new struct.
     pub fn map_text<T, F>(self, f: F) -> Expire<T>
     where
         F: FnOnce(S) -> T,
@@ -45,5 +49,13 @@ where
         Ok(Self {
             name: scanner.next()?,
         })
+    }
+}
+
+impl FromStr for Expire {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element(s, crate::ActionKind::Expire)
     }
 }

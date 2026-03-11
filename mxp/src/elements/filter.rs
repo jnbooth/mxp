@@ -1,7 +1,7 @@
 use std::borrow::Cow;
+use std::str::FromStr;
 
-use crate::argument::{Decoder, ExpectArg as _, Scan};
-use crate::parser::Error;
+use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
 
 /// Defines a graphics format and provides a client plugin module that converts the MUD-specific
 /// format to a standard GIF or BMP format.
@@ -9,13 +9,14 @@ use crate::parser::Error;
 /// See [MXP specification: `<FILTER>`](https://www.zuggsoft.com/zmud/mxp.htm#File%20Filters).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Filter<S = String> {
+    /// File extension of the MUD-specific format.
     pub src: S,
     pub dest: S,
     pub name: S,
 }
 
 impl<S> Filter<S> {
-    /// Applies a type transformation to the text, returning a new struct.
+    /// Applies a type transformation to all text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Filter<T>
     where
         F: FnMut(S) -> T,
@@ -55,5 +56,13 @@ where
             dest: scanner.next_or("dest")?.expect_some("dest")?,
             name: scanner.next_or("name")?.expect_some("name")?,
         })
+    }
+}
+
+impl FromStr for Filter {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element(s, crate::ActionKind::Filter)
     }
 }

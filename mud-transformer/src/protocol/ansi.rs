@@ -141,10 +141,10 @@ impl Interpreter {
         }
         if code < 0x3A {
             let digit = u16::from(code - b'0');
-            self.code = Some(match self.code {
-                Some(n) => n.checked_mul(10)?.checked_add(digit)?,
-                None => digit,
-            });
+            self.code = match self.code {
+                Some(n) => Some(n.checked_mul(10)?.checked_add(digit)?),
+                None => Some(digit),
+            };
             return Some(Outcome::Continue);
         }
         if code < 0x3C {

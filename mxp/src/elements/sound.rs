@@ -3,8 +3,7 @@ use std::fmt;
 use std::num::NonZero;
 use std::str::FromStr;
 
-use crate::argument::{Decoder, ExpectArg as _, Scan};
-use crate::parser::{Error, StringVariant, UnrecognizedVariant};
+use crate::parse::{Decoder, Error, ExpectArg as _, Scan, StringVariant, UnrecognizedVariant};
 
 /// Specifies the number of times a sound/music file should be played.
 ///
@@ -161,7 +160,7 @@ impl<S: AsRef<str>> Sound<S> {
 }
 
 impl<S> Sound<S> {
-    /// Applies a type transformation to the text, returning a new struct.
+    /// Applies a type transformation to all text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Sound<T>
     where
         F: FnMut(S) -> T,
@@ -214,6 +213,14 @@ where
     }
 }
 
+impl FromStr for Sound {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element(s, crate::ActionKind::Sound)
+    }
+}
+
 /// Music triggers are typically background MID (MIDI) files. Only one music trigger can be active
 /// at once.
 ///
@@ -252,7 +259,7 @@ impl<S: AsRef<str>> Music<S> {
 }
 
 impl<S> Music<S> {
-    /// Applies a type transformation to the text, returning a new struct.
+    /// Applies a type transformation to all text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Music<T>
     where
         F: FnMut(S) -> T,
@@ -305,6 +312,14 @@ where
                 .and_then(|continuation| continuation.parse().ok())
                 .unwrap_or_default(),
         })
+    }
+}
+
+impl FromStr for Music {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element(s, crate::ActionKind::Music)
     }
 }
 

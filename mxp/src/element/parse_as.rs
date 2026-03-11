@@ -1,4 +1,4 @@
-use crate::parser::{StringVariant, UnrecognizedVariant};
+use crate::parse::{StringVariant, UnrecognizedVariant};
 
 /// The MUD server can tag a line to be parsed in a specific way by the client.
 ///

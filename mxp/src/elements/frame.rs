@@ -1,8 +1,8 @@
 use std::borrow::Cow;
+use std::str::FromStr;
 
-use crate::argument::{Decoder, ExpectArg as _, Scan};
 use crate::keyword::FrameKeyword;
-use crate::parser::{Error, StringVariant, UnrecognizedVariant};
+use crate::parse::{Decoder, Error, ExpectArg as _, Scan, StringVariant, UnrecognizedVariant};
 use crate::screen::{Align, Dimension};
 
 /// Action to apply to a [`Frame`].
@@ -91,7 +91,7 @@ impl<S> Frame<S> {
         self.title.as_ref().unwrap_or(&self.name)
     }
 
-    /// Applies a type transformation to the text, returning a new struct.
+    /// Applies a type transformation to all text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Frame<T>
     where
         F: FnMut(S) -> T,
@@ -170,5 +170,13 @@ where
             layout,
             scrolling,
         })
+    }
+}
+
+impl FromStr for Frame {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element(s, crate::ActionKind::Frame)
     }
 }

@@ -1,8 +1,9 @@
+use std::str::FromStr;
+
 use flagset::FlagSet;
 
-use crate::argument::{Decoder, Scan};
 use crate::keyword::MxpKeyword;
-use crate::parser::Error;
+use crate::parse::{Decoder, Error, Scan};
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Mxp {
@@ -20,5 +21,13 @@ where
         Ok(Self {
             keywords: scanner.into_keywords(),
         })
+    }
+}
+
+impl FromStr for Mxp {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element(s, crate::ActionKind::Mxp)
     }
 }

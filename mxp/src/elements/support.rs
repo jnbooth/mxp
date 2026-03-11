@@ -1,7 +1,7 @@
 use std::borrow::Cow;
+use std::str::FromStr;
 
-use crate::argument::{Decoder, Scan};
-use crate::parser::Error;
+use crate::parse::{Decoder, Error, Scan};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Support<S = String> {
@@ -9,7 +9,7 @@ pub struct Support<S = String> {
 }
 
 impl<S> Support<S> {
-    /// Applies a type transformation to the text, returning a new struct.
+    /// Applies a type transformation to all text, returning a new struct.
     pub fn map_text<T, F>(self, f: F) -> Support<T>
     where
         F: FnMut(S) -> T,
@@ -34,5 +34,13 @@ where
             questions.push(question);
         }
         Ok(Self { questions })
+    }
+}
+
+impl FromStr for Support {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element(s, crate::ActionKind::Support)
     }
 }

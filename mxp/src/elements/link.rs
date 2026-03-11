@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use super::{Hyperlink, Send};
 
 /// Destination for a [`Link`] element.
@@ -188,6 +190,26 @@ where
             value.send_to,
             value.expire.map(|expire| expire.as_ref().to_owned()),
         )
+    }
+}
+
+impl FromStr for Link {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let source = crate::parse::cleanup_source(s)?;
+        let mut words = crate::parse::Words::new(source);
+        let name = words.validate_next_or(crate::ErrorKind::InvalidElementName)?;
+        let Some(tag) = crate::element::Tag::well_known(name) else {
+            return Err(crate::parse::FromStrError::UnexpectedTag(name.to_owned()));
+        };
+        let args = words.parse_args()?;
+        let scanner = args.scan(());
+        match tag.action {
+            crate::ActionKind::Hyperlink => Ok(Hyperlink::try_from(scanner)?.into()),
+            crate::ActionKind::Send => Ok(Send::try_from(scanner)?.into()),
+            _ => Err(crate::parse::FromStrError::UnexpectedTag(name.to_owned())),
+        }
     }
 }
 

@@ -1,12 +1,11 @@
 use std::borrow::Cow;
 
-use crate::argument::{Decoder, ExpectArg as _};
 use crate::collections::CaseFoldMap;
 use crate::color::RgbColor;
 use crate::element::Element;
 use crate::keyword::LineTagKeyword;
 use crate::mode::Mode;
-use crate::parser::{Error, ErrorKind, Words};
+use crate::parse::{Decoder, ExpectArg as _, Words};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct LineTag {
@@ -111,23 +110,16 @@ pub(crate) struct LineTagUpdate {
 
 impl LineTagUpdate {
     pub fn parse<D: Decoder>(words: Words, decoder: D) -> crate::Result<Self> {
-        let args = words.parse_args_to_owned()?;
+        let args = words.parse_args()?;
         let mut scanner = args.scan(decoder).with_keywords();
 
-        let index_arg = scanner.next()?.expect_some("tag")?;
-        let index: u8 = index_arg
-            .parse()
-            .map_err(|_| Error::new(index_arg, ErrorKind::InvalidNumber))?;
+        let index = scanner.next()?.expect_number()?.expect_some("tag")?;
 
         let window = scanner.next_or("windowname")?.map(Cow::into_owned);
 
-        let fore = scanner
-            .next_or("fore")?
-            .and_then(|color| RgbColor::named(&color));
+        let fore = scanner.next_or("fore")?.color();
 
-        let back = scanner
-            .next_or("back")?
-            .and_then(|color| RgbColor::named(&color));
+        let back = scanner.next_or("back")?.color();
 
         let keywords = scanner.into_keywords();
         let gag = if keywords.contains(LineTagKeyword::Gag) {

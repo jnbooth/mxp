@@ -2,8 +2,8 @@ use std::borrow::Cow;
 
 use super::action::Action;
 use super::action_kind::ActionKind;
-use crate::argument::{Arguments, Decoder};
 use crate::case_insensitive::to_ascii_lowercase;
+use crate::parse::{Arguments, Decoder};
 
 /// Atomic MXP tags, such as `<A>`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

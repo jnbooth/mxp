@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::parser::{Error, ErrorKind, StringVariant, UnrecognizedVariant, Words};
+use crate::parse::{Error, ErrorKind, StringVariant, UnrecognizedVariant, Words};
 
 /// Type of MXP definition sent by the server.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -37,7 +37,6 @@ impl FromStr for DefinitionKind {
         }
     }
 }
-
 /// MXP definition sent by the server, which may define an [attribute list], [element], [entity],
 /// or [line tag].
 ///

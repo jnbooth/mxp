@@ -6,9 +6,8 @@ use flagset::FlagSet;
 use super::decoded::DecodedEntity;
 use super::entity::Entity;
 use super::iter::PublishedIter;
-use crate::argument::{Decoder, KeywordFilter};
-use crate::keyword::EntityKeyword;
-use crate::parser::{Error, ErrorKind};
+use crate::keyword::{EntityKeyword, KeywordFilter};
+use crate::parse::{Decoder, ErrorKind};
 
 /// Entry in an [`EntityMap`].
 pub struct EntityEntry<'a> {
@@ -136,20 +135,7 @@ impl EntityMap {
     /// assert!(map.decode("#xQ").is_err());
     /// ```
     pub fn decode(&self, name: &str) -> crate::Result<Option<DecodedEntity<'_>>> {
-        let (start, radix) = match name.as_bytes() {
-            [b'#', b'x', ..] => (2, 16),
-            [b'#', ..] => (1, 10),
-            _ => return Ok(self.get_inner(name)),
-        };
-        let Ok(code) = u32::from_str_radix(&name[start..], radix) else {
-            return Err(Error::new(name, ErrorKind::InvalidEntityNumber));
-        };
-        match char::from_u32(code) {
-            Some('\0'..='\x08' | '\x0a'..='\x1f' | '\x7f'..='\u{9f}') | None => {
-                Err(Error::new(name, ErrorKind::DisallowedEntityNumber))
-            }
-            Some(c) => Ok(Some(c.into())),
-        }
+        self.decode_entity::<()>(name)
     }
 
     /// Removes a key from the map, returning the value at the key if the key was previously in the
@@ -393,29 +379,24 @@ impl EntityMap {
         }
         inner(self, name, value, description, keywords.into())
     }
-
-    #[inline]
-    fn get_inner(&self, name: &str) -> Option<DecodedEntity<'_>> {
-        if let Some(&global) = self.globals.get(name.as_bytes()) {
-            return Some(global.into());
-        }
-        Some(self.inner.get(name)?.value.as_str().into())
-    }
 }
 
 impl Decoder for EntityMap {
-    fn decode_entity<F: KeywordFilter>(
-        &self,
-        entity: &str,
-    ) -> crate::Result<Option<DecodedEntity<'_>>> {
-        EntityMap::decode(self, entity)
+    fn get_entity<F>(&self, name: &str) -> Option<&str>
+    where
+        F: KeywordFilter,
+    {
+        if let Some(&global) = self.globals.get(name.as_bytes()) {
+            return Some(global);
+        }
+        Some(self.inner.get(name)?.value.as_str())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::EntityVisibility;
+    use crate::{EntityVisibility, Error};
 
     #[test]
     fn set_new() {

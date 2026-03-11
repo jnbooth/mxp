@@ -1,7 +1,7 @@
 use std::borrow::Cow;
+use std::str::FromStr;
 
-use crate::argument::{Decoder, ExpectArg as _, Scan};
-use crate::parser::Error;
+use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
 
 /// Displays an MXP entity value as status bar text.
 ///
@@ -17,7 +17,7 @@ pub struct Stat<S = String> {
 }
 
 impl<S> Stat<S> {
-    /// Applies a type transformation to the text, returning a new struct.
+    /// Applies a type transformation to all text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Stat<T>
     where
         F: FnMut(S) -> T,
@@ -57,5 +57,13 @@ where
             max: scanner.next_or("max")?,
             caption: scanner.next_or("caption")?,
         })
+    }
+}
+
+impl FromStr for Stat {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element(s, crate::ActionKind::Stat)
     }
 }

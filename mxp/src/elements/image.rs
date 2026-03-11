@@ -1,8 +1,8 @@
 use std::borrow::Cow;
+use std::str::FromStr;
 
-use crate::argument::{Decoder, ExpectArg as _, Scan};
 use crate::keyword::ImageKeyword;
-use crate::parser::Error;
+use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
 use crate::screen::{Align, Dimension};
 
 /// Displays an inline graphics image.
@@ -36,7 +36,7 @@ pub struct Image<S = String> {
 }
 
 impl<S> Image<S> {
-    /// Applies a type transformation to the text, returning a new struct.
+    /// Applies a type transformation to all text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Image<T>
     where
         F: FnMut(S) -> T,
@@ -97,5 +97,13 @@ where
                 .and_then(|align| align.parse().ok()),
             is_map: scanner.into_keywords().contains(ImageKeyword::IsMap),
         })
+    }
+}
+
+impl FromStr for Image {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element(s, crate::ActionKind::Image)
     }
 }

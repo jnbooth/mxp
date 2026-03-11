@@ -5,11 +5,10 @@ use super::collected::CollectedElement;
 use super::decoder::DecodeElement;
 use super::item::ElementItem;
 use super::parse_as::ParseAs;
-use crate::argument::{Arguments, Decoder};
 use crate::color::RgbColor;
 use crate::keyword::ElementKeyword;
 use crate::mode::Mode;
-use crate::parser::{Error, ErrorKind, Words};
+use crate::parse::{Arguments, Decoder, Error, ErrorKind, Words};
 
 /// Result of [`Element::parse`].
 #[derive(Debug)]
@@ -69,12 +68,12 @@ impl Element {
     pub fn parse<D: Decoder>(definition: &str, decoder: D) -> crate::Result<ElementCommand> {
         let mut words = Words::new(definition);
         let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
-        let args: Arguments<'static> = words.parse_args_to_owned()?;
+        let args = words.parse_args_to_owned()?;
 
         let mut scanner = args.scan(decoder).with_keywords();
         let items = Self::parse_items(scanner.next()?.as_deref())?;
 
-        let attributes: Arguments<'static> = match scanner.next_or("att")? {
+        let attributes = match scanner.next_or("att")? {
             Some(atts) => Words::new(&atts).parse_args_to_owned()?,
             None => Arguments::default(),
         };

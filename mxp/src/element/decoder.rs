@@ -5,8 +5,8 @@ use std::slice;
 use super::action::Action;
 use super::element::Element;
 use super::item::ElementItem;
-use crate::argument::{Arguments, Decoder, KeywordFilter};
-use crate::entity::DecodedEntity;
+use crate::keyword::KeywordFilter;
+use crate::parse::{Arguments, Decoder};
 
 #[derive(Copy, Clone, Debug)]
 struct ElementDecoder<'a, D: Decoder> {
@@ -16,19 +16,16 @@ struct ElementDecoder<'a, D: Decoder> {
 }
 
 impl<D: Decoder> Decoder for ElementDecoder<'_, D> {
-    fn decode_entity<F: KeywordFilter>(
-        &self,
-        entity: &str,
-    ) -> crate::Result<Option<DecodedEntity<'_>>> {
-        if entity == "text" {
-            return Ok(None);
+    fn get_entity<F: KeywordFilter>(&self, name: &str) -> Option<&str> {
+        if name == "text" {
+            return None;
         }
         match self
             .args
-            .find_from_attributes::<F>(entity, &self.element.attributes)
+            .find_from_attributes::<F>(name, &self.element.attributes)
         {
-            Some(attr) => Ok(Some(attr.into())),
-            None => self.decoder.decode_entity::<F>(entity),
+            Some(attr) => Some(attr),
+            None => self.decoder.get_entity::<F>(name),
         }
     }
 }

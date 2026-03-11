@@ -7,18 +7,43 @@ use std::{slice, str};
 
 use flagset::{FlagSet, Flags};
 
-use super::keyword_filter::{KeywordFilter, NoKeywords};
+use super::error::{Error, ErrorKind};
 use crate::collections::CaseFoldMap;
-use crate::entity::DecodedEntity;
-use crate::parser::{Error, ErrorKind};
+use crate::color::RgbColor;
+use crate::entity::{DecodedEntity, Entity};
+use crate::keyword::KeywordFilter;
 
 pub trait Decoder {
-    fn decode_entity<F>(&self, entity: &str) -> crate::Result<Option<DecodedEntity<'_>>>
+    fn get_entity<F>(&self, name: &str) -> Option<&str>
     where
         F: KeywordFilter;
+
+    fn decode_entity<F>(&self, entity: &str) -> crate::Result<Option<DecodedEntity<'_>>>
+    where
+        F: KeywordFilter,
+    {
+        let (start, radix) = match entity.as_bytes() {
+            [b'#', b'x', ..] => (2, 16),
+            [b'#', ..] => (1, 10),
+            _ => return Ok(self.get_entity::<F>(entity).map(Into::into)),
+        };
+        let Ok(code) = u32::from_str_radix(&entity[start..], radix) else {
+            return Err(Error::new(entity, ErrorKind::InvalidEntityNumber));
+        };
+        match char::from_u32(code) {
+            Some('\0'..='\x08' | '\x0a'..='\x1f' | '\x7f'..='\u{9f}') | None => {
+                Err(Error::new(entity, ErrorKind::DisallowedEntityNumber))
+            }
+            Some(c) => Ok(Some(c.into())),
+        }
+    }
 }
 
 impl<D: Decoder> Decoder for &D {
+    fn get_entity<F: KeywordFilter>(&self, name: &str) -> Option<&str> {
+        D::get_entity::<F>(self, name)
+    }
+
     fn decode_entity<F>(&self, entity: &str) -> crate::Result<Option<DecodedEntity<'_>>>
     where
         F: KeywordFilter,
@@ -27,8 +52,14 @@ impl<D: Decoder> Decoder for &D {
     }
 }
 
+impl Decoder for () {
+    fn get_entity<F: KeywordFilter>(&self, name: &str) -> Option<&str> {
+        Entity::global(name)
+    }
+}
+
 #[derive(Clone, Debug)]
-pub(crate) struct Scan<'a, D, F = NoKeywords> {
+pub(crate) struct Scan<'a, D, F = ()> {
     decoder: D,
     inner: slice::Iter<'a, Cow<'a, str>>,
     named: &'a CaseFoldMap<'a, Cow<'a, str>>,
@@ -144,7 +175,7 @@ impl<D, K: Flags> DerefMut for KeywordScan<'_, D, K> {
 impl<'a, D, K> KeywordScan<'a, D, K>
 where
     D: Decoder,
-    K: Flags + FromStr,
+    K: KeywordFilter + Flags + FromStr,
 {
     fn next_non_keyword(&mut self) -> Option<&'a str> {
         for arg in &mut self.inner.inner {
@@ -179,6 +210,9 @@ where
 pub(crate) trait ExpectArg {
     type Arg;
 
+    fn color(self) -> Option<RgbColor>
+    where
+        Self::Arg: AsRef<str>;
     fn expect_some(self, name: &str) -> crate::Result<Self::Arg>;
     fn expect_number<T>(self) -> crate::Result<Option<T>>
     where
@@ -188,6 +222,13 @@ pub(crate) trait ExpectArg {
 
 impl<S> ExpectArg for Option<S> {
     type Arg = S;
+
+    fn color(self) -> Option<RgbColor>
+    where
+        Self::Arg: AsRef<str>,
+    {
+        RgbColor::named(self?.as_ref())
+    }
 
     fn expect_some(self, name: &str) -> crate::Result<Self::Arg> {
         match self {

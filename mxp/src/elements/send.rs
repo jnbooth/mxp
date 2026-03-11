@@ -1,9 +1,8 @@
 use std::borrow::Cow;
 
 use super::link::SendTo;
-use crate::argument::{Decoder, Scan};
 use crate::keyword::SendKeyword;
-use crate::parser::Error;
+use crate::parse::{Decoder, Error, Scan};
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct Send<S> {

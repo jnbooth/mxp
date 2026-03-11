@@ -374,9 +374,7 @@ impl Transformer {
             Action::Br => self.output.start_line(),
             Action::Color(color) => self.output.set_mxp_color(color),
             Action::Dest(dest) => self.output.set_mxp_window(dest),
-            Action::Expire(expire) => self
-                .output
-                .append(MxpFragment::ExpireLinks(expire.into_owned().name)),
+            Action::Expire(expire) => self.output.append(expire.into_owned()),
             Action::Filter(filter) => self.output.append(filter.into_owned()),
             Action::Font(font) => self.output.set_mxp_font(font),
             Action::Frame(frame) => self.output.append(frame.into_owned()),

@@ -1,8 +1,8 @@
 use std::borrow::Cow;
+use std::str::FromStr;
 
-use crate::argument::{Decoder, ExpectArg as _, Scan};
 use crate::color::RgbColor;
-use crate::parser::Error;
+use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
 
 /// Displays an MXP entity value as a gauge.
 ///
@@ -20,7 +20,7 @@ pub struct Gauge<S = String> {
 }
 
 impl<S> Gauge<S> {
-    /// Applies a type transformation to the text, returning a new struct.
+    /// Applies a type transformation to all text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Gauge<T>
     where
         F: FnMut(S) -> T,
@@ -61,9 +61,15 @@ where
             entity: scanner.next()?.expect_some("EntityName")?,
             max: scanner.next_or("max")?,
             caption: scanner.next_or("caption")?,
-            color: scanner
-                .next_or("color")?
-                .and_then(|color| RgbColor::named(&color)),
+            color: scanner.next_or("color")?.color(),
         })
+    }
+}
+
+impl FromStr for Gauge {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element(s, crate::ActionKind::Gauge)
     }
 }

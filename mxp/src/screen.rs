@@ -1,7 +1,7 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::parser::{StringVariant, UnrecognizedVariant};
+use crate::parse::{StringVariant, UnrecognizedVariant};
 
 /// Alignment of an on-screen item.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]

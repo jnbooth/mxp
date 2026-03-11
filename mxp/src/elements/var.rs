@@ -1,10 +1,10 @@
 use std::borrow::Cow;
+use std::str::FromStr;
 
 use flagset::FlagSet;
 
-use crate::argument::{Decoder, ExpectArg as _, Scan};
 use crate::keyword::EntityKeyword;
-use crate::parser::Error;
+use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Var<S = String> {
@@ -13,7 +13,7 @@ pub struct Var<S = String> {
 }
 
 impl<S> Var<S> {
-    /// Applies a type transformation to the text, returning a new struct.
+    /// Applies a type transformation to all text, returning a new struct.
     pub fn map_text<T, F>(self, f: F) -> Var<T>
     where
         F: FnOnce(S) -> T,
@@ -51,5 +51,13 @@ where
             variable: scanner.next()?.expect_some("variable")?,
             keywords: scanner.into_keywords(),
         })
+    }
+}
+
+impl FromStr for Var {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element(s, crate::ActionKind::Var)
     }
 }

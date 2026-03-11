@@ -1,11 +1,14 @@
 use std::borrow::Cow;
+use std::str::FromStr;
 
 use super::action_kind::ActionKind;
-use crate::argument::{Decoder, Scan};
+use super::tag::Tag;
+use crate::ErrorKind;
 use crate::elements::{
     Color, Dest, Expire, Filter, Font, Frame, Gauge, Heading, Hyperlink, Image, Link, Music, Mxp,
     Relocate, Send, Sound, Stat, StyleVersion, Support, Var,
 };
+use crate::parse::{Decoder, FromStrError, Scan, Words};
 
 /// Effect caused by an [`Element`](crate::Element).
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -187,5 +190,76 @@ impl<'a> Action<Cow<'a, str>> {
                 }
             }
         })
+    }
+
+    pub fn into_owned(self) -> Action<String> {
+        self.map_text(Cow::into_owned)
+    }
+}
+
+impl Action<&str> {
+    pub fn into_owned(self) -> Action<String> {
+        self.map_text(ToOwned::to_owned)
+    }
+}
+
+impl<S> Action<S> {
+    /// Applies a type transformation to all text, returning a new struct.
+    pub fn map_text<F, T>(self, f: F) -> Action<T>
+    where
+        F: FnMut(S) -> T,
+    {
+        match self {
+            Self::Bold => Action::Bold,
+            Self::Br => Action::Br,
+            Self::Color(color) => Action::Color(color),
+            Self::Dest(dest) => Action::Dest(dest.map_text(f)),
+            Self::Expire(expire) => Action::Expire(expire.map_text(f)),
+            Self::Filter(filter) => Action::Filter(filter.map_text(f)),
+            Self::Font(font) => Action::Font(font.map_text(f)),
+            Self::Frame(frame) => Action::Frame(frame.map_text(f)),
+            Self::Gauge(gauge) => Action::Gauge(gauge.map_text(f)),
+            Self::Heading(heading) => Action::Heading(heading),
+            Self::Highlight => Action::Highlight,
+            Self::Hr => Action::Hr,
+            Self::Image(image) => Action::Image(image.map_text(f)),
+            Self::Italic => Action::Italic,
+            Self::Link(link) => Action::Link(link),
+            Self::Music(music) => Action::Music(music.map_text(f)),
+            Self::MusicOff => Action::MusicOff,
+            Self::Mxp(mxp) => Action::Mxp(mxp),
+            Self::NoBr => Action::NoBr,
+            Self::P => Action::P,
+            Self::Password => Action::Password,
+            Self::Relocate(relocate) => Action::Relocate(relocate.map_text(f)),
+            Self::Reset => Action::Reset,
+            Self::SBr => Action::SBr,
+            Self::Small => Action::Small,
+            Self::Sound(sound) => Action::Sound(sound.map_text(f)),
+            Self::SoundOff => Action::SoundOff,
+            Self::Stat(stat) => Action::Stat(stat.map_text(f)),
+            Self::Strikeout => Action::Strikeout,
+            Self::StyleVersion(style_version) => Action::StyleVersion(style_version.map_text(f)),
+            Self::Support(support) => Action::Support(support.map_text(f)),
+            Self::Tt => Action::Tt,
+            Self::Underline => Action::Underline,
+            Self::User => Action::User,
+            Self::Var(var) => Action::Var(var.map_text(f)),
+            Self::Version => Action::Version,
+        }
+    }
+}
+
+impl FromStr for Action<String> {
+    type Err = FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = crate::parse::cleanup_source(s)?;
+        let mut words = Words::new(s);
+        let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
+        let tag =
+            Tag::well_known(name).ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;
+        let args = words.parse_args()?;
+        Ok(Action::decode(tag.action, args.scan(()))?.into_owned())
     }
 }

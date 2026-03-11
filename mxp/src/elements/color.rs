@@ -1,10 +1,16 @@
-use crate::argument::{Decoder, Scan};
-use crate::color::RgbColor;
-use crate::parser::Error;
+use std::str::FromStr;
 
+use crate::color::RgbColor;
+use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
+
+/// Sets the color of the text.
+///
+/// See [MXP specification: `<COLOR>`](https://www.zuggsoft.com/zmud/mxp.htm#Text%20Formatting).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Color {
+    /// If defined, sets the foreground color of the text.
     pub fore: Option<RgbColor>,
+    /// If defined, sets the background color of the text.
     pub back: Option<RgbColor>,
 }
 
@@ -16,12 +22,16 @@ where
 
     fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
         Ok(Self {
-            fore: scanner
-                .next_or("fore")?
-                .and_then(|fore| RgbColor::named(&fore)),
-            back: scanner
-                .next_or("back")?
-                .and_then(|back| RgbColor::named(&back)),
+            fore: scanner.next_or("fore")?.color(),
+            back: scanner.next_or("back")?.color(),
         })
+    }
+}
+
+impl FromStr for Color {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element(s, crate::ActionKind::Color)
     }
 }

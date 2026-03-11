@@ -4,15 +4,15 @@ use super::OutputFragment;
 pub enum MxpFragment {
     Entity(EntityFragment),
     Error(mxp::Error),
-    ExpireLinks(Option<String>),
-    FileFilter(mxp::Filter),
+    Expire(mxp::Expire),
+    Filter(mxp::Filter),
     Gauge(mxp::Gauge),
     Music(mxp::Music),
     MusicOff,
     Relocate(mxp::Relocate),
     Sound(mxp::Sound),
     SoundOff,
-    StatusBar(mxp::Stat),
+    Stat(mxp::Stat),
     StyleVersion(mxp::StyleVersion),
 }
 
@@ -73,9 +73,15 @@ impl From<mxp::Error> for OutputFragment {
     }
 }
 
+impl From<mxp::Expire> for OutputFragment {
+    fn from(value: mxp::Expire) -> Self {
+        Self::Mxp(MxpFragment::Expire(value))
+    }
+}
+
 impl From<mxp::Filter> for OutputFragment {
     fn from(value: mxp::Filter) -> Self {
-        Self::Mxp(MxpFragment::FileFilter(value))
+        Self::Mxp(MxpFragment::Filter(value))
     }
 }
 
@@ -117,7 +123,7 @@ impl From<mxp::Sound> for OutputFragment {
 
 impl From<mxp::Stat> for OutputFragment {
     fn from(value: mxp::Stat) -> Self {
-        Self::Mxp(MxpFragment::StatusBar(value))
+        Self::Mxp(MxpFragment::Stat(value))
     }
 }
 

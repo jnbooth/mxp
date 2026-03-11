@@ -1,14 +1,12 @@
 use std::borrow::Cow;
 use std::iter::FilterMap;
 use std::num::NonZero;
-use std::str::{self, Split};
+use std::str::{self, FromStr, Split};
 
 use flagset::flags;
 
-use crate::argument::{Decoder, Scan};
 use crate::color::RgbColor;
-use crate::parser::Error;
-use crate::parser::UnrecognizedVariant;
+use crate::parse::{Decoder, Error, ExpectArg as _, Scan, UnrecognizedVariant};
 
 flags! {
     /// Font modifier applied by the [`color`] argument of a [`Font`] tag.
@@ -81,7 +79,7 @@ pub struct Font<S = String> {
 }
 
 impl<S> Font<S> {
-    /// Applies a type transformation to the text, returning a new struct.
+    /// Applies a type transformation to all text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Font<T>
     where
         F: FnMut(S) -> T,
@@ -128,10 +126,16 @@ where
             color: scanner
                 .next_or("color")?
                 .map(|color| FgColor { inner: color }),
-            back: scanner
-                .next_or("back")?
-                .and_then(|back| RgbColor::named(&back)),
+            back: scanner.next_or("back")?.color(),
         })
+    }
+}
+
+impl FromStr for Font {
+    type Err = crate::parse::FromStrError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element(s, crate::ActionKind::Font)
     }
 }
 

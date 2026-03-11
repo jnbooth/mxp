@@ -1,9 +1,11 @@
 use std::borrow::Cow;
 
-use super::keyword_filter::KeywordFilter;
+use super::error::{Error, ErrorKind};
 use super::scan::{Decoder, Scan};
+use super::validation::validate;
+use super::words::Words;
 use crate::collections::CaseFoldMap;
-use crate::parser::{Error, ErrorKind, Words, validate};
+use crate::keyword::KeywordFilter;
 
 /// Parsed arguments of an MXP command.
 ///
@@ -43,10 +45,10 @@ impl<'a> Arguments<'a> {
         F: KeywordFilter,
     {
         if let Some(named) = attributes.named.get(entity) {
-            return Some(match self.named.get(entity) {
-                Some(entity) => entity,
-                None => named,
-            });
+            return match self.named.get(entity) {
+                Some(entity) => Some(entity),
+                None => Some(named),
+            };
         }
         let position =
             F::iter(&attributes.positional).position(|attr| attr.eq_ignore_ascii_case(entity))?;
