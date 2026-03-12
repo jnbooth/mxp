@@ -1,7 +1,7 @@
-use std::borrow::Cow;
 use std::fmt;
 use std::marker::PhantomData;
 use std::str;
+use std::string::FromUtf8Error;
 
 /// Type associated with an [`mxp::Error`](Error).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -91,6 +91,7 @@ pub enum ErrorKind {
 pub struct Error {
     target: String,
     error: ErrorKind,
+    source: Option<String>,
 }
 
 impl fmt::Display for Error {
@@ -103,52 +104,29 @@ impl std::error::Error for Error {}
 
 impl Error {
     /// Constructs an error of the specified kind from a stringlike target being parsed.
-    pub fn new<T: ParseErrorTarget>(target: T, error: ErrorKind) -> Self {
+    pub fn new<T: Into<String>>(target: T, error: ErrorKind) -> Self {
         Self {
-            target: target.into_target(),
+            target: target.into(),
             error,
+            source: None,
         }
     }
-}
 
-/// Types that can be used to construct an [`mxp::Error`](Error).
-pub trait ParseErrorTarget {
-    fn into_target(self) -> String;
-}
+    pub fn source(&self) -> Option<&str> {
+        self.source.as_deref()
+    }
 
-impl ParseErrorTarget for String {
-    fn into_target(self) -> String {
-        self
+    pub fn set_source(&mut self, source: String) {
+        self.source = Some(source);
     }
 }
 
-impl ParseErrorTarget for Cow<'_, str> {
-    fn into_target(self) -> String {
-        self.into_owned()
-    }
-}
-
-impl ParseErrorTarget for &String {
-    fn into_target(self) -> String {
-        self.clone()
-    }
-}
-
-impl ParseErrorTarget for &str {
-    fn into_target(self) -> String {
-        self.to_owned()
-    }
-}
-
-impl ParseErrorTarget for &[u8] {
-    fn into_target(self) -> String {
-        String::from_utf8_lossy(self).into_owned()
-    }
-}
-
-impl ParseErrorTarget for &Vec<u8> {
-    fn into_target(self) -> String {
-        String::from_utf8_lossy(self).into_owned()
+impl From<FromUtf8Error> for Error {
+    fn from(value: FromUtf8Error) -> Self {
+        Error::new(
+            String::from_utf8_lossy(value.as_bytes()).into_owned(),
+            ErrorKind::MalformedBytes,
+        )
     }
 }
 

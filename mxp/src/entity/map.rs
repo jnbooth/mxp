@@ -312,20 +312,19 @@ impl EntityMap {
         // Reduce monomorphization
         fn inner<'a>(
             map: &'a mut EntityMap,
-            key: &'a str,
+            name: &'a str,
             value: &str,
             description: Option<String>,
             keywords: FlagSet<EntityKeyword>,
-        ) -> crate::Result<Option<EntityEntry<'a>>> {
-            map.guard_global(key)?;
+        ) -> Option<EntityEntry<'a>> {
             if keywords.contains(EntityKeyword::Delete) {
-                return Ok(map.inner.remove(key).map(|_| EntityEntry {
-                    name: key,
-                    value: None,
-                }));
+                return map
+                    .inner
+                    .remove(name)
+                    .map(|_| EntityEntry { name, value: None });
             }
-            let entity = match map.inner.entry(key.to_owned()) {
-                Entry::Vacant(_) if keywords.contains(EntityKeyword::Remove) => return Ok(None),
+            let entity = match map.inner.entry(name.to_owned()) {
+                Entry::Vacant(_) if keywords.contains(EntityKeyword::Remove) => return None,
                 Entry::Vacant(entry) => entry.insert(Entity {
                     value: value.to_owned(),
                     visibility: keywords.into(),
@@ -334,10 +333,7 @@ impl EntityMap {
                 Entry::Occupied(entry) if keywords.contains(EntityKeyword::Remove) => {
                     if entry.get().value == value {
                         entry.remove();
-                        return Ok(Some(EntityEntry {
-                            name: key,
-                            value: None,
-                        }));
+                        return Some(EntityEntry { name, value: None });
                     }
                     let entity = entry.into_mut();
                     entity.remove(value);
@@ -363,7 +359,7 @@ impl EntityMap {
                         let old_visibility = entity.visibility;
                         entity.apply_keywords(keywords);
                         if entity.visibility == old_visibility {
-                            return Ok(None);
+                            return None;
                         }
                     } else {
                         entity.value.clear();
@@ -373,12 +369,13 @@ impl EntityMap {
                     entity
                 }
             };
-            Ok(Some(EntityEntry {
-                name: key,
+            Some(EntityEntry {
+                name,
                 value: Some(entity),
-            }))
+            })
         }
-        inner(self, name, value, description, keywords.into())
+        self.guard_global(name)?;
+        Ok(inner(self, name, value, description, keywords.into()))
     }
 }
 

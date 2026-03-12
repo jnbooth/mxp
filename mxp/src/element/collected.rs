@@ -37,34 +37,12 @@ impl FromStr for DefinitionKind {
         }
     }
 }
-/// MXP definition sent by the server, which may define an [attribute list], [element], [entity],
-/// or [line tag].
-///
-/// [attribute list]: https://www.zuggsoft.com/zmud/mxp.htm#ATTLIST
-/// [element]: https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT
-/// [entity]: https://www.zuggsoft.com/zmud/mxp.htm#ENTITY
-/// [line tag]: https://www.zuggsoft.com/zmud/mxp.htm#User-defined%20Line%20Tags
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct CollectedDefinition<'a> {
-    pub(crate) kind: DefinitionKind,
-    pub(crate) text: &'a str,
-}
-
-impl<'a> CollectedDefinition<'a> {
-    fn parse(text: &'a str) -> Option<Self> {
-        let (kind, definition) = text.split_once(' ')?;
-        Some(Self {
-            kind: kind.parse().ok()?,
-            text: definition,
-        })
-    }
-}
 
 /// The three types of MXP tag elements sent by the server.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug)]
 pub enum CollectedElement<'a> {
     /// A definition, e.g. [`<!ELEMENT>`].
-    Definition(CollectedDefinition<'a>),
+    Definition(DefinitionKind, &'a str),
     /// A closing tag, e.g. [`</BOLD>`].
     TagClose(&'a str),
     /// An opening tag, e.g. [`<BOLD>`].
@@ -72,27 +50,24 @@ pub enum CollectedElement<'a> {
 }
 
 impl<'a> CollectedElement<'a> {
-    pub(crate) fn parse(text: &'a str) -> crate::Result<Self> {
-        let tag = *text
-            .as_bytes()
-            .first()
-            .ok_or_else(|| Error::new(text, ErrorKind::EmptyElement))?;
+    pub(crate) fn parse(source: &'a str, secure: bool) -> crate::Result<Self> {
+        let source = source.trim_ascii();
 
-        match tag {
-            b'!' => {
-                let body = &text[1..];
-                if body.is_empty() {
-                    return Err(Error::new(text, ErrorKind::ElementTooShort));
-                }
-                let definition = CollectedDefinition::parse(body)
-                    .ok_or_else(|| Error::new(body, ErrorKind::InvalidDefinition))?;
-                Ok(Self::Definition(definition))
+        match source.split_at_checked(1) {
+            None if source.is_empty() => Err(Error::new(source, ErrorKind::EmptyElement)),
+            Some(("!" | "/", "")) => Err(Error::new(source, ErrorKind::ElementTooShort)),
+            Some(("!", _)) if !secure => {
+                Err(Error::new(source, ErrorKind::DefinitionWhenNotSecure))
             }
-            b'/' => {
-                let body = &text[1..];
-                if body.is_empty() {
-                    return Err(Error::new(text, ErrorKind::ElementTooShort));
-                }
+            Some(("!", body)) => {
+                let mut words = Words::new(body);
+                let kind = words
+                    .next()
+                    .and_then(|kind| kind.parse().ok())
+                    .ok_or_else(|| Error::new(body, ErrorKind::InvalidDefinition))?;
+                Ok(Self::Definition(kind, words.as_str()))
+            }
+            Some(("/", body)) => {
                 let mut words = Words::new(body);
                 let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
                 if words.next().is_some() {
@@ -100,7 +75,7 @@ impl<'a> CollectedElement<'a> {
                 }
                 Ok(Self::TagClose(name))
             }
-            _ => Ok(Self::TagOpen(text)),
+            _ => Ok(Self::TagOpen(source)),
         }
     }
 }

@@ -9,8 +9,8 @@ pub use color::{HexOutOfRangeError, NamedColorIter, ParseHexColorError, RgbColor
 
 mod element;
 pub use element::{
-    Action, ActionKind, CollectedDefinition, CollectedElement, DecodeElement, DefinitionKind,
-    Element, ElementCommand, ElementItem, ParseAs, Tag,
+    Action, ActionKind, CollectedElement, DecodeElement, DefinitionKind, Element, ElementCommand,
+    ElementItem, ParseAs, Tag,
 };
 
 mod elements;
@@ -30,7 +30,7 @@ mod mode;
 pub use mode::{Mode, ModeRangeError, ModeState};
 
 mod parse;
-pub use parse::{Arguments, Error, ErrorKind, ParseErrorTarget, Words, is_valid, validate};
+pub use parse::{Arguments, Error, ErrorKind, Words, is_valid, validate};
 
 pub mod responses;
 

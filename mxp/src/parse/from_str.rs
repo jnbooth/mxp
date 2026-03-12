@@ -38,12 +38,12 @@ impl Error for FromStrError {
 
 pub(crate) fn cleanup_source(source: &str) -> crate::Result<&str> {
     Ok(source
-        .trim()
+        .trim_ascii()
         .strip_prefix('<')
         .ok_or_else(|| crate::Error::new(source, ErrorKind::NoTagInDefinition))?
         .strip_suffix('>')
         .ok_or_else(|| crate::Error::new(source, ErrorKind::UnterminatedElement))?
-        .trim())
+        .trim_ascii())
 }
 
 pub(crate) fn parse_element<T>(source: &str, kind: ActionKind) -> Result<T, FromStrError>

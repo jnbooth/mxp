@@ -5,7 +5,7 @@ mod action_kind;
 pub use action_kind::ActionKind;
 
 mod collected;
-pub use collected::{CollectedDefinition, CollectedElement, DefinitionKind};
+pub use collected::{CollectedElement, DefinitionKind};
 
 mod decoder;
 pub use decoder::DecodeElement;

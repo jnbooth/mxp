@@ -2,14 +2,11 @@ use std::borrow::Cow;
 
 use super::line_tags::{LineTagUpdate, LineTags};
 use crate::collections::CaseFoldMap;
-use crate::element::{
-    Action, CollectedDefinition, DecodeElement, DefinitionKind, Element, ElementCommand, Tag,
-};
+use crate::element::{Action, DecodeElement, DefinitionKind, Element, ElementCommand, Tag};
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
 use crate::keyword::KeywordFilter;
 use crate::mode::Mode;
 use crate::parse::{Arguments, Decoder, Error, ErrorKind, Words};
-use crate::validate;
 
 /// A store of MXP state: elements, entities, and line tags.
 #[derive(Clone, Debug, Default)]
@@ -83,15 +80,14 @@ impl State {
     }
 
     /// Retrieves a tag or element by name. Returns an error if no tag or element is defined by
-    /// that name, if the name is not a valid MXP identifier, or if the tag or element is not Open
-    /// (see [`Component::is_open`]) and `secure` is false.
+    /// that name, or if the tag or element is not Open  (see [`Component::is_open`]) and `secure`
+    /// is false.
     pub fn get_component(&self, name: &str, secure: bool) -> crate::Result<Component<'_>> {
         let component = if let Some(tag) = Tag::well_known(name) {
             Component::Tag(tag)
         } else if let Some(custom) = self.elements.get(name) {
             Component::Element(custom)
         } else {
-            validate(name, ErrorKind::InvalidElementName)?;
             return Err(Error::new(name, ErrorKind::UnknownElement));
         };
         if !secure && !component.is_open() {
@@ -151,13 +147,14 @@ impl State {
     /// [line tag]: https://www.zuggsoft.com/zmud/mxp.htm#User-defined%20Line%20Tags
     pub fn define<'a>(
         &'a mut self,
-        definition: CollectedDefinition<'a>,
+        kind: DefinitionKind,
+        definition: &'a str,
     ) -> crate::Result<Option<EntityEntry<'a>>> {
-        match definition.kind {
-            DefinitionKind::AttributeList => self.define_attributes(definition.text),
-            DefinitionKind::Element => self.define_element(definition.text),
-            DefinitionKind::Entity => return self.define_entity(definition.text),
-            DefinitionKind::LineTag => self.define_line_tag(definition.text),
+        match kind {
+            DefinitionKind::AttributeList => self.define_attributes(definition),
+            DefinitionKind::Element => self.define_element(definition),
+            DefinitionKind::Entity => return self.define_entity(definition),
+            DefinitionKind::LineTag => self.define_line_tag(definition),
         }?;
         Ok(None)
     }

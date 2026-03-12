@@ -53,12 +53,8 @@ pub struct Element {
 
 impl Element {
     /// Parses an element tag.
-    pub fn collect(text: &str, secure: bool) -> crate::Result<CollectedElement<'_>> {
-        let collected = CollectedElement::parse(text)?;
-        if !secure && matches!(collected, CollectedElement::Definition(_)) {
-            return Err(Error::new(text, ErrorKind::DefinitionWhenNotSecure));
-        }
-        Ok(collected)
+    pub fn collect(source: &str, secure: bool) -> crate::Result<CollectedElement<'_>> {
+        CollectedElement::parse(source, secure)
     }
 
     pub fn decode<'a, D>(&'a self, args: &'a Arguments<'a>, decoder: D) -> DecodeElement<'a, D>
