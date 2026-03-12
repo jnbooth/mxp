@@ -4,12 +4,12 @@ use crate::{Error, ErrorKind};
 
 /// List of arguments to an MXP tag.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ElementItem<'a> {
+pub struct ElementItem {
     pub tag: &'static Tag,
-    pub arguments: Arguments<'a>,
+    pub arguments: Arguments<'static>,
 }
 
-impl ElementItem<'static> {
+impl ElementItem {
     pub(crate) fn parse(tag: &str) -> crate::Result<Self> {
         let mut words = Words::new(tag);
         let tag_name = words

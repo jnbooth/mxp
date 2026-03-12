@@ -28,7 +28,7 @@ pub struct Element {
     /// Tag name
     pub name: String,
     /// What atomic elements it defines (arg 1)
-    pub items: Vec<ElementItem<'static>>,
+    pub items: Vec<ElementItem>,
     /// List of attributes to this element (ATT="xx")
     pub attributes: Arguments<'static>,
     /// Line tag number (20 - 99) (TAG=n)
@@ -142,7 +142,7 @@ impl Element {
         ]
     }
 
-    fn parse_items(argument: Option<&str>) -> crate::Result<Vec<ElementItem<'static>>> {
+    fn parse_items(argument: Option<&str>) -> crate::Result<Vec<ElementItem>> {
         let Some(argument) = argument else {
             return Ok(Vec::new());
         };

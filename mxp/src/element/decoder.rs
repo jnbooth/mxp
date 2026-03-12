@@ -34,7 +34,7 @@ impl<D: Decoder> Decoder for ElementDecoder<'_, D> {
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct DecodeElement<'a, D: Decoder + Copy> {
     decoder: ElementDecoder<'a, D>,
-    items: slice::Iter<'a, ElementItem<'a>>,
+    items: slice::Iter<'a, ElementItem>,
 }
 
 impl<'a, D: Decoder + Copy> DecodeElement<'a, D> {
