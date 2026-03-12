@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::str::FromStr;
 
 use super::{Hyperlink, Send};
@@ -162,33 +163,28 @@ fn split_list(list: &str) -> (String, Vec<LinkPrompt>) {
     (first, iter.map(LinkPrompt::from).collect())
 }
 
-impl<S> From<Hyperlink<S>> for Link
-where
-    S: AsRef<str>,
-{
-    fn from(value: Hyperlink<S>) -> Self {
+impl From<Hyperlink<Cow<'_, str>>> for Link {
+    fn from(value: Hyperlink<Cow<'_, str>>) -> Self {
         Self::new(
             value.href.as_ref(),
-            value.hint.as_ref().map(AsRef::as_ref),
+            value.hint.as_deref(),
             SendTo::Internet,
-            value.expire.map(|expire| expire.as_ref().to_owned()),
+            value.expire.map(Cow::into_owned),
         )
     }
 }
 
-impl<S> From<Send<S>> for Link
-where
-    S: AsRef<str>,
-{
-    fn from(value: Send<S>) -> Self {
+impl From<Send<Cow<'_, str>>> for Link {
+    fn from(value: Send<Cow<'_, str>>) -> Self {
+        let href = match &value.href {
+            Some(href) => href,
+            None => Link::EMBED_ENTITY,
+        };
         Self::new(
-            value
-                .href
-                .as_ref()
-                .map_or(Link::EMBED_ENTITY, AsRef::as_ref),
-            value.hint.as_ref().map(AsRef::as_ref),
+            href,
+            value.hint.as_deref(),
             value.send_to,
-            value.expire.map(|expire| expire.as_ref().to_owned()),
+            value.expire.map(Cow::into_owned),
         )
     }
 }
