@@ -120,12 +120,6 @@ impl Transformer {
         self.mxp_state.insert_entity(name, value)
     }
 
-    fn subnegotiate<T: Negotiate>(&mut self, negotiator: T) {
-        self.input.append([telnet::IAC, telnet::SB, T::CODE]);
-        negotiator.negotiate(&mut self.input, &self.config).unwrap();
-        self.input.append([telnet::IAC, telnet::SE]);
-    }
-
     pub fn config(&self) -> &TransformerConfig {
         &self.config
     }
@@ -142,7 +136,7 @@ impl Transformer {
         }
         match self.config.use_mxp {
             UseMxp::Always => self.mxp_on(),
-            UseMxp::Never => self.mxp_off(true),
+            UseMxp::Never => self.mxp_off(),
             UseMxp::Command | UseMxp::Query => (),
         }
         let mnes_updates = self.mnes_variables.changes(&config, &self.config);
@@ -201,26 +195,53 @@ impl Transformer {
         self.mxp_state.custom_entities_len()
     }
 
-    fn take_mxp_string(&mut self) -> mxp::Result<String> {
-        Ok(String::from_utf8(mem::take(&mut self.mxp_entity_string))?)
+    pub fn reset_ansi(&mut self) {
+        self.output.reset_ansi();
     }
 
-    fn mxp_off(&mut self, completely: bool) {
+    pub fn reset_mxp(&mut self) {
         self.output.reset_mxp();
-        if !self.mxp_active {
-            return;
-        }
-        self.mxp_close_tags_from(0);
-        self.output.append(TelnetFragment::Mxp { enabled: false });
+    }
 
-        if !completely {
-            return;
+    pub fn receive(&mut self, bytes: &[u8], buf: &mut [u8]) -> io::Result<usize> {
+        if bytes.is_empty() {
+            return Ok(0);
         }
-        self.mxp_mode_change(Some(mxp::Mode::OPEN));
-        if self.phase.is_mxp() {
-            self.phase = Phase::Normal;
+        let mut received = 0;
+        let mut cursor = ReceiveCursor::new(bytes);
+        if !self.decompress.active() {
+            for byte in &mut cursor {
+                self.receive_byte(byte);
+                if self.decompress.active() {
+                    break;
+                }
+            }
+            received += bytes.len() - cursor.len();
         }
-        self.mxp_active = false;
+        while !cursor.is_empty() {
+            let n = self.decompress.decompress(&mut cursor, buf)?;
+            let mut iter = buf[..n].iter();
+            for &byte in &mut iter {
+                self.receive_byte(byte);
+                if !self.decompress.active() {
+                    self.decompress.reset();
+                    let remainder = iter.as_slice().to_vec();
+                    received += n - remainder.len();
+                    received += self.receive(&remainder, buf)?;
+                    received += self.receive(cursor.as_slice(), buf)?;
+                    return Ok(received);
+                }
+            }
+            received += n;
+        }
+
+        Ok(received)
+    }
+
+    fn subnegotiate<T: Negotiate>(&mut self, negotiator: T) {
+        self.input.append([telnet::IAC, telnet::SB, T::CODE]);
+        negotiator.negotiate(&mut self.input, &self.config).unwrap();
+        self.input.append([telnet::IAC, telnet::SE]);
     }
 
     fn mxp_on(&mut self) {
@@ -231,6 +252,24 @@ impl Transformer {
         self.mxp_mode.set(mxp::Mode::OPEN);
         self.mxp_tags.clear();
         self.mxp_state.clear();
+    }
+
+    fn mxp_reset(&mut self) {
+        self.output.reset_mxp();
+        if !self.mxp_active {
+            return;
+        }
+        self.mxp_close_tags_from(0);
+        self.output.append(TelnetFragment::Mxp { enabled: false });
+    }
+
+    fn mxp_off(&mut self) {
+        self.mxp_reset();
+        self.mxp_mode_change(Some(mxp::Mode::OPEN));
+        if self.phase.is_mxp() {
+            self.phase = Phase::Normal;
+        }
+        self.mxp_active = false;
     }
 
     fn mxp_collected_element(&mut self, source: &str) -> mxp::Result<()> {
@@ -342,12 +381,12 @@ impl Transformer {
             Action::Link(link) => self.output.set_mxp_action(link),
             Action::Music(music) => self.output.append(music.into_owned()),
             Action::MusicOff => self.output.append(MxpFragment::MusicOff),
-            Action::MxpOff => self.mxp_off(true),
+            Action::MxpOff => self.mxp_off(),
             Action::NoBr => self.ignore_next_newline = true,
             Action::P => self.in_paragraph = true,
             Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
             Action::Relocate(relocate) => self.output.append(relocate.into_owned()),
-            Action::Reset => self.mxp_off(false),
+            Action::Reset => self.mxp_reset(),
             Action::SBr => self.output.append_text(" "),
             Action::Small => self.output.set_mxp_flag(TextStyle::Small),
             Action::Sound(sound) => self.output.append(sound.into_owned()),
@@ -417,54 +456,13 @@ impl Transformer {
     }
 
     fn mxp_unterminated(&mut self, error: mxp::ErrorKind) {
-        self.output.append(mxp::Error::new(
-            String::from_utf8_lossy(&self.mxp_entity_string),
-            error,
-        ));
+        let entity_string = String::from_utf8_lossy(&self.mxp_entity_string);
+        self.output.append(mxp::Error::new(entity_string, error));
         self.mxp_entity_string.clear();
     }
 
-    pub fn reset_ansi(&mut self) {
-        self.output.reset_ansi();
-    }
-
-    pub fn reset_mxp(&mut self) {
-        self.output.reset_mxp();
-    }
-
-    pub fn receive(&mut self, bytes: &[u8], buf: &mut [u8]) -> io::Result<usize> {
-        if bytes.is_empty() {
-            return Ok(0);
-        }
-        let mut received = 0;
-        let mut cursor = ReceiveCursor::new(bytes);
-        if !self.decompress.active() {
-            for byte in &mut cursor {
-                self.receive_byte(byte);
-                if self.decompress.active() {
-                    break;
-                }
-            }
-            received += bytes.len() - cursor.len();
-        }
-        while !cursor.is_empty() {
-            let n = self.decompress.decompress(&mut cursor, buf)?;
-            let mut iter = buf[..n].iter();
-            for &byte in &mut iter {
-                self.receive_byte(byte);
-                if !self.decompress.active() {
-                    self.decompress.reset();
-                    let remainder = iter.as_slice().to_vec();
-                    received += n - remainder.len();
-                    received += self.receive(&remainder, buf)?;
-                    received += self.receive(cursor.as_slice(), buf)?;
-                    return Ok(received);
-                }
-            }
-            received += n;
-        }
-
-        Ok(received)
+    fn take_mxp_string(&mut self) -> mxp::Result<String> {
+        Ok(String::from_utf8(mem::take(&mut self.mxp_entity_string))?)
     }
 
     #[allow(clippy::match_same_arms)]
@@ -593,7 +591,7 @@ impl Transformer {
                             self.output.set_mxp_action(mxp::Link::for_text());
                         }
                     }
-                    xterm::Outcome::Mxp(mxp::Mode::RESET) => self.mxp_off(false),
+                    xterm::Outcome::Mxp(mxp::Mode::RESET) => self.mxp_reset(),
                     xterm::Outcome::Mxp(mode) => self.mxp_mode_change(Some(mode)),
                 }
                 if reset {
@@ -753,7 +751,7 @@ impl Transformer {
                 });
                 self.phase = Phase::Normal;
                 match c {
-                    protocol::MXP if self.mxp_active => self.mxp_off(true),
+                    protocol::MXP if self.mxp_active => self.mxp_off(),
                     protocol::MTTS => self.ttype_negotiator.reset(),
                     protocol::MNES => self.mnes_variables.clear(),
                     _ => (),

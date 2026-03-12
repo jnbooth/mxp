@@ -266,7 +266,13 @@ impl BufferedOutput {
 
     #[inline]
     pub fn append_char(&mut self, output: char) {
-        self.append_text(output.encode_utf8(&mut [0; 4]));
+        if self.text_buf.is_empty() {
+            self.spans.set_populated();
+        }
+        self.text_buf.push(output);
+        if self.in_variable {
+            self.variable.push(output);
+        }
     }
 
     pub fn append_text(&mut self, output: &str) {

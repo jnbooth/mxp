@@ -11,7 +11,7 @@ pub enum DecodedEntity<'a> {
     Custom(&'a str),
 }
 
-impl DecodedEntity<'_> {
+impl<'a> DecodedEntity<'a> {
     /// Appends the decoded entity to a string.
     ///
     /// # Examples
@@ -28,6 +28,14 @@ impl DecodedEntity<'_> {
         match self {
             Self::Standard(c) => buf.push(c),
             Self::Custom(s) => buf.push_str(s),
+        }
+    }
+
+    #[inline]
+    pub fn encode(self, buf: &'a mut [u8]) -> &'a str {
+        match self {
+            Self::Standard(c) => c.encode_utf8(buf),
+            Self::Custom(s) => s,
         }
     }
 }
