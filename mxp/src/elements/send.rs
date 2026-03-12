@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 
-use super::link::SendTo;
 use crate::keyword::SendKeyword;
 use crate::parse::{Decoder, Error, Scan};
 
@@ -8,8 +7,8 @@ use crate::parse::{Decoder, Error, Scan};
 pub(crate) struct Send<S> {
     pub href: Option<S>,
     pub hint: Option<S>,
-    pub send_to: SendTo,
     pub expire: Option<S>,
+    pub prompt: bool,
 }
 
 impl<'a, D> TryFrom<Scan<'a, D>> for Send<Cow<'a, str>>
@@ -24,16 +23,11 @@ where
         let hint = scanner.next_or("hint")?;
         let expire = scanner.next_or("expire")?;
         let keywords = scanner.into_keywords()?;
-        let send_to = if keywords.contains(SendKeyword::Prompt) {
-            SendTo::Input
-        } else {
-            SendTo::World
-        };
         Ok(Self {
             href,
             hint,
-            send_to,
             expire,
+            prompt: keywords.contains(SendKeyword::Prompt),
         })
     }
 }

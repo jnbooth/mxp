@@ -14,7 +14,7 @@ pub enum SendTo {
     World = 1,
     /// `<SEND PROMPT href="...">`.
     /// When clicked, the link text should be sent to the client's command line.
-    Input,
+    Prompt,
     /// `<A href="..."`>`.
     /// When clicked, the link text should be opened in a browser as a web URL.
     Internet,
@@ -180,10 +180,15 @@ impl From<Send<Cow<'_, str>>> for Link {
             Some(href) => href,
             None => Link::EMBED_ENTITY,
         };
+        let send_to = if value.prompt {
+            SendTo::Prompt
+        } else {
+            SendTo::World
+        };
         Self::new(
             href,
             value.hint.as_deref(),
-            value.send_to,
+            send_to,
             value.expire.map(Cow::into_owned),
         )
     }
