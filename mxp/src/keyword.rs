@@ -66,7 +66,7 @@ pub trait KeywordFilter {
     fn iter<'a, S: AsRef<str> + 'a>(args: &'a [S]) -> Self::Iter<'a, S>;
 }
 
-/// Default [`KeywordFilter`] that iterates through strings without filtering them.
+/// Default `KeywordFilter` that iterates through strings without filtering them.
 impl KeywordFilter for () {
     type Iter<'a, S: 'a> = slice::Iter<'a, S>;
 

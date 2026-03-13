@@ -66,14 +66,51 @@ impl Default for FrameLayout {
 /// A separate browser window region with its own HTML document.
 ///
 /// See [MXP specification: `<FRAME>`](https://www.zuggsoft.com/zmud/mxp.htm#Frames).
+///
+/// # Examples
+///
+/// ```
+/// use mxp::{Align, Dimension, FrameAction, FrameLayout};
+///
+/// assert_eq!(
+///     "<FRAME NAME=Map Left=-20c Top=0 Width=20c Height=20c>".parse::<mxp::Frame>(),
+///     Ok(mxp::Frame {
+///         name: "Map".into(),
+///         action: FrameAction::Open,
+///         title: "Map".into(),
+///         scrolling: false,
+///         layout: FrameLayout::External {
+///             left: Dimension::character_spacing(-20),
+///             top: Dimension::pixels(0),
+///             width: Some(Dimension::character_spacing(20)),
+///             height: Some(Dimension::character_spacing(20)),
+///             floating: false,
+///         },
+///     }),
+/// );
+///
+/// assert_eq!(
+///     "<FRAME NAME=Tells REDIRECT INTERNAL ALIGN=top SCROLLING=yes>".parse::<mxp::Frame>(),
+///     Ok(mxp::Frame {
+///         name: "Tells".into(),
+///         action: FrameAction::Redirect,
+///         title: "Tells".into(),
+///         scrolling: true,
+///         layout: FrameLayout::Internal {
+///             align: Align::Top,
+///         },
+///     }),
+/// );
+///
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Frame<S = String> {
     /// The name of the frame to be used to send text to the frame later in the text stream. Several special names are recognized: `_top` specifies the main MUD window, `_previous` specifies the window that was active before this frame.
     pub name: S,
     /// Action to apply to the frame.
     pub action: FrameAction,
-    /// Specifies the full caption of the frame. If undefined, `name` should be used as the title.
-    pub title: Option<S>,
+    /// Specifies the full caption of the frame.
+    pub title: S,
     /// Frame layout.
     pub layout: FrameLayout,
     /// Determines whether the frame is allowed to scroll.
@@ -81,11 +118,6 @@ pub struct Frame<S = String> {
 }
 
 impl<S> Frame<S> {
-    /// `self.title`, or `self.name` if `self.title` is `None`.
-    pub fn title(&self) -> &S {
-        self.title.as_ref().unwrap_or(&self.name)
-    }
-
     /// Applies a type transformation to all text, returning a new struct.
     pub fn map_text<T, F>(self, mut f: F) -> Frame<T>
     where
@@ -94,7 +126,7 @@ impl<S> Frame<S> {
         Frame {
             name: f(self.name),
             action: self.action,
-            title: self.title.map(f),
+            title: f(self.title),
             layout: self.layout,
             scrolling: self.scrolling,
         }
@@ -109,7 +141,7 @@ impl<S: AsRef<str>> Frame<S> {
         Frame {
             name: self.name.as_ref(),
             action: self.action,
-            title: self.title.as_ref().map(AsRef::as_ref),
+            title: self.title.as_ref(),
             layout: self.layout,
             scrolling: self.scrolling,
         }
@@ -139,7 +171,7 @@ where
             .next_or("action")?
             .expect_variant()?
             .unwrap_or_default();
-        let title = scanner.next_or("title")?;
+        let title = scanner.next_or("title")?.unwrap_or(name.clone());
         let align = scanner
             .next_or("align")?
             .expect_variant()?

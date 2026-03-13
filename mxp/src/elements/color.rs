@@ -6,6 +6,20 @@ use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
 /// Sets the color of the text.
 ///
 /// See [MXP specification: `<COLOR>`](https://www.zuggsoft.com/zmud/mxp.htm#Text%20Formatting).
+///
+/// # Examples
+///
+/// ```
+/// use mxp::RgbColor;
+///
+/// assert_eq!(
+///     "<COLOR FORE=red BACK=#123456>".parse::<mxp::Color>(),
+///     Ok(mxp::Color {
+///         fore: Some(RgbColor::hex(0xFF0000)),
+///         back: Some(RgbColor::hex(0x123456)),
+///     }),
+/// );
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Color {
     /// If defined, sets the foreground color of the text.

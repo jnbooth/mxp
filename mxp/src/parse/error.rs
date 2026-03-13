@@ -163,14 +163,6 @@ impl<T> Clone for UnrecognizedVariant<T> {
     }
 }
 
-impl<T> PartialEq<UnrecognizedVariant<T>> for UnrecognizedVariant<T> {
-    fn eq(&self, other: &UnrecognizedVariant<T>) -> bool {
-        self.input == other.input
-    }
-}
-
-impl<T> Eq for UnrecognizedVariant<T> {}
-
 impl<T> fmt::Debug for UnrecognizedVariant<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_tuple("UnrecognizedVariant")

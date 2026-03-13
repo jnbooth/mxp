@@ -185,12 +185,12 @@ impl EntityMap {
     /// use mxp::{EntityInfo, EntityKeyword, EntityMap};
     ///
     /// let mut map = EntityMap::new();
-    /// map.set("k1", "v1", Some("desc1".to_owned()), None).unwrap();
-    /// map.set("k2", "v2", Some("desc2".to_owned()), EntityKeyword::Publish)
+    /// map.set("k1", "v1", Some("desc1"), None).unwrap();
+    /// map.set("k2", "v2", Some("desc2"), EntityKeyword::Publish)
     ///     .unwrap();
-    /// map.set("k3", "v3", Some("desc3".to_owned()), EntityKeyword::Publish)
+    /// map.set("k3", "v3", Some("desc3"), EntityKeyword::Publish)
     ///     .unwrap();
-    /// map.set("k4", "v4", Some("desc4".to_owned()), None).unwrap();
+    /// map.set("k4", "v4", Some("desc4"), None).unwrap();
     /// map.set("k5", "v5", None, EntityKeyword::Publish).unwrap();
     ///
     /// let mut published = map.published().collect::<Vec<_>>();
@@ -278,9 +278,9 @@ impl EntityMap {
     ///
     /// let mut map = EntityMap::with_globals();
     /// assert_eq!(map.get("HP"), None);
-    /// assert!(map.insert("HP".to_owned(), "150".to_owned()));
+    /// assert!(map.insert("HP".to_owned(), "150".to_owned()).is_ok());
     /// assert_eq!(map.get("HP"), Some("150"));
-    /// assert!(!map.insert("lt".to_owned(), "!".to_owned())); // cannot modify global entity
+    /// assert!(map.insert("lt".to_owned(), "!".to_owned()).is_err()); // cannot modify global entity
     /// ```
     pub fn insert(&mut self, name: String, value: String) -> crate::Result<()> {
         self.guard_global(&name)?;

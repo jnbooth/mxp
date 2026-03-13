@@ -23,6 +23,23 @@ impl_parse_enum!(FontStyle, Blink, Bold, Italic, Underline, Inverse);
 /// Changes the font for subsequent text.
 ///
 /// See [MXP specification: `<FONT>`](https://www.zuggsoft.com/zmud/mxp.htm#MXP%20Tags).
+///
+/// # Examples
+///
+/// ```
+/// use mxp::RgbColor;
+///
+/// assert_eq!(
+///     "<FONT 'Times New Roman' SIZE=10 COLOR=black BACK=#123456>".parse::<mxp::Font>(),
+///     Ok(mxp::Font {
+///         face: Some("Times New Roman".into()),
+///         size: 10.try_into().ok(),
+///         color: Some(RgbColor::hex(0x000000)),
+///         back: Some(RgbColor::hex(0x123456)),
+///         style: Default::default(),
+///     }),
+/// );
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Font<S = String> {
     /// Font family.

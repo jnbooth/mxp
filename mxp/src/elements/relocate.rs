@@ -6,6 +6,18 @@ use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
 /// Closes the current MUD connection and causes a new connect to open on a new server.
 ///
 /// See [MXP specification: `<RELOCATE>`](https://www.zuggsoft.com/zmud/mxp.htm#Crosslinking%20multiple%20MUD%20servers).
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(
+///     "<RELOCATE new.server.com 1000>".parse::<mxp::Relocate>(),
+///     Ok(mxp::Relocate {
+///         hostname: "new.server.com".into(),
+///         port: 1000,
+///     }),
+/// );
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Relocate<S = String> {
     /// Hostname of the new connection.

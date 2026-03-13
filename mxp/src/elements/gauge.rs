@@ -7,6 +7,22 @@ use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
 /// Displays an MXP entity value as a gauge.
 ///
 /// See [MXP specification: `<GAUGE>`](https://www.zuggsoft.com/zmud/mxp.htm#Using%20Entities).
+///
+/// # Examples
+///
+/// ```
+/// use mxp::RgbColor;
+///
+/// assert_eq!(
+///     "<GAUGE Hp MAX=HpMax Caption=Health Color=red>".parse::<mxp::Gauge>(),
+///     Ok(mxp::Gauge {
+///         entity: "Hp".into(),
+///         max: Some("HpMax".into()),
+///         caption: Some("Health".into()),
+///         color: Some(RgbColor::hex(0xFF0000)),
+///     }),
+/// );
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Gauge<S = String> {
     /// Name of the entity to use as gauge data.

@@ -11,6 +11,21 @@ use crate::parse::{Decoder, ExpectArg as _, Scan};
 /// Note that when text in a frame or window scrolls, the text is no longer at the same X or Y position. So, for status windows, ensure that you set the frame to be unscrollable.
 ///
 /// See [MXP specification: `<DEST>`](https://www.zuggsoft.com/zmud/mxp.htm#Cursor%20Control).
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(
+///     "<DEST status X=10 Y=2>".parse::<mxp::Dest>(),
+///     Ok(mxp::Dest {
+///         name: Some("status".into()),
+///         column: 10.try_into().ok(),
+///         line: 2.try_into().ok(),
+///         eof: false,
+///         eol: false,
+///     }),
+/// );
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Dest<S = String> {
     /// Name of [frame](crate::Frame) to use as the destination for text.

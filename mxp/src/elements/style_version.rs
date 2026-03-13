@@ -8,7 +8,18 @@ use crate::parse::{Decoder, ExpectArg as _, Scan};
 /// client. The client caches this version information and returns it when requested by a plain
 /// `<VERSION>` request.
 ///
-/// See [`MXP specification: <VERSION>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control).
+/// See [MXP specification: `<VERSION>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control).
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(
+///     "<VERSION 0.6>".parse::<mxp::StyleVersion>(),
+///     Ok(mxp::StyleVersion {
+///         styleversion: "0.6".into(),
+///     }),
+/// );
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct StyleVersion<S = String> {
     /// Style-sheet version number.

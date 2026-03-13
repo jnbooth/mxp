@@ -3,6 +3,17 @@ use std::str::FromStr;
 /// Sets text heading level.
 ///
 /// See [MXP Specification: HTML tags](https://www.zuggsoft.com/zmud/mxp.htm#HTML%20tags).
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!("<H1>".parse::<mxp::Heading>(), Ok(mxp::Heading::H1));
+/// assert_eq!("<H2>".parse::<mxp::Heading>(), Ok(mxp::Heading::H2));
+/// assert_eq!("<H3>".parse::<mxp::Heading>(), Ok(mxp::Heading::H3));
+/// assert_eq!("<H4>".parse::<mxp::Heading>(), Ok(mxp::Heading::H4));
+/// assert_eq!("<H5>".parse::<mxp::Heading>(), Ok(mxp::Heading::H5));
+/// assert_eq!("<H6>".parse::<mxp::Heading>(), Ok(mxp::Heading::H6));
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Heading {
     H1 = 1,

@@ -7,6 +7,20 @@ use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
 /// format to a standard GIF or BMP format.
 ///
 /// See [MXP specification: `<FILTER>`](https://www.zuggsoft.com/zmud/mxp.htm#File%20Filters).
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(
+///     "<FILTER SRC='bff' DEST='gif' NAME='MyPlugin'>".parse::<mxp::Filter>(),
+///     Ok(mxp::Filter {
+///         src: "bff".into(),
+///         dest: Some("gif".into()),
+///         name: "MyPlugin".into(),
+///         proc: 0,
+///     }),
+/// );
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Filter<S = String> {
     /// File extension of the MUD-specific format.

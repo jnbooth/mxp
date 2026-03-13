@@ -6,6 +6,21 @@ use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
 /// Displays an MXP entity value as status bar text.
 ///
 /// See [MXP specification: `<STAT>`](https://www.zuggsoft.com/zmud/mxp.htm#Using%20Entities).
+///
+/// # Examples
+///
+/// ```
+/// use mxp::RgbColor;
+///
+/// assert_eq!(
+///     "<Stat Hp MAX=HpMax Caption=Health>".parse::<mxp::Stat>(),
+///     Ok(mxp::Stat {
+///         entity: "Hp".into(),
+///         max: Some("HpMax".into()),
+///         caption: Some("Health".into()),
+///     }),
+/// );
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Stat<S = String> {
     /// Name of the entity to use as text data.

@@ -8,6 +8,17 @@ use crate::parse::{Decoder, Scan};
 /// links from the previous room description are no longer valid and need to e removed.
 ///
 /// See [MXP specification: `<EXPIRE>`](https://www.zuggsoft.com/zmud/mxp.htm#Links).
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(
+///     "<EXPIRE exits>".parse::<mxp::Expire>(),
+///     Ok(mxp::Expire {
+///         name: Some("exits".into()),
+///     }),
+/// );
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Expire<S = String> {
     /// Name of the link to remove. If `None`, expire all links with names.

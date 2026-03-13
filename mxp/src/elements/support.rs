@@ -5,7 +5,18 @@ use crate::parse::{Decoder, Error, Scan};
 
 /// Determines exactly which tags are supported by the client.
 ///
-/// See [`MXP specification: <SUPPORT>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control).
+/// See [MXP specification: `<SUPPORT>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control).
+///
+/// # Examples
+///
+/// ```
+/// assert_eq!(
+///     "<SUPPORT 'color.*' send.expire image>".parse::<mxp::Support>(),
+///     Ok(mxp::Support {
+///         questions: vec!["color.*".into(), "send.expire".into(), "image".into()],
+///     }),
+/// );
+/// ```
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Support<S = String> {
     pub questions: Vec<S>,

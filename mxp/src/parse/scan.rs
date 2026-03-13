@@ -55,6 +55,7 @@ impl<D: Decoder> Decoder for &D {
     }
 }
 
+/// Fallback `Decoder` that only looks up global entities (with [`Entity::global`]).
 impl Decoder for () {
     fn get_entity<F: KeywordFilter>(&self, name: &str) -> Option<&str> {
         Entity::global(name)

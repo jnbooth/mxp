@@ -2,6 +2,7 @@
 mod macros;
 
 mod color;
+
 pub use color::Color;
 
 mod dest;
@@ -31,6 +32,9 @@ pub use hyperlink::Hyperlink;
 mod image;
 pub use image::Image;
 
+mod music;
+pub use music::{AudioContinuation, Music};
+
 mod relocate;
 pub use relocate::Relocate;
 
@@ -38,7 +42,7 @@ mod send;
 pub use send::{Send, SendMenu, SendMenuItem};
 
 mod sound;
-pub use sound::{AudioContinuation, AudioRepetition, Music, Sound};
+pub use sound::{AudioRepetition, Sound};
 
 mod stat;
 pub use stat::Stat;

@@ -112,6 +112,7 @@ impl Tag {
             b"expire" => Some(&Self::EXPIRE),
             b"filter" => Some(&Self::FILTER),
             b"font" => Some(&Self::FONT),
+            b"frame" => Some(&Self::FRAME),
             b"gauge" => Some(&Self::GAUGE),
             b"h" => Some(&Self::H),
             b"h1" => Some(&Self::H1),
@@ -167,6 +168,21 @@ impl Tag {
     const EXPIRE: Tag = tag!("expire", Expire);
     const FILTER: Tag = tag!("filter", Filter);
     const FONT: Tag = tag!("font", Font, "face", "size", "color", "back");
+    const FRAME: Tag = tag!(
+        "frame",
+        Frame,
+        "name",
+        "action",
+        "title",
+        "internal",
+        "align",
+        "left",
+        "top",
+        "width",
+        "height",
+        "scrolling",
+        "floating"
+    );
     const GAUGE: Tag = tag!("gauge", Gauge);
     const H: Tag = tag!("h", Highlight);
     const H1: Tag = tag!("h1", H1);
@@ -222,6 +238,7 @@ impl Tag {
         Self::EXPIRE,
         Self::FILTER,
         Self::FONT,
+        Self::FRAME,
         Self::GAUGE,
         Self::H,
         Self::H1,
