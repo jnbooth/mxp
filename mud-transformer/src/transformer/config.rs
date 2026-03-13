@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::fmt;
 
 use flagset::{FlagSet, flags};
 use mxp::RgbColor;
@@ -35,6 +36,12 @@ impl TabBehavior {
             Self::Spaces(n) => &SPACES[..n.into()],
             _ => "",
         }
+    }
+}
+
+impl fmt::Display for TabBehavior {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.string().fmt(f)
     }
 }
 

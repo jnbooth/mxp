@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::str;
+use std::{fmt, str};
 
 use bytestring::ByteString;
 use bytestringmut::ByteStringMut;
@@ -466,7 +466,26 @@ impl BufferedOutput {
         }
     }
 
+    #[inline]
+    pub fn write_fmt(&mut self, args: fmt::Arguments) {
+        fmt::Write::write_fmt(self, args).unwrap();
+    }
+
     pub fn variables(&self) -> &HashMap<String, String> {
         &self.variables
+    }
+}
+
+impl fmt::Write for BufferedOutput {
+    #[inline]
+    fn write_char(&mut self, c: char) -> fmt::Result {
+        self.append_char(c);
+        Ok(())
+    }
+
+    #[inline]
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        self.append_text(s);
+        Ok(())
     }
 }

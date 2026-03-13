@@ -389,7 +389,7 @@ impl Transformer {
             Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
             Action::Relocate(relocate) => self.output.append(relocate.into_owned()),
             Action::Reset => self.mxp_reset(),
-            Action::SBr => self.output.append_text(" "),
+            Action::SBr => write!(self.output, " "),
             Action::Send(link) => self.output.set_mxp_link(link.into_owned()),
             Action::Small => self.output.set_mxp_flag(TextStyle::Small),
             Action::Sound(sound) => self.output.append(sound.into_owned()),
@@ -432,10 +432,8 @@ impl Transformer {
     fn mxp_collected_entity(&mut self, source: &str) -> mxp::Result<()> {
         let name = source.trim_ascii();
         mxp::validate(name, mxp::ErrorKind::InvalidEntityName)?;
-        match self.mxp_state.decode_entity(name)? {
-            mxp::DecodedEntity::Standard(c) => self.output.append_char(c),
-            mxp::DecodedEntity::Custom(s) => self.output.append_text(s),
-        }
+        let entity = self.mxp_state.decode_entity(name)?;
+        write!(self.output, "{entity}");
         Ok(())
     }
 
@@ -482,7 +480,7 @@ impl Transformer {
 
         if self.phase == Phase::Utf8Character && !is_utf8_continuation(c) {
             let sequence = str::from_utf8(&self.utf8_sequence).unwrap_or("\u{FFFD}");
-            self.output.append_text(sequence);
+            write!(self.output, "{sequence}");
             self.phase = Phase::Normal;
         }
 
@@ -512,10 +510,11 @@ impl Transformer {
                         self.mxp_entity_string.clear();
                         self.phase = Phase::MxpEntity;
                     }
-                    32..=126 => self.output.append_text(
+                    32..=126 => {
                         // SAFETY: `utf8` is valid UTF-8, since it is a single ASCII byte.
-                        unsafe { str::from_utf8_unchecked(slice::from_ref(&c)) },
-                    ),
+                        let single_char = unsafe { str::from_utf8_unchecked(slice::from_ref(&c)) };
+                        write!(self.output, "{single_char}");
+                    }
                     ansi::ESC => self.phase = Phase::Esc,
                     telnet::IAC => self.phase = Phase::Iac,
                     b'\n' => {
@@ -528,9 +527,9 @@ impl Transformer {
                                     self.output.start_line();
                                     self.output.start_line();
                                 }
-                                b'.' => self.output.append_text("  "),
+                                b'.' => write!(self.output, "  "),
                                 b' ' | b'\t' | 0x0C => (),
-                                _ => self.output.append_text(" "),
+                                _ => write!(self.output, " "),
                             }
                         } else if self.ignore_next_newline {
                             self.ignore_next_newline = false;
@@ -540,13 +539,13 @@ impl Transformer {
                     }
                     b'\t' if self.in_paragraph => {
                         if last_char != b' ' {
-                            self.output.append_text(" ");
+                            write!(self.output, " ");
                         }
                     }
                     b'\t' => match self.config.tab {
                         TabBehavior::Control => self.output.append(CursorEffect::TabForward(1)),
                         TabBehavior::NextMultipleOf8 => self.output.append_tab(),
-                        tab => self.output.append_text(tab.string()),
+                        tab => write!(self.output, "{}", tab.string()),
                     },
                     ansi::ENQ => self.input.append(self.ansi.answerback()),
                     ansi::BEL => self.output.append(ControlFragment::Beep),
