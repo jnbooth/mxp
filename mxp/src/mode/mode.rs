@@ -49,17 +49,14 @@ impl Mode {
         matches!(self, Self::OPEN | Self::PERM_OPEN)
     }
 
-    /// When this mode is active, MXP tags should be parsed.
-    pub const fn is_mxp(self) -> bool {
-        matches!(
-            self,
-            Self::OPEN | Self::PERM_OPEN | Self::SECURE | Self::SECURE_ONCE | Self::PERM_SECURE
-        )
-    }
-
     /// When this mode is active, all tags and commands in MXP are allowed.
     pub const fn is_secure(self) -> bool {
         matches!(self, Self::SECURE | Self::SECURE_ONCE | Self::PERM_SECURE)
+    }
+
+    /// When this mode is active, MXP tags should not be parsed.
+    pub const fn is_locked(self) -> bool {
+        matches!(self, Self::LOCKED | Self::PERM_LOCKED)
     }
 
     /// When this mode is active, the line is tagged for automappers.

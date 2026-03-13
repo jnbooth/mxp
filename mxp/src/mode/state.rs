@@ -135,14 +135,14 @@ impl ModeState {
         self.get().is_open()
     }
 
-    /// See [`Mode::is_mxp`].
-    pub const fn is_mxp(&self) -> bool {
-        self.get().is_mxp()
-    }
-
     /// See [`Mode::is_secure`].
     pub const fn is_secure(&self) -> bool {
         self.get().is_secure()
+    }
+
+    /// See [`Mode::is_locked`].
+    pub const fn is_locked(&self) -> bool {
+        self.get().is_locked()
     }
 
     /// See [`Mode::is_automapping`].

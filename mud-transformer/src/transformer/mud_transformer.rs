@@ -263,11 +263,7 @@ impl Transformer {
 
     fn mxp_reset(&mut self) {
         self.output.reset_mxp();
-        if !self.mxp_active {
-            return;
-        }
         self.mxp_close_tags_from(0);
-        self.output.append(TelnetFragment::Mxp { enabled: false });
     }
 
     fn mxp_off(&mut self) {
@@ -277,6 +273,10 @@ impl Transformer {
             self.phase = Phase::Normal;
         }
         self.mxp_active = false;
+        if !self.mxp_active {
+            return;
+        }
+        self.output.append(TelnetFragment::Mxp { enabled: false });
     }
 
     fn mxp_collected_element(&mut self, source: &str) -> mxp::Result<()> {
@@ -502,11 +502,11 @@ impl Transformer {
                 self.last_char = c;
                 match c {
                     b' ' if self.in_paragraph && last_char == b' ' => (),
-                    b'<' if self.mxp_active && self.mxp_mode.is_mxp() => {
+                    b'<' if self.mxp_active && !self.mxp_mode.is_locked() => {
                         self.mxp_entity_string.clear();
                         self.phase = Phase::MxpElement;
                     }
-                    b'&' if self.mxp_active && self.mxp_mode.is_mxp() => {
+                    b'&' if self.mxp_active && !self.mxp_mode.is_locked() => {
                         self.mxp_entity_string.clear();
                         self.phase = Phase::MxpEntity;
                     }
@@ -591,7 +591,6 @@ impl Transformer {
                             self.output.set_mxp_link(mxp::Send::default());
                         }
                     }
-                    xterm::Outcome::Mxp(mxp::Mode::RESET) => self.mxp_reset(),
                     xterm::Outcome::Mxp(mode) => self.mxp_mode_change(Some(mode)),
                 }
                 if reset {
