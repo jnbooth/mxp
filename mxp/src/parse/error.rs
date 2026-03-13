@@ -26,8 +26,6 @@ pub enum ErrorKind {
     InvalidElementName,
     /// ie. not <!ELEMENT ...> or <!ENTITY ...>
     InvalidDefinition,
-    /// cannot redefine inbuilt element
-    CannotRedefineElement,
     /// no < in element definition, eg. <!ELEMENT foo 'bold' >  (should be '<bold>')
     NoTagInDefinition,
     /// eg. <!ELEMENT foo '<<bold>' >

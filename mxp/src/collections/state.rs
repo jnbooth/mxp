@@ -91,10 +91,10 @@ impl State {
     /// that name, or if the tag or element is not Open  (see [`Component::is_open`]) and `secure`
     /// is false.
     pub fn get_component(&self, name: &str, secure: bool) -> crate::Result<Component<'_>> {
-        let component = if let Some(tag) = Tag::well_known(name) {
-            Component::Tag(tag)
-        } else if let Some(custom) = self.elements.get(name) {
+        let component = if let Some(custom) = self.elements.get(name) {
             Component::Element(custom)
+        } else if let Some(tag) = Tag::well_known(name) {
+            Component::Tag(tag)
         } else {
             return Err(Error::new(name, ErrorKind::UnknownElement));
         };
@@ -167,24 +167,14 @@ impl State {
         Ok(None)
     }
 
-    fn guard_global_element(name: &str) -> crate::Result<()> {
-        if Tag::well_known(name).is_some() {
-            Err(Error::new(name, ErrorKind::CannotRedefineElement))
-        } else {
-            Ok(())
-        }
-    }
-
     fn define_element(&mut self, definition: &str) -> crate::Result<()> {
-        let el = match Element::parse(definition, &self.entities)? {
+        let el = match Element::parse(definition)? {
             ElementCommand::Define(el) => el,
             ElementCommand::Delete(name) => {
-                Self::guard_global_element(&name)?;
                 self.elements.remove(&name);
                 return Ok(());
             }
         };
-        Self::guard_global_element(&el.name)?;
         if let Some(tag) = el.tag {
             self.line_tags.set(usize::from(tag.get()), el.name.clone());
         }

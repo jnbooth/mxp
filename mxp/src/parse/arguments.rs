@@ -1,11 +1,16 @@
 use std::borrow::Cow;
+use std::slice;
+use std::str::FromStr;
+
+use flagset::Flags;
 
 use super::error::{Error, ErrorKind};
 use super::scan::{Decoder, Scan};
 use super::validation::validate;
 use super::words::Words;
 use crate::collections::CaseFoldMap;
-use crate::keyword::KeywordFilter;
+use crate::keyword::{KeywordFilter, KeywordFilterIter};
+use crate::parse::ArgumentMatcher;
 
 /// Parsed arguments of an MXP command.
 ///
@@ -56,6 +61,12 @@ impl<'a> Arguments<'a> {
             Some(attr) => Some(attr),
             None => Some(""),
         }
+    }
+
+    pub(crate) fn matcher<K: Flags + FromStr>(
+        &self,
+    ) -> ArgumentMatcher<'_, KeywordFilterIter<K, slice::Iter<'_, Cow<'_, str>>>> {
+        ArgumentMatcher::new(KeywordFilterIter::new(&self.positional), &self.named)
     }
 
     pub(crate) fn scan<D: Decoder>(&self, decoder: D) -> Scan<'_, D> {

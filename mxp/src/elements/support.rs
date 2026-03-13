@@ -42,12 +42,10 @@ where
 {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> Result<Self, Self::Error> {
-        let mut questions = Vec::with_capacity(scanner.len());
-        while let Some(question) = scanner.next()? {
-            questions.push(question);
-        }
-        Ok(Self { questions })
+    fn try_from(scanner: Scan<'a, D>) -> Result<Self, Self::Error> {
+        Ok(Self {
+            questions: scanner.collect::<Result<_, _>>()?,
+        })
     }
 }
 

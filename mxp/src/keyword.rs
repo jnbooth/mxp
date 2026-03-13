@@ -1,7 +1,8 @@
+use std::iter::FusedIterator;
 use std::str::FromStr;
 use std::{iter, slice};
 
-use flagset::flags;
+use flagset::{FlagSet, Flags, flags};
 
 use crate::parse::UnrecognizedVariant;
 
@@ -52,6 +53,92 @@ flags! {
     pub(crate) enum SendKeyword: u8 {
         Prompt
     }
+}
+
+#[derive(Clone, Debug)]
+pub struct KeywordFilterIter<K, I>
+where
+    K: Flags + FromStr,
+    I: Iterator,
+    I::Item: AsRef<str>,
+{
+    keywords: FlagSet<K>,
+    inner: I,
+}
+
+impl<K, I> KeywordFilterIter<K, I>
+where
+    K: Flags + FromStr,
+    I: Iterator,
+    I::Item: AsRef<str>,
+{
+    pub fn new<T>(iter: T) -> Self
+    where
+        T: IntoIterator<IntoIter = I>,
+    {
+        Self {
+            keywords: FlagSet::empty(),
+            inner: iter.into_iter(),
+        }
+    }
+
+    pub fn into_keywords(mut self) -> Result<FlagSet<K>, K::Err> {
+        for item in self.inner {
+            self.keywords |= K::from_str(item.as_ref())?;
+        }
+        Ok(self.keywords)
+    }
+}
+
+impl<K, I> Iterator for KeywordFilterIter<K, I>
+where
+    K: Flags + FromStr,
+    I: Iterator,
+    I::Item: AsRef<str>,
+{
+    type Item = I::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        for item in &mut self.inner {
+            if let Ok(keyword) = K::from_str(item.as_ref()) {
+                self.keywords |= keyword;
+            } else {
+                return Some(item);
+            }
+        }
+        None
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let (_, upper) = self.inner.size_hint();
+        (0, upper)
+    }
+}
+
+impl<K, I> DoubleEndedIterator for KeywordFilterIter<K, I>
+where
+    K: Flags + FromStr,
+    I: DoubleEndedIterator,
+    I::Item: AsRef<str>,
+{
+    fn next_back(&mut self) -> Option<Self::Item> {
+        while let Some(next) = self.inner.next_back() {
+            if let Ok(keyword) = K::from_str(next.as_ref()) {
+                self.keywords |= keyword;
+            } else {
+                return Some(next);
+            }
+        }
+        None
+    }
+}
+
+impl<K, I> FusedIterator for KeywordFilterIter<K, I>
+where
+    K: Flags + FromStr,
+    I: Iterator,
+    I::Item: AsRef<str>,
+{
 }
 
 /// A trait for filtering out keywords from a list of strings.

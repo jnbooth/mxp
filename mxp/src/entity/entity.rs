@@ -22,7 +22,10 @@ pub struct Entity {
 
 impl Entity {
     pub(super) fn globals() -> HashMap<&'static [u8], &'static str> {
-        html_escape::NAMED_ENTITIES.iter().copied().collect()
+        let mut globals = HashMap::with_capacity(html_escape::NAMED_ENTITIES.len() + 1);
+        globals.extend(html_escape::NAMED_ENTITIES);
+        globals.insert(b"text", "&text;");
+        globals
     }
 
     /// Returns a global entity if one is defined for the given name.

@@ -64,23 +64,24 @@ impl Element {
         DecodeElement::new(self, args, decoder)
     }
 
-    /// Parses an MXP element from a definition, using the specified entity map for decoding.
-    pub fn parse<D: Decoder>(definition: &str, decoder: D) -> crate::Result<ElementCommand> {
+    /// Parses an MXP element from a definition.
+    pub fn parse(definition: &str) -> crate::Result<ElementCommand> {
         let mut words = Words::new(definition);
         let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
-        let args = words.parse_args_to_owned()?;
+        let args = words.parse_args()?;
 
-        let mut scanner = args.scan(decoder).with_keywords();
-        let items = Self::parse_items(scanner.next()?.as_deref())?;
+        let mut iter = args.matcher();
 
-        let attributes = match scanner.next_or("att")? {
-            Some(atts) => Words::new(&atts).parse_args_to_owned()?,
+        let items = Self::parse_items(iter.next().map(|next| &**next))?;
+
+        let attributes = match iter.next_or("att") {
+            Some(atts) => Words::new(atts).parse_args_to_owned()?,
             None => Arguments::default(),
         };
 
-        let tag = Self::parse_tag(scanner.next_or("tag")?)?;
+        let tag = Self::parse_tag(iter.next_or("tag"))?;
 
-        let (parse_as, variable) = match scanner.next_or("flag")? {
+        let (parse_as, variable) = match iter.next_or("flag") {
             None => (None, None),
             Some(flag) => {
                 if flag[.."set ".len()].eq_ignore_ascii_case("set ") {
@@ -91,14 +92,16 @@ impl Element {
             }
         };
 
-        let keywords = scanner.into_keywords()?;
+        let keywords = iter.into_inner().into_keywords()?;
+
+        let name = name.to_owned();
 
         if keywords.contains(ElementKeyword::Delete) {
-            return Ok(ElementCommand::Delete(name.to_owned()));
+            return Ok(ElementCommand::Delete(name));
         }
 
         Ok(ElementCommand::Define(Self {
-            name: name.to_owned(),
+            name,
             open: keywords.contains(ElementKeyword::Open),
             command: keywords.contains(ElementKeyword::Empty),
             items,
@@ -172,13 +175,13 @@ impl Element {
         Ok(items)
     }
 
-    fn parse_tag(tag: Option<Cow<str>>) -> crate::Result<Option<NonZero<u8>>> {
+    fn parse_tag(tag: Option<&Cow<str>>) -> crate::Result<Option<NonZero<u8>>> {
         let Some(tag) = tag else {
             return Ok(None);
         };
         match tag.parse::<NonZero<u8>>() {
             Ok(tag) if Mode(tag.get()).is_user_defined() => Ok(Some(tag)),
-            _ => Err(crate::Error::new(tag, ErrorKind::InvalidLineTag)),
+            _ => Err(crate::Error::new(&**tag, ErrorKind::InvalidLineTag)),
         }
     }
 }

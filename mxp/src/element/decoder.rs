@@ -17,9 +17,6 @@ struct ElementDecoder<'a, D: Decoder> {
 
 impl<D: Decoder> Decoder for ElementDecoder<'_, D> {
     fn get_entity<F: KeywordFilter>(&self, name: &str) -> Option<&str> {
-        if name == "text" {
-            return None;
-        }
         match self
             .args
             .find_from_attributes::<F>(name, &self.element.attributes)
