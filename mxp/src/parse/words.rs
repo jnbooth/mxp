@@ -25,18 +25,6 @@ impl<'a> Words<'a> {
         }
     }
 
-    pub fn source(&self) -> &'a str {
-        self.source
-    }
-
-    fn get_offset(&self) -> usize {
-        self.source.len() - self.iter.len() - usize::from(!self.done)
-    }
-
-    pub fn as_str(&self) -> &'a str {
-        &self.source[self.get_offset()..]
-    }
-
     pub fn validate_next_or(&mut self, e: ErrorKind) -> crate::Result<&'a str> {
         match self.next() {
             None => Err(Error::new(self.source, e)),
@@ -56,43 +44,77 @@ impl<'a> Words<'a> {
         arguments.extend::<String>(self)?;
         Ok(arguments)
     }
-}
 
-const fn is_decimal(c: u8) -> bool {
-    matches!(c, b'0'..=b'9' | b','..=b'.' | b'_')
-}
-const fn is_ident(c: u8) -> bool {
-    matches!(c, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b','..=b'.' | b'_')
-}
-const fn is_utf8_continuation(c: u8) -> bool {
-    (c & 0xC0) == 0x80
+    pub fn source(&self) -> &'a str {
+        self.source
+    }
+
+    pub fn as_str(&self) -> &'a str {
+        &self.source[self.get_offset()..]
+    }
+
+    fn get_offset(&self) -> usize {
+        self.source.len() - self.iter.len() - usize::from(!self.done)
+    }
+
+    fn iter_while<F: FnMut(&u8) -> bool>(&mut self, pred: F) {
+        self.done = self.iter.all(pred);
+    }
+
+    fn iter_until(&mut self, c: u8) -> bool {
+        let found = self.iter.any(|&ch| ch == c);
+        self.iter_once();
+        found
+    }
+
+    fn iter_once(&mut self) {
+        self.done = self.iter.next().is_none();
+    }
+
+    fn get_byte(&self, i: usize) -> Option<u8> {
+        self.source.as_bytes().get(i).copied()
+    }
 }
 
 impl<'a> Iterator for Words<'a> {
     type Item = &'a str;
 
+    #[allow(clippy::trivially_copy_pass_by_ref)]
     fn next(&mut self) -> Option<Self::Item> {
+        const fn is_word(c: &u8) -> bool {
+            matches!(*c, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'+'..=b'.' | b'_')
+        }
+        const fn is_utf8_continuation(c: &u8) -> bool {
+            (*c & 0xC0) == 0x80
+        }
+
         let mut offset = self.get_offset();
-        let first = *self.source.as_bytes().get(offset)?;
+        let first = self.get_byte(offset)?;
         let mut finished_quote = false;
-        self.done = !match first {
+        match first {
             b'"' | b'\'' => {
                 offset += 1;
-                finished_quote = self.iter.any(|&c| c == first);
-                self.iter.next().is_some()
+                finished_quote = self.iter_until(first);
             }
-            b'#' => self.iter.any(|&c| !c.is_ascii_hexdigit()),
-            b'&' => self.iter.any(|&c| c == b';') && self.iter.next().is_some(),
-            b'0'..=b'9' | b'+' | b'-' => self.iter.any(|&c| !is_decimal(c)),
-            b'A'..=b'Z' | b'a'..=b'z' => self.iter.any(|&c| !is_ident(c)),
-            128.. => self.iter.any(|&c| !is_utf8_continuation(c)),
-            _ => self.iter.next().is_some(),
-        };
+            b'#' => {
+                self.iter_while(u8::is_ascii_hexdigit);
+            }
+            b'&' => {
+                self.iter_until(b';');
+            }
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'+' | b'-' => {
+                self.iter_while(is_word);
+            }
+            128.. => {
+                self.iter_while(is_utf8_continuation);
+            }
+            _ => self.iter_once(),
+        }
         let mut end = self.get_offset();
-        if let Some(next) = self.source.as_bytes().get(end)
+        if let Some(next) = self.get_byte(end)
             && next.is_ascii_whitespace()
         {
-            self.iter.any(|&c| !c.is_ascii_whitespace());
+            self.iter_while(u8::is_ascii_whitespace);
         }
         if finished_quote {
             end -= 1;
@@ -129,8 +151,7 @@ mod tests {
             "&aaabcdeef;",
             "foo,woo",
             "!",
-            "-2.5,3_1",
-            "a",
+            "-2.5,3_1a",
             "=",
             "-",
             "t",
