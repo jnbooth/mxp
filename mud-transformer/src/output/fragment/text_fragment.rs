@@ -7,7 +7,7 @@ use mxp::{Heading, RgbColor};
 
 use super::super::{Link, OutputFragment, TextStyle};
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub struct TextFragment {
     pub text: ByteString,
     pub flags: FlagSet<TextStyle>,
@@ -32,6 +32,35 @@ impl TextFragment {
 
     pub fn html(&self) -> TextFragmentHtml<'_> {
         TextFragmentHtml { fragment: self }
+    }
+}
+
+impl fmt::Debug for TextFragment {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut s = f.debug_struct("TextFragment");
+        s.field("text", &self.text);
+        if !self.flags.is_empty() {
+            s.field("flags", &self.flags);
+        }
+        if let Some(foreground) = self.foreground {
+            s.field("foreground", &foreground);
+        }
+        if let Some(background) = self.background {
+            s.field("background", &background);
+        }
+        if let Some(font) = &self.font {
+            s.field("font", font);
+        }
+        if let Some(size) = self.size {
+            s.field("size", &size);
+        }
+        if let Some(link) = &self.link {
+            s.field("link", link);
+        }
+        if let Some(heading) = self.heading {
+            s.field("heading", &heading);
+        }
+        s.finish()
     }
 }
 

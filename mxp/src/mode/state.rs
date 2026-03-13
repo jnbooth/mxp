@@ -90,6 +90,11 @@ impl ModeState {
             Mode::PERM_OPEN | Mode::PERM_SECURE | Mode::PERM_LOCKED => {
                 self.default_mode = mode;
             }
+            Mode::RESET => {
+                self.default_mode = Mode::OPEN;
+                self.active_mode = Mode::OPEN;
+                return closing;
+            }
             _ => (),
         }
         self.active_mode = mode;

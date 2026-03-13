@@ -255,6 +255,7 @@ impl Transformer {
         if self.mxp_active {
             return;
         }
+        self.mxp_active = true;
         self.output.append(TelnetFragment::Mxp { enabled: true });
         self.mxp_mode.set(mxp::Mode::OPEN);
         self.mxp_tags.clear();
@@ -267,15 +268,15 @@ impl Transformer {
     }
 
     fn mxp_off(&mut self) {
+        if !self.mxp_active {
+            return;
+        }
         self.mxp_reset();
         self.mxp_mode_change(Some(mxp::Mode::OPEN));
         if self.phase.is_mxp() {
             self.phase = Phase::Normal;
         }
         self.mxp_active = false;
-        if !self.mxp_active {
-            return;
-        }
         self.output.append(TelnetFragment::Mxp { enabled: false });
     }
 
@@ -438,6 +439,10 @@ impl Transformer {
     }
 
     fn mxp_mode_change(&mut self, newmode: Option<mxp::Mode>) {
+        if newmode == Some(mxp::Mode::RESET) {
+            self.mxp_reset();
+            return;
+        }
         if self.mxp_mode.update(newmode) {
             let closed = self.mxp_tags.last_unsecure_index();
             self.mxp_close_tags_from(closed);
