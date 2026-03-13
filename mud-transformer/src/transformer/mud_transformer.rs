@@ -512,8 +512,8 @@ impl Transformer {
                     }
                     32..=126 => {
                         // SAFETY: `utf8` is valid UTF-8, since it is a single ASCII byte.
-                        let single_char = unsafe { str::from_utf8_unchecked(slice::from_ref(&c)) };
-                        write!(self.output, "{single_char}");
+                        let one_ascii = unsafe { str::from_utf8_unchecked(slice::from_ref(&c)) };
+                        self.output.append_text(one_ascii);
                     }
                     ansi::ESC => self.phase = Phase::Esc,
                     telnet::IAC => self.phase = Phase::Iac,
