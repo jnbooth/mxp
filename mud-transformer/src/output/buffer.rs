@@ -123,26 +123,19 @@ impl BufferedOutput {
         if times == 0 {
             return;
         }
-        if self.text_buf.is_empty() {
-            self.spans.set_populated();
-        }
         for _ in 0..times {
             self.text_buf.push_str(text);
             if self.in_variable {
                 self.variable.push_str(text);
             }
         }
-        self.cursor += text.len() * times;
         if let Some(c) = last_printable_char(text) {
             self.last_char = Some(c);
         }
     }
 
     pub fn last_printed_character(&self) -> Option<char> {
-        if let Some(c) = last_printable_char(&self.text_buf) {
-            return Some(c);
-        }
-        self.last_char
+        last_printable_char(&self.text_buf).or(self.last_char)
     }
 
     #[inline]
@@ -267,9 +260,6 @@ impl BufferedOutput {
 
     #[inline]
     pub fn append_char(&mut self, output: char) {
-        if self.text_buf.is_empty() {
-            self.spans.set_populated();
-        }
         self.text_buf.push(output);
         if self.in_variable {
             self.variable.push(output);
@@ -277,12 +267,6 @@ impl BufferedOutput {
     }
 
     pub fn append_text(&mut self, output: &str) {
-        if output.is_empty() {
-            return;
-        }
-        if self.text_buf.is_empty() {
-            self.spans.set_populated();
-        }
         self.text_buf.push_str(output);
         if self.in_variable {
             self.variable.push_str(output);
@@ -366,19 +350,20 @@ impl BufferedOutput {
     }
 
     pub fn set_mxp_flag(&mut self, flag: TextStyle) {
-        if self.spans.set_flag(flag) && !self.ansi_flags.contains(flag) {
+        if self.spans.set_flag(flag, self.text_buf.is_empty()) && !self.ansi_flags.contains(flag) {
             self.flush_mxp();
         }
     }
 
     pub fn set_mxp_color(&mut self, color: mxp::Color) {
+        let empty = self.text_buf.is_empty();
         let set_foreground = if let Some(fg) = color.fore {
-            self.spans.set_foreground(fg.into())
+            self.spans.set_foreground(fg.into(), empty)
         } else {
             false
         };
         let set_background = if let Some(bg) = color.back {
-            self.spans.set_background(bg.into())
+            self.spans.set_background(bg.into(), empty)
         } else {
             false
         };
@@ -388,13 +373,15 @@ impl BufferedOutput {
     }
 
     pub fn set_mxp_foreground<C: Into<TermColor>>(&mut self, foreground: C) {
-        if self.spans.set_foreground(foreground.into()) {
+        let empty = self.text_buf.is_empty();
+        if self.spans.set_foreground(foreground.into(), empty) {
             self.flush_mxp();
         }
     }
 
     pub fn set_mxp_background<C: Into<TermColor>>(&mut self, background: C) {
-        if self.spans.set_background(background.into()) {
+        let empty = self.text_buf.is_empty();
+        if self.spans.set_background(background.into(), empty) {
             self.flush_mxp();
         }
     }
@@ -408,20 +395,21 @@ impl BufferedOutput {
             back,
         } = font;
         let mut changed = false;
+        let empty = self.text_buf.is_empty();
         if let Some(face) = face {
-            changed = self.spans.set_font(face.as_ref()) || changed;
+            changed = self.spans.set_font(face.as_ref(), empty) || changed;
         }
         if let Some(size) = size {
-            changed = self.spans.set_size(size) || changed;
+            changed = self.spans.set_size(size, empty) || changed;
         }
         if let Some(color) = color {
-            changed = self.spans.set_foreground(color.into()) || changed;
+            changed = self.spans.set_foreground(color.into(), empty) || changed;
         }
         for flag in style {
-            changed = self.spans.set_flag(flag.into()) || changed;
+            changed = self.spans.set_flag(flag.into(), empty) || changed;
         }
         if let Some(back) = back {
-            changed = self.spans.set_background(back.into()) || changed;
+            changed = self.spans.set_background(back.into(), empty) || changed;
         }
         if changed {
             self.flush_mxp();
@@ -429,39 +417,39 @@ impl BufferedOutput {
     }
 
     pub fn set_mxp_link<T: Into<Link>>(&mut self, link: T) {
-        if self.spans.set_link(link.into()) {
+        if self.spans.set_link(link.into(), self.text_buf.is_empty()) {
             self.flush_mxp();
         }
     }
 
     pub fn set_mxp_heading(&mut self, heading: mxp::Heading) {
-        if self.spans.set_heading(heading) {
+        if self.spans.set_heading(heading, self.text_buf.is_empty()) {
             self.flush_mxp();
         }
     }
 
     pub fn set_mxp_entity(&mut self, var: mxp::Var) {
         self.in_variable = true;
-        if self.spans.set_entity(var) {
+        if self.spans.set_entity(var, self.text_buf.is_empty()) {
             self.flush_mxp();
         }
     }
 
     pub fn set_mxp_variable(&mut self, var: &str) {
         self.in_variable = true;
-        if self.spans.set_variable(var) {
+        if self.spans.set_variable(var, self.text_buf.is_empty()) {
             self.flush_mxp();
         }
     }
 
     pub fn set_mxp_gag(&mut self) {
-        if self.spans.set_gag() {
+        if self.spans.set_gag(self.text_buf.is_empty()) {
             self.flush_mxp();
         }
     }
 
     pub fn set_mxp_window<S: AsRef<str>>(&mut self, window: mxp::Dest<S>) {
-        if self.spans.set_window(window) {
+        if self.spans.set_window(window, self.text_buf.is_empty()) {
             self.flush_mxp();
         }
     }

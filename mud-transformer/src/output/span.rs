@@ -62,7 +62,6 @@ impl From<mxp::FontStyle> for TextStyle {
 /// 2|Item 2">this is a menu link</SEND>
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct Span {
-    populated: bool,
     pub(super) flags: FlagSet<TextStyle>,
     pub(super) foreground: TermColor,
     pub(super) background: TermColor,
@@ -77,17 +76,16 @@ pub(crate) struct Span {
 }
 
 macro_rules! set_flag {
-    ($self:ident, $p:ident, $val:ident) => {
+    ($self:ident, $empty:expr, $p:ident, $val:ident) => {
         let span = match $self.spans.as_mut_slice().last_mut() {
             Some(span) if span.$p.contains($val) => {
                 return false;
             }
-            Some(span) if !span.populated => {
+            Some(span) if $empty => {
                 span.$p |= $val;
                 return false;
             }
             Some(span) => Span {
-                populated: false,
                 $p: span.$p | $val,
                 ..span.clone()
             },
@@ -103,17 +101,16 @@ macro_rules! set_flag {
 }
 
 macro_rules! set_prop {
-    ($self:ident, $p:ident) => {
+    ($self:ident, $empty:expr, $p:ident) => {
         let span = match $self.spans.as_mut_slice().last_mut() {
             Some(span) if span.$p == $p => {
                 return false;
             }
-            Some(span) if !span.populated => {
+            Some(span) if $empty => {
                 span.$p = $p;
                 return false;
             }
             Some(span) => Span {
-                populated: false,
                 $p: $p,
                 ..span.clone()
             },
@@ -128,22 +125,21 @@ macro_rules! set_prop {
 }
 
 macro_rules! set_opt_prop {
-    ($self:ident, $p:ident) => {
-        set_opt_prop!($self, $p, $p)
+    ($self:ident, $empty:expr, $p:ident) => {
+        set_opt_prop!($self, $empty, $p, $p)
     };
-    ($self:ident, $p:ident, $val:expr) => {
+    ($self:ident, $empty:expr, $p:ident, $val:expr) => {
         let span = match $self.spans.as_mut_slice().last_mut() {
             Some(Span {
                 $p: Some(other), ..
             }) if other == &$p => {
                 return false;
             }
-            Some(span) if !span.populated => {
+            Some(span) if $empty => {
                 span.$p = Some($val);
                 return false;
             }
             Some(span) => Span {
-                populated: false,
                 $p: Some($val),
                 ..span.clone()
             },
@@ -158,8 +154,8 @@ macro_rules! set_opt_prop {
 }
 
 macro_rules! set_string_prop {
-    ($self:ident, $p:ident) => {
-        set_opt_prop!($self, $p, share_string(&mut $self.buf, $p));
+    ($self:ident, $empty:expr, $p:ident) => {
+        set_opt_prop!($self, $empty, $p, share_string(&mut $self.buf, $p));
     };
 }
 
@@ -183,10 +179,6 @@ where
 impl SpanList {
     pub const fn get(&self) -> Option<&Span> {
         self.spans.as_slice().last()
-    }
-
-    const fn get_mut(&mut self) -> Option<&mut Span> {
-        self.spans.as_mut_slice().last_mut()
     }
 
     pub fn truncate(&mut self, i: usize) -> Option<Span> {
@@ -221,56 +213,50 @@ impl SpanList {
         }
     }
 
-    pub fn set_populated(&mut self) {
-        if let Some(span) = self.get_mut() {
-            span.populated = true;
-        }
+    pub fn set_background(&mut self, background: TermColor, empty: bool) -> bool {
+        set_prop!(self, empty, background);
     }
 
-    pub fn set_background(&mut self, background: TermColor) -> bool {
-        set_prop!(self, background);
+    pub fn set_entity(&mut self, entity: mxp::Var, empty: bool) -> bool {
+        set_opt_prop!(self, empty, entity);
     }
 
-    pub fn set_entity(&mut self, entity: mxp::Var) -> bool {
-        set_opt_prop!(self, entity);
+    pub fn set_flag(&mut self, flag: TextStyle, empty: bool) -> bool {
+        set_flag!(self, empty, flags, flag);
     }
 
-    pub fn set_flag(&mut self, flag: TextStyle) -> bool {
-        set_flag!(self, flags, flag);
+    pub fn set_foreground(&mut self, foreground: TermColor, empty: bool) -> bool {
+        set_prop!(self, empty, foreground);
     }
 
-    pub fn set_foreground(&mut self, foreground: TermColor) -> bool {
-        set_prop!(self, foreground);
+    pub fn set_font(&mut self, font: &str, empty: bool) -> bool {
+        set_string_prop!(self, empty, font);
     }
 
-    pub fn set_font(&mut self, font: &str) -> bool {
-        set_string_prop!(self, font);
-    }
-
-    pub fn set_gag(&mut self) -> bool {
+    pub fn set_gag(&mut self, empty: bool) -> bool {
         let gag = true;
-        set_prop!(self, gag);
+        set_prop!(self, empty, gag);
     }
 
-    pub fn set_heading(&mut self, heading: Heading) -> bool {
-        set_opt_prop!(self, heading);
+    pub fn set_heading(&mut self, heading: Heading, empty: bool) -> bool {
+        set_opt_prop!(self, empty, heading);
     }
 
-    pub fn set_link(&mut self, link: Link) -> bool {
-        set_opt_prop!(self, link);
+    pub fn set_link(&mut self, link: Link, empty: bool) -> bool {
+        set_opt_prop!(self, empty, link);
     }
 
-    pub fn set_size(&mut self, size: NonZero<u8>) -> bool {
-        set_opt_prop!(self, size);
+    pub fn set_size(&mut self, size: NonZero<u8>, empty: bool) -> bool {
+        set_opt_prop!(self, empty, size);
     }
 
-    pub fn set_window<S: AsRef<str>>(&mut self, window: mxp::Dest<S>) -> bool {
+    pub fn set_window<S: AsRef<str>>(&mut self, window: mxp::Dest<S>, empty: bool) -> bool {
         let window = window.map_text(|text| share_string(&mut self.buf, text));
-        set_opt_prop!(self, window);
+        set_opt_prop!(self, empty, window);
     }
 
-    pub fn set_variable(&mut self, variable: &str) -> bool {
-        set_string_prop!(self, variable);
+    pub fn set_variable(&mut self, variable: &str, empty: bool) -> bool {
+        set_string_prop!(self, empty, variable);
     }
 }
 
