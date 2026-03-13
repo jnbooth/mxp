@@ -4,7 +4,7 @@ pub(crate) use buffer::BufferedOutput;
 mod fragment;
 pub use fragment::{
     ControlFragment, EntityFragment, MxpFragment, Output, OutputDrain, OutputFragment,
-    TelnetFragment, TextFragment, TextFragmentANSI, TextFragmentHtml,
+    TelnetFragment, TextFragment, TextFragmentANSI, TextFragmentHtml, VariableFragment,
 };
 
 mod interpret_ansi;

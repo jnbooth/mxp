@@ -57,13 +57,6 @@ impl From<mxp::FontStyle> for TextStyle {
     }
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct EntitySetter {
-    pub name: String,
-    pub flags: FlagSet<mxp::EntityKeyword>,
-    pub is_variable: bool,
-}
-
 /// eg. <send "command1|command2|command3" hint="click to see menu|Item 1|Item
 /// 2|Item 2">this is a menu link</SEND>
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -78,7 +71,8 @@ pub(crate) struct Span {
     pub(super) heading: Option<Heading>,
     pub(super) gag: bool,
     pub(super) window: Option<mxp::Dest<ByteString>>,
-    pub(super) entity: Option<EntitySetter>,
+    pub(super) entity: Option<mxp::Var>,
+    pub(super) variable: Option<ByteString>,
 }
 
 macro_rules! set_flag {
@@ -194,17 +188,24 @@ impl SpanList {
         self.spans.as_mut_slice().last_mut()
     }
 
-    pub fn truncate(&mut self, i: usize) -> Option<EntitySetter> {
+    pub fn truncate(&mut self, i: usize) -> Option<Span> {
         if i >= self.spans.len() {
             return None;
         }
-        let entity = self.spans.pop().and_then(|span| span.entity);
+        let span = self.spans.pop()?;
         self.spans.truncate(i);
-        entity
+        Some(span)
     }
 
     pub fn clear(&mut self) {
         self.spans.clear();
+    }
+
+    pub const fn in_variable(&self) -> bool {
+        let Some(span) = self.get() else {
+            return false;
+        };
+        span.variable.is_some() || span.entity.is_some()
     }
 
     pub const fn len(&self) -> usize {
@@ -225,6 +226,18 @@ impl SpanList {
         }
     }
 
+    pub fn set_background(&mut self, background: TermColor) -> bool {
+        set_prop!(self, background);
+    }
+
+    pub fn set_entity(&mut self, entity: mxp::Var) -> bool {
+        set_opt_prop!(self, entity);
+    }
+
+    pub fn set_action(&mut self, action: mxp::Link) -> bool {
+        set_opt_prop!(self, action);
+    }
+
     pub fn set_flag(&mut self, flag: TextStyle) -> bool {
         set_flag!(self, flags, flag);
     }
@@ -233,38 +246,8 @@ impl SpanList {
         set_prop!(self, foreground);
     }
 
-    pub fn set_background(&mut self, background: TermColor) -> bool {
-        set_prop!(self, background);
-    }
-
     pub fn set_font(&mut self, font: &str) -> bool {
         set_string_prop!(self, font);
-    }
-
-    pub fn set_size(&mut self, size: NonZero<u8>) -> bool {
-        set_opt_prop!(self, size);
-    }
-
-    pub fn set_action(&mut self, action: mxp::Link) -> bool {
-        set_opt_prop!(self, action);
-    }
-
-    pub fn set_heading(&mut self, heading: Heading) -> bool {
-        set_opt_prop!(self, heading);
-    }
-
-    pub fn set_entity(
-        &mut self,
-        name: String,
-        flags: FlagSet<mxp::EntityKeyword>,
-        is_variable: bool,
-    ) -> bool {
-        let entity = EntitySetter {
-            name,
-            flags,
-            is_variable,
-        };
-        set_opt_prop!(self, entity);
     }
 
     pub fn set_gag(&mut self) -> bool {
@@ -272,9 +255,21 @@ impl SpanList {
         set_prop!(self, gag);
     }
 
+    pub fn set_heading(&mut self, heading: Heading) -> bool {
+        set_opt_prop!(self, heading);
+    }
+
+    pub fn set_size(&mut self, size: NonZero<u8>) -> bool {
+        set_opt_prop!(self, size);
+    }
+
     pub fn set_window<S: AsRef<str>>(&mut self, window: mxp::Dest<S>) -> bool {
         let window = window.map_text(|text| share_string(&mut self.buf, text));
         set_opt_prop!(self, window);
+    }
+
+    pub fn set_variable(&mut self, variable: &str) -> bool {
+        set_string_prop!(self, variable);
     }
 }
 

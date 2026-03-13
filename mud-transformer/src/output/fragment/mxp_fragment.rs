@@ -14,6 +14,7 @@ pub enum MxpFragment {
     SoundOff,
     Stat(mxp::Stat),
     StyleVersion(mxp::StyleVersion),
+    Variable(VariableFragment),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -22,48 +23,42 @@ pub enum EntityFragment {
         name: String,
         value: String,
         publish: bool,
-        is_variable: bool,
     },
     Unset {
         name: String,
-        is_variable: bool,
     },
 }
 
-impl EntityFragment {
-    pub fn entity(entry: &mxp::EntityEntry) -> Self {
-        Self::new(entry, false)
-    }
-
-    pub fn variable(entry: &mxp::EntityEntry) -> Self {
-        Self::new(entry, true)
-    }
-
-    fn new(entry: &mxp::EntityEntry, is_variable: bool) -> Self {
+impl From<mxp::EntityEntry<'_>> for EntityFragment {
+    fn from(entry: mxp::EntityEntry) -> Self {
         match entry.value {
             Some(entity) => Self::Set {
                 name: entry.name.to_owned(),
                 value: entity.value.clone(),
                 publish: entity.is_published(),
-                is_variable,
             },
             None => Self::Unset {
                 name: entry.name.to_owned(),
-                is_variable,
             },
         }
     }
 }
 
-impl From<EntityFragment> for OutputFragment {
-    fn from(value: EntityFragment) -> Self {
-        Self::Mxp(MxpFragment::Entity(value))
-    }
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct VariableFragment {
+    pub name: String,
+    pub value: String,
 }
 
 impl From<MxpFragment> for OutputFragment {
     fn from(value: MxpFragment) -> Self {
         Self::Mxp(value)
+    }
+}
+
+impl From<mxp::EntityEntry<'_>> for OutputFragment {
+    fn from(value: mxp::EntityEntry<'_>) -> Self {
+        Self::Mxp(MxpFragment::Entity(value.into()))
     }
 }
 
@@ -130,5 +125,11 @@ impl From<mxp::Stat> for OutputFragment {
 impl From<mxp::StyleVersion> for OutputFragment {
     fn from(value: mxp::StyleVersion) -> Self {
         Self::Mxp(MxpFragment::StyleVersion(value))
+    }
+}
+
+impl From<VariableFragment> for OutputFragment {
+    fn from(value: VariableFragment) -> Self {
+        Self::Mxp(MxpFragment::Variable(value))
     }
 }

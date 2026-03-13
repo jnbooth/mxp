@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use super::line_tags::{LineTagUpdate, LineTags};
 use crate::collections::CaseFoldMap;
 use crate::element::{Action, DecodeElement, DefinitionKind, Element, ElementCommand, Tag};
+use crate::elements::Var;
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
 use crate::keyword::KeywordFilter;
 use crate::mode::Mode;
@@ -67,10 +68,17 @@ impl State {
         self.entities.get(name)
     }
 
-    /// Alias for `self.entities_mut().insert(name, value)`.
-    /// See [`EntityMap::insert`].
-    pub fn insert_entity(&mut self, name: String, value: String) -> bool {
-        self.entities.insert(name, value)
+    pub fn set_entity<'a, S: AsRef<str>>(
+        &'a mut self,
+        var: &'a Var<S>,
+        value: &str,
+    ) -> crate::Result<Option<EntityEntry<'a>>> {
+        self.entities.set(
+            var.name.as_ref(),
+            value,
+            var.desc.as_ref().map(AsRef::as_ref),
+            var.keywords,
+        )
     }
 
     /// Alias for `self.entities().published()`.
@@ -203,8 +211,7 @@ impl State {
         };
         let desc = scanner.next_or("desc")?;
         let keywords = scanner.into_keywords()?;
-        self.entities
-            .set(key, &value, desc.map(Cow::into_owned), keywords)
+        self.entities.set(key, &value, desc.as_deref(), keywords)
     }
 
     fn define_attributes(&mut self, definition: &str) -> crate::Result<()> {

@@ -4,7 +4,7 @@ mod control_fragment;
 pub use control_fragment::ControlFragment;
 
 mod mxp_fragment;
-pub use mxp_fragment::{EntityFragment, MxpFragment};
+pub use mxp_fragment::{EntityFragment, MxpFragment, VariableFragment};
 
 mod telnet_fragment;
 pub use telnet_fragment::TelnetFragment;

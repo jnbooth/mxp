@@ -282,12 +282,10 @@ impl EntityMap {
     /// assert_eq!(map.get("HP"), Some("150"));
     /// assert!(!map.insert("lt".to_owned(), "!".to_owned())); // cannot modify global entity
     /// ```
-    pub fn insert(&mut self, name: String, value: String) -> bool {
-        if self.globals.contains_key(name.as_bytes()) {
-            return false;
-        }
+    pub fn insert(&mut self, name: String, value: String) -> crate::Result<()> {
+        self.guard_global(&name)?;
         self.inner.insert(name, value.into());
-        true
+        Ok(())
     }
 
     /// Applies an MXP entity definition with the specified name, value, description and keywords,
@@ -306,7 +304,7 @@ impl EntityMap {
         &'a mut self,
         name: &'a str,
         value: &str,
-        description: Option<String>,
+        description: Option<&str>,
         keywords: T,
     ) -> crate::Result<Option<EntityEntry<'a>>> {
         // Reduce monomorphization
@@ -314,7 +312,7 @@ impl EntityMap {
             map: &'a mut EntityMap,
             name: &'a str,
             value: &str,
-            description: Option<String>,
+            description: Option<&str>,
             keywords: FlagSet<EntityKeyword>,
         ) -> Option<EntityEntry<'a>> {
             if keywords.contains(EntityKeyword::Delete) {
@@ -328,7 +326,7 @@ impl EntityMap {
                 Entry::Vacant(entry) => entry.insert(Entity {
                     value: value.to_owned(),
                     visibility: keywords.into(),
-                    description: description.unwrap_or_default(),
+                    description: description.unwrap_or_default().to_owned(),
                 }),
                 Entry::Occupied(entry) if keywords.contains(EntityKeyword::Remove) => {
                     if entry.get().value == value {
@@ -350,7 +348,7 @@ impl EntityMap {
                     let entity = entry.into_mut();
                     let description_unchanged = match description {
                         Some(description) if entity.description != description => {
-                            entity.description = description;
+                            description.clone_into(&mut entity.description);
                             false
                         }
                         _ => true,
@@ -414,8 +412,8 @@ mod tests {
     #[test]
     fn set_replace() {
         let mut map = EntityMap::new();
-        map.set("key", "value", Some("desc1".to_owned()), None).ok();
-        map.set("key", "", Some("desc2".to_owned()), EntityKeyword::Publish)
+        map.set("key", "value", Some("desc1"), None).ok();
+        map.set("key", "", Some("desc2"), EntityKeyword::Publish)
             .ok();
         assert_eq!(
             map.inner.get("key"),

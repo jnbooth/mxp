@@ -8,22 +8,40 @@ use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
 
 /// The `<VAR>` tag is just like the `<!ENTITY>` tag, except that the value of the variable is
 /// placed between the `<VAR>` and `</VAR>` tags, and this value is displayed to the user.
+///
+/// # Examples
+///
+/// ```
+/// use mxp::EntityKeyword;
+///
+/// assert_eq!(
+///     "<VAR Hp DESC=Health PUBLISH>".parse::<mxp::Var>(),
+///     Ok(mxp::Var {
+///         name: "Hp".into(),
+///         desc: Some("Health".into()),
+///         keywords: EntityKeyword::Publish.into(),
+///     }),
+/// );
+/// ```
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Var<S = String> {
     /// Variable name.
-    pub variable: S,
+    pub name: S,
+    /// Variable description.
+    pub desc: Option<S>,
     /// Keywords.
     pub keywords: FlagSet<EntityKeyword>,
 }
 
 impl<S> Var<S> {
     /// Applies a type transformation to all text, returning a new struct.
-    pub fn map_text<T, F>(self, f: F) -> Var<T>
+    pub fn map_text<T, F>(self, mut f: F) -> Var<T>
     where
-        F: FnOnce(S) -> T,
+        F: FnMut(S) -> T,
     {
         Var {
-            variable: f(self.variable),
+            name: f(self.name),
+            desc: self.desc.map(f),
             keywords: self.keywords,
         }
     }
@@ -35,7 +53,8 @@ impl<S: AsRef<str>> Var<S> {
     /// Returns a new struct that borrows text from this one.
     pub fn borrow_text(&self) -> Var<&str> {
         Var {
-            variable: self.variable.as_ref(),
+            name: self.name.as_ref(),
+            desc: self.desc.as_ref().map(AsRef::as_ref),
             keywords: self.keywords,
         }
     }
@@ -52,8 +71,23 @@ where
     fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         let variable = scanner.next()?.expect_some("variable")?;
+        let desc = scanner.next_or("desc")?;
         let keywords = scanner.into_keywords()?;
-        Ok(Self { variable, keywords })
+        Ok(Self {
+            name: variable,
+            desc,
+            keywords,
+        })
+    }
+}
+
+impl<S> From<S> for Var<S> {
+    fn from(name: S) -> Self {
+        Self {
+            name,
+            desc: None,
+            keywords: FlagSet::empty(),
+        }
     }
 }
 

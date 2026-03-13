@@ -1,9 +1,9 @@
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::num::NonZero;
 use std::{io, mem, slice};
 
 use bytes::BytesMut;
-use flagset::FlagSet;
 use mxp::escape::{ansi, telnet};
 use mxp::responses::{SupportResponse, VersionResponse};
 
@@ -14,8 +14,8 @@ use super::state::StateLock;
 use super::tag::{Tag, TagList};
 use crate::input::{BufferedInput, InputDrain};
 use crate::output::{
-    BufferedOutput, ControlFragment, EntityFragment, MxpFragment, OutputDrain, OutputFragment,
-    TelnetFragment, TextStyle,
+    BufferedOutput, ControlFragment, MxpFragment, OutputDrain, OutputFragment, TelnetFragment,
+    TextStyle,
 };
 use crate::protocol::negotiate::{Negotiate, TelnetSource, TelnetVerb};
 use crate::protocol::{self, charset, mccp, mnes, msdp, mssp, mtts, xterm};
@@ -117,7 +117,14 @@ impl Transformer {
     }
 
     pub fn set_mxp_entity(&mut self, name: String, value: String) -> bool {
-        self.mxp_state.insert_entity(name, value)
+        self.mxp_state.entities_mut().insert(name, value).is_ok()
+    }
+
+    pub fn unset_mxp_entity(&mut self, name: &str) -> bool {
+        self.mxp_state
+            .entities_mut()
+            .remove(name)
+            .is_ok_and(|entity| entity.is_some())
     }
 
     pub fn config(&self) -> &TransformerConfig {
@@ -183,8 +190,8 @@ impl Transformer {
         self.mxp_state.published_entities()
     }
 
-    pub fn published_variables(&self) -> mxp::PublishedIter<'_> {
-        self.output.published_variables()
+    pub fn variables(&self) -> &HashMap<String, String> {
+        self.output.variables()
     }
 
     pub fn count_custom_mxp_elements(&self) -> usize {
@@ -278,7 +285,7 @@ impl Transformer {
         match mxp::Element::collect(source, secure)? {
             mxp::CollectedElement::Definition(kind, definition) => {
                 if let Some(entity) = self.mxp_state.define(kind, definition)? {
-                    self.output.append(EntityFragment::entity(&entity));
+                    self.output.append(entity);
                 }
                 Ok(())
             }
@@ -324,12 +331,7 @@ impl Transformer {
 
             mxp::Component::Element(el) => {
                 if let Some(variable) = &el.variable {
-                    if let Err(e) = mxp_state.guard_global_entity(variable) {
-                        self.output.append(e);
-                    } else {
-                        self.output
-                            .set_mxp_entity(variable.clone(), FlagSet::empty(), false);
-                    }
+                    self.output.set_mxp_variable(variable);
                 }
                 self.mxp_open_element(el, &args, mxp_state)
             }
@@ -403,11 +405,10 @@ impl Transformer {
             Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
             Action::User => input_mxp_auth(&mut self.input, &self.config.player),
             Action::Var(var) => {
-                if let Err(e) = mxp_state.guard_global_entity(&var.variable) {
+                if let Err(e) = mxp_state.guard_global_entity(&var.name) {
                     self.output.append(e);
                 } else {
-                    self.output
-                        .set_mxp_entity(var.variable.into_owned(), var.keywords, false);
+                    self.output.set_mxp_entity(var.into_owned());
                 }
             }
             Action::Version => {
@@ -423,8 +424,7 @@ impl Transformer {
 
     fn mxp_close_tags_from(&mut self, pos: usize) {
         if let Some(span_index) = self.mxp_tags.truncate(pos) {
-            self.output
-                .truncate_spans(span_index, self.mxp_state.entities_mut());
+            self.output.truncate_spans(span_index, &mut self.mxp_state);
         }
     }
 

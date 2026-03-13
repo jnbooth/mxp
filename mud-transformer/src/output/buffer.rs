@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::str;
 
 use bytestring::ByteString;
@@ -6,8 +7,8 @@ use flagset::FlagSet;
 use mxp::RgbColor;
 
 use super::{
-    ControlFragment, EntityFragment, Output, OutputDrain, OutputFragment, SpanList, TelnetFragment,
-    TextFragment, TextStyle,
+    ControlFragment, Output, OutputDrain, OutputFragment, SpanList, TelnetFragment, TextFragment,
+    TextStyle, VariableFragment,
 };
 use crate::responses::SgrReport;
 use crate::term::{TermColor, XTermPalette};
@@ -23,7 +24,7 @@ pub(crate) struct BufferedOutput {
     text_buf: ByteStringMut,
     fragments: Vec<Output>,
     spans: SpanList,
-    variables: mxp::EntityMap,
+    variables: HashMap<String, String>,
 
     in_line: bool,
     last_break: usize,
@@ -340,31 +341,28 @@ impl BufferedOutput {
         self.spans.len()
     }
 
-    pub fn truncate_spans(&mut self, i: usize, entities: &mut mxp::EntityMap) {
+    pub fn truncate_spans(&mut self, i: usize, state: &mut mxp::State) {
         self.flush();
-        let Some(entity) = self.spans.truncate(i) else {
+        let Some(span) = self.spans.truncate(i) else {
             return;
         };
-        self.in_variable = false;
-        let variables = if entity.is_variable {
-            &mut self.variables
-        } else {
-            entities
-        };
-        if entity.flags.contains(mxp::EntityKeyword::Delete) {
+        if let Some(entity) = span.entity
+            && let Ok(Some(entry)) = state.set_entity(&entity, &self.variable)
+        {
+            self.append(entry);
+        }
+        if let Some(name) = span.variable {
+            let name = String::from(name);
+            self.variables.insert(name.clone(), self.variable.clone());
+            self.append(VariableFragment {
+                name,
+                value: self.variable.clone(),
+            });
+        }
+        self.in_variable = self.spans.in_variable();
+        if !self.in_variable {
             self.variable.clear();
-            variables.remove(&entity.name).ok();
-            self.fragments.push(Output::from(EntityFragment::Unset {
-                name: entity.name,
-                is_variable: entity.is_variable,
-            }));
-            return;
         }
-        if let Ok(Some(entity)) = variables.set(&entity.name, &self.variable, None, entity.flags) {
-            self.fragments
-                .push(Output::from(EntityFragment::variable(&entity)));
-        }
-        self.variable.clear();
     }
 
     pub fn set_mxp_flag(&mut self, flag: TextStyle) {
@@ -442,14 +440,16 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_mxp_entity(
-        &mut self,
-        name: String,
-        flags: FlagSet<mxp::EntityKeyword>,
-        is_variable: bool,
-    ) {
+    pub fn set_mxp_entity(&mut self, var: mxp::Var) {
         self.in_variable = true;
-        if self.spans.set_entity(name, flags, is_variable) {
+        if self.spans.set_entity(var) {
+            self.flush_mxp();
+        }
+    }
+
+    pub fn set_mxp_variable(&mut self, var: &str) {
+        self.in_variable = true;
+        if self.spans.set_variable(var) {
             self.flush_mxp();
         }
     }
@@ -466,7 +466,7 @@ impl BufferedOutput {
         }
     }
 
-    pub fn published_variables(&self) -> mxp::PublishedIter<'_> {
-        self.variables.published()
+    pub fn variables(&self) -> &HashMap<String, String> {
+        &self.variables
     }
 }
