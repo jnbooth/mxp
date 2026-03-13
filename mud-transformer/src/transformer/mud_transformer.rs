@@ -378,9 +378,9 @@ impl Transformer {
             Action::Heading(heading) => self.output.set_mxp_heading(heading),
             Action::Highlight => self.output.set_mxp_flag(TextStyle::Highlight),
             Action::Hr => self.output.append(OutputFragment::Hr),
+            Action::Hyperlink(link) => self.output.set_mxp_link(link.into_owned()),
             Action::Image(image) => self.output.append(image.into_owned()),
             Action::Italic => self.output.set_mxp_flag(TextStyle::Italic),
-            Action::Link(link) => self.output.set_mxp_action(link),
             Action::Music(music) => self.output.append(music.into_owned()),
             Action::MusicOff => self.output.append(MxpFragment::MusicOff),
             Action::MxpOff => self.mxp_off(),
@@ -390,6 +390,7 @@ impl Transformer {
             Action::Relocate(relocate) => self.output.append(relocate.into_owned()),
             Action::Reset => self.mxp_reset(),
             Action::SBr => self.output.append_text(" "),
+            Action::Send(link) => self.output.set_mxp_link(link.into_owned()),
             Action::Small => self.output.set_mxp_flag(TextStyle::Small),
             Action::Sound(sound) => self.output.append(sound.into_owned()),
             Action::SoundOff => self.output.append(MxpFragment::SoundOff),
@@ -586,9 +587,9 @@ impl Transformer {
                     xterm::Outcome::Done | xterm::Outcome::Fail => (),
                     xterm::Outcome::Link => {
                         if let Some(link) = self.ansi.take_mslp_link() {
-                            self.output.set_mxp_action(link);
+                            self.output.set_mxp_link(link);
                         } else if self.config.linkify_underlined {
-                            self.output.set_mxp_action(mxp::Link::for_text());
+                            self.output.set_mxp_link(mxp::Send::default());
                         }
                     }
                     xterm::Outcome::Mxp(mxp::Mode::RESET) => self.mxp_reset(),

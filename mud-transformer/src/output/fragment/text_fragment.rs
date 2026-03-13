@@ -5,8 +5,7 @@ use bytestring::ByteString;
 use flagset::FlagSet;
 use mxp::{Heading, RgbColor};
 
-use super::OutputFragment;
-use crate::output::TextStyle;
+use super::super::{Link, OutputFragment, TextStyle};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct TextFragment {
@@ -16,7 +15,7 @@ pub struct TextFragment {
     pub background: Option<RgbColor>,
     pub font: Option<ByteString>,
     pub size: Option<NonZero<u8>>,
-    pub action: Option<mxp::Link>,
+    pub link: Option<Link>,
     pub heading: Option<mxp::Heading>,
 }
 
@@ -74,7 +73,7 @@ impl fmt::Display for TextFragmentANSI<'_> {
         let frag = self.fragment;
         let mut escaping = Escaping(false);
         let mut flags = frag.flags;
-        if frag.action.is_some() {
+        if frag.link.is_some() {
             flags |= TextStyle::Underline;
         }
         for ansi in flags.into_iter().filter_map(TextStyle::ansi) {
@@ -115,8 +114,8 @@ impl fmt::Display for TextFragmentHtml<'_> {
         let mut sep = StyleSeparator(false);
         let frag = self.fragment;
         let text = html_escape::encode_text(&frag.text);
-        if let Some(action) = &frag.action {
-            write!(f, "<a href=\"{}\">", action.action)?;
+        if let Some(link) = &frag.link {
+            write!(f, "<a href=\"{}\">", link.href)?;
         }
         let tag = match frag.heading {
             Some(Heading::H1) => "h1",
@@ -166,7 +165,7 @@ impl fmt::Display for TextFragmentHtml<'_> {
             f.write_str("\"")?;
         }
         write!(f, ">{text}</{tag}>")?;
-        if frag.action.is_some() {
+        if frag.link.is_some() {
             write!(f, "</a>")?;
         }
         Ok(())

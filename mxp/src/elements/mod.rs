@@ -26,19 +26,16 @@ mod gauge;
 pub use gauge::Gauge;
 
 mod hyperlink;
-pub(crate) use hyperlink::Hyperlink;
+pub use hyperlink::Hyperlink;
 
 mod image;
 pub use image::Image;
-
-mod link;
-pub use link::{Link, LinkPrompt, SendTo};
 
 mod relocate;
 pub use relocate::Relocate;
 
 mod send;
-pub(crate) use send::Send;
+pub use send::{Send, SendMenu, SendMenuItem};
 
 mod sound;
 pub use sound::{AudioContinuation, AudioRepetition, Music, Sound};

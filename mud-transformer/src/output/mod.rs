@@ -10,6 +10,9 @@ pub use fragment::{
 mod interpret_ansi;
 pub use interpret_ansi::interpret_ansi;
 
+mod link;
+pub use link::{Link, SendTo};
+
 mod span;
 pub(super) use span::SpanList;
 pub use span::TextStyle;

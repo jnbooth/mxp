@@ -1,14 +1,7 @@
 mod common;
 use common::{transform, transform_with};
-use mud_transformer::output::{TextFragment, TextStyle};
+use mud_transformer::output::{Link, TextFragment, TextStyle};
 use mud_transformer::{TransformerConfig, UseMxp};
-
-fn prompt(label: &str, action: &str) -> mxp::LinkPrompt {
-    mxp::LinkPrompt {
-        label: Some(label.to_owned()),
-        action: action.to_owned(),
-    }
-}
 
 #[test]
 fn mslp_underline() {
@@ -21,10 +14,7 @@ fn mslp_underline() {
     let expected = &[TextFragment {
         text: "Test link".into(),
         flags: TextStyle::Underline.into(),
-        action: Some(mxp::Link {
-            action: "Test link".to_owned(),
-            ..Default::default()
-        }),
+        link: Some("Test Link".into()),
         ..Default::default()
     }
     .into()];
@@ -41,10 +31,7 @@ fn mslp_deunderlined() {
     let output = transform_with(config, "\x1B[4;24mTest link\x1B[0m").output();
     let expected = &[TextFragment {
         text: "Test link".into(),
-        action: Some(mxp::Link {
-            action: "Test link".to_owned(),
-            ..Default::default()
-        }),
+        link: Some("Test link".into()),
         ..Default::default()
     }
     .into()];
@@ -74,12 +61,9 @@ fn msslp_menu() {
     let expected = &[TextFragment {
         text: "shopping list".into(),
         flags: TextStyle::Underline.into(),
-        action: Some(mxp::Link {
-            prompts: vec![
-                prompt("a tasty donut", "buy donut"),
-                prompt("a loaf of bread", "buy bread"),
-                prompt("a big tomato", "buy tomato"),
-            ],
+        link: Some(Link {
+            href: "buy donut|buy bread|buy tomato".into(),
+            hint: "a tasty donut|a loaf of bread|a big tomato".into(),
             ..Default::default()
         }),
         ..Default::default()
@@ -94,10 +78,7 @@ fn msslp_send() {
     let expected = &[TextFragment {
         text: "(click me)".into(),
         flags: TextStyle::Underline.into(),
-        action: Some(mxp::Link {
-            action: "say Hello World!".to_owned(),
-            ..Default::default()
-        }),
+        link: Some("say Hello World!".into()),
         ..Default::default()
     }
     .into()];

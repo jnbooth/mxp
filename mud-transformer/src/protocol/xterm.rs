@@ -1,3 +1,5 @@
+use std::fmt::Write as _;
+
 use bytes::{Bytes, BytesMut};
 use bytestring::ByteString;
 use mxp::RgbColor;
@@ -5,7 +7,7 @@ use mxp::escape::ansi;
 
 pub(crate) use super::ansi::Outcome;
 use crate::input::BufferedInput;
-use crate::output::{BufferedOutput, ControlFragment};
+use crate::output::{BufferedOutput, ControlFragment, Link, SendTo};
 use crate::responses::{CursorInformationReport, TabStopReport, UnknownSettingReport};
 use crate::term::{
     ControlStringType, CursorEffect, DynamicColor, Line, Mode, Reset, SelectionData, TabEffect,
@@ -41,7 +43,7 @@ pub(crate) struct Interpreter {
     answerback: Vec<u8>,
     code: u8,
     string: BytesMut,
-    mslp_link: Option<mxp::Link>,
+    mslp_link: Option<Link>,
 }
 
 impl Interpreter {
@@ -57,7 +59,7 @@ impl Interpreter {
         self.mslp_link = None;
     }
 
-    pub fn take_mslp_link(&mut self) -> Option<mxp::Link> {
+    pub fn take_mslp_link(&mut self) -> Option<Link> {
         self.mslp_link.take()
     }
 
@@ -420,29 +422,32 @@ fn decode_hex(sequence: &[u8], buf: &mut Vec<u8>) -> Option<()> {
     if rest.is_empty() { Some(()) } else { None }
 }
 
-fn mslp_send(text: &str) -> mxp::Link {
-    mxp::Link {
-        action: text.to_owned(),
-        send_to: mxp::SendTo::World,
+fn mslp_send(text: &str) -> Link {
+    Link {
+        href: text.to_owned(),
+        send_to: SendTo::World,
         ..Default::default()
     }
 }
 
-fn mslp_menu(text: &str) -> Option<mxp::Link> {
-    let mut prompts = Vec::with_capacity(text.chars().filter(|&c| c == '{').count());
+fn mslp_menu(text: &str) -> Option<Link> {
     let mut iter = text.split('{');
     iter.next()?;
+    let mut href = String::with_capacity(text.len());
+    let mut hint = String::with_capacity(text.len());
     while let Some(label) = iter.next() {
         let action = iter.next()?.trim_ascii_end().strip_suffix('}')?;
         let label = label.strip_suffix('}')?;
-        prompts.push(mxp::LinkPrompt {
-            action: action.to_owned(),
-            label: Some(label.to_owned()),
-        });
+        write!(href, "{action}|").unwrap();
+        write!(hint, "{label}|").unwrap();
     }
-    Some(mxp::Link {
-        send_to: mxp::SendTo::World,
-        prompts,
-        ..Default::default()
+    href.pop();
+    hint.pop();
+    Some(Link {
+        href,
+        hint,
+        expire: None,
+        send_to: SendTo::World,
+        menu: false,
     })
 }

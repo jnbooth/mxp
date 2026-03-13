@@ -4,8 +4,8 @@ use std::str::FromStr;
 use super::action_kind::ActionKind;
 use super::tag::Tag;
 use crate::elements::{
-    Color, Dest, Expire, Filter, Font, Frame, Gauge, Heading, Hyperlink, Image, Link, Music,
-    Relocate, Send, Sound, Stat, StyleVersion, Support, Var,
+    Color, Dest, Expire, Filter, Font, Frame, Gauge, Heading, Hyperlink, Image, Music, Relocate,
+    Send, Sound, Stat, StyleVersion, Support, Var,
 };
 use crate::parse::{Decoder, ExpectArg, FromStrError, Scan, Words};
 use crate::{Error, ErrorKind};
@@ -49,15 +49,15 @@ pub enum Action<S> {
     /// [`<HR>`](https://www.zuggsoft.com/zmud/mxp.htm#HTML%20tags):
     /// Insert a horizontal rule.
     Hr,
+    /// [`<A>`](https://www.zuggsoft.com/zmud/mxp.htm#Links):
+    /// Hyperlink.
+    Hyperlink(Hyperlink<S>),
     /// [`<IMAGE>`](https://www.zuggsoft.com/zmud/mxp.htm#Images):
     /// Display an image.
     Image(Image<S>),
     /// [`<ITALIC>`](https://www.zuggsoft.com/zmud/mxp.htm#Text%20Formatting):
     /// Make text italic.
     Italic,
-    /// [`<SEND>`, `<A>`](https://www.zuggsoft.com/zmud/mxp.htm#Links):
-    /// Hyperlink or send prompt.
-    Link(Link),
     /// [`<MUSIC>`](https://www.zuggsoft.com/zmud/mxp.htm#MSP%20Compatibility):
     /// Play music.
     Music(Music<S>),
@@ -84,6 +84,9 @@ pub enum Action<S> {
     Reset,
     /// [`<SBR>`](https://www.zuggsoft.com/zmud/mxp.htm#Line%20Spacing):
     /// Insert a soft linebreak.
+    /// [`<Send>`](https://www.zuggsoft.com/zmud/mxp.htm#Links):
+    /// Turn text into a link that sends a command to the world.
+    Send(Send<S>),
     SBr,
     /// [`<SMALL>`](https://www.zuggsoft.com/zmud/mxp.htm#HTML%20tags):
     /// Display text in a smaller size.
@@ -147,7 +150,7 @@ impl<'a> Action<Cow<'a, str>> {
             ActionKind::H6 => Self::Heading(Heading::H6),
             ActionKind::Highlight => Self::Highlight,
             ActionKind::Hr => Self::Hr,
-            ActionKind::Hyperlink => Self::Link(Hyperlink::try_from(scanner)?.into()),
+            ActionKind::Hyperlink => Self::Hyperlink(scanner.try_into()?),
             ActionKind::Image => Self::Image(Image::try_from(scanner)?),
             ActionKind::Italic => Self::Italic,
             ActionKind::Mxp => {
@@ -172,7 +175,7 @@ impl<'a> Action<Cow<'a, str>> {
             ActionKind::Relocate => Self::Relocate(scanner.try_into()?),
             ActionKind::Reset => Self::Reset,
             ActionKind::SBr => Self::SBr,
-            ActionKind::Send => Self::Link(Send::try_from(scanner)?.into()),
+            ActionKind::Send => Self::Send(scanner.try_into()?),
             ActionKind::Small => Self::Small,
             ActionKind::Sound => {
                 let sound = Sound::try_from(scanner)?;
@@ -229,9 +232,9 @@ impl<S> Action<S> {
             Self::Heading(heading) => Action::Heading(heading),
             Self::Highlight => Action::Highlight,
             Self::Hr => Action::Hr,
+            Self::Hyperlink(hyperlink) => Action::Hyperlink(hyperlink.map_text(f)),
             Self::Image(image) => Action::Image(image.map_text(f)),
             Self::Italic => Action::Italic,
-            Self::Link(link) => Action::Link(link),
             Self::Music(music) => Action::Music(music.map_text(f)),
             Self::MusicOff => Action::MusicOff,
             Self::MxpOff => Action::MxpOff,
@@ -242,6 +245,7 @@ impl<S> Action<S> {
             Self::Reset => Action::Reset,
             Self::SBr => Action::SBr,
             Self::Small => Action::Small,
+            Self::Send(send) => Action::Send(send.map_text(f)),
             Self::Sound(sound) => Action::Sound(sound.map_text(f)),
             Self::SoundOff => Action::SoundOff,
             Self::Stat(stat) => Action::Stat(stat.map_text(f)),

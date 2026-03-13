@@ -11,10 +11,7 @@ fn basic_link() {
         TextFragment::from("<").into(),
         TextFragment {
             text: "more options".into(),
-            action: Some(mxp::Link {
-                action: "options mxp alias".to_owned(),
-                ..Default::default()
-            }),
+            link: Some("options mxp alias".into()),
             ..Default::default()
         }
         .into(),
@@ -29,10 +26,7 @@ fn escape_in_link() {
         transform("\x1B[4z<send href=\"options mxp livingmenus=off\">off\x1B[4z</send>").output();
     let expected = &[TextFragment {
         text: "off".into(),
-        action: Some(mxp::Link {
-            action: "options mxp livingmenus=off".into(),
-            ..Default::default()
-        }),
+        link: Some("options mxp livingmenus=off".into()),
         ..Default::default()
     }
     .into()];

@@ -7,8 +7,8 @@ use flagset::FlagSet;
 use mxp::RgbColor;
 
 use super::{
-    ControlFragment, Output, OutputDrain, OutputFragment, SpanList, TelnetFragment, TextFragment,
-    TextStyle, VariableFragment,
+    ControlFragment, Link, Output, OutputDrain, OutputFragment, SpanList, TelnetFragment,
+    TextFragment, TextStyle, VariableFragment,
 };
 use crate::responses::SgrReport;
 use crate::term::{TermColor, XTermPalette};
@@ -225,7 +225,7 @@ impl BufferedOutput {
                 background: self.color(self.ansi_background),
                 font: None,
                 size: None,
-                action: None,
+                link: None,
                 heading: None,
             });
             return;
@@ -247,7 +247,7 @@ impl BufferedOutput {
             background: self.color(background),
             font: span.font.clone(),
             size: span.size,
-            action: span.action.as_ref().map(|action| action.with_text(&text)),
+            link: span.link.as_ref().map(|link| link.for_text(&text)),
             heading: span.heading,
             text,
         });
@@ -428,8 +428,8 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_mxp_action(&mut self, action: mxp::Link) {
-        if self.spans.set_action(action) {
+    pub fn set_mxp_link<T: Into<Link>>(&mut self, link: T) {
+        if self.spans.set_link(link.into()) {
             self.flush_mxp();
         }
     }

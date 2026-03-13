@@ -10,6 +10,7 @@ use mxp::escape::ansi;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+use super::link::Link;
 use crate::term::TermColor;
 
 flags! {
@@ -67,7 +68,7 @@ pub(crate) struct Span {
     pub(super) background: TermColor,
     pub(super) font: Option<ByteString>,
     pub(super) size: Option<NonZero<u8>>,
-    pub(super) action: Option<mxp::Link>,
+    pub(super) link: Option<Link>,
     pub(super) heading: Option<Heading>,
     pub(super) gag: bool,
     pub(super) window: Option<mxp::Dest<ByteString>>,
@@ -234,10 +235,6 @@ impl SpanList {
         set_opt_prop!(self, entity);
     }
 
-    pub fn set_action(&mut self, action: mxp::Link) -> bool {
-        set_opt_prop!(self, action);
-    }
-
     pub fn set_flag(&mut self, flag: TextStyle) -> bool {
         set_flag!(self, flags, flag);
     }
@@ -257,6 +254,10 @@ impl SpanList {
 
     pub fn set_heading(&mut self, heading: Heading) -> bool {
         set_opt_prop!(self, heading);
+    }
+
+    pub fn set_link(&mut self, link: Link) -> bool {
+        set_opt_prop!(self, link);
     }
 
     pub fn set_size(&mut self, size: NonZero<u8>) -> bool {
