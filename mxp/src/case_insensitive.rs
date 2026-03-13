@@ -19,8 +19,7 @@ macro_rules! impl_parse_enum {
         }
 
         impl crate::parse::StringVariant for $t {
-            type Variant = Self;
-            const VARIANTS: &[Self] = &[Self::$v1 $(, Self::$v)*];
+            const VARIANTS: &[&str] = &[stringify!($v1) $(, stringify!($v))*];
         }
     };
 }

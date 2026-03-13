@@ -20,7 +20,6 @@ pub enum DefinitionKind {
 }
 
 impl StringVariant for DefinitionKind {
-    type Variant = &'static str;
     const VARIANTS: &[&str] = &["ATTLIST", "ATT", "ELEMENT", "EL", "ENTITY", "EN", "TAG"];
 }
 

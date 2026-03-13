@@ -17,8 +17,7 @@ pub enum AudioContinuation {
 }
 
 impl StringVariant for AudioContinuation {
-    type Variant = &'static str;
-    const VARIANTS: &[&'static str] = &["0", "1"];
+    const VARIANTS: &[&str] = &["0", "1"];
 }
 
 impl FromStr for AudioContinuation {

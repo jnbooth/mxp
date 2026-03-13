@@ -131,8 +131,7 @@ impl From<FromUtf8Error> for Error {
 }
 
 pub(crate) trait StringVariant: Sized + 'static {
-    type Variant: fmt::Debug;
-    const VARIANTS: &[Self::Variant];
+    const VARIANTS: &[&str];
 }
 
 /// Error caused by attempting to parse a string that did not match any variant of a string-like
