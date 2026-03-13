@@ -1,4 +1,5 @@
 use std::fmt::Write as _;
+use std::num::NonZero;
 
 use bytes::{Bytes, BytesMut};
 use bytestring::ByteString;
@@ -41,7 +42,7 @@ pub(crate) struct Interpreter {
     csi: super::ansi::Interpreter,
     phase: Phase,
     answerback: Vec<u8>,
-    code: u8,
+    code: Option<NonZero<u8>>,
     string: BytesMut,
     mslp_link: Option<Link>,
 }
@@ -92,12 +93,12 @@ impl Interpreter {
                 return Start::Continue;
             }
             0x20..0x30 => {
-                self.code = code;
+                self.code = NonZero::new(code);
                 self.phase = Phase::Normal;
                 return Start::Continue;
             }
             ansi::ESC_DCS | ansi::ESC_SOS | ansi::ESC_OSC | ansi::ESC_PM | ansi::ESC_APC => {
-                self.code = code;
+                self.code = NonZero::new(code);
                 self.phase = Phase::ControlString;
                 return Start::BeginString;
             }
@@ -112,7 +113,7 @@ impl Interpreter {
             b'H' => TabEffect::SetStop.into(),
             b'M' => CursorEffect::ReverseIndex.into(),
             b'Q' => {
-                self.code = 0;
+                self.code = None;
                 self.phase = Phase::FunctionKey;
                 return Start::BeginString;
             }
@@ -175,8 +176,8 @@ impl Interpreter {
                 Outcome::Continue
             }
             Phase::FunctionKey => {
-                if self.code == 0 {
-                    self.code = code;
+                if self.code.is_none() {
+                    self.code = NonZero::new(code);
                     return Outcome::Continue;
                 }
                 if self.string.first() == Some(&code) {
@@ -193,7 +194,7 @@ impl Interpreter {
         if !self.string.is_empty() {
             return None;
         }
-        match &[self.code, code] {
+        match &[self.code?.get(), code] {
             b"#3" => Some(Line::DoubleHeightTop.into()),
             b"#4" => Some(Line::DoubleHeightBottom.into()),
             b"#5" => Some(Line::SingleWidth.into()),
@@ -210,9 +211,8 @@ impl Interpreter {
     ) -> Option<()> {
         self.phase = Phase::Normal;
         let control_string = self.string.split().freeze();
-        let code = self.code;
-        self.code = 0;
-        let string_type = match code {
+        let code = self.code.take()?;
+        let string_type = match code.get() {
             ansi::ESC_DCS => return self.process_dcs(&control_string, output, input),
             ansi::ESC_OSC => return self.process_osc(&control_string, output, input),
             ansi::ESC_SOS => ControlStringType::Sos,
