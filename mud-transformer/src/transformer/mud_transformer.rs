@@ -25,7 +25,7 @@ fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
     if auth.is_empty() {
         return;
     }
-    writeln!(input, "{auth}\r");
+    write!(input, "{auth}\r\n");
 }
 
 #[derive(Debug)]
@@ -401,7 +401,7 @@ impl Transformer {
             Action::Support(support) => {
                 let supported_actions = self.config.supported_actions();
                 let supported_tags = SupportResponse::new(&support.questions, supported_actions);
-                writeln!(self.input, "{supported_tags}\r");
+                write!(self.input, "{supported_tags}");
             }
             Action::Tt => self.output.set_mxp_flag(TextStyle::NonProportional),
             Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
@@ -419,7 +419,7 @@ impl Transformer {
                     version: &self.config.version,
                     ..Default::default()
                 };
-                writeln!(self.input, "{response}\r");
+                write!(self.input, "{response}");
             }
         }
     }
