@@ -80,6 +80,18 @@ impl Link {
         self.as_send().menu()
     }
 
+    /// Returns the tooltip to display when a user mouses over this link.
+    /// This is always `self.hint` unless `self.menu` is true.
+    pub fn tooltip(&self) -> &str {
+        if !self.menu {
+            return &self.hint;
+        }
+        match self.hint.split_once('|') {
+            Some((tooltip, _)) => tooltip,
+            None => &self.hint,
+        }
+    }
+
     /// See [`Send::for_text`](mxp::Send::for_text).
     #[must_use = "function returns a new link"]
     pub fn for_text(&self, text: &str) -> Self {

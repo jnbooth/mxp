@@ -142,9 +142,11 @@ impl Send<Cow<'_, str>> {
 impl<'a> Send<&'a str> {
     /// Iterates through menu options.
     pub fn menu(&self) -> SendMenu<'a> {
+        let mut labels = self.hint.split('|');
+        labels.next();
         SendMenu {
             commands: self.href.split('|'),
-            labels: self.hint.split('|'),
+            labels,
         }
     }
 }
