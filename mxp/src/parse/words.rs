@@ -82,7 +82,7 @@ impl<'a> Iterator for Words<'a> {
     #[allow(clippy::trivially_copy_pass_by_ref)]
     fn next(&mut self) -> Option<Self::Item> {
         const fn is_word(c: &u8) -> bool {
-            matches!(*c, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'+'..=b'.' | b'_')
+            matches!(*c, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'+'..=b'.' | b'_' | b'|')
         }
         const fn is_utf8_continuation(c: &u8) -> bool {
             (*c & 0xC0) == 0x80
@@ -102,7 +102,7 @@ impl<'a> Iterator for Words<'a> {
             b'&' => {
                 self.iter_until(b';');
             }
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'+' | b'-' => {
+            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'+' | b'-' | b'|' => {
                 self.iter_while(is_word);
             }
             128.. => {
