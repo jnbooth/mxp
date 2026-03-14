@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
@@ -9,12 +10,19 @@ use super::iter::PublishedIter;
 use crate::keyword::{EntityKeyword, KeywordFilter};
 use crate::parse::{Decoder, ErrorKind};
 
+#[derive(Debug)]
 /// Entry in an [`EntityMap`].
 pub struct EntityEntry<'a> {
     /// Entity name.
     pub name: &'a str,
-    /// Entity value, or `None` if no entity matching `name` exists in the map.
-    pub value: Option<&'a Entity>,
+    /// Borrowed entity value, or owned entity value if the entity was removed.
+    pub value: Cow<'a, Entity>,
+}
+
+impl EntityEntry<'_> {
+    pub const fn is_removal(&self) -> bool {
+        matches!(self.value, Cow::Owned(_))
+    }
 }
 
 /// Stores all entities for the current environment, both MXP-defined entities ([`Entity`]) and
@@ -316,10 +324,10 @@ impl EntityMap {
             keywords: FlagSet<EntityKeyword>,
         ) -> Option<EntityEntry<'a>> {
             if keywords.contains(EntityKeyword::Delete) {
-                return map
-                    .inner
-                    .remove(name)
-                    .map(|_| EntityEntry { name, value: None });
+                return map.inner.remove(name).map(|entity| EntityEntry {
+                    name,
+                    value: Cow::Owned(entity),
+                });
             }
             let entity = match map.inner.entry(name.to_owned()) {
                 Entry::Vacant(_) if keywords.contains(EntityKeyword::Remove) => return None,
@@ -330,8 +338,10 @@ impl EntityMap {
                 }),
                 Entry::Occupied(entry) if keywords.contains(EntityKeyword::Remove) => {
                     if entry.get().value == value {
-                        entry.remove();
-                        return Some(EntityEntry { name, value: None });
+                        return Some(EntityEntry {
+                            name,
+                            value: Cow::Owned(entry.remove()),
+                        });
                     }
                     let entity = entry.into_mut();
                     entity.remove(value);
@@ -369,7 +379,7 @@ impl EntityMap {
             };
             Some(EntityEntry {
                 name,
-                value: Some(entity),
+                value: Cow::Borrowed(entity),
             })
         }
         self.guard_global(name)?;

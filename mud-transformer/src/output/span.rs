@@ -71,7 +71,7 @@ pub(crate) struct Span {
     pub(super) heading: Option<Heading>,
     pub(super) gag: bool,
     pub(super) window: Option<mxp::Dest<ByteString>>,
-    pub(super) entity: Option<mxp::Var>,
+    pub(super) entity: Option<mxp::Var<ByteString>>,
     pub(super) variable: Option<ByteString>,
 }
 
@@ -217,7 +217,8 @@ impl SpanList {
         set_prop!(self, empty, background);
     }
 
-    pub fn set_entity(&mut self, entity: mxp::Var, empty: bool) -> bool {
+    pub fn set_entity<S: AsRef<str>>(&mut self, entity: mxp::Var<S>, empty: bool) -> bool {
+        let entity = entity.map_text(|text| share_string(&mut self.buf, text));
         set_opt_prop!(self, empty, entity);
     }
 

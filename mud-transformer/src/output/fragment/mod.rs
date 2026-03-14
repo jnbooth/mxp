@@ -37,7 +37,6 @@ where
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum OutputFragment {
     Control(ControlFragment),
-    Frame(mxp::Frame),
     Hr,
     Image(mxp::Image),
     LineBreak,
@@ -61,7 +60,7 @@ impl OutputFragment {
 
     /// Fragment takes up space inside a line of text.
     pub const fn is_line_content(&self) -> bool {
-        matches!(self, Self::Image(_) | Self::Text(_))
+        matches!(self, Self::Text(_) | Self::Image(_))
     }
 
     /// Fragment does not target a specific window, so it doesn't need to be associated with an

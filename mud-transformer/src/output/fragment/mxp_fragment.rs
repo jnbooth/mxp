@@ -1,3 +1,8 @@
+use std::borrow::Cow;
+
+use bytestring::ByteString;
+use bytestringmut::ByteStringMut;
+
 use super::OutputFragment;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -6,6 +11,7 @@ pub enum MxpFragment {
     Error(mxp::Error),
     Expire(mxp::Expire),
     Filter(mxp::Filter),
+    Frame(mxp::Frame),
     Gauge(mxp::Gauge),
     Music(mxp::Music),
     MusicOff,
@@ -18,27 +24,30 @@ pub enum MxpFragment {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum EntityFragment {
-    Set {
-        name: String,
-        value: String,
-        publish: bool,
-    },
-    Unset {
-        name: String,
-    },
+pub struct EntityFragment {
+    pub name: ByteString,
+    pub value: Option<ByteString>,
+    pub published: bool,
 }
 
-impl From<mxp::EntityEntry<'_>> for EntityFragment {
-    fn from(entry: mxp::EntityEntry) -> Self {
+impl EntityFragment {
+    pub(crate) fn new(entry: mxp::EntityEntry, buf: &mut ByteStringMut) -> Self {
+        buf.clear();
+        buf.push_str(entry.name);
+        let name = buf.split().freeze();
         match entry.value {
-            Some(entity) => Self::Set {
-                name: entry.name.to_owned(),
-                value: entity.value.clone(),
-                publish: entity.is_published(),
-            },
-            None => Self::Unset {
-                name: entry.name.to_owned(),
+            Cow::Borrowed(entity) => {
+                buf.push_str(&entity.value);
+                Self {
+                    name,
+                    value: Some(buf.split().freeze()),
+                    published: entity.is_published(),
+                }
+            }
+            Cow::Owned(entity) => Self {
+                name,
+                value: None,
+                published: entity.is_published(),
             },
         }
     }
@@ -46,8 +55,8 @@ impl From<mxp::EntityEntry<'_>> for EntityFragment {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct VariableFragment {
-    pub name: String,
-    pub value: String,
+    pub name: ByteString,
+    pub value: ByteString,
 }
 
 impl From<MxpFragment> for OutputFragment {
@@ -56,9 +65,9 @@ impl From<MxpFragment> for OutputFragment {
     }
 }
 
-impl From<mxp::EntityEntry<'_>> for OutputFragment {
-    fn from(value: mxp::EntityEntry<'_>) -> Self {
-        Self::Mxp(MxpFragment::Entity(value.into()))
+impl From<EntityFragment> for OutputFragment {
+    fn from(value: EntityFragment) -> Self {
+        Self::Mxp(MxpFragment::Entity(value))
     }
 }
 
@@ -82,7 +91,7 @@ impl From<mxp::Filter> for OutputFragment {
 
 impl From<mxp::Frame> for OutputFragment {
     fn from(value: mxp::Frame) -> Self {
-        Self::Frame(value)
+        Self::Mxp(MxpFragment::Frame(value))
     }
 }
 

@@ -9,6 +9,7 @@ use super::{
     ControlFragment, Link, Output, OutputDrain, OutputFragment, SpanList, TelnetFragment,
     TextFragment, TextStyle, VariableFragment,
 };
+use crate::output::EntityFragment;
 use crate::responses::SgrReport;
 use crate::term::{TermColor, XTermPalette};
 
@@ -36,7 +37,7 @@ pub(crate) struct BufferedOutput {
 
     cursor: usize,
     in_variable: bool,
-    variable: String,
+    variable: ByteStringMut,
 }
 
 impl BufferedOutput {
@@ -327,20 +328,27 @@ impl BufferedOutput {
         let Some(span) = self.spans.truncate(i) else {
             return;
         };
+        if span.entity.is_none() && span.variable.is_none() {
+            return;
+        }
+        let variable = self.variable.split().freeze();
         if let Some(entity) = span.entity
-            && let Ok(Some(entry)) = state.set_entity(&entity, &self.variable)
+            && let Ok(Some(entry)) = state.set_entity(&entity, &variable)
+            && !entry.value.is_private()
         {
-            self.append(entry);
+            let fragment = EntityFragment::new(entry, &mut self.variable);
+            self.append(fragment);
+        }
+        self.in_variable = self.spans.in_variable();
+        if self.in_variable {
+            // not done with it yet
+            self.variable.push_str(&variable);
         }
         if let Some(name) = span.variable {
             self.append(VariableFragment {
-                name: name.into(),
-                value: self.variable.clone(),
+                name,
+                value: variable,
             });
-        }
-        self.in_variable = self.spans.in_variable();
-        if !self.in_variable {
-            self.variable.clear();
         }
     }
 
@@ -423,7 +431,7 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_mxp_entity(&mut self, var: mxp::Var) {
+    pub fn set_mxp_entity<S: AsRef<str>>(&mut self, var: mxp::Var<S>) {
         self.in_variable = true;
         if self.spans.set_entity(var, self.text_buf.is_empty()) {
             self.flush_mxp();

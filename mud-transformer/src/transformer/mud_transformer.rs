@@ -3,6 +3,7 @@ use std::num::NonZero;
 use std::{io, mem, slice};
 
 use bytes::BytesMut;
+use bytestringmut::ByteStringMut;
 use mxp::escape::{ansi, telnet};
 use mxp::responses::{SupportResponse, VersionResponse};
 
@@ -13,8 +14,8 @@ use super::state::StateLock;
 use super::tag::{Tag, TagList};
 use crate::input::{BufferedInput, InputDrain};
 use crate::output::{
-    BufferedOutput, ControlFragment, MxpFragment, OutputDrain, OutputFragment, TelnetFragment,
-    TextStyle,
+    BufferedOutput, ControlFragment, EntityFragment, MxpFragment, OutputDrain, OutputFragment,
+    TelnetFragment, TextStyle,
 };
 use crate::protocol::negotiate::{Negotiate, TelnetSource, TelnetVerb};
 use crate::protocol::{self, charset, mccp, mnes, msdp, mssp, mtts, xterm};
@@ -36,6 +37,7 @@ pub struct Transformer {
     ignore_next_newline: bool,
 
     mxp_active: bool,
+    mxp_buf: ByteStringMut,
     mxp_entity_string: Vec<u8>,
     mxp_mode: mxp::ModeState,
     mxp_quote_terminator: Option<NonZero<u8>>,
@@ -78,6 +80,7 @@ impl Transformer {
 
             in_paragraph: false,
             ignore_next_newline: false,
+            mxp_buf: ByteStringMut::new(),
             mxp_mode: mxp::ModeState::new(),
             mxp_quote_terminator: None,
             mxp_entity_string: Vec::new(),
@@ -189,11 +192,11 @@ impl Transformer {
         self.mxp_state.published_entities()
     }
 
-    pub fn count_custom_mxp_elements(&self) -> usize {
+    pub fn mxp_element_count(&self) -> usize {
         self.mxp_state.custom_elements_len()
     }
 
-    pub fn count_custom_mxp_entities(&self) -> usize {
+    pub fn mxp_entity_count(&self) -> usize {
         self.mxp_state.custom_entities_len()
     }
 
@@ -280,8 +283,11 @@ impl Transformer {
 
         match mxp::Element::collect(source, secure)? {
             mxp::CollectedElement::Definition(kind, definition) => {
-                if let Some(entity) = self.mxp_state.define(kind, definition)? {
-                    self.output.append(entity);
+                if let Some(entity) = self.mxp_state.define(kind, definition)?
+                    && !entity.value.is_private()
+                {
+                    let fragment = EntityFragment::new(entity, &mut self.mxp_buf);
+                    self.output.append(fragment);
                 }
                 Ok(())
             }
@@ -405,7 +411,7 @@ impl Transformer {
                 if let Err(e) = mxp_state.guard_global_entity(&var.name) {
                     self.output.append(e);
                 } else {
-                    self.output.set_mxp_entity(var.into_owned());
+                    self.output.set_mxp_entity(var);
                 }
             }
             Action::Version => {
