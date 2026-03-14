@@ -117,13 +117,10 @@ impl<S: AsRef<str>> Music<S> {
 
 impl_partial_eq!(Music);
 
-impl<'a, D> TryFrom<Scan<'a, D>> for Music<Cow<'a, str>>
-where
-    D: Decoder,
-{
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Music<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let fname = scanner.next()?.expect_some("fname")?;
         let volume = scanner.next_or("v")?.expect_number()?.unwrap_or(100);
         let repeat = scanner.next_or("l")?.expect_number()?.unwrap_or_default();

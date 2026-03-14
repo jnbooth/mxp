@@ -7,6 +7,7 @@ use crate::elements::{
     Color, Dest, Expire, Filter, Font, Frame, Gauge, Heading, Hyperlink, Image, Music, Relocate,
     Send, Sound, Stat, StyleVersion, Support, Var,
 };
+use crate::parse::Arguments;
 use crate::parse::{Decoder, ExpectArg, FromStrError, Scan, Words};
 use crate::{Error, ErrorKind};
 
@@ -128,10 +129,10 @@ pub enum Action<S> {
 }
 
 impl<'a> Action<Cow<'a, str>> {
-    pub(crate) fn decode<D>(action: ActionKind, mut scanner: Scan<'a, D>) -> crate::Result<Self>
-    where
-        D: Decoder,
-    {
+    pub(crate) fn decode<D: Decoder, S: AsRef<str>>(
+        action: ActionKind,
+        mut scanner: Scan<'a, D, S>,
+    ) -> crate::Result<Self> {
         Ok(match action {
             ActionKind::Bold => Self::Bold,
             ActionKind::Br => Self::Br,
@@ -270,7 +271,7 @@ impl FromStr for Action<String> {
         let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
         let tag =
             Tag::well_known(name).ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;
-        let args = words.parse_args()?;
+        let args: Arguments<'_, Cow<'_, str>> = words.try_into()?;
         Ok(Action::decode(tag.action, args.scan(()))?.into_owned())
     }
 }

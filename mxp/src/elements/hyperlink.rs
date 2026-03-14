@@ -59,13 +59,10 @@ impl<S: AsRef<str>> Hyperlink<S> {
 
 impl_partial_eq!(Hyperlink);
 
-impl<'a, D> TryFrom<Scan<'a, D>> for Hyperlink<Cow<'a, str>>
-where
-    D: Decoder,
-{
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Hyperlink<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let href = scanner.next_or("href")?.expect_some("href")?;
         let hint = scanner.next_or("hint")?.unwrap_or_else(|| href.clone());
         let expire = scanner.next_or("expire")?;

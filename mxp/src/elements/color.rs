@@ -28,13 +28,10 @@ pub struct Color {
     pub back: Option<RgbColor>,
 }
 
-impl<'a, D> TryFrom<Scan<'a, D>> for Color
-where
-    D: Decoder,
-{
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Color {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let fore = scanner.next_or("fore")?.expect_color()?;
         let back = scanner.next_or("back")?.expect_color()?;
         scanner.expect_end()?;

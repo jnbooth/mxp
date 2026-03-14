@@ -62,22 +62,21 @@ impl Decoder for () {
 }
 
 trait DecoderExt {
-    fn decode<'a, K: KeywordFilter>(&self, s: &'a Cow<'a, str>) -> crate::Result<Cow<'a, str>>;
+    fn decode<'a, K: KeywordFilter>(&self, s: &'a str) -> crate::Result<Cow<'a, str>>;
 
-    fn decode_some<'a, K: KeywordFilter>(
+    fn decode_some<'a, K: KeywordFilter, S: AsRef<str>>(
         &self,
-        s: Option<&'a Cow<'a, str>>,
+        s: Option<&'a S>,
     ) -> crate::Result<Option<Cow<'a, str>>> {
         match s {
-            Some(s) => Ok(Some(self.decode::<K>(s)?)),
+            Some(s) => Ok(Some(self.decode::<K>(s.as_ref())?)),
             None => Ok(None),
         }
     }
 }
 
 impl<D: Decoder> DecoderExt for D {
-    fn decode<'a, K: KeywordFilter>(&self, s: &'a Cow<'a, str>) -> crate::Result<Cow<'a, str>> {
-        let mut s = s.as_ref();
+    fn decode<'a, K: KeywordFilter>(&self, mut s: &'a str) -> crate::Result<Cow<'a, str>> {
         let mut res = String::new();
         while let Some((before, rest)) = s.split_once('&') {
             if !before.is_empty() {
@@ -100,24 +99,20 @@ impl<D: Decoder> DecoderExt for D {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) struct Scan<'a, D: Decoder> {
+pub(crate) struct Scan<'a, D: Decoder, S: AsRef<str> = Cow<'a, str>> {
     decoder: D,
-    inner: ArgumentMatcher<'a, slice::Iter<'a, Cow<'a, str>>>,
+    inner: ArgumentMatcher<'a, slice::Iter<'a, S>, S>,
 }
 
-impl<'a, D: Decoder> Scan<'a, D> {
-    pub fn new(
-        decoder: D,
-        positional: &'a [Cow<'a, str>],
-        named: &'a CaseFoldMap<'a, Cow<'a, str>>,
-    ) -> Self {
+impl<'a, D: Decoder, S: AsRef<str>> Scan<'a, D, S> {
+    pub fn new(decoder: D, positional: &'a [S], named: &'a CaseFoldMap<'a, S>) -> Self {
         Self {
             decoder,
             inner: ArgumentMatcher::new(positional, named),
         }
     }
 
-    pub fn with_keywords<E: Flags + FromStr>(self) -> KeywordScan<'a, D, E> {
+    pub fn with_keywords<K: Flags + FromStr + KeywordFilter>(self) -> KeywordScan<'a, D, K, S> {
         KeywordScan {
             decoder: self.decoder,
             inner: self.inner.map(KeywordFilterIter::new),
@@ -125,17 +120,17 @@ impl<'a, D: Decoder> Scan<'a, D> {
     }
 
     pub fn next(&mut self) -> crate::Result<Option<Cow<'a, str>>> {
-        self.decoder.decode_some::<()>(self.inner.next())
+        self.decoder.decode_some::<(), S>(self.inner.next())
     }
 
     pub fn next_or(&mut self, name: &str) -> crate::Result<Option<Cow<'a, str>>> {
-        self.decoder.decode_some::<()>(self.inner.next_or(name))
+        self.decoder.decode_some::<(), S>(self.inner.next_or(name))
     }
 
     pub fn expect_end(mut self) -> crate::Result<()> {
         if let Some(next) = self.inner.next() {
             return Err(Error::new(
-                next.clone(),
+                next.as_ref(),
                 ErrorKind::UnexpectedEntityArguments,
             ));
         }
@@ -143,12 +138,12 @@ impl<'a, D: Decoder> Scan<'a, D> {
     }
 }
 
-impl<'a, D: Decoder> Iterator for Scan<'a, D> {
+impl<'a, D: Decoder, S: AsRef<str>> Iterator for Scan<'a, D, S> {
     type Item = crate::Result<Cow<'a, str>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.inner.next()?;
-        Some(self.decoder.decode::<()>(next))
+        Some(self.decoder.decode::<()>(next.as_ref()))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -156,22 +151,28 @@ impl<'a, D: Decoder> Iterator for Scan<'a, D> {
     }
 }
 
-pub(crate) struct KeywordScan<'a, D, K: Flags + FromStr> {
-    decoder: D,
-    inner: ArgumentMatcher<'a, KeywordFilterIter<K, slice::Iter<'a, Cow<'a, str>>>>,
-}
-
-impl<'a, D, K> KeywordScan<'a, D, K>
+pub(crate) struct KeywordScan<'a, D, K, S = Cow<'a, str>>
 where
     D: Decoder,
     K: KeywordFilter + Flags + FromStr,
+    S: AsRef<str>,
+{
+    decoder: D,
+    inner: ArgumentMatcher<'a, KeywordFilterIter<K, slice::Iter<'a, S>>, S>,
+}
+
+impl<'a, D, K, S> KeywordScan<'a, D, K, S>
+where
+    D: Decoder,
+    K: KeywordFilter + Flags + FromStr,
+    S: AsRef<str>,
 {
     pub fn next(&mut self) -> crate::Result<Option<Cow<'a, str>>> {
-        self.decoder.decode_some::<K>(self.inner.next())
+        self.decoder.decode_some::<K, S>(self.inner.next())
     }
 
     pub fn next_or(&mut self, name: &str) -> crate::Result<Option<Cow<'a, str>>> {
-        self.decoder.decode_some::<K>(self.inner.next_or(name))
+        self.decoder.decode_some::<K, S>(self.inner.next_or(name))
     }
 
     pub fn into_keywords(self) -> Result<FlagSet<K>, K::Err>
@@ -182,16 +183,17 @@ where
     }
 }
 
-impl<'a, D, K> Iterator for KeywordScan<'a, D, K>
+impl<'a, D, K, S> Iterator for KeywordScan<'a, D, K, S>
 where
     D: Decoder,
     K: KeywordFilter + Flags + FromStr,
+    S: AsRef<str>,
 {
     type Item = crate::Result<Cow<'a, str>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let next = self.inner.next()?;
-        Some(self.decoder.decode::<K>(next))
+        Some(self.decoder.decode::<K>(next.as_ref()))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

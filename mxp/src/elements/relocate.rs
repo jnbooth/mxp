@@ -53,13 +53,10 @@ impl<S: AsRef<str>> Relocate<S> {
 
 impl_partial_eq!(Relocate);
 
-impl<'a, D> TryFrom<Scan<'a, D>> for Relocate<Cow<'a, str>>
-where
-    D: Decoder,
-{
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Relocate<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let hostname = scanner.next()?.expect_some("hostname")?;
         let port = scanner.next()?.expect_number()?.expect_some("port")?;
         scanner.expect_end()?;

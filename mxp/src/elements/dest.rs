@@ -96,13 +96,10 @@ impl<S: AsRef<str>> From<S> for Dest<S> {
     }
 }
 
-impl<'a, D> TryFrom<Scan<'a, D>> for Dest<Cow<'a, str>>
-where
-    D: Decoder,
-{
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Dest<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords::<DestKeyword>();
         let name = scanner.next()?;
         let column = scanner

@@ -4,19 +4,19 @@ use std::ops::{Deref, DerefMut};
 use crate::collections::CaseFoldMap;
 
 #[derive(Clone, Debug)]
-pub struct ArgumentMatcher<'a, I>
+pub struct ArgumentMatcher<'a, I, S = Cow<'a, str>>
 where
-    I: Iterator<Item = &'a Cow<'a, str>>,
+    I: Iterator<Item = &'a S>,
 {
     inner: I,
-    named: &'a CaseFoldMap<'a, Cow<'a, str>>,
+    named: &'a CaseFoldMap<'a, S>,
 }
 
-impl<'a, I> ArgumentMatcher<'a, I>
+impl<'a, I, S> ArgumentMatcher<'a, I, S>
 where
-    I: Iterator<Item = &'a Cow<'a, str>>,
+    I: Iterator<Item = &'a S>,
 {
-    pub fn new<P>(positional: P, named: &'a CaseFoldMap<'a, Cow<'a, str>>) -> Self
+    pub fn new<P>(positional: P, named: &'a CaseFoldMap<'a, S>) -> Self
     where
         P: IntoIterator<IntoIter = I>,
     {
@@ -30,10 +30,10 @@ where
         self.inner
     }
 
-    pub fn map<F, U>(self, f: F) -> ArgumentMatcher<'a, U>
+    pub fn map<F, U>(self, f: F) -> ArgumentMatcher<'a, U, S>
     where
         F: FnOnce(I) -> U,
-        U: Iterator<Item = &'a Cow<'a, str>>,
+        U: Iterator<Item = &'a S>,
     {
         ArgumentMatcher {
             inner: f(self.inner),
@@ -42,9 +42,9 @@ where
     }
 }
 
-impl<'a, I> ArgumentMatcher<'a, I>
+impl<'a, I, S> ArgumentMatcher<'a, I, S>
 where
-    I: Iterator<Item = &'a Cow<'a, str>>,
+    I: Iterator<Item = &'a S>,
 {
     pub fn next_or(&mut self, name: &str) -> Option<I::Item> {
         match self.named.get(name) {
@@ -54,9 +54,9 @@ where
     }
 }
 
-impl<'a, I> Deref for ArgumentMatcher<'a, I>
+impl<'a, I, S> Deref for ArgumentMatcher<'a, I, S>
 where
-    I: Iterator<Item = &'a Cow<'a, str>>,
+    I: Iterator<Item = &'a S>,
 {
     type Target = I;
 
@@ -65,9 +65,9 @@ where
     }
 }
 
-impl<'a, I> DerefMut for ArgumentMatcher<'a, I>
+impl<'a, I, S> DerefMut for ArgumentMatcher<'a, I, S>
 where
-    I: Iterator<Item = &'a Cow<'a, str>>,
+    I: Iterator<Item = &'a S>,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner

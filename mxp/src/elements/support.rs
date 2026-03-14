@@ -36,13 +36,10 @@ impl<S> Support<S> {
 
 impl_into_owned!(Support);
 
-impl<'a, D> TryFrom<Scan<'a, D>> for Support<Cow<'a, str>>
-where
-    D: Decoder,
-{
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Support<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D>) -> Result<Self, Self::Error> {
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         Ok(Self {
             questions: scanner.collect::<Result<_, _>>()?,
         })

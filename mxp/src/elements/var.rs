@@ -62,13 +62,10 @@ impl<S: AsRef<str>> Var<S> {
 
 impl_partial_eq!(Var);
 
-impl<'a, D> TryFrom<Scan<'a, D>> for Var<Cow<'a, str>>
-where
-    D: Decoder,
-{
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Var<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         let variable = scanner.next()?.expect_some("variable")?;
         let desc = scanner.next_or("desc")?;

@@ -3,6 +3,7 @@ use std::slice;
 use std::str::FromStr;
 
 use flagset::Flags;
+use uncased::Uncased;
 
 use super::error::{Error, ErrorKind};
 use super::scan::{Decoder, Scan};
@@ -19,13 +20,19 @@ use crate::parse::ArgumentMatcher;
 /// and `T="combat"` and `P=80` are named arguments.
 ///
 /// See [MXP specification: Attributes](https://www.zuggsoft.com/zmud/mxp.htm#ATTLIST).
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Arguments<'a> {
-    positional: Vec<Cow<'a, str>>,
-    named: CaseFoldMap<'a, Cow<'a, str>>,
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct Arguments<'a, S = &'a str> {
+    positional: Vec<S>,
+    named: CaseFoldMap<'a, S>,
 }
 
-impl<'a> Arguments<'a> {
+impl<S> Default for Arguments<'_, S> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<S> Arguments<'_, S> {
     /// Constructs a new, empty `Arguments<S>`.
     pub fn new() -> Self {
         Self {
@@ -38,44 +45,46 @@ impl<'a> Arguments<'a> {
     pub fn is_empty(&self) -> bool {
         self.positional.is_empty() && self.named.is_empty()
     }
+}
 
+impl<'a, S: AsRef<str>> Arguments<'a, S> {
     /// Finds the value of an entity, using an element's attribute list to identify arguments
     /// and provide default values.
     pub(crate) fn find_from_attributes<F>(
         &'a self,
         entity: &str,
-        attributes: &'a Arguments<'a>,
+        attributes: &'a Arguments<'static, String>,
     ) -> Option<&'a str>
     where
         F: KeywordFilter,
     {
         if let Some(named) = attributes.named.get(entity) {
             return match self.named.get(entity) {
-                Some(entity) => Some(entity),
+                Some(entity) => Some(entity.as_ref()),
                 None => Some(named),
             };
         }
         let position =
             F::iter(&attributes.positional).position(|attr| attr.eq_ignore_ascii_case(entity))?;
         match F::iter(&self.positional).nth(position) {
-            Some(attr) => Some(attr),
+            Some(attr) => Some(attr.as_ref()),
             None => Some(""),
         }
     }
 
     pub(crate) fn matcher<K: Flags + FromStr>(
         &self,
-    ) -> ArgumentMatcher<'_, KeywordFilterIter<K, slice::Iter<'_, Cow<'_, str>>>> {
+    ) -> ArgumentMatcher<'_, KeywordFilterIter<K, slice::Iter<'_, S>>, S> {
         ArgumentMatcher::new(KeywordFilterIter::new(&self.positional), &self.named)
     }
 
-    pub(crate) fn scan<D: Decoder>(&self, decoder: D) -> Scan<'_, D> {
+    pub(crate) fn scan<D: Decoder>(&self, decoder: D) -> Scan<'_, D, S> {
         Scan::new(decoder, &self.positional, &self.named)
     }
 
-    pub(crate) fn extend<'b, S>(&mut self, mut iter: Words<'b>) -> crate::Result<()>
+    pub(crate) fn extend<'b, T>(&mut self, mut iter: Words<'b>) -> crate::Result<()>
     where
-        S: From<&'b str> + Into<Cow<'a, str>>,
+        T: From<&'b str> + Into<S> + Into<Uncased<'a>>,
     {
         while let Some(name) = iter.next() {
             if name == "/" {
@@ -90,9 +99,9 @@ impl<'a> Arguments<'a> {
                 let val = iter
                     .next()
                     .ok_or_else(|| Error::new(iter.source(), ErrorKind::NoArgument))?;
-                self.named.insert(S::from(name).into(), S::from(val).into());
+                self.named.insert(T::from(name), T::from(val).into());
             } else {
-                self.positional.push(S::from(name).into());
+                self.positional.push(T::from(name).into());
             }
         }
         Ok(())
@@ -109,6 +118,26 @@ impl<'a> TryFrom<Words<'a>> for Arguments<'a> {
     }
 }
 
+impl<'a> TryFrom<Words<'a>> for Arguments<'a, Cow<'a, str>> {
+    type Error = crate::Error;
+
+    fn try_from(value: Words<'a>) -> crate::Result<Self> {
+        let mut this = Self::new();
+        this.extend::<&str>(value)?;
+        Ok(this)
+    }
+}
+
+impl TryFrom<Words<'_>> for Arguments<'static, String> {
+    type Error = crate::Error;
+
+    fn try_from(value: Words<'_>) -> crate::Result<Self> {
+        let mut this = Self::new();
+        this.extend::<String>(value)?;
+        Ok(this)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -118,14 +147,8 @@ mod tests {
         let words = Words::new(r#"EL RName '<FONT COLOR=Red><B>' FLAG="RoomName""#);
         let args: Arguments = words.try_into().unwrap();
         let expected = Arguments {
-            positional: ["EL", "RName", "<FONT COLOR=Red><B>"]
-                .iter()
-                .map(|&arg| arg.into())
-                .collect(),
-            named: [("flag", "RoomName")]
-                .iter()
-                .map(|&(k, v)| (k, v.into()))
-                .collect(),
+            positional: vec!["EL", "RName", "<FONT COLOR=Red><B>"],
+            named: [("flag", "RoomName")].iter().copied().collect(),
         };
         assert_eq!(args, expected);
     }

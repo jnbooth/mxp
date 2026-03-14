@@ -66,13 +66,10 @@ impl<S: AsRef<str>> Gauge<S> {
 
 impl_partial_eq!(Gauge);
 
-impl<'a, D> TryFrom<Scan<'a, D>> for Gauge<Cow<'a, str>>
-where
-    D: Decoder,
-{
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Gauge<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let entity = scanner.next()?.expect_some("EntityName")?;
         let max = scanner.next_or("max")?;
         let caption = scanner.next_or("caption")?;

@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;
 
@@ -57,6 +58,6 @@ where
     Tag::well_known(name)
         .filter(|tag| tag.action == kind)
         .ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;
-    let args = words.parse_args()?;
+    let args: super::Arguments<'_, Cow<'_, str>> = words.try_into()?;
     Ok(args.scan(()).try_into()?)
 }

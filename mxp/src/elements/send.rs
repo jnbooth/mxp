@@ -151,13 +151,10 @@ impl<'a> Send<&'a str> {
     }
 }
 
-impl<'a, D> TryFrom<Scan<'a, D>> for Send<Cow<'a, str>>
-where
-    D: Decoder,
-{
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Send<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         let href = scanner
             .next_or("href")?

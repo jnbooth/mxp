@@ -16,13 +16,13 @@ struct ElementDecoder<'a, D: Decoder> {
 }
 
 impl<D: Decoder> Decoder for ElementDecoder<'_, D> {
-    fn get_entity<F: KeywordFilter>(&self, name: &str) -> Option<&str> {
+    fn get_entity<K: KeywordFilter>(&self, name: &str) -> Option<&str> {
         match self
             .args
-            .find_from_attributes::<F>(name, &self.element.attributes)
+            .find_from_attributes::<K>(name, &self.element.attributes)
         {
             Some(attr) => Some(attr),
-            None => self.decoder.get_entity::<F>(name),
+            None => self.decoder.get_entity::<K>(name),
         }
     }
 }
@@ -35,7 +35,7 @@ pub struct DecodeElement<'a, D: Decoder + Copy> {
 }
 
 impl<'a, D: Decoder + Copy> DecodeElement<'a, D> {
-    pub(super) fn new(element: &'a Element, args: &'a Arguments, decoder: D) -> Self {
+    pub(super) fn new(element: &'a Element, args: &'a Arguments<&'a str>, decoder: D) -> Self {
         Self {
             decoder: ElementDecoder {
                 decoder,

@@ -6,7 +6,7 @@ use crate::{Error, ErrorKind};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ElementItem {
     pub tag: &'static Tag,
-    pub arguments: Arguments<'static>,
+    pub arguments: Arguments<'static, String>,
 }
 
 impl ElementItem {

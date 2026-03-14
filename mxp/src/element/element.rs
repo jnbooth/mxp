@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::num::NonZero;
 
 use super::collected::CollectedElement;
@@ -30,7 +29,7 @@ pub struct Element {
     /// What atomic elements it defines (arg 1)
     pub items: Vec<ElementItem>,
     /// List of attributes to this element (ATT="xx")
-    pub attributes: Arguments<'static>,
+    pub attributes: Arguments<'static, String>,
     /// Line tag number (20 - 99) (TAG=n)
     pub tag: Option<NonZero<u8>>,
     /// Parsing flag
@@ -79,7 +78,7 @@ impl Element {
             None => Arguments::default(),
         };
 
-        let tag = Self::parse_tag(iter.next_or("tag"))?;
+        let tag = Self::parse_tag(iter.next_or("tag").copied())?;
 
         let (parse_as, variable) = match iter.next_or("flag") {
             None => (None, None),
@@ -175,13 +174,13 @@ impl Element {
         Ok(items)
     }
 
-    fn parse_tag(tag: Option<&Cow<str>>) -> crate::Result<Option<NonZero<u8>>> {
+    fn parse_tag(tag: Option<&str>) -> crate::Result<Option<NonZero<u8>>> {
         let Some(tag) = tag else {
             return Ok(None);
         };
         match tag.parse::<NonZero<u8>>() {
             Ok(tag) if Mode(tag.get()).is_user_defined() => Ok(Some(tag)),
-            _ => Err(crate::Error::new(&**tag, ErrorKind::InvalidLineTag)),
+            _ => Err(crate::Error::new(tag, ErrorKind::InvalidLineTag)),
         }
     }
 }

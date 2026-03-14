@@ -50,13 +50,10 @@ impl<S: AsRef<str>> Expire<S> {
 
 impl_partial_eq!(Expire);
 
-impl<'a, D> TryFrom<Scan<'a, D>> for Expire<Cow<'a, str>>
-where
-    D: Decoder,
-{
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Expire<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let name = scanner.next()?;
         scanner.expect_end()?;
         Ok(Self { name })

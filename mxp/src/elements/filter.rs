@@ -65,13 +65,10 @@ impl<S: AsRef<str>> Filter<S> {
 
 impl_partial_eq!(Filter);
 
-impl<'a, D> TryFrom<Scan<'a, D>> for Filter<Cow<'a, str>>
-where
-    D: Decoder,
-{
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Filter<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(mut scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let src = scanner.next_or("src")?.expect_some("src")?;
         let dest = scanner.next_or("dest")?;
         let name = scanner.next_or("name")?.expect_some("name")?;

@@ -130,13 +130,10 @@ impl<S: AsRef<str>> Image<S> {
 
 impl_partial_eq!(Image);
 
-impl<'a, D> TryFrom<Scan<'a, D>> for Image<Cow<'a, str>>
-where
-    D: Decoder,
-{
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Image<Cow<'a, str>> {
     type Error = Error;
 
-    fn try_from(scanner: Scan<'a, D>) -> crate::Result<Self> {
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         let fname = scanner.next_or("fname")?.expect_some("fname")?;
         let url = scanner.next_or("url")?;
