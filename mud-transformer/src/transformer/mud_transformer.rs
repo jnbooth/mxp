@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::num::NonZero;
 use std::{io, mem, slice};
 
@@ -188,10 +187,6 @@ impl Transformer {
 
     pub fn published_entities(&self) -> mxp::PublishedIter<'_> {
         self.mxp_state.published_entities()
-    }
-
-    pub fn variables(&self) -> &HashMap<String, String> {
-        self.output.variables()
     }
 
     pub fn count_custom_mxp_elements(&self) -> usize {

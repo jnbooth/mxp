@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::{fmt, str};
 
 use bytestring::ByteString;
@@ -24,8 +23,6 @@ pub(crate) struct BufferedOutput {
     text_buf: ByteStringMut,
     fragments: Vec<Output>,
     spans: SpanList,
-    variables: HashMap<String, String>,
-
     in_line: bool,
     last_break: usize,
     last_linebreak: Option<usize>,
@@ -336,10 +333,8 @@ impl BufferedOutput {
             self.append(entry);
         }
         if let Some(name) = span.variable {
-            let name = String::from(name);
-            self.variables.insert(name.clone(), self.variable.clone());
             self.append(VariableFragment {
-                name,
+                name: name.into(),
                 value: self.variable.clone(),
             });
         }
@@ -457,10 +452,6 @@ impl BufferedOutput {
     #[inline]
     pub fn write_fmt(&mut self, args: fmt::Arguments) {
         fmt::Write::write_fmt(self, args).unwrap();
-    }
-
-    pub fn variables(&self) -> &HashMap<String, String> {
-        &self.variables
     }
 }
 
