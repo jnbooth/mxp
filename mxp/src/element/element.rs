@@ -49,7 +49,7 @@ impl Element {
                     open: true,
                     items: vec![ElementItem {
                         tag: COLOR,
-                        arguments: Words::new(body).parse_args_to_owned().unwrap(),
+                        arguments: Words::new(body).try_into().unwrap(),
                     }],
                     ..Default::default()
                 },

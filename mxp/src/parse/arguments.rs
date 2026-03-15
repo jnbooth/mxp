@@ -75,7 +75,7 @@ impl<'a, S: AsRef<str>> Arguments<'a, S> {
         Scan::new(decoder, &self.positional, &self.named)
     }
 
-    pub(crate) fn extend<'b, T>(&mut self, mut iter: Words<'b>) -> crate::Result<()>
+    fn extend_inner<'b, T>(&mut self, mut iter: Words<'b>) -> crate::Result<()>
     where
         T: From<&'b str> + Into<S> + Into<Uncased<'a>>,
     {
@@ -105,6 +105,22 @@ impl<'a> Arguments<'a> {
     pub fn parse(source: &'a str) -> crate::Result<Self> {
         Words::new(source).try_into()
     }
+
+    pub(crate) fn extend(&mut self, iter: Words<'a>) -> crate::Result<()> {
+        self.extend_inner::<&str>(iter)
+    }
+}
+
+impl<'a> Arguments<'a, Cow<'a, str>> {
+    pub(crate) fn extend(&mut self, iter: Words<'a>) -> crate::Result<()> {
+        self.extend_inner::<&str>(iter)
+    }
+}
+
+impl Arguments<'static, String> {
+    pub(crate) fn extend(&mut self, iter: Words<'_>) -> crate::Result<()> {
+        self.extend_inner::<String>(iter)
+    }
 }
 
 impl<'a> TryFrom<Words<'a>> for Arguments<'a> {
@@ -112,7 +128,7 @@ impl<'a> TryFrom<Words<'a>> for Arguments<'a> {
 
     fn try_from(value: Words<'a>) -> crate::Result<Self> {
         let mut this = Self::new();
-        this.extend::<&str>(value)?;
+        this.extend(value)?;
         Ok(this)
     }
 }
@@ -122,7 +138,7 @@ impl<'a> TryFrom<Words<'a>> for Arguments<'a, Cow<'a, str>> {
 
     fn try_from(value: Words<'a>) -> crate::Result<Self> {
         let mut this = Self::new();
-        this.extend::<&str>(value)?;
+        this.extend(value)?;
         Ok(this)
     }
 }
@@ -132,7 +148,9 @@ impl TryFrom<Words<'_>> for Arguments<'static, String> {
 
     fn try_from(value: Words<'_>) -> crate::Result<Self> {
         let mut this = Self::new();
-        this.extend::<String>(value)?;
+        this.extend(value)?;
+        this.named.shrink_to_fit();
+        this.positional.shrink_to_fit();
         Ok(this)
     }
 }

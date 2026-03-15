@@ -189,7 +189,7 @@ impl State {
             .get_mut(definition.name)
             .ok_or_else(|| Error::new(definition.name, ErrorKind::UnknownElementInAttlist))?
             .attributes
-            .extend::<String>(words)
+            .extend(words)
     }
 
     fn define_element(&mut self, definition: ElementDefinition) {

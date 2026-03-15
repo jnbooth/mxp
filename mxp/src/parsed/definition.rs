@@ -104,7 +104,7 @@ impl<'a> ElementDefinition<'a> {
         };
 
         let attributes = match iter.next_or("att") {
-            Some(&atts) => Words::new(atts).parse_args_to_owned()?,
+            Some(&atts) => Words::new(atts).try_into()?,
             None => Arguments::default(),
         };
 

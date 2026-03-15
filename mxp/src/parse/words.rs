@@ -35,10 +35,6 @@ impl<'a> Words<'a> {
         self.try_into()
     }
 
-    pub fn parse_args_to_owned(self) -> crate::Result<Arguments<'static, String>> {
-        self.try_into()
-    }
-
     pub fn source(&self) -> &'a str {
         self.source
     }

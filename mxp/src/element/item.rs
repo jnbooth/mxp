@@ -23,7 +23,7 @@ impl ElementItem {
         if let Some(tag) = Tag::well_known(tag_name) {
             return Ok(Self {
                 tag,
-                arguments: words.parse_args_to_owned()?,
+                arguments: words.try_into()?,
             });
         }
         crate::validate(tag_name, ErrorKind::InvalidElementName)?;
