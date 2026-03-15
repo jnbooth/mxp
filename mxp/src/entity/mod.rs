@@ -12,3 +12,5 @@ pub use map::{EntityEntry, EntityMap};
 
 mod visibility;
 pub use visibility::EntityVisibility;
+
+pub use crate::keyword::EntityKeyword;

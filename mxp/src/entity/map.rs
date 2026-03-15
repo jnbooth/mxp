@@ -34,7 +34,7 @@ impl EntityMap {
     /// # Examples
     ///
     /// ```
-    /// use mxp::EntityMap;
+    /// use mxp::entity::EntityMap;
     ///
     /// let map = EntityMap::new();
     /// // global entities not recognized
@@ -49,7 +49,7 @@ impl EntityMap {
     /// # Examples
     ///
     /// ```
-    /// use mxp::EntityMap;
+    /// use mxp::entity::EntityMap;
     ///
     /// let map = EntityMap::with_globals();
     /// assert_eq!(map.decode("lt"), Ok("<".into()));
@@ -66,7 +66,7 @@ impl EntityMap {
     /// # Examples
     ///
     /// ```
-    /// use mxp::EntityMap;
+    /// use mxp::entity::EntityMap;
     ///
     /// let mut map = EntityMap::with_globals();
     /// assert!(map.is_empty());
@@ -82,7 +82,7 @@ impl EntityMap {
     /// # Examples
     ///
     /// ```
-    /// use mxp::EntityMap;
+    /// use mxp::entity::EntityMap;
     ///
     /// let mut map = EntityMap::with_globals();
     /// assert!(map.is_empty());
@@ -100,7 +100,7 @@ impl EntityMap {
     /// # Examples
     ///
     /// ```
-    /// use mxp::EntityMap;
+    /// use mxp::entity::EntityMap;
     ///
     /// let mut map = EntityMap::with_globals();
     /// map.insert("HP".to_owned(), "150".to_owned());
@@ -117,7 +117,7 @@ impl EntityMap {
     /// # Examples
     ///
     /// ```
-    /// use mxp::EntityMap;
+    /// use mxp::entity::EntityMap;
     ///
     /// let mut map = EntityMap::with_globals();
     ///
@@ -149,7 +149,7 @@ impl EntityMap {
     /// # Examples
     ///
     /// ```
-    /// use mxp::EntityMap;
+    /// use mxp::entity::EntityMap;
     ///
     /// let mut map = EntityMap::with_globals();
     /// map.insert("HP".to_owned(), "150".to_owned());
@@ -167,7 +167,7 @@ impl EntityMap {
     /// # Examples
     ///
     /// ```
-    /// use mxp::EntityMap;
+    /// use mxp::entity::EntityMap;
     ///
     /// let mut map = EntityMap::with_globals();
     /// assert!(map.is_global("lt"));
@@ -185,7 +185,7 @@ impl EntityMap {
     /// # Examples
     ///
     /// ```
-    /// use mxp::{EntityInfo, EntityKeyword, EntityMap};
+    /// use mxp::entity::{EntityInfo, EntityKeyword, EntityMap};
     ///
     /// let mut map = EntityMap::new();
     /// map.set("k1", "v1", Some("desc1"), None).unwrap();
@@ -235,7 +235,7 @@ impl EntityMap {
     /// # Examples
     ///
     /// ```
-    /// use mxp::EntityMap;
+    /// use mxp::entity::EntityMap;
     ///
     /// let mut map = EntityMap::with_globals();
     /// assert_eq!(map.get("HP"), None);
@@ -256,7 +256,7 @@ impl EntityMap {
     /// # Examples
     ///
     /// ```
-    /// use mxp::EntityMap;
+    /// use mxp::entity::EntityMap;
     ///
     /// let map = EntityMap::with_globals();
     /// assert!(map.guard_global("HP").is_ok());
@@ -277,7 +277,7 @@ impl EntityMap {
     /// # Examples
     ///
     /// ```
-    /// use mxp::EntityMap;
+    /// use mxp::entity::EntityMap;
     ///
     /// let mut map = EntityMap::with_globals();
     /// assert_eq!(map.get("HP"), None);
@@ -382,7 +382,7 @@ impl Decoder for EntityMap {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{EntityVisibility, Error};
+    use crate::Error;
 
     #[test]
     fn set_new() {

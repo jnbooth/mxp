@@ -17,10 +17,12 @@ impl<'a> DecodedEntity<'a> {
     /// # Examples
     ///
     /// ```
+    /// use mxp::entity::DecodedEntity;
+    ///
     /// let mut buf = String::new();
-    /// mxp::DecodedEntity::Standard('>').push_to(&mut buf);
-    /// mxp::DecodedEntity::Custom("Warrior").push_to(&mut buf);
-    /// mxp::DecodedEntity::Standard('<').push_to(&mut buf);
+    /// DecodedEntity::Standard('>').push_to(&mut buf);
+    /// DecodedEntity::Custom("Warrior").push_to(&mut buf);
+    /// DecodedEntity::Standard('<').push_to(&mut buf);
     /// assert_eq!(buf, ">Warrior<");
     /// ```
     #[inline]

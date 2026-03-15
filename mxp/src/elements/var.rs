@@ -13,7 +13,7 @@ use crate::parse::{Decoder, Scan};
 /// # Examples
 ///
 /// ```
-/// use mxp::EntityKeyword;
+/// use mxp::entity::EntityKeyword;
 ///
 /// assert_eq!(
 ///     "<VAR Hp DESC=Health PUBLISH>".parse::<mxp::Var>(),

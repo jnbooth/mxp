@@ -1,6 +1,6 @@
 use flagset::FlagSet;
 
-use crate::EntityKeyword;
+use crate::keyword::EntityKeyword;
 
 /// Visibility of an [`Entity`](crate::Entity), as defined by the server.
 ///

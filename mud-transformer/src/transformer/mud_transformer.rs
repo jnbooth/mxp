@@ -4,6 +4,7 @@ use std::{io, mem, slice};
 
 use bytes::BytesMut;
 use bytestringmut::ByteStringMut;
+use mxp::entity::PublishedIter;
 use mxp::escape::{ansi, telnet};
 use mxp::parsed::{ParsedDefinition, ParsedElement, ParsedTagOpen};
 
@@ -188,7 +189,7 @@ impl Transformer {
         self.input.drain()
     }
 
-    pub fn published_entities(&self) -> mxp::PublishedIter<'_> {
+    pub fn published_entities(&self) -> PublishedIter<'_> {
         self.mxp_state.published_entities()
     }
 

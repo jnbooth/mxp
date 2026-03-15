@@ -7,8 +7,8 @@ pub use arguments::Arguments;
 mod collections;
 pub use collections::{Component, State};
 
-mod color;
-pub use color::{HexOutOfRangeError, NamedColorIter, ParseHexColorError, RgbColor};
+pub mod color;
+pub use color::RgbColor;
 
 mod element;
 pub use element::{Action, ActionKind, DecodeElement, Element, ElementItem, ParseAs, Tag};
@@ -16,15 +16,13 @@ pub use element::{Action, ActionKind, DecodeElement, Element, ElementItem, Parse
 mod elements;
 pub use elements::*;
 
-mod entity;
-pub use entity::{
-    DecodedEntity, Entity, EntityEntry, EntityInfo, EntityMap, EntityVisibility, PublishedIter,
-};
+pub mod entity;
+pub use entity::Entity;
 
 pub mod escape;
 
 mod keyword;
-pub use keyword::{EntityKeyword, KeywordFilter};
+pub use keyword::KeywordFilter;
 
 mod line;
 pub use line::{LineTag, LineTagProperties, Mode, ModeRangeError, ModeState};
