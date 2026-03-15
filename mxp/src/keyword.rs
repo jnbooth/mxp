@@ -55,6 +55,7 @@ flags! {
     }
 }
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone)]
 pub struct KeywordFilterIter<K, I>
 where

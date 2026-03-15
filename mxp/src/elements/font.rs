@@ -9,7 +9,7 @@ use crate::color::RgbColor;
 use crate::parse::{Decoder, Scan, UnrecognizedVariant};
 
 flags! {
-    /// Font modifier applied by the [`color`] argument of a [`Font`] tag.
+    /// Font modifier applied by the [`color`](Font::color) argument of a [`Font`] tag.
     pub enum FontStyle: u8 {
         Blink,
         Bold,

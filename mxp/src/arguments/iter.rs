@@ -4,6 +4,9 @@ use std::{fmt, slice};
 
 use uncased::Uncased;
 
+/// This struct is created by [`Arguments::named`](crate::Arguments::named).
+/// See its documentation for more.
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Named<'a, S> {
     pub(super) inner: hash_map::Iter<'a, Uncased<'a>, S>,
 }
@@ -49,6 +52,9 @@ impl<S> ExactSizeIterator for Named<'_, S> {
 
 impl<S> FusedIterator for Named<'_, S> {}
 
+/// This struct is created by [`Arguments::positional`](crate::Arguments::positional).
+/// See its documentation for more.
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 pub struct Positional<'a, S> {
     pub(super) inner: slice::Iter<'a, S>,
 }

@@ -1,3 +1,5 @@
+//! [`Entity`] and associated types.
+
 mod decoded;
 pub use decoded::DecodedEntity;
 

@@ -5,7 +5,9 @@ use crate::arguments::ExpectArg as _;
 use crate::parse::{Decoder, Scan};
 
 /// A MUD sets a style-sheet version number by sending the `<VERSION styleversion>` tag to the
-/// client. The client caches this version information and returns it when requested by a plain
+/// client.
+///
+/// The client caches this version information and returns it when requested by a plain
 /// `<VERSION>` request.
 ///
 /// See [MXP specification: `<VERSION>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control).

@@ -15,7 +15,7 @@ use crate::parse::{Decoder, Scan};
 /// use mxp::RgbColor;
 ///
 /// assert_eq!(
-///     "<GAUGE Hp MAX=HpMax Caption=Health Color=red>".parse::<mxp::Gauge>(),
+///     "<GAUGE Hp MAX=HpMax CAPTION=Health COLOR=red>".parse::<mxp::Gauge>(),
 ///     Ok(mxp::Gauge {
 ///         entity: "Hp".into(),
 ///         max: Some("HpMax".into()),

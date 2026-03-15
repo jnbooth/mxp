@@ -410,7 +410,7 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_mxp_line_tag(&mut self, tag: &mxp::LineTagProperties) {
+    pub fn set_mxp_line_tag(&mut self, tag: &mxp::LineTag) {
         if tag.gag {
             self.set_mxp_gag();
         }

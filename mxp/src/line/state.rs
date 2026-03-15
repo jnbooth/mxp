@@ -3,7 +3,7 @@ use std::cmp;
 use super::mode::Mode;
 use crate::element::ParseAs;
 
-/// State tracker for [`mxp::Mode`](crate::Mode).
+/// State tracker for [`Mode`](crate::Mode).
 ///
 /// See [MXP specification: MXP Line Tags](https://www.zuggsoft.com/zmud/mxp.htm#MXP%20Line%20Tags).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -165,7 +165,7 @@ impl ModeState {
         self.get().is_welcome()
     }
 
-    /// See [`Mode::is_mxp`].
+    /// See [`Mode::is_user_defined`].
     pub const fn is_user_defined(&self) -> bool {
         self.get().is_user_defined()
     }

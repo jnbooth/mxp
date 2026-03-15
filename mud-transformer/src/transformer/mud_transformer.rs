@@ -322,7 +322,7 @@ impl Transformer {
         let Some(tag) = mxp_state.get_line_tag(self.mxp_mode.get()) else {
             return Ok(());
         };
-        self.output.set_mxp_line_tag(tag.properties);
+        self.output.set_mxp_line_tag(&tag);
         let Some(element) = tag.element else {
             return Ok(());
         };

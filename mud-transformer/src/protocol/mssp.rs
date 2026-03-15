@@ -10,6 +10,7 @@ pub const CODE: u8 = 70;
 pub const VAR: u8 = 1;
 pub const VAL: u8 = 2;
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone)]
 pub(crate) struct Iter {
     data: Bytes,

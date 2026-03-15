@@ -121,7 +121,10 @@ impl<S: Clone> From<S> for Send<S> {
 }
 
 impl Send<String> {
-    /// Iterates through menu options.
+    /// Iterator that produces menu items for a `Send`, as parsed from the [`href`](Self::href) and
+    /// [`hint`](Self::hint) fields.
+    ///
+    /// See [MXP specification: `<SEND>`](https://www.zuggsoft.com/zmud/mxp.htm#Links).
     pub fn menu(&self) -> SendMenu<'_> {
         SendMenu {
             commands: self.href.split('|'),
@@ -131,7 +134,10 @@ impl Send<String> {
 }
 
 impl Send<Cow<'_, str>> {
-    /// Iterates through menu options.
+    /// Iterator that produces menu items for a `Send`, as parsed from the [`href`](Self::href) and
+    /// [`hint`](Self::hint) fields.
+    ///
+    /// See [MXP specification: `<SEND>`](https://www.zuggsoft.com/zmud/mxp.htm#Links).
     pub fn menu(&self) -> SendMenu<'_> {
         SendMenu {
             commands: self.href.split('|'),
@@ -141,7 +147,10 @@ impl Send<Cow<'_, str>> {
 }
 
 impl<'a> Send<&'a str> {
-    /// Iterates through menu options.
+    /// Iterator that produces menu items for a `Send`, as parsed from the [`href`](Self::href) and
+    /// [`hint`](Self::hint) fields.
+    ///
+    /// See [MXP specification: `<SEND>`](https://www.zuggsoft.com/zmud/mxp.htm#Links).
     pub fn menu(&self) -> SendMenu<'a> {
         let mut labels = self.hint.split('|');
         labels.next();
@@ -172,6 +181,7 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Send<Cow<'a, str
     }
 }
 
+/// This struct is created by [`Send::menu`]. See its documentation for more.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct SendMenuItem<'a> {
     /// Command to send.
@@ -180,6 +190,8 @@ pub struct SendMenuItem<'a> {
     pub label: &'a str,
 }
 
+/// This struct is created by [`Send::menu`]. See its documentation for more.
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone)]
 pub struct SendMenu<'a> {
     commands: str::Split<'a, char>,

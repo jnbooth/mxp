@@ -11,7 +11,7 @@ use crate::elements::{
 use crate::parse::{Decoder, FromStrError, Scan, Words};
 use crate::{Error, ErrorKind};
 
-/// Effect caused by an [`Element`](crate::Element).
+/// Effect caused by an element. Created by applying [`Arguments`] to an element [`Tag`].
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Action<S> {
     /// [`<BOLD>`](https://www.zuggsoft.com/zmud/mxp.htm#Text%20Formatting):
@@ -85,10 +85,10 @@ pub enum Action<S> {
     Reset,
     /// [`<SBR>`](https://www.zuggsoft.com/zmud/mxp.htm#Line%20Spacing):
     /// Insert a soft linebreak.
+    SBr,
     /// [`<Send>`](https://www.zuggsoft.com/zmud/mxp.htm#Links):
     /// Turn text into a link that sends a command to the world.
     Send(Send<S>),
-    SBr,
     /// [`<SMALL>`](https://www.zuggsoft.com/zmud/mxp.htm#HTML%20tags):
     /// Display text in a smaller size.
     Small,
@@ -124,7 +124,7 @@ pub enum Action<S> {
     /// Set an MXP variable.
     Var(Var<S>),
     /// [`<VERSION>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control):
-    // Prompt client to respond with its client and version of MXP.
+    /// Prompt client to respond with its client and version of MXP.
     Version,
 }
 

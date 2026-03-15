@@ -33,7 +33,7 @@ pub enum DimensionUnit {
     CharacterSpacing = b'c' as _,
 }
 
-/// A measurement of screen space, specified as a pixel amount, a perentage, or an amount of
+/// A measurement of screen space, specified as a pixel amount, a percentage, or an amount of
 /// character widths, as determined by the [`DimensionUnit`].
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Dimension<T = u32> {

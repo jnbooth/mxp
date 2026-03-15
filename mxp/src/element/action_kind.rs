@@ -1,90 +1,125 @@
 use flagset::flags;
 
 flags! {
+    /// Type of effect caused by an [`Action`](crate::Action).
     pub enum ActionKind: u64 {
-        /// bold
+        /// [`<BOLD>`](https://www.zuggsoft.com/zmud/mxp.htm#Text%20Formatting):
+        /// Make text bold.
         Bold,
-        /// Hard Line break (secure)
+        /// [`<BR>`](https://www.zuggsoft.com/zmud/mxp.htm#Line%20Spacing):
+        /// Insert a hard line break.
         Br,
-        /// eg. <color fore=red back=blue>
+        ///[`<COLOR>`](https://www.zuggsoft.com/zmud/mxp.htm#Text%20Formatting):
+        /// Change text color.
         Color,
-        /// destination frame
+        /// [`<DEST>`](https://www.zuggsoft.com/zmud/mxp.htm#Cursor%20Control):
+        /// Set destination frame.
         Dest,
-        /// expire
+        /// [`<EXPIRE>`](https://www.zuggsoft.com/zmud/mxp.htm#Links):
+        /// Expire links.
         Expire,
-        /// sound/image filter
+        /// [`<FILTER>`](https://www.zuggsoft.com/zmud/mxp.htm#File%20Filters):
+        /// Set file filter.
         Filter,
-        /// Font appearance
+        /// [`<FONT>`](https://www.zuggsoft.com/zmud/mxp.htm#Text%20Formatting):
+        /// Change text font.
         Font,
-        /// frame
+        /// [`<FRAME>`](https://www.zuggsoft.com/zmud/mxp.htm#Frames):
+        /// Create a frame window.
         Frame,
-        /// gauge
+        /// [`<GAUGE>`](https://www.zuggsoft.com/zmud/mxp.htm#Using%20Entities):
+        /// Display an MXP entity value as a gauge.
         Gauge,
-        /// Level 1 heading (secure)
+        /// Level 1 heading.
         H1,
-        /// Level 2 heading (secure)
+        /// Level 2 heading.
         H2,
-        /// Level 3 heading (secure)
+        /// Level 3 heading.
         H3,
-        /// Level 4 heading (secure)
+        /// Level 4 heading.
         H4,
-        /// Level 5 heading (secure)
+        /// Level 5 heading.
         H5,
-        /// Level 6 heading (secure)
+        /// Level 6 heading.
         H6,
-        /// Highlight text
+        /// [`<HIGH>`](https://www.zuggsoft.com/zmud/mxp.htm#Text%20Formatting):
+        /// Highlight text.
         Highlight,
-        /// Horizontal rule (secure)
+        /// [`<HR>`](https://www.zuggsoft.com/zmud/mxp.htm#HTML%20tags):
+        /// Insert a horizontal rule.
         Hr,
-        /// Hyperlink (secure)
+        /// [`<A>`](https://www.zuggsoft.com/zmud/mxp.htm#Links):
+        /// Hyperlink.
         Hyperlink,
-        /// show image
+        /// [`<IMAGE>`](https://www.zuggsoft.com/zmud/mxp.htm#Images):
+        /// Display an image.
         Image,
-        /// italic
+        /// [`<ITALIC>`](https://www.zuggsoft.com/zmud/mxp.htm#Text%20Formatting):
+        /// Make text italic.
         Italic,
-        /// play music
+        /// [`<MUSIC>`](https://www.zuggsoft.com/zmud/mxp.htm#MSP%20Compatibility):
+        /// Play or stop music.
         Music,
-        /// MXP command (eg. MXP OFF)
+        /// [`<MXP OFF>`](https://gpascal.com/forum/?id=232):
+        /// MXP control command. This is an unofficial extension to the MXP protocol.
         Mxp,
-        /// ignore next newline
+        /// [`<NOBR>`](https://www.zuggsoft.com/zmud/mxp.htm#Line%20Spacing):
+        /// Ignore next newline.
         NoBr,
-        /// Paragraph break (secure)
+        /// [`<P>`](https://www.zuggsoft.com/zmud/mxp.htm#Line%20Spacing):
+        /// Insert a paragraph break.
         P,
-        /// send password
+        /// [`<PASSWORD>`](https://www.zuggsoft.com/zmud/mxp.htm#Crosslinking%20multiple%20MUD%20servers):
+        /// Prompt client to send user password.
         Password,
-        /// causes a new connect to open
+        /// [`<RELOCATE>`](https://www.zuggsoft.com/zmud/mxp.htm#Crosslinking%20multiple%20MUD%20servers):
+        /// Prompt client to switch to a new network connection.
         Relocate,
-        /// close all open tags
+        /// [`<RESET>`](https://gpascal.com/forum/?id=232):
+        /// Close all open tags. This is an unofficial extension to the MXP protocol.
         Reset,
-        /// Soft line break
+        /// [`<SBR>`](https://www.zuggsoft.com/zmud/mxp.htm#Line%20Spacing):
+        /// Insert a soft linebreak.
         SBr,
-        /// eg. <send href="go west"> west
+        /// [`<Send>`](https://www.zuggsoft.com/zmud/mxp.htm#Links):
+        /// Turn text into a link that sends a command to the world.
         Send,
-        /// Small text
+        /// [`<SMALL>`](https://www.zuggsoft.com/zmud/mxp.htm#HTML%20tags):
+        /// Display text in a smaller size.
         Small,
-        /// play sound
+        /// [`<SOUND>`](https://www.zuggsoft.com/zmud/mxp.htm#MSP%20Compatibility):
+        /// Play or stop a sound file.
         Sound,
-        /// status
+        /// [`<STAT>`](https://www.zuggsoft.com/zmud/mxp.htm#Using%20Entities):
+        /// Display an MXP entity value on the status bar.
         Stat,
-        /// Strikethrough
+        /// [`<STRIKEOUT>`](https://www.zuggsoft.com/zmud/mxp.htm#Text%20Formatting):
+        /// Strike-out the text.
         Strikeout,
-        /// what commands we support
+        /// [`<SUPPORT>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control):
+        /// Prompt client to respond with the commands that it supports.
         Support,
-        /// Non-proportional font
+        /// [`<TT>`](https://www.zuggsoft.com/zmud/mxp.htm#HTML%20tags):
+        /// Display text in a non-proportional font.
         Tt,
-        /// underline
+        /// [`<UNDERLINE>`](https://www.zuggsoft.com/zmud/mxp.htm#Text%20Formatting):
+        /// Underline text.
         Underline,
-        /// send username
+        /// [`<USER>`](https://www.zuggsoft.com/zmud/mxp.htm#Crosslinking%20multiple%20MUD%20servers):
+        /// Prompt client to send username.
         User,
-        /// Set variable
+        /// [`<VAR>`](https://www.zuggsoft.com/zmud/mxp.htm#ENTITY):
+        /// Set an MXP variable.
         Var,
-        /// version request
+        /// [`<VERSION>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control):
+        /// Prompt client to respond with its client and version of MXP.
         Version,
     }
 }
 
 impl ActionKind {
-    /// Returns `true` if this is a command tag, i.e. a tag with no closing tag.
+    /// Returns `true` if this is a command tag. Command tags do not have content, so they have no
+    /// closing tag.
     pub const fn is_command(self) -> bool {
         matches!(
             self,
@@ -110,19 +145,31 @@ impl ActionKind {
         )
     }
 
-    /// Returns `true` if the action can be used if the MXP [`Mode`](crate::Mode) is "open".
+    /// Returns `true` if the action can be used if the MXP line [`Mode`](crate::Mode) is Open.
+    ///
+    /// The following actions are open:
+    ///
+    /// - [`Bold`](Self::Bold)
+    /// - [`Color`](Self::Color)
+    /// - [`Font`](Self::Font)
+    /// - [`Highlight`](Self::Highlight)
+    /// - [`Italic`](Self::Italic)
+    /// - [`Small`](Self::Small)
+    /// - [`Strikeout`](Self::Strikeout)
+    /// - [`Tt`](Self::Tt)
+    /// - [`Underline`](Self::Underline)
     pub const fn is_open(self) -> bool {
         matches!(
             self,
             Self::Bold
                 | Self::Color
-                | Self::Italic
+                | Self::Font
                 | Self::Highlight
-                | Self::Strikeout
+                | Self::Italic
                 | Self::Small
+                | Self::Strikeout
                 | Self::Tt
                 | Self::Underline
-                | Self::Font
         )
     }
 }

@@ -129,7 +129,7 @@ impl XTermPalette {
         &mut self.palette
     }
 
-    /// Iterates over the palette.
+    /// Iterator that visits every XTerm color in order. The iterator element type is `RgbColor`.
     #[inline]
     pub fn iter(&self) -> array::IntoIter<RgbColor, 256> {
         self.into_iter()

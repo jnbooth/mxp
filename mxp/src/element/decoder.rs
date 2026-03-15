@@ -10,13 +10,13 @@ use crate::keyword::KeywordFilter;
 use crate::parse::Decoder;
 
 #[derive(Copy, Clone, Debug)]
-struct ElementDecoder<'a, D: Decoder> {
+struct DecodeElement<'a, D: Decoder> {
     decoder: D,
     element: &'a Element,
     args: &'a Arguments<'a>,
 }
 
-impl<D: Decoder> Decoder for ElementDecoder<'_, D> {
+impl<D: Decoder> Decoder for DecodeElement<'_, D> {
     fn get_entity<K: KeywordFilter>(&self, name: &str) -> Option<&str> {
         match self
             .args
@@ -28,18 +28,19 @@ impl<D: Decoder> Decoder for ElementDecoder<'_, D> {
     }
 }
 
-/// This `struct` is created by [`State::decode_element`]. See its documentation for more.
+/// This struct is created by [`State::decode_element`](crate::State::decode_element).
+/// See its documentation for more.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone)]
-pub struct DecodeElement<'a, D: Decoder + Copy> {
-    decoder: ElementDecoder<'a, D>,
+pub struct ElementDecoder<'a, D: Decoder + Copy> {
+    decoder: DecodeElement<'a, D>,
     items: slice::Iter<'a, ElementItem>,
 }
 
-impl<'a, D: Decoder + Copy> DecodeElement<'a, D> {
+impl<'a, D: Decoder + Copy> ElementDecoder<'a, D> {
     pub(super) fn new(element: &'a Element, args: &'a Arguments<&'a str>, decoder: D) -> Self {
         Self {
-            decoder: ElementDecoder {
+            decoder: DecodeElement {
                 decoder,
                 element,
                 args,
@@ -49,7 +50,7 @@ impl<'a, D: Decoder + Copy> DecodeElement<'a, D> {
     }
 }
 
-impl<'a, D: Decoder + Copy> Iterator for DecodeElement<'a, D> {
+impl<'a, D: Decoder + Copy> Iterator for ElementDecoder<'a, D> {
     type Item = crate::Result<Action<Cow<'a, str>>>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -67,7 +68,7 @@ impl<'a, D: Decoder + Copy> Iterator for DecodeElement<'a, D> {
     }
 }
 
-impl<D> ExactSizeIterator for DecodeElement<'_, D>
+impl<D> ExactSizeIterator for ElementDecoder<'_, D>
 where
     D: Decoder + Copy,
 {
@@ -76,4 +77,4 @@ where
     }
 }
 
-impl<D> FusedIterator for DecodeElement<'_, D> where D: Decoder + Copy {}
+impl<D> FusedIterator for ElementDecoder<'_, D> where D: Decoder + Copy {}

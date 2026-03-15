@@ -1,3 +1,5 @@
+//! [`RgbColor`] and associated types.
+
 mod error;
 pub use error::{HexOutOfRangeError, ParseHexColorError};
 

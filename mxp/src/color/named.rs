@@ -2,6 +2,7 @@ use std::{iter, slice};
 
 use super::rgb::RgbColor;
 
+/// Type alias for the iterator returned by [`RgbColor::iter_named`].
 pub type NamedColorIter = iter::Copied<slice::Iter<'static, (&'static str, RgbColor)>>;
 
 pub(super) const NAMED_COLORS: &[(&str, RgbColor)] = &[

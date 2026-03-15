@@ -1,3 +1,5 @@
+//! Constants for special characters used in ANSI sequences.
+
 /// Null character
 pub const NULL: u8 = 0x00;
 /// Start of Header

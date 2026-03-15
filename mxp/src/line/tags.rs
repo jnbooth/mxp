@@ -1,6 +1,6 @@
 use super::mode::Mode;
 use super::tag::{LineTag, LineTagProperties};
-use crate::collections::CaseFoldMap;
+use crate::CaseFoldMap;
 use crate::element::Element;
 use crate::parsed::LineTagDefinition;
 use crate::{Error, ErrorKind};

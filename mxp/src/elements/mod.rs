@@ -1,3 +1,5 @@
+//! Atomic elements defined by the MXP standard.
+
 #[macro_use]
 mod macros;
 
@@ -33,7 +35,7 @@ mod image;
 pub use image::Image;
 
 mod music;
-pub use music::{AudioContinuation, Music};
+pub use music::Music;
 
 mod relocate;
 pub use relocate::Relocate;

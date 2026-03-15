@@ -1,8 +1,8 @@
 use std::borrow::Cow;
 
+use crate::CaseFoldMap;
 use crate::arguments::Arguments;
-use crate::collections::CaseFoldMap;
-use crate::element::{Action, DecodeElement, Element, Tag};
+use crate::element::{Action, Element, ElementDecoder, Tag};
 use crate::elements::Var;
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
 use crate::keyword::KeywordFilter;
@@ -144,7 +144,7 @@ impl State {
         &'a self,
         element: &'a Element,
         args: &'a Arguments<'a>,
-    ) -> DecodeElement<'a, &'a State> {
+    ) -> ElementDecoder<'a, &'a State> {
         element.decode(args, self)
     }
 

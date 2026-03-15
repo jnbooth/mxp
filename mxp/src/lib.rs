@@ -4,16 +4,16 @@ mod case_insensitive;
 pub mod arguments;
 pub use arguments::Arguments;
 
-mod collections;
-pub use collections::{Component, State};
+mod case_fold_map;
+pub(crate) use case_fold_map::CaseFoldMap;
 
 pub mod color;
 pub use color::RgbColor;
 
-mod element;
-pub use element::{Action, ActionKind, DecodeElement, Element, ElementItem, ParseAs, Tag};
+pub mod element;
+pub use element::{Action, ActionKind, Element, Tag};
 
-mod elements;
+pub mod elements;
 pub use elements::*;
 
 pub mod entity;
@@ -37,8 +37,12 @@ pub mod responses;
 mod screen;
 pub use screen::{Align, Dimension, DimensionUnit};
 
+mod state;
+pub use state::{Component, State};
+
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// Reexport from the [`flagset`](flagset::FlagSet) package.
 pub use flagset::FlagSet;
 
 #[cfg(test)]

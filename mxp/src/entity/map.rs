@@ -6,22 +6,27 @@ use flagset::FlagSet;
 
 use super::decoded::DecodedEntity;
 use super::entity::Entity;
+use super::iter::EntityInfo;
 use super::iter::PublishedIter;
 use super::visibility::EntityVisibility;
 use crate::keyword::{EntityKeyword, KeywordFilter};
 use crate::parse::{Decoder, ErrorKind};
 
 #[derive(Debug)]
-/// Entry in an [`EntityMap`].
+/// This struct is created by [`EntityMap::set`]. See its documentation for more.
 pub struct EntityEntry<'a> {
     /// Borrowed entity value, or `None` if the entity was removed.
     pub value: Option<&'a str>,
-    /// Entity is published.
+    /// If `true`, entity's visibility is [`EntityVisibility::Publish`]. If `false`, entity's
+    /// visibility is [`EntityVisibility::Default`].
+    ///
+    /// Generally speaking, entity entries should only be processed by the client if `publish` is
+    /// `true`.
     pub publish: bool,
 }
 
-/// Stores all entities for the current environment, both MXP-defined entities ([`Entity`]) and
-/// global XML entities (static string slices).
+/// Stores all entities for the current environment, both MXP-defined entities (as [`Entity`]) and
+/// global XML entities (as `&'static str`).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct EntityMap {
     inner: HashMap<String, Entity>,
@@ -179,8 +184,8 @@ impl EntityMap {
         name.starts_with('#') || self.globals.contains_key(name.as_bytes())
     }
 
-    /// Iterates through all entities which have been marked as PUBLISH by the server, in the form
-    /// of [`EntityInfo`](super::EntityInfo) entries.
+    /// An iterator visiting all entities which have been marked as PUBLISH by the server, in
+    /// arbitrary order. The iterator element type is `&'a` [`EntityInfo`].
     ///
     /// # Examples
     ///
@@ -221,7 +226,7 @@ impl EntityMap {
     /// ```
     pub fn published(&self) -> PublishedIter<'_> {
         self.inner.iter().filter_map(|(k, v)| {
-            v.is_published().then_some(super::EntityInfo {
+            v.is_published().then_some(EntityInfo {
                 name: k,
                 description: &v.description,
                 value: &v.value,
@@ -230,7 +235,8 @@ impl EntityMap {
     }
 
     /// Returns the value of a custom MXP entity, or `None` if there is no entity with the specified
-    /// name or the entity with the specified name was marked as PRIVATE by the server.
+    /// name or the entity with the specified name was marked as PRIVATE
+    /// ([`EntityVisibility::Private`]) by the server.
     ///
     /// # Examples
     ///
@@ -291,8 +297,8 @@ impl EntityMap {
         Ok(())
     }
 
-    /// Applies an MXP entity definition with the specified name, value, description and keywords,
-    /// as provided by `<!ENTITY>` declarations from the server.
+    /// Applies an MXP [`EntityDefinition`](crate::parsed::EntityDefinition) with the specified
+    /// name, value, description and keywords.
     /// Depending on the keywords provided, this may cause an entity to be inserted, removed,
     /// updated, or replaced.
     ///
@@ -302,7 +308,6 @@ impl EntityMap {
     /// changed.
     ///
     /// See [MXP specification: `<!ENTITY>`](https://www.zuggsoft.com/zmud/mxp.htm#ENTITY).
-    /// ```
     pub fn set<'a, T: Into<FlagSet<EntityKeyword>>>(
         &'a mut self,
         name: &str,

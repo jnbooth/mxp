@@ -5,11 +5,11 @@ use crate::{Error, ErrorKind};
 /// The three types of MXP tag elements sent by the server.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ParsedElement<'a> {
-    /// A definition, e.g. [`<!ELEMENT>`].
+    /// A definition, e.g. `<!ELEMENT>`.
     Definition(ParsedDefinition<'a>),
-    /// A closing tag, e.g. [`</BOLD>`].
+    /// A closing tag, e.g. `</BOLD>`.
     TagClose(ParsedTagClose<'a>),
-    /// An opening tag, e.g. [`<BOLD>`].
+    /// An opening tag, e.g. `<BOLD>`.
     TagOpen(ParsedTagOpen<'a>),
 }
 

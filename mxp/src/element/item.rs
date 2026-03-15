@@ -6,7 +6,11 @@ use crate::{Error, ErrorKind};
 /// List of arguments to an MXP tag.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ElementItem {
+    /// Standard atomic tag to apply. Determines the [`Action`](crate::Action) of this item.
     pub tag: &'static Tag,
+    /// Arguments for the tag. These may contain custom entities meant to be supplied as arguments
+    /// to the custom element. An [`ElementDecoder`](crate::element::ElementDecoder) replaces
+    /// those entities with the custom element's arguments.
     pub arguments: Arguments<'static, String>,
 }
 

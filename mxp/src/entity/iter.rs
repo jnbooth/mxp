@@ -3,9 +3,8 @@ use std::iter;
 
 use super::entity::Entity;
 
-/// Information about a published entity.
-///
-/// See [MXP specification: Entities](https://www.zuggsoft.com/zmud/mxp.htm#ENTITY).
+/// This struct is created by [`EntityMap::published`](crate::entity::EntityMap::published).
+/// See its documentation for more.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct EntityInfo<'a> {
     /// Entity name.
@@ -16,7 +15,7 @@ pub struct EntityInfo<'a> {
     pub value: &'a str,
 }
 
-/// Type alias for the iterator returned by [`EntityMap::published`](crate::EntityMap::published).
+/// Type alias for the iterator returned by [`EntityMap::published`](crate::entity::EntityMap::published).
 pub type PublishedIter<'a> = iter::FilterMap<
     hash_map::Iter<'a, String, Entity>,
     fn((&'a String, &'a Entity)) -> Option<EntityInfo<'a>>,

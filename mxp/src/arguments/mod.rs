@@ -1,3 +1,5 @@
+//! [`Arguments`] and associated types.
+
 mod arguments;
 pub use arguments::Arguments;
 

@@ -4,6 +4,8 @@ use crate::color::RgbColor;
 use crate::element::Element;
 use crate::parsed::LineTagDefinition;
 
+/// [`LineTagProperties`] for a line mode, as well as an [`Element`] if one is associated with the
+/// current user-defined line mode.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct LineTag<'a> {
     pub element: Option<&'a Element>,

@@ -34,7 +34,8 @@ impl Mode {
     pub const ROOM_DESC: Self = Self(11);
     /// The line is parsed as the name of a room.
     pub const ROOM_EXITS: Self = Self(12);
-    /// This text is sent from the MUD at the beginning of a session to welcome the user to the MUD. Same as the <WELCOME> MXP tag.
+    /// This text is sent from the MUD at the beginning of a session to welcome the user to the MUD.
+    /// Same as the `<WELCOME>` MXP tag.
     pub const WELCOME_TEXT: Self = Self(19);
 
     /// Minimum value of a user-defined line mode. See [`Mode::is_user_defined`].
@@ -45,27 +46,47 @@ impl Mode {
 
 impl Mode {
     /// When this mode is active, only MXP commands in the "open" category are allowed.
+    ///
+    /// The following modes are open:
+    ///
+    /// - [`OPEN`](Self::OPEN)
+    /// - [`PERM_OPEN`](Self::PERM_OPEN)
     pub const fn is_open(self) -> bool {
         matches!(self, Self::OPEN | Self::PERM_OPEN)
     }
 
     /// When this mode is active, all tags and commands in MXP are allowed.
+    ///
+    /// The following modes are secure:
+    ///
+    /// - [`SECURE`](Self::SECURE)
+    /// - [`SECURE_ONCE`](Self::SECURE_ONCE)
+    /// - [`PERM_SECURE`](Self::PERM_SECURE)
     pub const fn is_secure(self) -> bool {
         matches!(self, Self::SECURE | Self::SECURE_ONCE | Self::PERM_SECURE)
     }
 
     /// When this mode is active, MXP tags should not be parsed.
+    ///
+    /// The following modes are locked:
+    ///
+    /// - [`LOCKED`](Self::LOCKED)
+    /// - [`PERM_LOCKED`](Self::PERM_LOCKED)
     pub const fn is_locked(self) -> bool {
         matches!(self, Self::LOCKED | Self::PERM_LOCKED)
     }
 
     /// When this mode is active, the line is tagged for automappers.
+    ///
+    /// Line modes between 10 [`ROOM_NAME`](Self::ROOM_NAME) and 19
+    /// [`WELCOME_TEXT`](Self::WELCOME_TEXT) are reserved for automappers.
     pub const fn is_automapping(self) -> bool {
         matches!(self.0, 10..=19)
     }
 
-    /// How the line should be parsed by an automapper. This only applies to [`Mode::ROOM_NAME`],
-    /// [`Mode::ROOM_DESC`], and [`Mode::ROOM_EXITS`].
+    /// How the line should be parsed by an automapper. This only applies to
+    /// [`ROOM_NAME`](Self::ROOM_NAME), [`Mode::ROOM_DESC`](Self::ROOM_DESC), and
+    /// [`ROOM_EXITS`](Self::ROOM_EXITS).
     pub const fn parse_as(self) -> Option<ParseAs> {
         match self {
             Self::ROOM_NAME => Some(ParseAs::RoomName),
@@ -86,6 +107,9 @@ impl Mode {
     ///
     /// A common use for these is to tag various chat channels to allow client-side filtering or
     /// redirection of the text.
+    ///
+    /// User-defined tags must be between 20 ([`USER_DEFINED_MIN`](Self::USER_DEFINED_MIN)) and
+    /// 99 ([`USER_DEFINED_MAX`](Self::USER_DEFINED_MAX)).
     pub const fn is_user_defined(self) -> bool {
         const MIN: u8 = Mode::USER_DEFINED_MIN.0;
         const MAX: u8 = Mode::USER_DEFINED_MAX.0;
@@ -120,6 +144,7 @@ impl fmt::Display for Mode {
     }
 }
 
+/// The error type returned when a checked conversion from an integral type to [`Mode`] fails.
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct ModeRangeError(pub(crate) ());
 

@@ -6,7 +6,7 @@ use uncased::Uncased;
 
 use super::iter::{Named, Positional};
 use super::matcher::ArgumentMatcher;
-use crate::collections::CaseFoldMap;
+use crate::CaseFoldMap;
 use crate::keyword::KeywordFilter;
 use crate::parse::{Decoder, Scan, Words, validate};
 use crate::{Error, ErrorKind};
@@ -54,12 +54,16 @@ impl<'a, S> Arguments<'a, S> {
         self.named.get(name)
     }
 
+    /// Iterator that visits all named arguments in arbitrary order. The iterator element type is
+    /// `(&'a str, &'a S)`.
     pub fn named(&self) -> Named<'_, S> {
         Named {
             inner: self.named.iter(),
         }
     }
 
+    /// Iterator that visits all positional arguments in sequence. The iterator element type is
+    /// `&'a S`.
     pub fn positional(&self) -> Positional<'_, S> {
         Positional {
             inner: self.positional.iter(),
@@ -128,6 +132,7 @@ impl<'a, S: AsRef<str>> Arguments<'a, S> {
 }
 
 impl<'a> Arguments<'a> {
+    /// Parses arguments from a string slice without cloning the data.
     pub fn parse(source: &'a str) -> crate::Result<Self> {
         Words::new(source).try_into()
     }

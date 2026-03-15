@@ -3,8 +3,8 @@ use std::str::FromStr;
 
 use crate::parse::{Decoder, Scan};
 
-/// Removes previously displayed [`Link`](crate::Link)s. For example, when moving to a new room,
-/// links from the previous room description are no longer valid and need to e removed.
+/// Removes previously displayed links. For example, when moving to a new room, links from the
+/// previous room description are no longer valid and need to be removed.
 ///
 /// See [MXP specification: `<EXPIRE>`](https://www.zuggsoft.com/zmud/mxp.htm#Links).
 ///

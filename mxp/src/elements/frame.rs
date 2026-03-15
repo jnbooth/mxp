@@ -74,7 +74,7 @@ impl Default for FrameLayout {
 /// use mxp::{Align, Dimension, FrameAction, FrameLayout};
 ///
 /// assert_eq!(
-///     "<FRAME NAME=Map Left=-20c Top=0 Width=20c Height=20c>".parse::<mxp::Frame>(),
+///     "<FRAME NAME=Map LEFT=-20c TOP=0 WIDTH=20c HEIGHT=20c>".parse::<mxp::Frame>(),
 ///     Ok(mxp::Frame {
 ///         name: "Map".into(),
 ///         action: FrameAction::Open,

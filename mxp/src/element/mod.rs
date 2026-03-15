@@ -1,3 +1,5 @@
+//! [`Element`] and associated types.
+
 mod action;
 pub use action::Action;
 
@@ -5,7 +7,7 @@ mod action_kind;
 pub use action_kind::ActionKind;
 
 mod decoder;
-pub use decoder::DecodeElement;
+pub use decoder::ElementDecoder;
 
 mod element;
 pub use element::Element;

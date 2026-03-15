@@ -5,8 +5,8 @@ use std::{slice, str};
 use flagset::{FlagSet, Flags};
 
 use super::validation::is_valid;
+use crate::CaseFoldMap;
 use crate::arguments::ArgumentMatcher;
-use crate::collections::CaseFoldMap;
 use crate::entity::{DecodedEntity, Entity};
 use crate::keyword::{KeywordFilter, KeywordFilterIter};
 use crate::{Error, ErrorKind};

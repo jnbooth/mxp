@@ -3,8 +3,9 @@ use std::sync::LazyLock;
 
 use super::visibility::EntityVisibility;
 
-/// Stores information from the MUD (MUD variables). Once an entity is defined, an entity's value
-/// can be referenced by using the `&Name;` syntax.
+/// Stores information from the MUD (MUD variables).
+///
+/// Once an entity is defined, its value can be referenced by using the `&Name;` syntax.
 ///
 /// See [MXP specification: Entities](https://www.zuggsoft.com/zmud/mxp.htm#ENTITY).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]

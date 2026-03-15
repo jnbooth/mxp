@@ -1,3 +1,5 @@
+//! Constants for special characters used by Telnet protocols.
+
 /// IAC WILL END-OF-RECORD.
 ///
 /// Specified in [RFC 885](https://datatracker.ietf.org/doc/html/rfc885):

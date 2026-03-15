@@ -5,11 +5,8 @@ use super::AudioRepetition;
 use crate::arguments::ExpectArg as _;
 use crate::parse::{Decoder, Scan, StringVariant, UnrecognizedVariant};
 
-/// Specifies file behavior if the server requests it should play again while it is already playing.
-///
-/// See [MSP specification: C parameter](https://www.zuggsoft.com/zmud/msp.htm#MSP%20Specification).
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
-pub enum AudioContinuation {
+enum AudioContinuation {
     /// If requested again, the file should restart.
     Restart = 0,
     #[default]
@@ -64,7 +61,7 @@ pub struct Music<S = String> {
     pub volume: u8,
     /// Repeat behavior.
     pub repeat: AudioRepetition,
-    /// If requested again, the file should simply continue playing.
+    /// If requested again, the file should simply continue playing..
     pub continual: bool,
     /// Type of music, e.g. combat, zone, death, clan. Case-insensitive. This parameter was
     /// intended to provide a way to group music into subfolders within the main music directory.

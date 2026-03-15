@@ -4,7 +4,7 @@ use std::string::FromUtf8Error;
 
 use crate::ErrorKind;
 
-/// Error caused by attempting to parse malformed MXP data from the server.
+/// Error encountered during parsing and processing of MXP data.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Error {
     kind: ErrorKind,

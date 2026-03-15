@@ -41,6 +41,8 @@ impl Tag {
         Self::SUPPORTED
     }
 
+    /// Resolves a [`Tag`] into an [`Action`] by decoding arguments and supplying them to the tag's
+    /// definition.
     pub fn decode<'a, D: Decoder>(
         &self,
         args: &'a Arguments<'a>,
@@ -72,6 +74,7 @@ impl Tag {
         false
     }
 
+    /// Ensures all named arguments are supported.
     pub(crate) fn check_arguments<S: AsRef<str>>(&self, args: &Arguments<S>) -> crate::Result<()> {
         match args.keys().find(|arg| !self.supports(arg.as_str())) {
             None => Ok(()),

@@ -1,6 +1,6 @@
 use std::fmt;
 
-/// Type associated with an [`mxp::Error`](Error).
+/// Type associated with an [`mxp::Error`](crate::Error).
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ErrorKind {
     /// `&#5000;`
@@ -74,7 +74,7 @@ pub enum ErrorKind {
     InvalidNumber,
     /// `<send foo>`
     UnexpectedArgument,
-    /// `octamarine`
+    /// `octarine`
     UnknownColor,
 
     /// cannot convert bytes into UTF-8

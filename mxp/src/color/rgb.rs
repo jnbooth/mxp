@@ -171,7 +171,8 @@ impl RgbColor {
         get_named_color(name_lower)
     }
 
-    /// Iterates through colors in the standard list of [148 CSS colors].
+    /// Iterator that visits the colors in the standard list of [148 CSS colors] in sequence. The
+    /// iterator element type is `(&'static str, RgbColor)`.
     ///
     /// [148 CSS colors]: https://www.w3.org/wiki/CSS/Properties/color/keywords
     ///

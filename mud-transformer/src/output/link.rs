@@ -6,7 +6,7 @@ pub enum SendTo {
     /// `<SEND href="...">`.
     /// When clicked, the link href should be sent to the server as if typed by the user.
     #[default]
-    World = 1,
+    World,
     /// `<SEND PROMPT href="...">`.
     /// When clicked, the link text should be sent to the client's command line.
     Prompt,

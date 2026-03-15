@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use flagset::{FlagSet, Flags};
 
-use crate::collections::CaseFoldMap;
+use crate::CaseFoldMap;
 use crate::keyword::{KeywordFilter, KeywordFilterIter};
 
 #[derive(Clone, Debug)]

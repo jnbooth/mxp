@@ -14,7 +14,7 @@ use crate::parse::{Decoder, Scan};
 /// use mxp::RgbColor;
 ///
 /// assert_eq!(
-///     "<Stat Hp MAX=HpMax Caption=Health>".parse::<mxp::Stat>(),
+///     "<Stat Hp MAX=HpMax CAPTION=Health>".parse::<mxp::Stat>(),
 ///     Ok(mxp::Stat {
 ///         entity: "Hp".into(),
 ///         max: Some("HpMax".into()),

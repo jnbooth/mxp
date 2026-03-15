@@ -69,6 +69,7 @@ impl WindowOp {
     }
 }
 
+#[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone)]
 pub(crate) struct WindowOpIter<I> {
     inner: I,
