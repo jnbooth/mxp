@@ -67,7 +67,7 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Var<Cow<'a, str>
 
     fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
-        let variable = scanner.next()?.expect_some("variable")?;
+        let variable = scanner.next()?.expect_some("Variable")?;
         let desc = scanner.next_or("desc")?;
         let keywords = scanner.into_keywords()?;
         Ok(Self {

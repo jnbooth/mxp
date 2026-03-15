@@ -197,7 +197,7 @@ impl<'a> LineTagDefinition<'a> {
     fn parse(words: Words<'a>) -> crate::Result<Self> {
         let args = words.parse_args()?;
         let mut matcher = args.matcher().with_keywords();
-        let index = Mode(matcher.next().expect_number()?.expect_some("tag")?);
+        let index = Mode(matcher.next().expect_number()?.expect_some("Tag")?);
         if !index.is_user_defined() {
             return Err(Error::new(index.to_string(), ErrorKind::IllegalLineTag));
         }

@@ -54,7 +54,7 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for StyleVersion<Cow
     type Error = crate::Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        let styleversion = scanner.next()?.expect_some("styleversion")?;
+        let styleversion = scanner.next()?.expect_some("StyleVersion")?;
         scanner.expect_end()?;
         Ok(Self { styleversion })
     }

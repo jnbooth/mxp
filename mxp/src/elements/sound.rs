@@ -134,7 +134,7 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Sound<Cow<'a, st
     type Error = crate::Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        let fname = scanner.next()?.expect_some("fname")?;
+        let fname = scanner.next_or("fname")?.expect_some("fname")?;
         let volume = scanner.next_or("v")?.expect_number()?.unwrap_or(100);
         let repeat = scanner.next_or("l")?.expect_number()?.unwrap_or_default();
         let priority = scanner.next_or("p")?.expect_number()?.unwrap_or(50);

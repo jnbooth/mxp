@@ -57,8 +57,8 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Relocate<Cow<'a,
     type Error = crate::Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        let hostname = scanner.next()?.expect_some("hostname")?;
-        let port = scanner.next()?.expect_number()?.expect_some("port")?;
+        let hostname = scanner.next()?.expect_some("Hostname")?;
+        let port = scanner.next()?.expect_number()?.expect_some("Port")?;
         scanner.expect_end()?;
         Ok(Self { hostname, port })
     }
