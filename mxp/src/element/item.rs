@@ -21,10 +21,9 @@ impl ElementItem {
             _ => (),
         }
         if let Some(tag) = Tag::well_known(tag_name) {
-            return Ok(Self {
-                tag,
-                arguments: words.try_into()?,
-            });
+            let arguments = words.try_into()?;
+            tag.check_arguments(&arguments)?;
+            return Ok(Self { tag, arguments });
         }
         crate::validate(tag_name, ErrorKind::InvalidElementName)?;
         Err(Error::new(tag_name, ErrorKind::UnknownElementInDefinition))

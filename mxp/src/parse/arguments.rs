@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::collections::hash_map;
 use std::slice;
 
 use uncased::Uncased;
@@ -30,7 +31,7 @@ impl<S> Default for Arguments<'_, S> {
     }
 }
 
-impl<S> Arguments<'_, S> {
+impl<'a, S> Arguments<'a, S> {
     /// Constructs a new, empty `Arguments<S>`.
     pub fn new() -> Self {
         Self {
@@ -42,6 +43,10 @@ impl<S> Arguments<'_, S> {
     /// Returns `true` if there are no parsed arguments.
     pub fn is_empty(&self) -> bool {
         self.positional.is_empty() && self.named.is_empty()
+    }
+
+    pub(crate) fn keys(&self) -> hash_map::Keys<'_, Uncased<'a>, S> {
+        self.named.keys()
     }
 }
 

@@ -272,6 +272,7 @@ impl FromStr for Action<String> {
         let tag =
             Tag::well_known(name).ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;
         let args: Arguments<Cow<str>> = words.try_into()?;
+        tag.check_arguments(&args)?;
         Ok(Action::decode(tag.action, args.scan(()))?.into_owned())
     }
 }

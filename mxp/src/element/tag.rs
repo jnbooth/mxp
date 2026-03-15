@@ -4,6 +4,7 @@ use super::action::Action;
 use super::action_kind::ActionKind;
 use crate::case_insensitive::to_ascii_lowercase;
 use crate::parse::{Arguments, Decoder};
+use crate::{Error, ErrorKind};
 
 /// Atomic MXP tags, such as `<A>`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -34,11 +35,17 @@ macro_rules! tag {
 }
 
 impl Tag {
+    /// Lists all tags supported by the `mxp` crate.
+    pub const fn supported() -> &'static [Self] {
+        Self::SUPPORTED
+    }
+
     pub fn decode<'a, D: Decoder>(
         &self,
         args: &'a Arguments<'a>,
         decoder: D,
     ) -> crate::Result<Action<Cow<'a, str>>> {
+        self.check_arguments(args)?;
         Action::decode(self.action, args.scan(decoder))
     }
 
@@ -64,9 +71,11 @@ impl Tag {
         false
     }
 
-    /// Lists all tags supported by the `mxp` crate.
-    pub const fn supported() -> &'static [Self] {
-        Self::SUPPORTED
+    pub(crate) fn check_arguments<S: AsRef<str>>(&self, args: &Arguments<S>) -> crate::Result<()> {
+        match args.keys().find(|arg| !self.supports(arg.as_str())) {
+            None => Ok(()),
+            Some(arg) => Err(Error::new(arg.as_str(), ErrorKind::UnexpectedArgument)),
+        }
     }
 
     /// Returns a `Tag` if `name` is a well-known MXP tag, such as `"A"` or `"image"`.
