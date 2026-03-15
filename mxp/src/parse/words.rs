@@ -8,7 +8,7 @@ use super::validation::validate;
 /// Iterator over the word units of an MXP string.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone, Debug)]
-pub struct Words<'a> {
+pub(crate) struct Words<'a> {
     iter: slice::Iter<'a, u8>,
     done: bool,
     source: &'a str,

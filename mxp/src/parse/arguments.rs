@@ -1,8 +1,6 @@
 use std::borrow::Cow;
 use std::slice;
-use std::str::FromStr;
 
-use flagset::Flags;
 use uncased::Uncased;
 
 use super::error::{Error, ErrorKind};
@@ -10,7 +8,7 @@ use super::scan::{Decoder, Scan};
 use super::validation::validate;
 use super::words::Words;
 use crate::collections::CaseFoldMap;
-use crate::keyword::{KeywordFilter, KeywordFilterIter};
+use crate::keyword::KeywordFilter;
 use crate::parse::ArgumentMatcher;
 
 /// Parsed arguments of an MXP command.
@@ -50,14 +48,11 @@ impl<S> Arguments<'_, S> {
 impl<'a, S: AsRef<str>> Arguments<'a, S> {
     /// Finds the value of an entity, using an element's attribute list to identify arguments
     /// and provide default values.
-    pub(crate) fn find_from_attributes<F>(
+    pub(crate) fn find_from_attributes<K: KeywordFilter>(
         &'a self,
         entity: &str,
         attributes: &'a Arguments<'static, String>,
-    ) -> Option<&'a str>
-    where
-        F: KeywordFilter,
-    {
+    ) -> Option<&'a str> {
         if let Some(named) = attributes.named.get(entity) {
             return match self.named.get(entity) {
                 Some(entity) => Some(entity.as_ref()),
@@ -65,17 +60,15 @@ impl<'a, S: AsRef<str>> Arguments<'a, S> {
             };
         }
         let position =
-            F::iter(&attributes.positional).position(|attr| attr.eq_ignore_ascii_case(entity))?;
-        match F::iter(&self.positional).nth(position) {
+            K::iter(&attributes.positional).position(|attr| attr.eq_ignore_ascii_case(entity))?;
+        match K::iter(&self.positional).nth(position) {
             Some(attr) => Some(attr.as_ref()),
             None => Some(""),
         }
     }
 
-    pub(crate) fn matcher<K: Flags + FromStr>(
-        &self,
-    ) -> ArgumentMatcher<'_, KeywordFilterIter<K, slice::Iter<'_, S>>, S> {
-        ArgumentMatcher::new(KeywordFilterIter::new(&self.positional), &self.named)
+    pub(crate) fn matcher(&self) -> ArgumentMatcher<'_, slice::Iter<'_, S>, S> {
+        ArgumentMatcher::new(&self.positional, &self.named)
     }
 
     pub(crate) fn scan<D: Decoder>(&self, decoder: D) -> Scan<'_, D, S> {
@@ -105,6 +98,12 @@ impl<'a, S: AsRef<str>> Arguments<'a, S> {
             }
         }
         Ok(())
+    }
+}
+
+impl<'a> Arguments<'a> {
+    pub fn parse(source: &'a str) -> crate::Result<Self> {
+        Words::new(source).try_into()
     }
 }
 

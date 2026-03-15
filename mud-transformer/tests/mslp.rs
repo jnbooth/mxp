@@ -14,7 +14,7 @@ fn mslp_underline() {
     let expected = &[TextFragment {
         text: "Test link".into(),
         flags: TextStyle::Underline.into(),
-        link: Some("Test Link".into()),
+        link: Some("Test link".into()),
         ..Default::default()
     }
     .into()];
@@ -56,7 +56,7 @@ fn mslp_underline_disabled() {
 }
 
 #[test]
-fn msslp_menu() {
+fn mslp_menu() {
     let output = transform("\x1B]68;1;MENU;{a tasty donut}{buy donut} {a loaf of bread}{buy bread} {a big tomato}{buy tomato}\x07\x1B[4mshopping list\x1B[24m").output();
     let expected = &[TextFragment {
         text: "shopping list".into(),
@@ -73,7 +73,7 @@ fn msslp_menu() {
 }
 
 #[test]
-fn msslp_send() {
+fn mslp_send() {
     let output = transform("\x1B]68;1;SEND;say Hello World!\x07\x1B[4m(click me)\x1B[24m").output();
     let expected = &[TextFragment {
         text: "(click me)".into(),
@@ -86,7 +86,7 @@ fn msslp_send() {
 }
 
 #[test]
-fn msslp_spaced() {
+fn mslp_spaced() {
     let output =
         transform("\x1B]68;1;SEND;say Hello World!\x07 \x1B[4m(click me)\x1B[24m").output();
     let expected = &[
@@ -102,7 +102,7 @@ fn msslp_spaced() {
 }
 
 #[test]
-fn msslp_escaped() {
+fn mslp_escaped() {
     let output =
         transform("\x1B]68;1;SEND;say Hello World!\x07\x1B[0m\x1B[4m(click me)\x1B[24m").output();
     let expected = &[TextFragment {

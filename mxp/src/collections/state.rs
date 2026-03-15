@@ -1,13 +1,16 @@
 use std::borrow::Cow;
 
-use super::line_tags::{LineTagUpdate, LineTags};
 use crate::collections::CaseFoldMap;
-use crate::element::{Action, DecodeElement, DefinitionKind, Element, ElementCommand, Tag};
+use crate::element::{Action, DecodeElement, Element, Tag};
 use crate::elements::Var;
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
 use crate::keyword::KeywordFilter;
-use crate::mode::Mode;
+use crate::line::{LineTag, LineTags, Mode};
 use crate::parse::{Arguments, Decoder, Error, ErrorKind, Words};
+use crate::parsed::{
+    AttributeListDefinition, ElementDefinition, EntityDefinition, LineTagDefinition,
+    ParsedDefinition,
+};
 
 /// A store of MXP state: elements, entities, and line tags.
 #[derive(Clone, Debug, Default)]
@@ -70,15 +73,28 @@ impl State {
 
     pub fn set_entity<'a, S: AsRef<str>>(
         &'a mut self,
-        var: &'a Var<S>,
+        var: &Var<S>,
         value: &str,
     ) -> crate::Result<Option<EntityEntry<'a>>> {
-        self.entities.set(
+        let Some(entity) = self.entities.set(
             var.name.as_ref(),
             value,
             var.desc.as_ref().map(AsRef::as_ref),
             var.keywords,
-        )
+        )?
+        else {
+            return Ok(None);
+        };
+        if entity.is_private() {
+            return Ok(None);
+        }
+        Ok(Some(EntityEntry {
+            value: match entity {
+                Cow::Borrowed(entity) => Some(&entity.value),
+                Cow::Owned(_) => None,
+            },
+            publish: entity.is_published(),
+        }))
     }
 
     /// Alias for `self.entities().published()`.
@@ -105,7 +121,7 @@ impl State {
     }
 
     /// Retrieves the element associated with a line tag for a specified mode, if one exists.
-    pub fn get_line_tag(&self, mode: Mode) -> Option<&Element> {
+    pub fn get_line_tag(&self, mode: Mode) -> Option<LineTag<'_>> {
         self.line_tags.get(usize::from(mode.0), &self.elements)
     }
 
@@ -155,69 +171,68 @@ impl State {
     /// [line tag]: https://www.zuggsoft.com/zmud/mxp.htm#User-defined%20Line%20Tags
     pub fn define<'a>(
         &'a mut self,
-        kind: DefinitionKind,
-        definition: &'a str,
+        definition: ParsedDefinition,
     ) -> crate::Result<Option<EntityEntry<'a>>> {
-        match kind {
-            DefinitionKind::AttributeList => self.define_attributes(definition),
-            DefinitionKind::Element => self.define_element(definition),
-            DefinitionKind::Entity => return self.define_entity(definition),
-            DefinitionKind::LineTag => self.define_line_tag(definition),
-        }?;
+        match definition {
+            ParsedDefinition::AttributeList(def) => self.define_attributes(&def)?,
+            ParsedDefinition::Element(def) => self.define_element(def),
+            ParsedDefinition::Entity(def) => return self.define_entity(def),
+            ParsedDefinition::LineTag(def) => self.define_line_tag(def)?,
+        }
         Ok(None)
     }
 
-    fn define_element(&mut self, definition: &str) -> crate::Result<()> {
-        let el = match Element::parse(definition)? {
-            ElementCommand::Define(el) => el,
-            ElementCommand::Delete(name) => {
-                self.elements.remove(&name);
-                return Ok(());
-            }
+    fn define_attributes(&mut self, definition: &AttributeListDefinition) -> crate::Result<()> {
+        let words = Words::new(definition.body);
+        self.elements
+            .get_mut(definition.name)
+            .ok_or_else(|| Error::new(definition.body, ErrorKind::UnknownElementInAttlist))?
+            .attributes
+            .extend::<String>(words)
+    }
+
+    fn define_element(&mut self, definition: ElementDefinition) {
+        let Some(el) = definition.element else {
+            self.elements.remove(definition.name);
+            return;
         };
         if let Some(tag) = el.tag {
             self.line_tags.set(usize::from(tag.get()), el.name.clone());
         }
         self.elements.insert(el.name.clone(), el);
-        Ok(())
-    }
-
-    fn define_line_tag(&mut self, definition: &str) -> crate::Result<()> {
-        let update = LineTagUpdate::parse(Words::new(definition), &self.entities)?;
-        self.line_tags.update(update, &mut self.elements);
-        Ok(())
     }
 
     fn define_entity<'a>(
         &'a mut self,
-        definition: &'a str,
+        definition: EntityDefinition,
     ) -> crate::Result<Option<EntityEntry<'a>>> {
-        let mut words = Words::new(definition);
-        let key = words.validate_next_or(ErrorKind::InvalidElementName)?;
-        let args = words.parse_args()?;
-        let mut scanner = args.scan(&self.entities).with_keywords();
-        let Some(value) = scanner.next()? else {
-            return Err(Error::new(definition, ErrorKind::NoDefinitionTag));
+        let EntityDefinition {
+            name,
+            desc,
+            value,
+            keywords,
+        } = definition;
+        let desc = match desc {
+            Some(desc) => Some(self.decode_string::<()>(desc)?),
+            None => None,
         };
-        let desc = scanner.next_or("desc")?;
-        let keywords = scanner.into_keywords()?;
-        self.entities.set(key, &value, desc.as_deref(), keywords)
+        let value = self.decode_string::<()>(value)?;
+        let var = Var {
+            name,
+            desc: desc.as_deref(),
+            keywords,
+        };
+        self.set_entity(&var, &value)
     }
 
-    fn define_attributes(&mut self, definition: &str) -> crate::Result<()> {
-        let mut words = Words::new(definition);
-        let key = words.validate_next_or(ErrorKind::InvalidElementName)?;
-        self.elements
-            .get_mut(key)
-            .ok_or_else(|| Error::new(key, ErrorKind::UnknownElementInAttlist))?
-            .attributes
-            .extend::<String>(words)
+    fn define_line_tag(&mut self, definition: LineTagDefinition) -> crate::Result<()> {
+        self.line_tags.update(definition)
     }
 }
 
 impl Decoder for State {
-    fn get_entity<F: KeywordFilter>(&self, name: &str) -> Option<&str> {
-        self.entities.get_entity::<F>(name)
+    fn get_entity<K: KeywordFilter>(&self, name: &str) -> Option<&str> {
+        self.entities.get_entity::<K>(name)
     }
 }
 

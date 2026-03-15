@@ -1,7 +1,4 @@
-use std::borrow::Cow;
-
 use bytestring::ByteString;
-use bytestringmut::ByteStringMut;
 
 use super::OutputFragment;
 
@@ -27,30 +24,7 @@ pub enum MxpFragment {
 pub struct EntityFragment {
     pub name: ByteString,
     pub value: Option<ByteString>,
-    pub published: bool,
-}
-
-impl EntityFragment {
-    pub(crate) fn new(entry: mxp::EntityEntry, buf: &mut ByteStringMut) -> Self {
-        buf.clear();
-        buf.push_str(entry.name);
-        let name = buf.split().freeze();
-        match entry.value {
-            Cow::Borrowed(entity) => {
-                buf.push_str(&entity.value);
-                Self {
-                    name,
-                    value: Some(buf.split().freeze()),
-                    published: entity.is_published(),
-                }
-            }
-            Cow::Owned(entity) => Self {
-                name,
-                value: None,
-                published: entity.is_published(),
-            },
-        }
-    }
+    pub publish: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -1,6 +1,5 @@
 use std::fmt;
 use std::marker::PhantomData;
-use std::str;
 use std::string::FromUtf8Error;
 
 /// Type associated with an [`mxp::Error`](Error).
@@ -82,6 +81,8 @@ pub enum ErrorKind {
     TagOpenedInSecureMode,
     /// eg. <!ELEMENT TAG=0>`
     InvalidLineTag,
+    /// eg. <!TAG 3>
+    InvalidLineTagMode,
 }
 
 /// Error caused by attempting to parse malformed MXP data from the server.
@@ -89,7 +90,6 @@ pub enum ErrorKind {
 pub struct Error {
     target: String,
     error: ErrorKind,
-    source: Option<String>,
 }
 
 impl fmt::Display for Error {
@@ -106,16 +106,7 @@ impl Error {
         Self {
             target: target.into(),
             error,
-            source: None,
         }
-    }
-
-    pub fn source(&self) -> Option<&str> {
-        self.source.as_deref()
-    }
-
-    pub fn set_source(&mut self, source: String) {
-        self.source = Some(source);
     }
 }
 

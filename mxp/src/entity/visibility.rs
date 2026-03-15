@@ -13,7 +13,7 @@ pub enum EntityVisibility {
     /// Private entities cannot be queried by the MUD client.  They are completely hidden.
     Private,
     /// Published entities can be used by the client to produce a list of MUD Server variables to be access by the player.
-    Published,
+    Publish,
 }
 
 impl From<FlagSet<EntityKeyword>> for EntityVisibility {
@@ -21,7 +21,7 @@ impl From<FlagSet<EntityKeyword>> for EntityVisibility {
         if value.contains(EntityKeyword::Private) {
             Self::Private
         } else if value.contains(EntityKeyword::Publish) {
-            Self::Published
+            Self::Publish
         } else {
             Self::Default
         }

@@ -43,6 +43,10 @@ pub(crate) enum Phase {
 }
 
 impl Phase {
+    pub const fn is_ansi(self) -> bool {
+        matches!(self, Phase::Esc | Phase::Ansi | Phase::AnsiString)
+    }
+
     pub const fn is_mxp(self) -> bool {
         matches!(
             self,

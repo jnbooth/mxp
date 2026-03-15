@@ -1,10 +1,7 @@
 use std::collections::HashMap;
 use std::sync::LazyLock;
 
-use flagset::FlagSet;
-
 use super::visibility::EntityVisibility;
-use crate::EntityKeyword;
 
 /// Stores information from the MUD (MUD variables). Once an entity is defined, an entity's value
 /// can be referenced by using the `&Name;` syntax.
@@ -97,27 +94,9 @@ impl Entity {
         matches!(self.visibility, EntityVisibility::Private)
     }
 
-    /// Returns `true` if `self.visibility` is [`EntityVisibility::Published`].
+    /// Returns `true` if `self.visibility` is [`EntityVisibility::Publish`].
     pub const fn is_published(&self) -> bool {
-        matches!(self.visibility, EntityVisibility::Published)
-    }
-
-    /// Applies [`EntityKeyword`]s to this entity.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let mut entity = mxp::Entity::new(String::new());
-    /// entity.apply_keywords(mxp::EntityKeyword::Publish);
-    /// assert_eq!(entity.visibility, mxp::EntityVisibility::Published);
-    /// ```
-    pub fn apply_keywords<T: Into<FlagSet<EntityKeyword>>>(&mut self, keywords: T) {
-        let keywords = keywords.into();
-        if keywords.contains(EntityKeyword::Private) {
-            self.visibility = EntityVisibility::Private;
-        } else if keywords.contains(EntityKeyword::Publish) {
-            self.visibility = EntityVisibility::Published;
-        }
+        matches!(self.visibility, EntityVisibility::Publish)
     }
 
     /// Treating the current value as a list of values separated by `'|'`, appends the specified
@@ -161,20 +140,5 @@ impl Entity {
 impl From<String> for Entity {
     fn from(value: String) -> Self {
         Self::new(value)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn apply_private() {
-        let mut entity = Entity::new(String::new());
-        entity.apply_keywords(EntityKeyword::Publish);
-        entity.apply_keywords(None);
-        entity.apply_keywords(EntityKeyword::Private);
-        entity.apply_keywords(None);
-        assert_eq!(entity.visibility, EntityVisibility::Private);
     }
 }

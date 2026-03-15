@@ -8,10 +8,7 @@ mod color;
 pub use color::{HexOutOfRangeError, NamedColorIter, ParseHexColorError, RgbColor};
 
 mod element;
-pub use element::{
-    Action, ActionKind, CollectedElement, DecodeElement, DefinitionKind, Element, ElementCommand,
-    ElementItem, ParseAs, Tag,
-};
+pub use element::{Action, ActionKind, DecodeElement, Element, ElementItem, ParseAs, Tag};
 
 mod elements;
 pub use elements::*;
@@ -26,11 +23,13 @@ pub mod escape;
 mod keyword;
 pub use keyword::{EntityKeyword, KeywordFilter};
 
-mod mode;
-pub use mode::{Mode, ModeRangeError, ModeState};
+mod line;
+pub use line::{LineTag, LineTagProperties, Mode, ModeRangeError, ModeState};
 
 mod parse;
-pub use parse::{Arguments, Error, ErrorKind, Words, is_valid, validate};
+pub use parse::{Arguments, Error, ErrorKind, is_valid, validate, validate_utf8};
+
+pub mod parsed;
 
 pub mod responses;
 

@@ -1,5 +1,3 @@
-use std::str;
-
 use super::error::{Error, ErrorKind};
 
 /// If the specified target is valid to use as an MXP identifier or value, returns `Ok(())`.
@@ -21,6 +19,18 @@ pub fn validate(target: &str, error: ErrorKind) -> crate::Result<()> {
     } else {
         Err(Error::new(target, error))
     }
+}
+
+/// Equivalent to [`str::from_utf8`], but returns an [`mxp::Error`](Error) instead of a
+/// [`Utf8Error`](std::str::Utf8Error).
+pub fn validate_utf8(bytes: &[u8]) -> crate::Result<&str> {
+    if let Ok(utf8) = str::from_utf8(bytes) {
+        return Ok(utf8);
+    }
+    Err(Error::new(
+        String::from_utf8_lossy(bytes),
+        ErrorKind::MalformedBytes,
+    ))
 }
 
 /// If the specified target is valid to use as an MXP identifier or value, returns `true`.

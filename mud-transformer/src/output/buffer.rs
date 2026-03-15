@@ -9,7 +9,6 @@ use super::{
     ControlFragment, Link, Output, OutputDrain, OutputFragment, SpanList, TelnetFragment,
     TextFragment, TextStyle, VariableFragment,
 };
-use crate::output::EntityFragment;
 use crate::responses::SgrReport;
 use crate::term::{TermColor, XTermPalette};
 
@@ -323,22 +322,13 @@ impl BufferedOutput {
         self.spans.len()
     }
 
-    pub fn truncate_spans(&mut self, i: usize, state: &mut mxp::State) {
+    pub fn truncate_spans(&mut self, i: usize) -> Option<(mxp::Var<ByteString>, ByteString)> {
         self.flush();
-        let Some(span) = self.spans.truncate(i) else {
-            return;
-        };
+        let span = self.spans.truncate(i)?;
         if span.entity.is_none() && span.variable.is_none() {
-            return;
+            return None;
         }
         let variable = self.variable.split().freeze();
-        if let Some(entity) = span.entity
-            && let Ok(Some(entry)) = state.set_entity(&entity, &variable)
-            && !entry.value.is_private()
-        {
-            let fragment = EntityFragment::new(entry, &mut self.variable);
-            self.append(fragment);
-        }
         self.in_variable = self.spans.in_variable();
         if self.in_variable {
             // not done with it yet
@@ -347,9 +337,10 @@ impl BufferedOutput {
         if let Some(name) = span.variable {
             self.append(VariableFragment {
                 name,
-                value: variable,
+                value: variable.clone(),
             });
         }
+        Some((span.entity?, variable))
     }
 
     pub fn set_mxp_flag(&mut self, flag: TextStyle) {
@@ -416,6 +407,21 @@ impl BufferedOutput {
         }
         if changed {
             self.flush_mxp();
+        }
+    }
+
+    pub fn set_mxp_line_tag(&mut self, tag: &mxp::LineTagProperties) {
+        if tag.gag {
+            self.set_mxp_gag();
+        }
+        if let Some(window) = &tag.window {
+            self.set_mxp_window(window.into());
+        }
+        if let Some(fore) = tag.fore {
+            self.set_mxp_foreground(fore);
+        }
+        if let Some(back) = tag.back {
+            self.set_mxp_background(back);
         }
     }
 

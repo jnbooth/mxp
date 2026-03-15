@@ -19,7 +19,7 @@ mod scan;
 pub(crate) use scan::{Decoder, Scan};
 
 mod validation;
-pub use validation::{is_valid, validate};
+pub use validation::{is_valid, validate, validate_utf8};
 
 mod words;
-pub use words::Words;
+pub(crate) use words::Words;

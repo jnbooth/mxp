@@ -7,22 +7,17 @@ use flagset::FlagSet;
 use super::decoded::DecodedEntity;
 use super::entity::Entity;
 use super::iter::PublishedIter;
+use super::visibility::EntityVisibility;
 use crate::keyword::{EntityKeyword, KeywordFilter};
 use crate::parse::{Decoder, ErrorKind};
 
 #[derive(Debug)]
 /// Entry in an [`EntityMap`].
 pub struct EntityEntry<'a> {
-    /// Entity name.
-    pub name: &'a str,
-    /// Borrowed entity value, or owned entity value if the entity was removed.
-    pub value: Cow<'a, Entity>,
-}
-
-impl EntityEntry<'_> {
-    pub const fn is_removal(&self) -> bool {
-        matches!(self.value, Cow::Owned(_))
-    }
+    /// Borrowed entity value, or `None` if the entity was removed.
+    pub value: Option<&'a str>,
+    /// Entity is published.
+    pub publish: bool,
 }
 
 /// Stores all entities for the current environment, both MXP-defined entities ([`Entity`]) and
@@ -310,77 +305,65 @@ impl EntityMap {
     /// ```
     pub fn set<'a, T: Into<FlagSet<EntityKeyword>>>(
         &'a mut self,
-        name: &'a str,
+        name: &str,
         value: &str,
         description: Option<&str>,
         keywords: T,
-    ) -> crate::Result<Option<EntityEntry<'a>>> {
+    ) -> crate::Result<Option<Cow<'a, Entity>>> {
         // Reduce monomorphization
         fn inner<'a>(
             map: &'a mut EntityMap,
-            name: &'a str,
+            name: &str,
             value: &str,
             description: Option<&str>,
             keywords: FlagSet<EntityKeyword>,
-        ) -> Option<EntityEntry<'a>> {
+        ) -> Option<Cow<'a, Entity>> {
+            let visibility = keywords.into();
             if keywords.contains(EntityKeyword::Delete) {
-                return map.inner.remove(name).map(|entity| EntityEntry {
-                    name,
-                    value: Cow::Owned(entity),
-                });
+                let mut entity = map.inner.remove(name)?;
+                if visibility != EntityVisibility::Default {
+                    entity.visibility = visibility;
+                }
+                return Some(Cow::Owned(entity));
             }
             let entity = match map.inner.entry(name.to_owned()) {
                 Entry::Vacant(_) if keywords.contains(EntityKeyword::Remove) => return None,
                 Entry::Vacant(entry) => entry.insert(Entity {
                     value: value.to_owned(),
-                    visibility: keywords.into(),
+                    visibility,
                     description: description.unwrap_or_default().to_owned(),
                 }),
                 Entry::Occupied(entry) if keywords.contains(EntityKeyword::Remove) => {
                     if entry.get().value == value {
-                        return Some(EntityEntry {
-                            name,
-                            value: Cow::Owned(entry.remove()),
-                        });
+                        let mut entity = entry.remove();
+                        entity.value.clear();
+                        if visibility != EntityVisibility::Default {
+                            entity.visibility = visibility;
+                        }
+                        return Some(Cow::Owned(entity));
                     }
                     let entity = entry.into_mut();
                     entity.remove(value);
-                    entity.apply_keywords(keywords);
                     entity
                 }
                 Entry::Occupied(entry) if keywords.contains(EntityKeyword::Add) => {
                     let entity = entry.into_mut();
                     entity.add(value);
-                    entity.apply_keywords(keywords);
                     entity
                 }
                 Entry::Occupied(entry) => {
                     let entity = entry.into_mut();
-                    let description_unchanged = match description {
-                        Some(description) if entity.description != description => {
-                            description.clone_into(&mut entity.description);
-                            false
-                        }
-                        _ => true,
-                    };
-                    if description_unchanged && entity.value == value {
-                        let old_visibility = entity.visibility;
-                        entity.apply_keywords(keywords);
-                        if entity.visibility == old_visibility {
-                            return None;
-                        }
-                    } else {
-                        entity.value.clear();
-                        entity.value.push_str(value);
-                        entity.apply_keywords(keywords);
+                    value.clone_into(&mut entity.value);
+                    if let Some(description) = description {
+                        description.clone_into(&mut entity.description);
                     }
                     entity
                 }
             };
-            Some(EntityEntry {
-                name,
-                value: Cow::Borrowed(entity),
-            })
+            if visibility != EntityVisibility::Default {
+                entity.visibility = visibility;
+            }
+            Some(Cow::Borrowed(entity))
         }
         self.guard_global(name)?;
         Ok(inner(self, name, value, description, keywords.into()))
@@ -388,10 +371,7 @@ impl EntityMap {
 }
 
 impl Decoder for EntityMap {
-    fn get_entity<F>(&self, name: &str) -> Option<&str>
-    where
-        F: KeywordFilter,
-    {
+    fn get_entity<K: KeywordFilter>(&self, name: &str) -> Option<&str> {
         if let Some(&global) = self.globals.get(name.as_bytes()) {
             return Some(global);
         }
@@ -429,7 +409,7 @@ mod tests {
             map.inner.get("key"),
             Some(&Entity {
                 value: String::new(),
-                visibility: EntityVisibility::Published,
+                visibility: EntityVisibility::Publish,
                 description: "desc2".to_owned()
             })
         );

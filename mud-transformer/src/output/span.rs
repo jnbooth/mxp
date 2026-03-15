@@ -10,6 +10,7 @@ use mxp::escape::ansi;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
+use super::bytestringmut_ext::ByteStringMutExt as _;
 use super::link::Link;
 use crate::term::TermColor;
 
@@ -155,7 +156,7 @@ macro_rules! set_opt_prop {
 
 macro_rules! set_string_prop {
     ($self:ident, $empty:expr, $p:ident) => {
-        set_opt_prop!($self, $empty, $p, share_string(&mut $self.buf, $p));
+        set_opt_prop!($self, $empty, $p, $self.buf.share($p));
     };
 }
 
@@ -218,7 +219,7 @@ impl SpanList {
     }
 
     pub fn set_entity<S: AsRef<str>>(&mut self, entity: mxp::Var<S>, empty: bool) -> bool {
-        let entity = entity.map_text(|text| share_string(&mut self.buf, text));
+        let entity = entity.map_text(|text| self.buf.share(text.as_ref()));
         set_opt_prop!(self, empty, entity);
     }
 
@@ -252,16 +253,11 @@ impl SpanList {
     }
 
     pub fn set_window<S: AsRef<str>>(&mut self, window: mxp::Dest<S>, empty: bool) -> bool {
-        let window = window.map_text(|text| share_string(&mut self.buf, text));
+        let window = window.map_text(|text| self.buf.share(text.as_ref()));
         set_opt_prop!(self, empty, window);
     }
 
     pub fn set_variable(&mut self, variable: &str, empty: bool) -> bool {
         set_string_prop!(self, empty, variable);
     }
-}
-
-fn share_string<S: AsRef<str>>(buf: &mut ByteStringMut, s: S) -> ByteString {
-    buf.push_str(s.as_ref());
-    buf.split().freeze()
 }

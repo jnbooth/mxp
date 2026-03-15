@@ -425,6 +425,7 @@ fn decode_hex(sequence: &[u8], buf: &mut Vec<u8>) -> Option<()> {
 fn mslp_send(text: &str) -> Link {
     Link {
         href: text.to_owned(),
+        hint: text.to_owned(),
         send_to: SendTo::World,
         ..Default::default()
     }

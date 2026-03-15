@@ -3,6 +3,7 @@ use std::fmt;
 
 use flagset::{FlagSet, flags};
 use mxp::RgbColor;
+use mxp::responses::{SupportResponse, VersionResponse};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -26,7 +27,7 @@ pub enum TabBehavior {
 }
 
 impl TabBehavior {
-    pub(crate) fn string(self) -> &'static str {
+    pub(crate) fn str(self) -> &'static str {
         const SPACES: &str = match str::from_utf8(&[b' '; 256]) {
             Ok(spaces) => spaces,
             Err(_) => unreachable!(),
@@ -41,7 +42,7 @@ impl TabBehavior {
 
 impl fmt::Display for TabBehavior {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.string().fmt(f)
+        self.str().fmt(f)
     }
 }
 
@@ -236,11 +237,27 @@ impl TransformerConfig {
         }
     }
 
-    pub(crate) fn supported_actions(&self) -> FlagSet<mxp::ActionKind> {
+    fn supported_actions(&self) -> FlagSet<mxp::ActionKind> {
         let mut actions = FlagSet::full();
         for action in (!self.supports).into_iter().map(mxp::ActionKind::from) {
             actions -= action;
         }
         actions
+    }
+
+    pub(crate) fn support_response<I>(&self, questions: I) -> SupportResponse<I>
+    where
+        I: IntoIterator + Clone,
+        I::Item: AsRef<str>,
+    {
+        SupportResponse::new(questions, self.supported_actions())
+    }
+
+    pub(crate) fn version_response(&self) -> VersionResponse<'_> {
+        VersionResponse {
+            client: &self.app_name,
+            version: &self.version,
+            ..Default::default()
+        }
     }
 }

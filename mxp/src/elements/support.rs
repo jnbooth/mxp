@@ -1,7 +1,12 @@
 use std::borrow::Cow;
 use std::str::FromStr;
+use std::{slice, vec};
 
+use flagset::FlagSet;
+
+use crate::element::ActionKind;
 use crate::parse::{Decoder, Error, Scan};
+use crate::responses::SupportResponse;
 
 /// Determines exactly which tags are supported by the client.
 ///
@@ -32,9 +37,42 @@ impl<S> Support<S> {
             questions: self.questions.into_iter().map(f).collect(),
         }
     }
+
+    /// Alias for `self.questions.iter()`.
+    pub fn iter(&self) -> slice::Iter<'_, S> {
+        self.questions.iter()
+    }
+
+    /// Constructs a `SupportResponse` from this struct's questions.
+    pub fn respond(&self, supported: FlagSet<ActionKind>) -> SupportResponse<slice::Iter<'_, S>>
+    where
+        S: AsRef<str>,
+    {
+        SupportResponse::new(self.questions.iter(), supported)
+    }
 }
 
 impl_into_owned!(Support);
+
+impl<S> IntoIterator for Support<S> {
+    type Item = S;
+
+    type IntoIter = vec::IntoIter<S>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.questions.into_iter()
+    }
+}
+
+impl<'a, S> IntoIterator for &'a Support<S> {
+    type Item = &'a S;
+
+    type IntoIter = slice::Iter<'a, S>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.questions.iter()
+    }
+}
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Support<Cow<'a, str>> {
     type Error = Error;
