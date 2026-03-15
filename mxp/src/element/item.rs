@@ -10,7 +10,7 @@ pub struct ElementItem {
 }
 
 impl ElementItem {
-    pub fn parse(source: &str) -> crate::Result<Self> {
+    fn parse(source: &str) -> crate::Result<Self> {
         let mut words = Words::new(source);
         let tag_name = words
             .next()
@@ -31,28 +31,28 @@ impl ElementItem {
     }
 
     pub fn parse_all(source: &str) -> crate::Result<Vec<Self>> {
-        let size_guess = source.bytes().filter(|&c| c == b'<').count();
+        let bytes = source.as_bytes();
+        let size_guess = bytes.iter().filter(|c| **c == b'<').count();
         let mut items = Vec::with_capacity(size_guess);
 
-        let mut iter = source.char_indices();
-        while let Some((start, startc)) = iter.next() {
-            if startc != '<' {
+        let mut iter = bytes.iter().enumerate();
+        while let Some((start, &startc)) = iter.next() {
+            if startc != b'<' {
                 return Err(Error::new(source, ErrorKind::NoTagInDefinition));
             }
             loop {
-                let (end, endc) = iter.next().ok_or_else(|| {
+                let (end, &endc) = iter.next().ok_or_else(|| {
                     Error::new(source, ErrorKind::UnterminatedElementInDefinition)
                 })?;
                 match endc {
-                    '<' => {
+                    b'<' => {
                         return Err(Error::new(source, ErrorKind::UnexpectedSymbolInDefinition));
                     }
-                    '>' => {
-                        let definition = &source[start + 1..end];
-                        items.push(ElementItem::parse(definition)?);
+                    b'>' => {
+                        items.push(ElementItem::parse(&source[start + 1..end])?);
                         break;
                     }
-                    '\'' | '"' if !iter.any(|(_, c)| c == endc) => {
+                    b'\'' | b'"' if !iter.any(|(_, &c)| c == endc) => {
                         return Err(Error::new(source, ErrorKind::UnterminatedQuoteInDefinition));
                     }
                     _ => (),
