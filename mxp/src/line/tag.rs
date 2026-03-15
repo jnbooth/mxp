@@ -36,7 +36,7 @@ pub struct LineTagProperties {
 }
 
 impl LineTagProperties {
-    pub fn apply(&mut self, definition: LineTagDefinition<'_>) {
+    pub fn apply(&mut self, definition: LineTagDefinition) {
         if let Some(enable) = definition.enable {
             self.enable = enable;
         }

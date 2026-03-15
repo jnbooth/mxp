@@ -316,7 +316,7 @@ impl IndexMut<RangeToInclusive<u8>> for XTermPalette {
     }
 }
 
-impl IntoIterator for &'_ XTermPalette {
+impl IntoIterator for &XTermPalette {
     type Item = RgbColor;
 
     type IntoIter = array::IntoIter<RgbColor, 256>;

@@ -47,7 +47,7 @@ impl Error {
 
     /// Appends additional context to the error message.
     #[must_use = "returns self"]
-    pub fn with_context(mut self, context: fmt::Arguments<'_>) -> Self {
+    pub fn with_context(mut self, context: fmt::Arguments) -> Self {
         self.target.write_fmt(context).expect("formatting error");
         self
     }

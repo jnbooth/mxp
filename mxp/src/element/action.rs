@@ -271,7 +271,7 @@ impl FromStr for Action<String> {
         crate::validate(name, ErrorKind::InvalidElementName)?;
         let tag =
             Tag::well_known(name).ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;
-        let args: Arguments<'_, Cow<'_, str>> = words.try_into()?;
+        let args: Arguments<Cow<str>> = words.try_into()?;
         Ok(Action::decode(tag.action, args.scan(()))?.into_owned())
     }
 }

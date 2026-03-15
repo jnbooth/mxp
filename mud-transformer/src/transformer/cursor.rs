@@ -28,7 +28,7 @@ impl Read for ReceiveCursor<'_> {
     }
 
     #[inline]
-    fn read_vectored(&mut self, bufs: &mut [IoSliceMut<'_>]) -> io::Result<usize> {
+    fn read_vectored(&mut self, bufs: &mut [IoSliceMut]) -> io::Result<usize> {
         self.inner.read_vectored(bufs)
     }
 

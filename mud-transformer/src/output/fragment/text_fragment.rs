@@ -36,7 +36,7 @@ impl TextFragment {
 }
 
 impl fmt::Debug for TextFragment {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut s = f.debug_struct("TextFragment");
         s.field("text", &self.text);
         if !self.flags.is_empty() {
