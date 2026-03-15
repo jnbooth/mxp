@@ -1,6 +1,8 @@
 use std::fmt;
 
-/// Formats a [`<VERSION>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control) response.
+/// Formats a [`<VERSION>`] response.
+///
+/// [`<VERSION>`]: https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control
 ///
 /// # Examples
 ///

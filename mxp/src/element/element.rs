@@ -10,12 +10,16 @@ use crate::parse::{Decoder, Words};
 ///
 /// An `Element` is a combination of atomic [`Tag`]s, with its own argument schema. When a custom
 /// element is used, the arguments supplied to it are parsed and passed on to its child
-/// [`items`](Self::items), each of which applies an [`Action`](crate::Action).
+/// [`items`], each of which applies an [`Action`].
 ///
-/// An element is defined by an [`ElementDefinition`](crate::parsed::ElementDefinition) in a
-/// [`ParsedDefinition`](crate::parsed::ParsedDefinition).
+/// An element is defined by an [`ElementDefinition`] in a [`ParsedDefinition`].
 ///
 /// See [MXP specification: Elements](https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT).
+///
+/// [`items`]: Self::items
+/// [`Action`]: crate::Action
+/// [`ElementDefinition`]: crate::parsed::ElementDefinition
+/// [`ParsedDefinition`]: crate::parsed::ParsedDefinition
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Element {
     /// Tag name.

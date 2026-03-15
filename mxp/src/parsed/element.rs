@@ -68,8 +68,12 @@ pub struct ParsedTagOpen<'a> {
     /// Element name.
     pub name: &'a str,
     /// The rest of the definition as a string slice. This should be parsed with
-    /// [`arguments.parse()`](ArgumentsStr::parse) for use with functions such as
-    /// [`Tag::decode`](crate::Tag::decode) and [`Element::decode`](crate::Element::decode).
+    /// [`arguments.parse_args()`] for use with functions such as [`Tag::decode`] and
+    /// [`Element::decode`].
+    ///
+    /// [`arguments.parse_args()`]: ArgumentsStr::parse_args
+    /// [`Tag::decode`]: crate::Tag::decode
+    /// [`Element::decode`]: crate::Element::decode
     pub arguments: ArgumentsStr<'a>,
 }
 

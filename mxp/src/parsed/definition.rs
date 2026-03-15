@@ -94,8 +94,8 @@ pub struct AttributeListDefinition<'a> {
     /// Name of the element for which the additional attributes are being defined.
     pub name: &'a str,
     /// The rest of the definition as a string slice. This can be parsed to [`Arguments`], but there
-    /// is no need to do so; [`State::define`](mxp::State::define) forwards the body directly to the
-    /// previously defined arguments.
+    /// is no need to do so; [`State::define`](crate::State::define) forwards the body directly to
+    /// the previously defined arguments.
     pub attributes: ArgumentsStr<'a>,
 }
 

@@ -4,7 +4,9 @@ use flagset::FlagSet;
 
 use crate::element::{ActionKind, Tag};
 
-/// Formats a [`<SUPPORT>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control) response.
+/// Formats a [`<SUPPORT>`] response.
+///
+/// [`<SUPPORT>`]: https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control
 ///
 /// # Examples
 ///

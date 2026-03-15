@@ -19,10 +19,14 @@ pub enum TabBehavior {
     /// whose index is a multiple of 8.
     ///
     /// Note: This does not take cursor operations into account, so if your client responds to
-    /// control commands such as [`CursorEffect::Back`](crate::term::CursorEffect::TabForward),
-    /// the transformer will likely miscalculate the next multiple of 8.
+    /// control commands such as [`CursorEffect::Back`], the transformer will likely miscalculate
+    /// the next multiple of 8.
+    ///
+    /// [`CursorEffect::Back`]: crate::term::CursorEffect::TabForward
     NextMultipleOf8,
-    /// Interpret tab characters as [`CursorEffect::TabForward`](crate::term::CursorEffect::TabForward)) control characters.
+    /// Interpret tab characters as [`CursorEffect::TabForward`] control characters.
+    ///
+    /// [`CursorEffect::TabForward`]: crate::term::CursorEffect::TabForward
     Control,
 }
 

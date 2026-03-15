@@ -276,8 +276,7 @@ impl EntityMap {
         Ok(())
     }
 
-    /// Applies an MXP [`EntityDefinition`](crate::parsed::EntityDefinition) with the specified
-    /// name, value, description and keywords.
+    /// Applies an MXP [`EntityDefinition`]'s name, value, description and keywords.
     /// Depending on the keywords provided, this may cause an entity to be inserted, removed,
     /// updated, or replaced.
     ///
@@ -360,8 +359,9 @@ impl Decoder for EntityMap {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use flagset::FlagSet;
+
+    use super::*;
 
     fn define<'a, T>(
         map: &'a mut EntityMap,
