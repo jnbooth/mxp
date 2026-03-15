@@ -36,6 +36,9 @@ impl<S> ExpectArg for Option<S> {
             return Ok(None);
         };
         let arg = arg.as_ref();
+        if arg.is_empty() {
+            return Ok(None);
+        }
         match RgbColor::named(arg) {
             Some(color) => Ok(Some(color)),
             None => Err(Error::new(arg, ErrorKind::UnknownColor)),
@@ -58,6 +61,9 @@ impl<S> ExpectArg for Option<S> {
             return Ok(None);
         };
         let arg = arg.as_ref();
+        if arg.is_empty() {
+            return Ok(None);
+        }
         match arg.parse() {
             Ok(parsed) => Ok(Some(parsed)),
             Err(_) => Err(Error::new(arg, ErrorKind::InvalidNumber)),
@@ -73,6 +79,9 @@ impl<S> ExpectArg for Option<S> {
             return Ok(None);
         };
         let arg = arg.as_ref();
+        if arg.is_empty() {
+            return Ok(None);
+        }
         match arg.parse() {
             Ok(parsed) => Ok(Some(parsed)),
             Err(_) => Err(Error::new(arg, ErrorKind::UnexpectedArgument)),

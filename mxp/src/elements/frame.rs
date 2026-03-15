@@ -168,7 +168,7 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Frame<Cow<'a, st
             .next_or("action")?
             .expect_variant()?
             .unwrap_or_default();
-        let title = scanner.next_or("title")?.unwrap_or(name.clone());
+        let title = scanner.next_or("title")?.unwrap_or_else(|| name.clone());
         let align = scanner
             .next_or("align")?
             .expect_variant()?
