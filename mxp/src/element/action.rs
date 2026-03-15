@@ -3,11 +3,12 @@ use std::str::FromStr;
 
 use super::action_kind::ActionKind;
 use super::tag::Tag;
+use crate::arguments::{Arguments, ExpectArg as _};
 use crate::elements::{
     Color, Dest, Expire, Filter, Font, Frame, Gauge, Heading, Hyperlink, Image, Music, Relocate,
     Send, Sound, Stat, StyleVersion, Support, Var,
 };
-use crate::parse::{Arguments, Decoder, ExpectArg, FromStrError, Scan, Words};
+use crate::parse::{Decoder, FromStrError, Scan, Words};
 use crate::{Error, ErrorKind};
 
 /// Effect caused by an [`Element`](crate::Element).

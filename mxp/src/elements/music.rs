@@ -2,7 +2,8 @@ use std::borrow::Cow;
 use std::str::FromStr;
 
 use super::AudioRepetition;
-use crate::parse::{Decoder, ExpectArg as _, Scan, StringVariant, UnrecognizedVariant};
+use crate::arguments::ExpectArg as _;
+use crate::parse::{Decoder, Scan, StringVariant, UnrecognizedVariant};
 
 /// Specifies file behavior if the server requests it should play again while it is already playing.
 ///

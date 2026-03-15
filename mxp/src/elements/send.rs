@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 use std::str::{self, FromStr};
 
 use crate::keyword::SendKeyword;
@@ -179,10 +180,16 @@ pub struct SendMenuItem<'a> {
     pub label: &'a str,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct SendMenu<'a> {
     commands: str::Split<'a, char>,
     labels: str::Split<'a, char>,
+}
+
+impl fmt::Debug for SendMenu<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
 }
 
 impl<'a> Iterator for SendMenu<'a> {

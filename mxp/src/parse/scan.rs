@@ -4,10 +4,11 @@ use std::{slice, str};
 
 use flagset::{FlagSet, Flags};
 
+use super::validation::is_valid;
+use crate::arguments::ArgumentMatcher;
 use crate::collections::CaseFoldMap;
 use crate::entity::{DecodedEntity, Entity};
 use crate::keyword::{KeywordFilter, KeywordFilterIter};
-use crate::parse::{ArgumentMatcher, is_valid};
 use crate::{Error, ErrorKind};
 
 pub trait Decoder {
@@ -98,7 +99,7 @@ impl<D: Decoder> DecoderExt for D {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct Scan<'a, D: Decoder, S: AsRef<str> = Cow<'a, str>> {
     decoder: D,
     inner: ArgumentMatcher<'a, slice::Iter<'a, S>, S>,
@@ -148,6 +149,7 @@ impl<'a, D: Decoder, S: AsRef<str>> Iterator for Scan<'a, D, S> {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct KeywordScan<'a, D, K, S = Cow<'a, str>>
 where
     D: Decoder,

@@ -1,12 +1,12 @@
 use std::iter::FusedIterator;
-use std::slice;
+use std::{fmt, slice};
 
-use super::arguments::Arguments;
+use crate::arguments::Arguments;
 use crate::{Error, ErrorKind};
 
 /// Iterator over the word units of an MXP string.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct Words<'a> {
     iter: slice::Iter<'a, u8>,
     done: bool,
@@ -63,6 +63,12 @@ impl<'a> Words<'a> {
 
     fn get_byte(&self, i: usize) -> Option<u8> {
         self.source.as_bytes().get(i).copied()
+    }
+}
+
+impl fmt::Debug for Words<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
     }
 }
 

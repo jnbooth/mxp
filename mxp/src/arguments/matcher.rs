@@ -8,7 +8,7 @@ use crate::collections::CaseFoldMap;
 use crate::keyword::{KeywordFilter, KeywordFilterIter};
 
 #[derive(Clone, Debug)]
-pub struct ArgumentMatcher<'a, I, S = Cow<'a, str>>
+pub(crate) struct ArgumentMatcher<'a, I, S = Cow<'a, str>>
 where
     I: Iterator<Item = &'a S>,
 {

@@ -1,3 +1,5 @@
+use std::fmt;
+
 use bytes::{Buf, Bytes};
 
 /// MUD Server Status Protocol
@@ -8,7 +10,7 @@ pub const CODE: u8 = 70;
 pub const VAR: u8 = 1;
 pub const VAL: u8 = 2;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct Iter {
     data: Bytes,
 }
@@ -37,6 +39,17 @@ impl Iterator for Iter {
             Some(after) => Some((before, after)),
             None => Some((before, self.data.split_off(0))),
         }
+    }
+}
+
+impl fmt::Debug for Iter {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fn format(bytes: &Bytes) -> String {
+            String::from_utf8_lossy(bytes).into_owned()
+        }
+        f.debug_map()
+            .entries(self.clone().map(|(k, v)| (format(&k), format(&v))))
+            .finish()
     }
 }
 

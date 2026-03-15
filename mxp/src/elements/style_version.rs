@@ -1,7 +1,8 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
-use crate::parse::{Decoder, ExpectArg as _, Scan};
+use crate::arguments::ExpectArg as _;
+use crate::parse::{Decoder, Scan};
 
 /// A MUD sets a style-sheet version number by sending the `<VERSION styleversion>` tag to the
 /// client. The client caches this version information and returns it when requested by a plain

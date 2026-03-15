@@ -1,8 +1,9 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
+use crate::arguments::ExpectArg as _;
 use crate::keyword::FrameKeyword;
-use crate::parse::{Decoder, ExpectArg as _, Scan, UnrecognizedVariant};
+use crate::parse::{Decoder, Scan, UnrecognizedVariant};
 use crate::screen::{Align, Dimension};
 
 /// Action to apply to a [`Frame`].

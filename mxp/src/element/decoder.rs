@@ -5,8 +5,9 @@ use std::slice;
 use super::action::Action;
 use super::element::Element;
 use super::item::ElementItem;
+use crate::arguments::Arguments;
 use crate::keyword::KeywordFilter;
-use crate::parse::{Arguments, Decoder};
+use crate::parse::Decoder;
 
 #[derive(Copy, Clone, Debug)]
 struct ElementDecoder<'a, D: Decoder> {
@@ -29,6 +30,7 @@ impl<D: Decoder> Decoder for ElementDecoder<'_, D> {
 
 /// This `struct` is created by [`State::decode_element`]. See its documentation for more.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Clone)]
 pub struct DecodeElement<'a, D: Decoder + Copy> {
     decoder: ElementDecoder<'a, D>,
     items: slice::Iter<'a, ElementItem>,

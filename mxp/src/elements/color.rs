@@ -1,7 +1,8 @@
 use std::str::FromStr;
 
+use crate::arguments::ExpectArg as _;
 use crate::color::RgbColor;
-use crate::parse::{Decoder, ExpectArg as _, Scan};
+use crate::parse::{Decoder, Scan};
 
 /// Sets the color of the text.
 ///

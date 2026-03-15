@@ -1,3 +1,4 @@
+use std::fmt;
 use std::iter::FusedIterator;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
@@ -68,8 +69,18 @@ impl WindowOp {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct WindowOpIter<I> {
     inner: I,
+}
+
+impl<I> fmt::Debug for WindowOpIter<I>
+where
+    I: Iterator<Item = Option<u16>> + Clone,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
+    }
 }
 
 impl<I> Iterator for WindowOpIter<I>

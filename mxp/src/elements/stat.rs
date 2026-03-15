@@ -1,7 +1,8 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
-use crate::parse::{Decoder, ExpectArg as _, Scan};
+use crate::arguments::ExpectArg as _;
+use crate::parse::{Decoder, Scan};
 
 /// Displays an MXP entity value as status bar text.
 ///

@@ -1,13 +1,13 @@
-use std::num::NonZero;
 use std::str::FromStr;
 
 use flagset::FlagSet;
 
+use crate::arguments::{Arguments, ExpectArg as _};
 use crate::color::RgbColor;
 use crate::element::{Element, ElementItem};
 use crate::keyword::{ElementKeyword, EntityKeyword, LineTagKeyword};
 use crate::line::Mode;
-use crate::parse::{Arguments, ExpectArg as _, Words};
+use crate::parse::Words;
 use crate::{Error, ErrorKind};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -109,8 +109,8 @@ impl<'a> ElementDefinition<'a> {
         };
 
         let tag = match iter.next_or("tag") {
-            Some(&tag) => match tag.parse::<NonZero<u8>>() {
-                Ok(tag) if Mode(tag.get()).is_user_defined() => Some(tag),
+            Some(&tag) => match tag.parse() {
+                Ok(tag) if Mode(tag).is_user_defined() => Some(Mode(tag)),
                 _ => {
                     return Err(crate::Error::new(
                         tag,
@@ -146,7 +146,7 @@ impl<'a> ElementDefinition<'a> {
                 command: keywords.contains(ElementKeyword::Empty),
                 items,
                 attributes,
-                tag,
+                line_tag: tag,
                 parse_as,
                 variable,
             }),

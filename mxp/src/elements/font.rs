@@ -4,8 +4,9 @@ use std::str::{self, FromStr};
 
 use flagset::{FlagSet, flags};
 
+use crate::arguments::ExpectArg as _;
 use crate::color::RgbColor;
-use crate::parse::{Decoder, ExpectArg as _, Scan, UnrecognizedVariant};
+use crate::parse::{Decoder, Scan, UnrecognizedVariant};
 
 flags! {
     /// Font modifier applied by the [`color`] argument of a [`Font`] tag.

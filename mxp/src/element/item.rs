@@ -1,5 +1,6 @@
 use super::tag::Tag;
-use crate::parse::{Arguments, Words};
+use crate::arguments::Arguments;
+use crate::parse::Words;
 use crate::{Error, ErrorKind};
 
 /// List of arguments to an MXP tag.

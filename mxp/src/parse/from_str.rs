@@ -5,6 +5,7 @@ use std::fmt;
 use super::scan::Scan;
 use super::words::Words;
 use crate::ErrorKind;
+use crate::arguments::Arguments;
 use crate::element::{ActionKind, Tag};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -58,6 +59,6 @@ where
     Tag::well_known(name)
         .filter(|tag| tag.action == kind)
         .ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;
-    let args: super::Arguments<Cow<str>> = words.try_into()?;
+    let args: Arguments<Cow<str>> = words.try_into()?;
     Ok(args.scan(()).try_into()?)
 }

@@ -1,6 +1,6 @@
 use std::iter::FusedIterator;
 use std::str::FromStr;
-use std::{iter, slice};
+use std::{fmt, iter, slice};
 
 use flagset::{FlagSet, Flags, flags};
 
@@ -55,7 +55,7 @@ flags! {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct KeywordFilterIter<K, I>
 where
     K: Flags + FromStr,
@@ -87,6 +87,17 @@ where
             self.keywords |= K::from_str(item.as_ref())?;
         }
         Ok(self.keywords)
+    }
+}
+
+impl<K, I> fmt::Debug for KeywordFilterIter<K, I>
+where
+    K: Flags + FromStr,
+    I: Iterator + Clone,
+    I::Item: AsRef<str> + fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_list().entries(self.clone()).finish()
     }
 }
 

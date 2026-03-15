@@ -3,8 +3,9 @@ use std::str::FromStr;
 
 use flagset::FlagSet;
 
+use crate::arguments::ExpectArg as _;
 use crate::keyword::EntityKeyword;
-use crate::parse::{Decoder, ExpectArg as _, Scan};
+use crate::parse::{Decoder, Scan};
 
 /// The `<VAR>` tag is just like the `<!ENTITY>` tag, except that the value of the variable is
 /// placed between the `<VAR>` and `</VAR>` tags, and this value is displayed to the user.

@@ -1,10 +1,10 @@
-use std::num::NonZero;
-
 use super::decoder::DecodeElement;
 use super::item::ElementItem;
 use super::parse_as::ParseAs;
 use super::tag::Tag;
-use crate::parse::{Arguments, Decoder, Words};
+use crate::arguments::Arguments;
+use crate::line::Mode;
+use crate::parse::{Decoder, Words};
 
 /// User-defined MXP tags that we recognise, e.g. <boldcolor>.
 /// For example: <!ELEMENT boldtext '<COLOR &col;><B>' ATT='col=red'>
@@ -19,7 +19,7 @@ pub struct Element {
     /// List of attributes to this element (ATT="xx")
     pub attributes: Arguments<'static, String>,
     /// Line tag number (20 - 99) (TAG=n)
-    pub tag: Option<NonZero<u8>>,
+    pub line_tag: Option<Mode>,
     /// Parsing flag
     pub parse_as: Option<ParseAs>,
     /// Which variable to set (SET x)

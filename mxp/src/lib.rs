@@ -1,6 +1,9 @@
 #[macro_use]
 mod case_insensitive;
 
+pub mod arguments;
+pub use arguments::Arguments;
+
 mod collections;
 pub use collections::{Component, State};
 
@@ -27,7 +30,7 @@ mod line;
 pub use line::{LineTag, LineTagProperties, Mode, ModeRangeError, ModeState};
 
 mod parse;
-pub use parse::{Arguments, Error, ErrorKind, is_valid, validate, validate_utf8};
+pub use parse::{Error, ErrorKind, is_valid, validate, validate_utf8};
 
 pub mod parsed;
 

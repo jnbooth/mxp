@@ -1,12 +1,13 @@
 use std::borrow::Cow;
 
+use crate::arguments::Arguments;
 use crate::collections::CaseFoldMap;
 use crate::element::{Action, DecodeElement, Element, Tag};
 use crate::elements::Var;
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
 use crate::keyword::KeywordFilter;
 use crate::line::{LineTag, LineTags, Mode};
-use crate::parse::{Arguments, Decoder, Words};
+use crate::parse::{Decoder, Words};
 use crate::parsed::{
     AttributeListDefinition, ElementDefinition, EntityDefinition, LineTagDefinition,
     ParsedDefinition,
@@ -197,8 +198,8 @@ impl State {
             self.elements.remove(definition.name);
             return;
         };
-        if let Some(tag) = el.tag {
-            self.line_tags.set(usize::from(tag.get()), el.name.clone());
+        if let Some(tag) = el.line_tag {
+            self.line_tags.set(tag.0.into(), el.name.clone());
         }
         self.elements.insert(el.name.clone(), el);
     }

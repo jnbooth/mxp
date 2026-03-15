@@ -1,6 +1,3 @@
-mod arguments;
-pub use arguments::Arguments;
-
 mod error;
 pub(crate) use error::StringVariant;
 pub use error::{Error, UnrecognizedVariant};
@@ -8,15 +5,9 @@ pub use error::{Error, UnrecognizedVariant};
 mod error_kind;
 pub use error_kind::ErrorKind;
 
-mod expect_arg;
-pub(crate) use expect_arg::ExpectArg;
-
 mod from_str;
 pub use from_str::FromStrError;
 pub(crate) use from_str::{cleanup_source, parse_element};
-
-mod matcher;
-pub(crate) use matcher::ArgumentMatcher;
 
 mod scan;
 pub(crate) use scan::{Decoder, Scan};

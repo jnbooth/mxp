@@ -4,12 +4,11 @@ use std::slice;
 
 use uncased::Uncased;
 
-use super::scan::{Decoder, Scan};
-use super::validation::validate;
-use super::words::Words;
+use super::iter::{Named, Positional};
+use super::matcher::ArgumentMatcher;
 use crate::collections::CaseFoldMap;
 use crate::keyword::KeywordFilter;
-use crate::parse::ArgumentMatcher;
+use crate::parse::{Decoder, Scan, Words, validate};
 use crate::{Error, ErrorKind};
 
 /// Parsed arguments of an MXP command.
@@ -43,6 +42,28 @@ impl<'a, S> Arguments<'a, S> {
     /// Returns `true` if there are no parsed arguments.
     pub fn is_empty(&self) -> bool {
         self.positional.is_empty() && self.named.is_empty()
+    }
+
+    /// Finds the positional value at a specified index.
+    pub fn at(&self, i: usize) -> Option<&S> {
+        self.positional.get(i)
+    }
+
+    /// Finds the value associated with a named key.
+    pub fn get(&self, name: &str) -> Option<&S> {
+        self.named.get(name)
+    }
+
+    pub fn named(&self) -> Named<'_, S> {
+        Named {
+            inner: self.named.iter(),
+        }
+    }
+
+    pub fn positional(&self) -> Positional<'_, S> {
+        Positional {
+            inner: self.positional.iter(),
+        }
     }
 
     pub(crate) fn keys(&self) -> hash_map::Keys<'_, Uncased<'a>, S> {

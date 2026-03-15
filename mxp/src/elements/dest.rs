@@ -2,8 +2,9 @@ use std::borrow::Cow;
 use std::num::NonZero;
 use std::str::FromStr;
 
+use crate::arguments::ExpectArg as _;
 use crate::keyword::DestKeyword;
-use crate::parse::{Decoder, ExpectArg as _, Scan};
+use crate::parse::{Decoder, Scan};
 
 /// Positions text at a certain position in a frame.
 ///

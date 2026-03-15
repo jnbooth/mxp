@@ -1,7 +1,8 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
-use crate::parse::{Decoder, ExpectArg as _, Scan};
+use crate::arguments::ExpectArg as _;
+use crate::parse::{Decoder, Scan};
 
 /// Defines a graphics format and provides a client plugin module that converts the MUD-specific
 /// format to a standard GIF or BMP format.

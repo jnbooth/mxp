@@ -1,8 +1,9 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
+use crate::arguments::ExpectArg as _;
 use crate::keyword::ImageKeyword;
-use crate::parse::{Decoder, ExpectArg as _, Scan};
+use crate::parse::{Decoder, Scan};
 use crate::screen::{Align, Dimension};
 
 /// Displays an inline graphics image.

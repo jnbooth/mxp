@@ -1,7 +1,8 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
-use crate::parse::{Decoder, ExpectArg as _, Scan};
+use crate::arguments::ExpectArg as _;
+use crate::parse::{Decoder, Scan};
 
 /// Closes the current MUD connection and causes a new connect to open on a new server.
 ///
