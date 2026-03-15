@@ -2,7 +2,6 @@ use std::borrow::Cow;
 use std::num::NonZero;
 use std::str::FromStr;
 
-use crate::Error;
 use crate::keyword::DestKeyword;
 use crate::parse::{Decoder, ExpectArg as _, Scan};
 
@@ -97,7 +96,7 @@ impl<S: AsRef<str>> From<S> for Dest<S> {
 }
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Dest<Cow<'a, str>> {
-    type Error = Error;
+    type Error = crate::Error;
 
     fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords::<DestKeyword>();

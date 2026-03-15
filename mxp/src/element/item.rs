@@ -10,49 +10,50 @@ pub struct ElementItem {
 }
 
 impl ElementItem {
-    pub fn parse(tag: &str) -> crate::Result<Self> {
-        let mut words = Words::new(tag);
+    pub fn parse(source: &str) -> crate::Result<Self> {
+        let mut words = Words::new(source);
         let tag_name = words
             .next()
-            .ok_or_else(|| Error::new(tag, ErrorKind::NoDefinitionTag))?;
-        let invalid_name = match tag_name {
-            "/" => Some(ErrorKind::DefinitionCannotCloseElement),
-            "!" => Some(ErrorKind::DefinitionCannotDefineElement),
-            _ => None,
-        };
-        if let Some(invalid) = invalid_name {
-            return Err(Error::new(tag, invalid));
+            .ok_or_else(|| Error::new("", ErrorKind::EmptyElementInDefinition))?;
+        match tag_name {
+            "/" => return Err(Error::braced(source, ErrorKind::CloseTagInDefinition)),
+            "!" => return Err(Error::braced(source, ErrorKind::DefinitionInDefinition)),
+            _ => (),
         }
-        let tag = Tag::well_known(tag_name)
-            .ok_or_else(|| Error::new(tag_name, ErrorKind::NoInbuiltDefinitionTag))?;
-        Ok(Self {
-            tag,
-            arguments: words.parse_args_to_owned()?,
-        })
+        if let Some(tag) = Tag::well_known(tag_name) {
+            return Ok(Self {
+                tag,
+                arguments: words.parse_args_to_owned()?,
+            });
+        }
+        crate::validate(tag_name, ErrorKind::InvalidElementName)?;
+        Err(Error::new(tag_name, ErrorKind::UnknownElementInDefinition))
     }
 
-    pub fn parse_all(argument: &str) -> crate::Result<Vec<Self>> {
-        let size_guess = argument.bytes().filter(|&c| c == b'<').count();
+    pub fn parse_all(source: &str) -> crate::Result<Vec<Self>> {
+        let size_guess = source.bytes().filter(|&c| c == b'<').count();
         let mut items = Vec::with_capacity(size_guess);
 
-        let mut iter = argument.char_indices();
+        let mut iter = source.char_indices();
         while let Some((start, startc)) = iter.next() {
             if startc != '<' {
-                return Err(Error::new(argument, ErrorKind::NoTagInDefinition));
+                return Err(Error::new(source, ErrorKind::NoTagInDefinition));
             }
             loop {
-                let (end, endc) = iter
-                    .next()
-                    .ok_or_else(|| Error::new(argument, ErrorKind::NoClosingDefinitionTag))?;
+                let (end, endc) = iter.next().ok_or_else(|| {
+                    Error::new(source, ErrorKind::UnterminatedElementInDefinition)
+                })?;
                 match endc {
-                    '<' => return Err(Error::new(argument, ErrorKind::UnexpectedDefinitionSymbol)),
+                    '<' => {
+                        return Err(Error::new(source, ErrorKind::UnexpectedSymbolInDefinition));
+                    }
                     '>' => {
-                        let definition = &argument[start + 1..end];
+                        let definition = &source[start + 1..end];
                         items.push(ElementItem::parse(definition)?);
                         break;
                     }
                     '\'' | '"' if !iter.any(|(_, c)| c == endc) => {
-                        return Err(Error::new(argument, ErrorKind::NoClosingDefinitionQuote));
+                        return Err(Error::new(source, ErrorKind::UnterminatedQuoteInDefinition));
                     }
                     _ => (),
                 }

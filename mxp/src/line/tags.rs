@@ -65,7 +65,7 @@ impl LineTags {
         let Some(i) = usize::from(update.index.0).checked_sub(OFFSET) else {
             return Err(Error::new(
                 update.index.0.to_string(),
-                ErrorKind::InvalidLineTagMode,
+                ErrorKind::IllegalLineTag,
             ));
         };
         if self.inner.len() <= i {

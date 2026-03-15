@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::str::{self, FromStr};
 
 use crate::keyword::SendKeyword;
-use crate::parse::{Decoder, Error, Scan};
+use crate::parse::{Decoder, Scan};
 
 /// Specifies that a span of text can be clicked on to cause an action.
 ///
@@ -152,7 +152,7 @@ impl<'a> Send<&'a str> {
 }
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Send<Cow<'a, str>> {
-    type Error = Error;
+    type Error = crate::Error;
 
     fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();

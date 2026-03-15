@@ -1,7 +1,7 @@
 use std::str::FromStr;
 
 use crate::color::RgbColor;
-use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
+use crate::parse::{Decoder, ExpectArg as _, Scan};
 
 /// Sets the color of the text.
 ///
@@ -29,7 +29,7 @@ pub struct Color {
 }
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Color {
-    type Error = Error;
+    type Error = crate::Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let fore = scanner.next_or("fore")?.expect_color()?;

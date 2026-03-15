@@ -5,7 +5,7 @@ use std::str::{self, FromStr};
 use flagset::{FlagSet, flags};
 
 use crate::color::RgbColor;
-use crate::parse::{Decoder, Error, ExpectArg as _, Scan, UnrecognizedVariant};
+use crate::parse::{Decoder, ExpectArg as _, Scan, UnrecognizedVariant};
 
 flags! {
     /// Font modifier applied by the [`color`] argument of a [`Font`] tag.
@@ -88,7 +88,7 @@ impl<S: AsRef<str>> Font<S> {
 impl_partial_eq!(Font);
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Font<Cow<'a, str>> {
-    type Error = Error;
+    type Error = crate::Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let face = scanner.next_or("face")?;

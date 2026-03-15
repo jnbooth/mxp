@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::str::FromStr;
 
 use crate::keyword::ImageKeyword;
-use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
+use crate::parse::{Decoder, ExpectArg as _, Scan};
 use crate::screen::{Align, Dimension};
 
 /// Displays an inline graphics image.
@@ -131,7 +131,7 @@ impl<S: AsRef<str>> Image<S> {
 impl_partial_eq!(Image);
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Image<Cow<'a, str>> {
-    type Error = Error;
+    type Error = crate::Error;
 
     fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();

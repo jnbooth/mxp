@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
-use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
+use crate::parse::{Decoder, ExpectArg as _, Scan};
 
 /// Opens a web page in the user's web browser.
 ///
@@ -60,7 +60,7 @@ impl<S: AsRef<str>> Hyperlink<S> {
 impl_partial_eq!(Hyperlink);
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Hyperlink<Cow<'a, str>> {
-    type Error = Error;
+    type Error = crate::Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let href = scanner.next_or("href")?.expect_some("href")?;

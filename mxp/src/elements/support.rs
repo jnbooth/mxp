@@ -5,7 +5,7 @@ use std::{slice, vec};
 use flagset::FlagSet;
 
 use crate::element::ActionKind;
-use crate::parse::{Decoder, Error, Scan};
+use crate::parse::{Decoder, Scan};
 use crate::responses::SupportResponse;
 
 /// Determines exactly which tags are supported by the client.
@@ -75,7 +75,7 @@ impl<'a, S> IntoIterator for &'a Support<S> {
 }
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Support<Cow<'a, str>> {
-    type Error = Error;
+    type Error = crate::Error;
 
     fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         Ok(Self {

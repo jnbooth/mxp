@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::str::FromStr;
 
 use crate::keyword::FrameKeyword;
-use crate::parse::{Decoder, Error, ExpectArg as _, Scan, UnrecognizedVariant};
+use crate::parse::{Decoder, ExpectArg as _, Scan, UnrecognizedVariant};
 use crate::screen::{Align, Dimension};
 
 /// Action to apply to a [`Frame`].
@@ -159,7 +159,7 @@ enum YesOrNo {
 impl_parse_enum!(YesOrNo, No, Yes);
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Frame<Cow<'a, str>> {
-    type Error = Error;
+    type Error = crate::Error;
 
     fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();

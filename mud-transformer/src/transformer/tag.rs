@@ -61,6 +61,6 @@ impl TagList {
                 ));
             }
         }
-        Err(mxp::Error::new(name, mxp::ErrorKind::OpenTagNotThere))
+        Err(mxp::Error::new(name, mxp::ErrorKind::UnmatchedCloseTag))
     }
 }

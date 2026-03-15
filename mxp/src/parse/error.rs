@@ -1,100 +1,24 @@
-use std::fmt;
+use std::fmt::{self, Write};
 use std::marker::PhantomData;
 use std::string::FromUtf8Error;
 
-/// Type associated with an [`mxp::Error`](Error).
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum ErrorKind {
-    /// eg. < ... \n
-    UnterminatedElement,
-    /// eg. <!-- ... \n
-    UnterminatedComment,
-    /// eg. & ... \n
-    UnterminatedEntity,
-    /// eg. < ' ... \n
-    UnterminatedQuote,
-    /// eg. <>
-    EmptyElement,
-    /// eg. <!>
-    ElementTooShort,
-    /// eg. &*;
-    InvalidEntityName,
-    /// eg. <!ELEMENT ... > in open mode
-    DefinitionWhenNotSecure,
-    /// eg. < 2345 >  or </ 2345 >
-    InvalidElementName,
-    /// ie. not <!ELEMENT ...> or <!ENTITY ...>
-    InvalidDefinition,
-    /// no < in element definition, eg. <!ELEMENT foo 'bold' >  (should be '<bold>')
-    NoTagInDefinition,
-    /// eg. <!ELEMENT foo '<<bold>' >
-    UnexpectedDefinitionSymbol,
-    /// eg. <!ELEMENT foo '<send "west>' >
-    NoClosingDefinitionQuote,
-    /// eg. <!ELEMENT foo '<bold' >
-    NoClosingDefinitionTag,
-    /// defining unknown tag, eg. <!ELEMENT foo '<bar>' >
-    NoInbuiltDefinitionTag,
-    /// eg. <!ELEMENT foo '<>' >
-    NoDefinitionTag,
-    /// ATTLIST for undefined element name
-    UnknownElementInAttlist,
-    /// cannot redefine inbuilt entity
-    CannotRedefineEntity,
-    /// eg. <!ENTITY foo &quot >
-    NoClosingSemicolon,
-    /// eg. <!ENTITY foo 'bar' xxxx >
-    UnexpectedEntityArguments,
-    /// eg. <blah>
-    UnknownElement,
-    /// eg. <send> in open mode
-    ElementWhenNotSecure,
-    /// argument to COLOR or FONT not recognised color
-    UnknownColor,
-    /// eg. 12d4
-    InvalidNumber,
-    /// eg. &#xxx;
-    InvalidEntityNumber,
-    /// eg. &#5000;
-    DisallowedEntityNumber,
-    /// eg. &foo;
-    UnknownEntity,
-    /// eg. <color 123=blue>  (123 is invalid)
-    InvalidArgumentName,
-    /// eg. <font color=>
-    NoArgument,
-    /// eg. <a>
-    IncompleteArguments,
-    /// eg. <!ELEMENT foo '</bold>' >
-    DefinitionCannotCloseElement,
-    /// eg. <!ELEMENT foo '<!ELEMENT>' >
-    DefinitionCannotDefineElement,
-    /// cannot convert bytes into UTF-8
-    MalformedBytes,
-    /// eg. </send bar >
-    ArgumentsToClosingTag,
-    /// when closing an open tag secure tag blocks it
-    OpenTagBlockedBySecureTag,
-    /// eg. </bold> when no opening tag
-    OpenTagNotThere,
-    /// cannot close tag - it was opened in secure mode
-    TagOpenedInSecureMode,
-    /// eg. <!ELEMENT TAG=0>`
-    InvalidLineTag,
-    /// eg. <!TAG 3>
-    InvalidLineTagMode,
-}
+use crate::ErrorKind;
 
 /// Error caused by attempting to parse malformed MXP data from the server.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Error {
+    kind: ErrorKind,
     target: String,
-    error: ErrorKind,
 }
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}: \"{}\"", self.error, self.target)
+        let Error { kind, target } = self;
+        if target.is_empty() {
+            write!(f, "{kind}")
+        } else {
+            write!(f, "{kind}: \"{target}\"")
+        }
     }
 }
 
@@ -104,9 +28,28 @@ impl Error {
     /// Constructs an error of the specified kind from a stringlike target being parsed.
     pub fn new<T: Into<String>>(target: T, error: ErrorKind) -> Self {
         Self {
+            kind: error,
             target: target.into(),
-            error,
         }
+    }
+
+    pub(crate) fn braced(target: &str, error: ErrorKind) -> Self {
+        Self {
+            kind: error,
+            target: format!("<{target}>"),
+        }
+    }
+
+    /// Returns the kind of error.
+    pub fn kind(&self) -> ErrorKind {
+        self.kind
+    }
+
+    /// Appends additional context to the error message.
+    #[must_use = "returns self"]
+    pub fn with_context(mut self, context: fmt::Arguments<'_>) -> Self {
+        self.target.write_fmt(context).expect("formatting error");
+        self
     }
 }
 
@@ -114,7 +57,7 @@ impl From<FromUtf8Error> for Error {
     fn from(value: FromUtf8Error) -> Self {
         Error::new(
             String::from_utf8_lossy(value.as_bytes()).into_owned(),
-            ErrorKind::MalformedBytes,
+            ErrorKind::InvalidUtf8,
         )
     }
 }
@@ -139,6 +82,10 @@ impl<T> UnrecognizedVariant<T> {
             input: input.to_owned(),
             phantom: PhantomData,
         }
+    }
+
+    pub fn target(&self) -> &str {
+        &self.input
     }
 }
 
@@ -175,6 +122,6 @@ impl<T: StringVariant> std::error::Error for UnrecognizedVariant<T> {}
 
 impl<T: StringVariant> From<UnrecognizedVariant<T>> for Error {
     fn from(value: UnrecognizedVariant<T>) -> Self {
-        Self::new(value.input, ErrorKind::UnexpectedEntityArguments)
+        Self::new(value.input, ErrorKind::UnexpectedArgument)
     }
 }

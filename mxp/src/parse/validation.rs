@@ -1,4 +1,4 @@
-use super::error::{Error, ErrorKind};
+use crate::{Error, ErrorKind};
 
 /// If the specified target is valid to use as an MXP identifier or value, returns `Ok(())`.
 /// Otherwise, returns an [`mxp::Error`](Error) for the target with the specified error kind.
@@ -29,7 +29,7 @@ pub fn validate_utf8(bytes: &[u8]) -> crate::Result<&str> {
     }
     Err(Error::new(
         String::from_utf8_lossy(bytes),
-        ErrorKind::MalformedBytes,
+        ErrorKind::InvalidUtf8,
     ))
 }
 

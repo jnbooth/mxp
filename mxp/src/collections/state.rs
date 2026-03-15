@@ -6,11 +6,12 @@ use crate::elements::Var;
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
 use crate::keyword::KeywordFilter;
 use crate::line::{LineTag, LineTags, Mode};
-use crate::parse::{Arguments, Decoder, Error, ErrorKind, Words};
+use crate::parse::{Arguments, Decoder, Words};
 use crate::parsed::{
     AttributeListDefinition, ElementDefinition, EntityDefinition, LineTagDefinition,
     ParsedDefinition,
 };
+use crate::{Error, ErrorKind};
 
 /// A store of MXP state: elements, entities, and line tags.
 #[derive(Clone, Debug, Default)]
@@ -115,7 +116,7 @@ impl State {
             return Err(Error::new(name, ErrorKind::UnknownElement));
         };
         if !secure && !component.is_open() {
-            return Err(Error::new(name, ErrorKind::ElementWhenNotSecure));
+            return Err(Error::new(name, ErrorKind::UnsecuredElement));
         }
         Ok(component)
     }
@@ -186,7 +187,7 @@ impl State {
         let words = Words::new(definition.body);
         self.elements
             .get_mut(definition.name)
-            .ok_or_else(|| Error::new(definition.body, ErrorKind::UnknownElementInAttlist))?
+            .ok_or_else(|| Error::new(definition.name, ErrorKind::UnknownElementInAttlist))?
             .attributes
             .extend::<String>(words)
     }

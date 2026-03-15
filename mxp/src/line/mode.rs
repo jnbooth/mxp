@@ -1,7 +1,6 @@
 use std::{cmp, fmt};
 
 use crate::element::ParseAs;
-use crate::{Error, ErrorKind};
 
 /// Mode defined by a line tag.
 ///
@@ -92,18 +91,6 @@ impl Mode {
         const MAX: u8 = Mode::USER_DEFINED_MAX.0;
         matches!(self.0, MIN..=MAX)
     }
-
-    pub fn user(mode: u8) -> crate::Result<Self> {
-        let mode = Self(mode);
-        if mode.is_user_defined() {
-            Ok(mode)
-        } else {
-            Err(Error::new(
-                mode.0.to_string(),
-                ErrorKind::InvalidLineTagMode,
-            ))
-        }
-    }
 }
 
 impl PartialEq<u8> for Mode {
@@ -124,6 +111,12 @@ impl PartialOrd<u8> for Mode {
 impl PartialOrd<Mode> for u8 {
     fn partial_cmp(&self, other: &Mode) -> Option<cmp::Ordering> {
         self.partial_cmp(&other.0)
+    }
+}
+
+impl fmt::Display for Mode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.0.fmt(f)
     }
 }
 

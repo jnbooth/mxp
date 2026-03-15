@@ -2,9 +2,9 @@ use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;
 
-use super::error::ErrorKind;
 use super::scan::Scan;
 use super::words::Words;
+use crate::ErrorKind;
 use crate::element::{ActionKind, Tag};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -53,8 +53,8 @@ where
 {
     let source = cleanup_source(source)?;
     let mut words = Words::new(source);
-
-    let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
+    let name = words.next_or(ErrorKind::EmptyElement)?;
+    crate::validate(name, ErrorKind::InvalidElementName)?;
     Tag::well_known(name)
         .filter(|tag| tag.action == kind)
         .ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;

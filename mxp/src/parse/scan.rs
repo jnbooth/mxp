@@ -4,11 +4,11 @@ use std::{slice, str};
 
 use flagset::{FlagSet, Flags};
 
-use super::error::{Error, ErrorKind};
 use crate::collections::CaseFoldMap;
 use crate::entity::{DecodedEntity, Entity};
 use crate::keyword::{KeywordFilter, KeywordFilterIter};
 use crate::parse::{ArgumentMatcher, is_valid};
+use crate::{Error, ErrorKind};
 
 pub trait Decoder {
     fn get_entity<K: KeywordFilter>(&self, name: &str) -> Option<&str>;
@@ -30,7 +30,7 @@ pub trait Decoder {
         };
         match char::from_u32(code) {
             Some('\0'..='\x08' | '\x0a'..='\x1f' | '\x7f'..='\u{9f}') | None => {
-                Err(Error::new(name, ErrorKind::DisallowedEntityNumber))
+                Err(Error::new(name, ErrorKind::IllegalEntityNumber))
             }
             Some(c) => Ok(c.into()),
         }
@@ -43,7 +43,10 @@ pub trait Decoder {
                 res.push_str(before);
             }
             let Some((entity, after)) = rest.split_once(';') else {
-                return Err(Error::new(rest, ErrorKind::NoClosingSemicolon));
+                return Err(Error::new(
+                    format!("&{rest}"),
+                    ErrorKind::NoClosingSemicolon,
+                ));
             };
             self.decode_entity::<K>(entity)?.push_to(&mut res);
             s = after;
@@ -126,10 +129,7 @@ impl<'a, D: Decoder, S: AsRef<str>> Scan<'a, D, S> {
 
     pub fn expect_end(mut self) -> crate::Result<()> {
         if let Some(next) = self.inner.next() {
-            return Err(Error::new(
-                next.as_ref(),
-                ErrorKind::UnexpectedEntityArguments,
-            ));
+            return Err(Error::new(next.as_ref(), ErrorKind::UnexpectedArgument));
         }
         Ok(())
     }

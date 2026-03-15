@@ -3,13 +3,13 @@ use std::slice;
 
 use uncased::Uncased;
 
-use super::error::{Error, ErrorKind};
 use super::scan::{Decoder, Scan};
 use super::validation::validate;
 use super::words::Words;
 use crate::collections::CaseFoldMap;
 use crate::keyword::KeywordFilter;
 use crate::parse::ArgumentMatcher;
+use crate::{Error, ErrorKind};
 
 /// Parsed arguments of an MXP command.
 ///
@@ -91,7 +91,7 @@ impl<'a, S: AsRef<str>> Arguments<'a, S> {
                 iter.next();
                 let val = iter
                     .next()
-                    .ok_or_else(|| Error::new(iter.source(), ErrorKind::NoArgument))?;
+                    .ok_or_else(|| Error::new(format!("{name}="), ErrorKind::EmptyArgument))?;
                 self.named.insert(T::from(name), T::from(val).into());
             } else {
                 self.positional.push(T::from(name).into());

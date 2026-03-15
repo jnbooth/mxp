@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
-use crate::Error;
 use crate::parse::{Decoder, Scan};
 
 /// Removes previously displayed [`Link`](crate::Link)s. For example, when moving to a new room,
@@ -51,7 +50,7 @@ impl<S: AsRef<str>> Expire<S> {
 impl_partial_eq!(Expire);
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Expire<Cow<'a, str>> {
-    type Error = Error;
+    type Error = crate::Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let name = scanner.next()?;

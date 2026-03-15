@@ -476,7 +476,7 @@ mod tests {
     fn decode_below_range() {
         assert_eq!(
             EntityMap::new().decode("#10"),
-            Err(Error::new("#10", ErrorKind::DisallowedEntityNumber))
+            Err(Error::new("#10", ErrorKind::IllegalEntityNumber))
         );
     }
 
@@ -484,7 +484,7 @@ mod tests {
     fn decode_above_range() {
         assert_eq!(
             EntityMap::new().decode("#x90"),
-            Err(Error::new("#x90", ErrorKind::DisallowedEntityNumber))
+            Err(Error::new("#x90", ErrorKind::IllegalEntityNumber))
         );
     }
 }

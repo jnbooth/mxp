@@ -3,7 +3,10 @@ pub use arguments::Arguments;
 
 mod error;
 pub(crate) use error::StringVariant;
-pub use error::{Error, ErrorKind, UnrecognizedVariant};
+pub use error::{Error, UnrecognizedVariant};
+
+mod error_kind;
+pub use error_kind::ErrorKind;
 
 mod expect_arg;
 pub(crate) use expect_arg::ExpectArg;

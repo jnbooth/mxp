@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::str::FromStr;
 
 use super::AudioRepetition;
-use crate::parse::{Decoder, Error, ExpectArg as _, Scan, StringVariant, UnrecognizedVariant};
+use crate::parse::{Decoder, ExpectArg as _, Scan, StringVariant, UnrecognizedVariant};
 
 /// Specifies file behavior if the server requests it should play again while it is already playing.
 ///
@@ -118,7 +118,7 @@ impl<S: AsRef<str>> Music<S> {
 impl_partial_eq!(Music);
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Music<Cow<'a, str>> {
-    type Error = Error;
+    type Error = crate::Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let fname = scanner.next()?.expect_some("fname")?;

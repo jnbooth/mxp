@@ -53,7 +53,10 @@ impl<'a, D: Decoder + Copy> Iterator for DecodeElement<'a, D> {
     fn next(&mut self) -> Option<Self::Item> {
         let item = self.items.next()?;
         let scanner = item.arguments.scan(self.decoder);
-        Some(Action::decode(item.tag.action, scanner))
+        Some(
+            Action::decode(item.tag.action, scanner)
+                .map_err(|e| e.with_context(format_args!(" for <{}>", item.tag.name))),
+        )
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

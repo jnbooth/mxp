@@ -1,9 +1,9 @@
 use std::num::ParseIntError;
 use std::str::FromStr;
 
-use super::error::{Error, ErrorKind};
 use crate::color::RgbColor;
 use crate::parse::UnrecognizedVariant;
+use crate::{Error, ErrorKind};
 
 pub(crate) trait ExpectArg {
     type Arg;
@@ -35,16 +35,17 @@ impl<S> ExpectArg for Option<S> {
         let Some(arg) = self else {
             return Ok(None);
         };
-        match RgbColor::named(arg.as_ref()) {
+        let arg = arg.as_ref();
+        match RgbColor::named(arg) {
             Some(color) => Ok(Some(color)),
-            None => Err(Error::new(arg.as_ref(), ErrorKind::UnknownColor)),
+            None => Err(Error::new(arg, ErrorKind::UnknownColor)),
         }
     }
 
     fn expect_some(self, name: &str) -> crate::Result<Self::Arg> {
         match self {
             Some(arg) => Ok(arg),
-            None => Err(Error::new(name, ErrorKind::IncompleteArguments)),
+            None => Err(Error::new(name, ErrorKind::MissingArguments)),
         }
     }
 
@@ -56,9 +57,10 @@ impl<S> ExpectArg for Option<S> {
         let Some(arg) = self else {
             return Ok(None);
         };
-        match arg.as_ref().parse() {
+        let arg = arg.as_ref();
+        match arg.parse() {
             Ok(parsed) => Ok(Some(parsed)),
-            Err(_) => Err(Error::new(arg.as_ref(), ErrorKind::InvalidNumber)),
+            Err(_) => Err(Error::new(arg, ErrorKind::InvalidNumber)),
         }
     }
 
@@ -70,12 +72,10 @@ impl<S> ExpectArg for Option<S> {
         let Some(arg) = self else {
             return Ok(None);
         };
-        match arg.as_ref().parse() {
+        let arg = arg.as_ref();
+        match arg.parse() {
             Ok(parsed) => Ok(Some(parsed)),
-            Err(_) => Err(Error::new(
-                arg.as_ref(),
-                ErrorKind::UnexpectedEntityArguments,
-            )),
+            Err(_) => Err(Error::new(arg, ErrorKind::UnexpectedArgument)),
         }
     }
 }

@@ -2,8 +2,7 @@ use std::iter::FusedIterator;
 use std::slice;
 
 use super::arguments::Arguments;
-use super::error::{Error, ErrorKind};
-use super::validation::validate;
+use crate::{Error, ErrorKind};
 
 /// Iterator over the word units of an MXP string.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
@@ -25,13 +24,10 @@ impl<'a> Words<'a> {
         }
     }
 
-    pub fn validate_next_or(&mut self, e: ErrorKind) -> crate::Result<&'a str> {
+    pub fn next_or(&mut self, e: ErrorKind) -> crate::Result<&'a str> {
         match self.next() {
+            Some(next) => Ok(next),
             None => Err(Error::new(self.source, e)),
-            Some(next) => {
-                validate(next, e)?;
-                Ok(next)
-            }
         }
     }
 

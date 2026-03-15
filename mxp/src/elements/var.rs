@@ -4,7 +4,7 @@ use std::str::FromStr;
 use flagset::FlagSet;
 
 use crate::keyword::EntityKeyword;
-use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
+use crate::parse::{Decoder, ExpectArg as _, Scan};
 
 /// The `<VAR>` tag is just like the `<!ENTITY>` tag, except that the value of the variable is
 /// placed between the `<VAR>` and `</VAR>` tags, and this value is displayed to the user.
@@ -63,7 +63,7 @@ impl<S: AsRef<str>> Var<S> {
 impl_partial_eq!(Var);
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Var<Cow<'a, str>> {
-    type Error = Error;
+    type Error = crate::Error;
 
     fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();

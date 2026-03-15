@@ -77,7 +77,7 @@ impl CursorInformation {
 
     fn flags(bytes: &str, targets: &[Self]) -> FlagSet<Self> {
         let mut flags = FlagSet::empty();
-        for &c in bytes.as_bytes() {
+        for c in bytes.bytes() {
             for &info in targets {
                 if (c & info.bit()) != 0 {
                     flags |= info;

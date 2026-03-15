@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
-use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
+use crate::parse::{Decoder, ExpectArg as _, Scan};
 
 /// Closes the current MUD connection and causes a new connect to open on a new server.
 ///
@@ -54,7 +54,7 @@ impl<S: AsRef<str>> Relocate<S> {
 impl_partial_eq!(Relocate);
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Relocate<Cow<'a, str>> {
-    type Error = Error;
+    type Error = crate::Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let hostname = scanner.next()?.expect_some("hostname")?;

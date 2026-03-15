@@ -1,5 +1,6 @@
 use super::definition::ParsedDefinition;
-use crate::parse::{Error, ErrorKind, Words};
+use crate::parse::Words;
+use crate::{Error, ErrorKind};
 
 /// The three types of MXP tag elements sent by the server.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -25,11 +26,9 @@ impl<'a> ParsedElement<'a> {
         let source = source.trim_ascii();
 
         match source.split_at_checked(1) {
-            None if source.is_empty() => Err(Error::new(source, ErrorKind::EmptyElement)),
-            Some(("!" | "/", "")) => Err(Error::new(source, ErrorKind::ElementTooShort)),
-            Some(("!", _)) if !secure => {
-                Err(Error::new(source, ErrorKind::DefinitionWhenNotSecure))
-            }
+            None if source.is_empty() => Err(Error::braced("", ErrorKind::EmptyElement)),
+            Some(("!" | "/", "")) => Err(Error::braced(source, ErrorKind::IncompleteElement)),
+            Some(("!", _)) if !secure => Err(Error::braced(source, ErrorKind::UnsecuredDefinition)),
             Some(("!", body)) => Ok(Self::Definition(ParsedDefinition::parse(body)?)),
             Some(("/", body)) => Ok(Self::TagClose(ParsedTagClose::parse(body)?)),
             _ => Ok(Self::TagOpen(ParsedTagOpen::parse(source)?)),
@@ -43,9 +42,10 @@ pub struct ParsedTagClose<'a> {
 }
 
 impl<'a> ParsedTagClose<'a> {
-    pub fn parse(source: &'a str) -> crate::Result<Self> {
+    fn parse(source: &'a str) -> crate::Result<Self> {
         let mut words = Words::new(source);
-        let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
+        let name = words.next_or(ErrorKind::IncompleteElement)?;
+        crate::validate(name, ErrorKind::InvalidElementName)?;
         if let Some(next) = words.next() {
             return Err(Error::new(next, ErrorKind::ArgumentsToClosingTag));
         }
@@ -60,9 +60,10 @@ pub struct ParsedTagOpen<'a> {
 }
 
 impl<'a> ParsedTagOpen<'a> {
-    pub fn parse(source: &'a str) -> crate::Result<Self> {
+    fn parse(source: &'a str) -> crate::Result<Self> {
         let mut words = Words::new(source);
-        let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
+        let name = words.next_or(ErrorKind::EmptyElement)?;
+        crate::validate(name, ErrorKind::InvalidElementName)?;
         Ok(Self {
             name,
             body: words.as_str(),

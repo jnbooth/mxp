@@ -3,7 +3,7 @@ use std::fmt;
 use std::num::{NonZero, ParseIntError};
 use std::str::FromStr;
 
-use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
+use crate::parse::{Decoder, ExpectArg as _, Scan};
 
 /// Specifies the number of times a sound/music file should be played.
 ///
@@ -131,7 +131,7 @@ impl<S: AsRef<str>> Sound<S> {
 impl_partial_eq!(Sound);
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Sound<Cow<'a, str>> {
-    type Error = Error;
+    type Error = crate::Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let fname = scanner.next()?.expect_some("fname")?;

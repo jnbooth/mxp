@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
-use crate::parse::{Decoder, Error, ExpectArg as _, Scan};
+use crate::parse::{Decoder, ExpectArg as _, Scan};
 
 /// Defines a graphics format and provides a client plugin module that converts the MUD-specific
 /// format to a standard GIF or BMP format.
@@ -66,7 +66,7 @@ impl<S: AsRef<str>> Filter<S> {
 impl_partial_eq!(Filter);
 
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Filter<Cow<'a, str>> {
-    type Error = Error;
+    type Error = crate::Error;
 
     fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
         let src = scanner.next_or("src")?.expect_some("src")?;

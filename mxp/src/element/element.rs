@@ -5,7 +5,6 @@ use super::item::ElementItem;
 use super::parse_as::ParseAs;
 use super::tag::Tag;
 use crate::parse::{Arguments, Decoder, Words};
-use crate::parsed::ParsedElement;
 
 /// User-defined MXP tags that we recognise, e.g. <boldcolor>.
 /// For example: <!ELEMENT boldtext '<COLOR &col;><B>' ATT='col=red'>
@@ -37,10 +36,6 @@ impl Element {
         D: Decoder + Copy,
     {
         DecodeElement::new(self, args, decoder)
-    }
-
-    pub fn parse(source: &str, secure: bool) -> crate::Result<ParsedElement<'_>> {
-        ParsedElement::parse(source, secure)
     }
 
     pub(crate) fn well_known() -> [(String, Element); 8] {

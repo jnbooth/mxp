@@ -7,8 +7,7 @@ use crate::elements::{
     Color, Dest, Expire, Filter, Font, Frame, Gauge, Heading, Hyperlink, Image, Music, Relocate,
     Send, Sound, Stat, StyleVersion, Support, Var,
 };
-use crate::parse::Arguments;
-use crate::parse::{Decoder, ExpectArg, FromStrError, Scan, Words};
+use crate::parse::{Arguments, Decoder, ExpectArg, FromStrError, Scan, Words};
 use crate::{Error, ErrorKind};
 
 /// Effect caused by an [`Element`](crate::Element).
@@ -159,7 +158,7 @@ impl<'a> Action<Cow<'a, str>> {
                 if command.eq_ignore_ascii_case("off") {
                     Self::MxpOff
                 } else {
-                    return Err(Error::new(command, ErrorKind::UnexpectedEntityArguments));
+                    return Err(Error::new(command, ErrorKind::UnexpectedArgument));
                 }
             }
             ActionKind::Music => {
@@ -268,7 +267,8 @@ impl FromStr for Action<String> {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = crate::parse::cleanup_source(s)?;
         let mut words = Words::new(s);
-        let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
+        let name = words.next_or(ErrorKind::EmptyElement)?;
+        crate::validate(name, ErrorKind::InvalidElementName)?;
         let tag =
             Tag::well_known(name).ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;
         let args: Arguments<'_, Cow<'_, str>> = words.try_into()?;

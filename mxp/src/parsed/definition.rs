@@ -7,9 +7,8 @@ use crate::color::RgbColor;
 use crate::element::{Element, ElementItem};
 use crate::keyword::{ElementKeyword, EntityKeyword, LineTagKeyword};
 use crate::line::Mode;
-use crate::parse::{
-    Arguments, Error, ErrorKind, ExpectArg as _, StringVariant, UnrecognizedVariant, Words,
-};
+use crate::parse::{Arguments, ExpectArg as _, Words};
+use crate::{Error, ErrorKind};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum DefinitionKind {
@@ -19,12 +18,8 @@ enum DefinitionKind {
     LineTag,
 }
 
-impl StringVariant for DefinitionKind {
-    const VARIANTS: &[&str] = &["ATTLIST", "ATT", "ELEMENT", "EL", "ENTITY", "EN", "TAG"];
-}
-
 impl FromStr for DefinitionKind {
-    type Err = UnrecognizedVariant<Self>;
+    type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match_ci! {s,
@@ -32,7 +27,7 @@ impl FromStr for DefinitionKind {
             "element" | "el" => Ok(Self::Element),
             "entity" | "en" => Ok(Self::Entity),
             "tag" => Ok(Self::LineTag),
-            _ => Err(Self::Err::new(s))
+            _ => Err(Error::new(s, ErrorKind::InvalidDefinition))
         }
     }
 }
@@ -55,12 +50,12 @@ impl<'a> ParsedDefinition<'a> {
         }
     }
 
-    pub fn parse(source: &'a str) -> crate::Result<Self> {
+    pub(super) fn parse(source: &'a str) -> crate::Result<Self> {
         let mut words = Words::new(source);
         let kind = words
             .next()
-            .and_then(|kind| kind.parse().ok())
-            .ok_or_else(|| Error::new(words.source(), ErrorKind::InvalidDefinition))?;
+            .ok_or_else(|| Error::new("<!>", ErrorKind::IncompleteElement))?
+            .parse()?;
         Ok(match kind {
             DefinitionKind::AttributeList => {
                 Self::AttributeList(AttributeListDefinition::parse(words)?)
@@ -72,7 +67,7 @@ impl<'a> ParsedDefinition<'a> {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct AttributeListDefinition<'a> {
     pub name: &'a str,
     pub body: &'a str,
@@ -80,7 +75,8 @@ pub struct AttributeListDefinition<'a> {
 
 impl<'a> AttributeListDefinition<'a> {
     fn parse(mut words: Words<'a>) -> crate::Result<Self> {
-        let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
+        let name = words.next_or(ErrorKind::IncompleteElement)?;
+        crate::validate(name, ErrorKind::InvalidElementName)?;
         Ok(Self {
             name,
             body: words.as_str(),
@@ -96,7 +92,8 @@ pub struct ElementDefinition<'a> {
 
 impl<'a> ElementDefinition<'a> {
     fn parse(mut words: Words<'a>) -> crate::Result<Self> {
-        let name = words.validate_next_or(ErrorKind::InvalidElementName)?;
+        let name = words.next_or(ErrorKind::IncompleteElement)?;
+        crate::validate(name, ErrorKind::InvalidElementName)?;
         let args = words.parse_args()?;
 
         let mut iter = args.matcher().with_keywords();
@@ -114,7 +111,12 @@ impl<'a> ElementDefinition<'a> {
         let tag = match iter.next_or("tag") {
             Some(&tag) => match tag.parse::<NonZero<u8>>() {
                 Ok(tag) if Mode(tag.get()).is_user_defined() => Some(tag),
-                _ => return Err(crate::Error::new(tag, ErrorKind::InvalidLineTag)),
+                _ => {
+                    return Err(crate::Error::new(
+                        tag,
+                        ErrorKind::IllegalLineTagInDefinition,
+                    ));
+                }
             },
             None => None,
         };
@@ -163,11 +165,12 @@ pub struct EntityDefinition<'a> {
 impl<'a> EntityDefinition<'a> {
     fn parse(mut words: Words<'a>) -> crate::Result<Self> {
         let source = words.source();
-        let name = words.validate_next_or(ErrorKind::InvalidEntityName)?;
+        let name = words.next_or(ErrorKind::IncompleteElement)?;
+        crate::validate(name, ErrorKind::InvalidElementName)?;
         let args = words.parse_args()?;
         let mut matcher = args.matcher().with_keywords();
         let Some(value) = matcher.next() else {
-            return Err(Error::new(source, ErrorKind::NoDefinitionTag));
+            return Err(Error::new(source, ErrorKind::EmptyElementInDefinition));
         };
         let desc = matcher.next_or("desc").copied();
         let keywords = matcher.into_keywords()?;
@@ -194,8 +197,10 @@ impl<'a> LineTagDefinition<'a> {
     fn parse(words: Words<'a>) -> crate::Result<Self> {
         let args = words.parse_args()?;
         let mut matcher = args.matcher().with_keywords();
-        let index_num = matcher.next().expect_number()?.expect_some("tag")?;
-        let index = Mode::user(index_num)?;
+        let index = Mode(matcher.next().expect_number()?.expect_some("tag")?);
+        if !index.is_user_defined() {
+            return Err(Error::new(index.to_string(), ErrorKind::IllegalLineTag));
+        }
         let window = matcher.next_or("windowname").copied();
         let fore = matcher.next_or("fore").expect_color()?;
         let back = matcher.next_or("back").expect_color()?;
