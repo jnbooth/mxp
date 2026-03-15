@@ -383,7 +383,7 @@ impl Transformer {
             });
         }
 
-        let args = mxp::Arguments::parse(tag.body)?;
+        let args = tag.arguments.parse_args()?;
 
         match component {
             mxp::Component::Tag(tag) => {

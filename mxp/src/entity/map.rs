@@ -2,18 +2,18 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 
-use flagset::FlagSet;
-
 use super::decoded::DecodedEntity;
 use super::entity::Entity;
 use super::iter::EntityInfo;
 use super::iter::PublishedIter;
 use super::visibility::EntityVisibility;
+use crate::Error;
 use crate::keyword::{EntityKeyword, KeywordFilter};
 use crate::parse::{Decoder, ErrorKind};
+use crate::parsed::EntityDefinition;
 
 #[derive(Debug)]
-/// This struct is created by [`EntityMap::set`]. See its documentation for more.
+/// This struct is created by [`EntityMap::define`]. See its documentation for more.
 pub struct EntityEntry<'a> {
     /// Borrowed entity value, or `None` if the entity was removed.
     pub value: Option<&'a str>,
@@ -23,6 +23,23 @@ pub struct EntityEntry<'a> {
     /// Generally speaking, entity entries should only be processed by the client if `publish` is
     /// `true`.
     pub publish: bool,
+}
+
+impl<'a> EntityEntry<'a> {
+    pub(crate) fn new(entity: Option<Cow<'a, Entity>>) -> Option<Self> {
+        let entity = entity?;
+        if entity.is_private() {
+            return None;
+        }
+        let value = match entity {
+            Cow::Borrowed(entity) => Some(entity.value.as_str()),
+            Cow::Owned(_) => None,
+        };
+        Some(Self {
+            value,
+            publish: entity.is_published(),
+        })
+    }
 }
 
 /// Stores all entities for the current environment, both MXP-defined entities (as [`Entity`]) and
@@ -186,44 +203,6 @@ impl EntityMap {
 
     /// An iterator visiting all entities which have been marked as PUBLISH by the server, in
     /// arbitrary order. The iterator element type is `&'a` [`EntityInfo`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use mxp::entity::{EntityInfo, EntityKeyword, EntityMap};
-    ///
-    /// let mut map = EntityMap::new();
-    /// map.set("k1", "v1", Some("desc1"), None).unwrap();
-    /// map.set("k2", "v2", Some("desc2"), EntityKeyword::Publish)
-    ///     .unwrap();
-    /// map.set("k3", "v3", Some("desc3"), EntityKeyword::Publish)
-    ///     .unwrap();
-    /// map.set("k4", "v4", Some("desc4"), None).unwrap();
-    /// map.set("k5", "v5", None, EntityKeyword::Publish).unwrap();
-    ///
-    /// let mut published = map.published().collect::<Vec<_>>();
-    /// published.sort_unstable_by_key(|i| i.name);
-    /// assert_eq!(
-    ///     published,
-    ///     &[
-    ///         EntityInfo {
-    ///             name: "k2",
-    ///             value: "v2",
-    ///             description: "desc2",
-    ///         },
-    ///         EntityInfo {
-    ///             name: "k3",
-    ///             value: "v3",
-    ///             description: "desc3",
-    ///         },
-    ///         EntityInfo {
-    ///             name: "k5",
-    ///             value: "v5",
-    ///             description: "",
-    ///         },
-    ///     ]
-    /// );
-    /// ```
     pub fn published(&self) -> PublishedIter<'_> {
         self.inner.iter().filter_map(|(k, v)| {
             v.is_published().then_some(EntityInfo {
@@ -257,7 +236,7 @@ impl EntityMap {
         Some(entity.value.as_str())
     }
 
-    /// Fails if `name` is a global entity, that is, if `self.is_global(name)`.
+    /// Fails if `name` is a global entity, that is, if [`self.is_global(name)`](Self::is_global).
     ///
     /// # Examples
     ///
@@ -271,7 +250,7 @@ impl EntityMap {
     /// ```
     pub fn guard_global(&self, name: &str) -> crate::Result<()> {
         if self.is_global(name) {
-            return Err(crate::Error::new(name, ErrorKind::CannotRedefineEntity));
+            return Err(Error::new(name, ErrorKind::CannotRedefineEntity));
         }
         Ok(())
     }
@@ -308,70 +287,65 @@ impl EntityMap {
     /// changed.
     ///
     /// See [MXP specification: `<!ENTITY>`](https://www.zuggsoft.com/zmud/mxp.htm#ENTITY).
-    pub fn set<'a, T: Into<FlagSet<EntityKeyword>>>(
+    pub fn define<'a>(
         &'a mut self,
-        name: &str,
-        value: &str,
-        description: Option<&str>,
-        keywords: T,
+        definition: EntityDefinition,
     ) -> crate::Result<Option<Cow<'a, Entity>>> {
-        // Reduce monomorphization
-        fn inner<'a>(
-            map: &'a mut EntityMap,
-            name: &str,
-            value: &str,
-            description: Option<&str>,
-            keywords: FlagSet<EntityKeyword>,
-        ) -> Option<Cow<'a, Entity>> {
-            let visibility = keywords.into();
-            if keywords.contains(EntityKeyword::Delete) {
-                let mut entity = map.inner.remove(name)?;
-                if visibility != EntityVisibility::Default {
-                    entity.visibility = visibility;
-                }
-                return Some(Cow::Owned(entity));
-            }
-            let entity = match map.inner.entry(name.to_owned()) {
-                Entry::Vacant(_) if keywords.contains(EntityKeyword::Remove) => return None,
-                Entry::Vacant(entry) => entry.insert(Entity {
-                    value: value.to_owned(),
-                    visibility,
-                    description: description.unwrap_or_default().to_owned(),
-                }),
-                Entry::Occupied(entry) if keywords.contains(EntityKeyword::Remove) => {
-                    if entry.get().value == value {
-                        let mut entity = entry.remove();
-                        entity.value.clear();
-                        if visibility != EntityVisibility::Default {
-                            entity.visibility = visibility;
-                        }
-                        return Some(Cow::Owned(entity));
-                    }
-                    let entity = entry.into_mut();
-                    entity.remove(value);
-                    entity
-                }
-                Entry::Occupied(entry) if keywords.contains(EntityKeyword::Add) => {
-                    let entity = entry.into_mut();
-                    entity.add(value);
-                    entity
-                }
-                Entry::Occupied(entry) => {
-                    let entity = entry.into_mut();
-                    value.clone_into(&mut entity.value);
-                    if let Some(description) = description {
-                        description.clone_into(&mut entity.description);
-                    }
-                    entity
-                }
+        let EntityDefinition {
+            name,
+            desc,
+            value,
+            keywords,
+        } = definition;
+        self.guard_global(name)?;
+        let visibility = keywords.into();
+        if keywords.contains(EntityKeyword::Delete) {
+            let Some(mut entity) = self.inner.remove(name) else {
+                return Ok(None);
             };
             if visibility != EntityVisibility::Default {
                 entity.visibility = visibility;
             }
-            Some(Cow::Borrowed(entity))
+            return Ok(Some(Cow::Owned(entity)));
         }
-        self.guard_global(name)?;
-        Ok(inner(self, name, value, description, keywords.into()))
+        let entity = match self.inner.entry(name.to_owned()) {
+            Entry::Vacant(_) if keywords.contains(EntityKeyword::Remove) => return Ok(None),
+            Entry::Vacant(entry) => entry.insert(Entity {
+                value: value.to_owned(),
+                visibility,
+                description: desc.unwrap_or_default().to_owned(),
+            }),
+            Entry::Occupied(entry) if keywords.contains(EntityKeyword::Remove) => {
+                if entry.get().value == value {
+                    let mut entity = entry.remove();
+                    entity.value.clear();
+                    if visibility != EntityVisibility::Default {
+                        entity.visibility = visibility;
+                    }
+                    return Ok(Some(Cow::Owned(entity)));
+                }
+                let entity = entry.into_mut();
+                entity.remove(value);
+                entity
+            }
+            Entry::Occupied(entry) if keywords.contains(EntityKeyword::Add) => {
+                let entity = entry.into_mut();
+                entity.add(value);
+                entity
+            }
+            Entry::Occupied(entry) => {
+                let entity = entry.into_mut();
+                value.clone_into(&mut entity.value);
+                if let Some(desc) = desc {
+                    desc.clone_into(&mut entity.description);
+                }
+                entity
+            }
+        };
+        if visibility != EntityVisibility::Default {
+            entity.visibility = visibility;
+        }
+        Ok(Some(Cow::Borrowed(entity)))
     }
 }
 
@@ -387,29 +361,46 @@ impl Decoder for EntityMap {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Error;
+    use flagset::FlagSet;
+
+    fn define<'a, T>(
+        map: &'a mut EntityMap,
+        name: &str,
+        value: &str,
+        desc: Option<&str>,
+        keywords: T,
+    ) -> crate::Result<Option<Cow<'a, Entity>>>
+    where
+        T: Into<FlagSet<EntityKeyword>>,
+    {
+        map.define(EntityDefinition {
+            name,
+            value,
+            desc,
+            keywords: keywords.into(),
+        })
+    }
 
     #[test]
-    fn set_new() {
+    fn define_new() {
         let mut map = EntityMap::new();
-        map.set("key", "value", None, None).ok();
+        define(&mut map, "key", "value", None, None).ok();
         assert_eq!(map.get("key"), Some("value"));
     }
 
     #[test]
-    fn set_delete() {
+    fn define_delete() {
         let mut map = EntityMap::new();
-        map.set("key", "value", None, None).ok();
-        map.set("key", "", None, EntityKeyword::Delete).ok();
+        define(&mut map, "key", "value", None, None).ok();
+        define(&mut map, "key", "", None, EntityKeyword::Delete).ok();
         assert_eq!(map.get("key"), None);
     }
 
     #[test]
-    fn set_replace() {
+    fn define_replace() {
         let mut map = EntityMap::new();
-        map.set("key", "value", Some("desc1"), None).ok();
-        map.set("key", "", Some("desc2"), EntityKeyword::Publish)
-            .ok();
+        define(&mut map, "key", "value", Some("desc1"), None).ok();
+        define(&mut map, "key", "", Some("desc2"), EntityKeyword::Publish).ok();
         assert_eq!(
             map.inner.get("key"),
             Some(&Entity {
@@ -421,21 +412,21 @@ mod tests {
     }
 
     #[test]
-    fn set_add_and_remove() {
+    fn define_add_and_remove() {
         let mut map = EntityMap::new();
-        map.set("key", "value1", None, EntityKeyword::Add).ok();
-        map.set("key", "value2", None, EntityKeyword::Add).ok();
-        map.set("key", "value3", None, EntityKeyword::Add).ok();
-        map.set("key", "value2", None, EntityKeyword::Remove).ok();
-        map.set("key", "x", None, EntityKeyword::Remove).ok();
+        define(&mut map, "key", "value1", None, EntityKeyword::Add).ok();
+        define(&mut map, "key", "value2", None, EntityKeyword::Add).ok();
+        define(&mut map, "key", "value3", None, EntityKeyword::Add).ok();
+        define(&mut map, "key", "value2", None, EntityKeyword::Remove).ok();
+        define(&mut map, "key", "x", None, EntityKeyword::Remove).ok();
         assert_eq!(map.get("key"), Some("value1|value3"));
     }
 
     #[test]
     fn protect_global() {
         let mut map = EntityMap::with_globals();
-        let set_nonglobal = map.set("key", "value1", None, EntityKeyword::Add).is_ok();
-        let set_global = map.set("amp", "value1", None, EntityKeyword::Add).is_ok();
+        let set_nonglobal = define(&mut map, "key", "value1", None, EntityKeyword::Add).is_ok();
+        let set_global = define(&mut map, "amp", "value1", None, EntityKeyword::Add).is_ok();
         let remove_nonglobal = map.remove("key").is_ok();
         let remove_global = map.remove("amp").is_ok();
         assert_eq!(
@@ -447,15 +438,15 @@ mod tests {
     #[test]
     fn decode_entity_matched() {
         let mut map = EntityMap::new();
-        map.set("key1", "value1", None, None).ok();
-        map.set("key2", "value2", None, None).ok();
+        define(&mut map, "key1", "value1", None, None).ok();
+        define(&mut map, "key2", "value2", None, None).ok();
         assert_eq!(map.decode("key1"), Ok("value1".into()));
     }
 
     #[test]
     fn decode_entity_unmatched() {
         let mut map = EntityMap::new();
-        map.set("key2", "value2", None, None).ok();
+        define(&mut map, "key2", "value2", None, None).ok();
         assert!(map.decode("key1").is_err());
     }
 

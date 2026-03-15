@@ -1,3 +1,4 @@
+use super::arguments_str::ArgumentsStr;
 use super::definition::ParsedDefinition;
 use crate::parse::Words;
 use crate::{Error, ErrorKind};
@@ -5,7 +6,7 @@ use crate::{Error, ErrorKind};
 /// The three types of MXP tag elements sent by the server.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ParsedElement<'a> {
-    /// A definition, e.g. `<!ELEMENT>`.
+    /// A definition, e.g. `<!ELEMENT...>`.
     Definition(ParsedDefinition<'a>),
     /// A closing tag, e.g. `</BOLD>`.
     TagClose(ParsedTagClose<'a>),
@@ -14,6 +15,7 @@ pub enum ParsedElement<'a> {
 }
 
 impl<'a> ParsedElement<'a> {
+    /// Returns the name of the element.
     pub fn name(&self) -> &'a str {
         match self {
             Self::Definition(definition) => definition.name(),
@@ -22,6 +24,11 @@ impl<'a> ParsedElement<'a> {
         }
     }
 
+    /// Parses an element from data sent by the server.
+    ///
+    /// Returns an error if `secure` is false and the data is a definition tag (`<!...>`).
+    /// Definitions can only be processed if the current line mode is
+    /// [secure](crate::Mode::is_secure).
     pub fn parse(source: &'a str, secure: bool) -> crate::Result<Self> {
         let source = source.trim_ascii();
 
@@ -36,8 +43,10 @@ impl<'a> ParsedElement<'a> {
     }
 }
 
+/// Parsed representation of a closing tag from the server, in the form of `</{name}>`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ParsedTagClose<'a> {
+    /// Element name.
     pub name: &'a str,
 }
 
@@ -53,10 +62,15 @@ impl<'a> ParsedTagClose<'a> {
     }
 }
 
+/// Parsed representation of an opening tag from the server, in the form of `<{name} ...>`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ParsedTagOpen<'a> {
+    /// Element name.
     pub name: &'a str,
-    pub body: &'a str,
+    /// The rest of the definition as a string slice. This should be parsed with
+    /// [`arguments.parse()`](ArgumentsStr::parse) for use with functions such as
+    /// [`Tag::decode`](crate::Tag::decode) and [`Element::decode`](crate::Element::decode).
+    pub arguments: ArgumentsStr<'a>,
 }
 
 impl<'a> ParsedTagOpen<'a> {
@@ -66,7 +80,7 @@ impl<'a> ParsedTagOpen<'a> {
         crate::validate(name, ErrorKind::InvalidElementName)?;
         Ok(Self {
             name,
-            body: words.as_str(),
+            arguments: ArgumentsStr(words.as_str()),
         })
     }
 }

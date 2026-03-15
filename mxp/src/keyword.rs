@@ -24,10 +24,15 @@ flags! {
 
     /// Keywords for [`<!ENTITY>`](crate::Entity) tags.
     pub enum EntityKeyword: u8 {
+        /// PRIVATE entities cannot be queried by the MUD client. They are completely hidden.
         Private,
+        /// PUBLISH entities can be used by the client to produce a list of MUD Server variables to be access by the player.
         Publish,
+        /// To delete an entity, use the DELETE argument. Setting an entity to a empty value does not delete it.
         Delete,
+        /// The ADD argument causes the Value to be added as a new item in a string list. So, it is appended to the existing value of the variable. String lists are values separated by the | character.
         Add,
+        /// The REMOVE argument causes the Value to be removed from the existing string list.
         Remove,
     }
 

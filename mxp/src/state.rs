@@ -78,25 +78,8 @@ impl State {
         var: &Var<S>,
         value: &str,
     ) -> crate::Result<Option<EntityEntry<'a>>> {
-        let Some(entity) = self.entities.set(
-            var.name.as_ref(),
-            value,
-            var.desc.as_ref().map(AsRef::as_ref),
-            var.keywords,
-        )?
-        else {
-            return Ok(None);
-        };
-        if entity.is_private() {
-            return Ok(None);
-        }
-        Ok(Some(EntityEntry {
-            value: match entity {
-                Cow::Borrowed(entity) => Some(&entity.value),
-                Cow::Owned(_) => None,
-            },
-            publish: entity.is_published(),
-        }))
+        let entity = self.entities.define(var.with_value(value))?;
+        Ok(EntityEntry::new(entity))
     }
 
     /// Alias for `self.entities().published()`.
@@ -185,7 +168,7 @@ impl State {
     }
 
     fn define_attributes(&mut self, definition: &AttributeListDefinition) -> crate::Result<()> {
-        let words = Words::new(definition.body);
+        let words = Words::new(definition.attributes.0);
         self.elements
             .get_mut(definition.name)
             .ok_or_else(|| Error::new(definition.name, ErrorKind::UnknownElementInAttlist))?
@@ -219,12 +202,13 @@ impl State {
             None => None,
         };
         let value = self.decode_string::<()>(value)?;
-        let var = Var {
+        let entity = self.entities.define(EntityDefinition {
             name,
             desc: desc.as_deref(),
+            value: &value,
             keywords,
-        };
-        self.set_entity(&var, &value)
+        })?;
+        Ok(EntityEntry::new(entity))
     }
 
     fn define_line_tag(&mut self, definition: LineTagDefinition) -> crate::Result<()> {

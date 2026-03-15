@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use flagset::FlagSet;
 
+use super::arguments_str::ArgumentsStr;
 use crate::arguments::{Arguments, ExpectArg as _};
 use crate::color::RgbColor;
 use crate::element::{Element, ElementItem};
@@ -32,21 +33,31 @@ impl FromStr for DefinitionKind {
     }
 }
 
+/// Parsed representation of a definition tag from the server, in the form of `<!...>`.
+///
+/// Note: This is the parameter type of [`State::define`](crate::State::define).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ParsedDefinition<'a> {
+    /// `<!ATTLIST ...>` or `<!ATT ...>`.
     AttributeList(AttributeListDefinition<'a>),
+    /// `<!ELEMENT ...>` or `<!EL ...>`.
     Element(ElementDefinition<'a>),
+    /// `<!ENTITY ...>` or `<!EN ...>`.
     Entity(EntityDefinition<'a>),
+    /// `<!TAG ...>`.
     LineTag(LineTagDefinition<'a>),
 }
 
 impl<'a> ParsedDefinition<'a> {
+    /// Returns the name of the item being defined.
+    ///
+    /// Note: A [`LineTagDefinition`] does not contain a name, so it will return `""` instead.
     pub fn name(&self) -> &'a str {
         match self {
             Self::AttributeList(def) => def.name,
             Self::Element(def) => def.name,
             Self::Entity(def) => def.name,
-            Self::LineTag(def) => def.window.unwrap_or_default(),
+            Self::LineTag(_) => "",
         }
     }
 
@@ -67,10 +78,25 @@ impl<'a> ParsedDefinition<'a> {
     }
 }
 
+/// Parsed representation of an attribute list definition from the server, in the form of
+/// `<!ATTLIST {name} ...>`.
+///
+/// Full definition:
+///
+/// ```xml
+/// <!ATTLIST
+///     Name
+///     Attributes
+/// >
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct AttributeListDefinition<'a> {
+    /// Name of the element for which the additional attributes are being defined.
     pub name: &'a str,
-    pub body: &'a str,
+    /// The rest of the definition as a string slice. This can be parsed to [`Arguments`], but there
+    /// is no need to do so; [`State::define`](mxp::State::define) forwards the body directly to the
+    /// previously defined arguments.
+    pub attributes: ArgumentsStr<'a>,
 }
 
 impl<'a> AttributeListDefinition<'a> {
@@ -79,14 +105,32 @@ impl<'a> AttributeListDefinition<'a> {
         crate::validate(name, ErrorKind::InvalidElementName)?;
         Ok(Self {
             name,
-            body: words.as_str(),
+            attributes: ArgumentsStr(words.as_str()),
         })
     }
 }
 
+/// Parsed representation of an entity definition from the server, in the form of
+/// `<!ENTITY {name} ...>`.
+///
+/// Full definition:
+///
+/// ```xml
+/// <!ELEMENT
+///     Name
+///     [Definition]
+///     [ATT=attribute-list]
+///     [TAG=tag]
+///     [FLAG=flags]
+///     [OPEN]
+///     [DELETE]
+///     [EMPTY]
+/// >
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ElementDefinition<'a> {
+    /// Name of the element.
     pub name: &'a str,
+    /// Definition of the element, or `None` if this is a `DELETE` instruction.
     pub element: Option<Element>,
 }
 
@@ -154,11 +198,31 @@ impl<'a> ElementDefinition<'a> {
     }
 }
 
+/// Parsed representation of an entity definition from the server, in the form of
+/// `<!ENTITY {name} {value} ...>`.
+///
+/// Full definition:
+///
+/// ```xml
+/// <!ENTITY
+///     Name
+///     Value
+///     [DESC=description]
+///     [PRIVATE]
+///     [PUBLISH]
+///     [DELETE]
+///     [ADD]
+///     [REMOVE]
+/// >
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct EntityDefinition<'a> {
+    /// Name of the entity.
     pub name: &'a str,
+    /// Optional description of the entity.
     pub desc: Option<&'a str>,
+    /// Value of the entity.
     pub value: &'a str,
+    /// Set of keywords included in the definition.
     pub keywords: FlagSet<EntityKeyword>,
 }
 
@@ -183,13 +247,35 @@ impl<'a> EntityDefinition<'a> {
     }
 }
 
+/// Parsed representation of a line tag definition from the server, in the form of
+/// `<!TAG {index} ...>`.
+///
+/// Full definition:
+///
+/// ```xml
+/// <!TAG
+///     Index
+///     [WINDOW=string]
+///     [FORE=color]
+///     [BACK=color]
+///     [GAG]
+///     [ENABLE]
+///     [DISABLE]
+/// >
+/// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct LineTagDefinition<'a> {
+    /// Tag number (20-99) to change.
     pub index: Mode,
+    /// Window to redirect the text to.
     pub window: Option<&'a str>,
+    /// Text should be gagged from the main MUD window.
     pub gag: Option<bool>,
+    /// Text color.
     pub fore: Option<RgbColor>,
+    /// Background color of the text.
     pub back: Option<RgbColor>,
+    /// If `Some(true)`, activates the line tag. If `Some(false)`, deactivates it.
     pub enable: Option<bool>,
 }
 
