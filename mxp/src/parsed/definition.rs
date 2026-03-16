@@ -41,17 +41,17 @@ pub enum ParsedDefinition<'a> {
     /// `<!ATTLIST ...>` or `<!ATT ...>`.
     AttributeList(AttributeListDefinition<'a>),
     /// `<!ELEMENT ...>` or `<!EL ...>`.
-    Element(ElementDefinition<'a>),
+    Element(ParsedElementDefinition<'a>),
     /// `<!ENTITY ...>` or `<!EN ...>`.
-    Entity(EntityDefinition<'a>),
+    Entity(ParsedEntityDefinition<'a>),
     /// `<!TAG ...>`.
-    LineTag(LineTagDefinition<'a>),
+    LineTag(ParsedLineTagDefinition<'a>),
 }
 
 impl<'a> ParsedDefinition<'a> {
     /// Returns the name of the item being defined.
     ///
-    /// Note: A [`LineTagDefinition`] does not contain a name, so it will return `""` instead.
+    /// Note: A [`ParsedLineTagDefinition`] does not contain a name, so it will return `""` instead.
     pub fn name(&self) -> &'a str {
         match self {
             Self::AttributeList(def) => def.name,
@@ -71,9 +71,9 @@ impl<'a> ParsedDefinition<'a> {
             DefinitionKind::AttributeList => {
                 Self::AttributeList(AttributeListDefinition::parse(words)?)
             }
-            DefinitionKind::Element => Self::Element(ElementDefinition::parse(words)?),
-            DefinitionKind::Entity => Self::Entity(EntityDefinition::parse(words)?),
-            DefinitionKind::LineTag => Self::LineTag(LineTagDefinition::parse(words)?),
+            DefinitionKind::Element => Self::Element(ParsedElementDefinition::parse(words)?),
+            DefinitionKind::Entity => Self::Entity(ParsedEntityDefinition::parse(words)?),
+            DefinitionKind::LineTag => Self::LineTag(ParsedLineTagDefinition::parse(words)?),
         })
     }
 }
@@ -127,14 +127,14 @@ impl<'a> AttributeListDefinition<'a> {
 ///     [EMPTY]
 /// >
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ElementDefinition<'a> {
+pub struct ParsedElementDefinition<'a> {
     /// Name of the element.
     pub name: &'a str,
     /// Definition of the element, or `None` if this is a `DELETE` instruction.
     pub element: Option<Element>,
 }
 
-impl<'a> ElementDefinition<'a> {
+impl<'a> ParsedElementDefinition<'a> {
     fn parse(mut words: Words<'a>) -> crate::Result<Self> {
         let name = words.next_or(ErrorKind::IncompleteElement)?;
         crate::validate(name, ErrorKind::InvalidElementName)?;
@@ -215,7 +215,7 @@ impl<'a> ElementDefinition<'a> {
 ///     [REMOVE]
 /// >
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct EntityDefinition<'a> {
+pub struct ParsedEntityDefinition<'a> {
     /// Name of the entity.
     pub name: &'a str,
     /// Optional description of the entity.
@@ -226,7 +226,7 @@ pub struct EntityDefinition<'a> {
     pub keywords: FlagSet<EntityKeyword>,
 }
 
-impl<'a> EntityDefinition<'a> {
+impl<'a> ParsedEntityDefinition<'a> {
     fn parse(mut words: Words<'a>) -> crate::Result<Self> {
         let source = words.source();
         let name = words.next_or(ErrorKind::IncompleteElement)?;
@@ -264,7 +264,7 @@ impl<'a> EntityDefinition<'a> {
 /// >
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct LineTagDefinition<'a> {
+pub struct ParsedLineTagDefinition<'a> {
     /// Tag number (20-99) to change.
     pub index: Mode,
     /// Window to redirect the text to.
@@ -279,7 +279,7 @@ pub struct LineTagDefinition<'a> {
     pub enable: Option<bool>,
 }
 
-impl<'a> LineTagDefinition<'a> {
+impl<'a> ParsedLineTagDefinition<'a> {
     fn parse(words: Words<'a>) -> crate::Result<Self> {
         let args = words.parse_args()?;
         let mut scanner = args.scan(()).with_keywords();

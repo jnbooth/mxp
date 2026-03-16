@@ -10,7 +10,7 @@ use super::visibility::EntityVisibility;
 use crate::Error;
 use crate::keyword::{EntityKeyword, KeywordFilter};
 use crate::parse::{Decoder, ErrorKind};
-use crate::parsed::EntityDefinition;
+use crate::parsed::ParsedEntityDefinition;
 
 #[derive(Debug)]
 /// This struct is created by [`EntityMap::define`]. See its documentation for more.
@@ -276,7 +276,7 @@ impl EntityMap {
         Ok(())
     }
 
-    /// Applies an MXP [`EntityDefinition`]'s name, value, description and keywords.
+    /// Applies an MXP [`ParsedEntityDefinition`]'s name, value, description and keywords.
     /// Depending on the keywords provided, this may cause an entity to be inserted, removed,
     /// updated, or replaced.
     ///
@@ -288,9 +288,9 @@ impl EntityMap {
     /// See [MXP specification: `<!ENTITY>`](https://www.zuggsoft.com/zmud/mxp.htm#ENTITY).
     pub fn define<'a>(
         &'a mut self,
-        definition: EntityDefinition,
+        definition: ParsedEntityDefinition,
     ) -> crate::Result<Option<Cow<'a, Entity>>> {
-        let EntityDefinition {
+        let ParsedEntityDefinition {
             name,
             desc,
             value,
@@ -373,7 +373,7 @@ mod tests {
     where
         T: Into<FlagSet<EntityKeyword>>,
     {
-        map.define(EntityDefinition {
+        map.define(ParsedEntityDefinition {
             name,
             value,
             desc,

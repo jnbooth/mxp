@@ -9,8 +9,8 @@ use crate::keyword::KeywordFilter;
 use crate::line::{LineTag, LineTags, Mode};
 use crate::parse::{Decoder, Words};
 use crate::parsed::{
-    AttributeListDefinition, ElementDefinition, EntityDefinition, LineTagDefinition,
-    ParsedDefinition,
+    AttributeListDefinition, ParsedDefinition, ParsedElementDefinition, ParsedEntityDefinition,
+    ParsedLineTagDefinition,
 };
 use crate::{Error, ErrorKind};
 
@@ -176,7 +176,7 @@ impl State {
             .extend(words)
     }
 
-    fn define_element(&mut self, definition: ElementDefinition) {
+    fn define_element(&mut self, definition: ParsedElementDefinition) {
         let Some(el) = definition.element else {
             self.elements.remove(definition.name);
             return;
@@ -189,9 +189,9 @@ impl State {
 
     fn define_entity<'a>(
         &'a mut self,
-        definition: EntityDefinition,
+        definition: ParsedEntityDefinition,
     ) -> crate::Result<Option<EntityEntry<'a>>> {
-        let EntityDefinition {
+        let ParsedEntityDefinition {
             name,
             desc,
             value,
@@ -202,7 +202,7 @@ impl State {
             None => None,
         };
         let value = self.decode_string::<()>(value)?;
-        let entity = self.entities.define(EntityDefinition {
+        let entity = self.entities.define(ParsedEntityDefinition {
             name,
             desc: desc.as_deref(),
             value: &value,
@@ -211,7 +211,7 @@ impl State {
         Ok(EntityEntry::new(entity))
     }
 
-    fn define_line_tag(&mut self, definition: LineTagDefinition) -> crate::Result<()> {
+    fn define_line_tag(&mut self, definition: ParsedLineTagDefinition) -> crate::Result<()> {
         self.line_tags.update(definition)
     }
 }

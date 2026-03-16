@@ -5,8 +5,8 @@ pub use arguments_str::ArgumentsStr;
 
 mod definition;
 pub use definition::{
-    AttributeListDefinition, ElementDefinition, EntityDefinition, LineTagDefinition,
-    ParsedDefinition,
+    AttributeListDefinition, ParsedDefinition, ParsedElementDefinition, ParsedEntityDefinition,
+    ParsedLineTagDefinition,
 };
 
 mod element;

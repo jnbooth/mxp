@@ -5,7 +5,7 @@ use flagset::FlagSet;
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::keyword::EntityKeyword;
 use crate::parse::Decoder;
-use crate::parsed::EntityDefinition;
+use crate::parsed::ParsedEntityDefinition;
 
 /// The `<VAR>` tag is just like the `<!ENTITY>` tag, except that the value of the variable is
 /// placed between the `<VAR>` and `</VAR>` tags, and this value is displayed to the user.
@@ -61,8 +61,8 @@ impl<S: AsRef<str>> Var<S> {
     }
 
     /// Creates an `EntityDefinition` from properties and a value.
-    pub fn with_value<'a>(&'a self, value: &'a str) -> EntityDefinition<'a> {
-        EntityDefinition {
+    pub fn with_value<'a>(&'a self, value: &'a str) -> ParsedEntityDefinition<'a> {
+        ParsedEntityDefinition {
             name: self.name.as_ref(),
             desc: self.desc.as_ref().map(AsRef::as_ref),
             keywords: self.keywords,

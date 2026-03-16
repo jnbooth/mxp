@@ -2,7 +2,7 @@ use std::ops::Deref;
 
 use crate::color::RgbColor;
 use crate::element::Element;
-use crate::parsed::LineTagDefinition;
+use crate::parsed::ParsedLineTagDefinition;
 
 /// [`LineTagProperties`] for a line mode, as well as an [`Element`] if one is associated with the
 /// current user-defined line mode.
@@ -38,7 +38,7 @@ pub struct LineTagProperties {
 }
 
 impl LineTagProperties {
-    pub fn apply(&mut self, definition: LineTagDefinition) {
+    pub fn apply(&mut self, definition: ParsedLineTagDefinition) {
         if let Some(enable) = definition.enable {
             self.enable = enable;
         }
