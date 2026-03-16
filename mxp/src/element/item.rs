@@ -1,6 +1,6 @@
 use super::atomic_tag::AtomicTag;
 use crate::arguments::Arguments;
-use crate::parse::Words;
+use crate::parse::{Words, count_bytes};
 use crate::{Error, ErrorKind};
 
 /// List of arguments to an MXP tag.
@@ -36,7 +36,7 @@ impl ElementItem {
 
     pub fn parse_all(source: &str) -> crate::Result<Vec<Self>> {
         let bytes = source.as_bytes();
-        let size_guess = bytes.iter().filter(|c| **c == b'<').count();
+        let size_guess = count_bytes(bytes, b'<');
         let mut items = Vec::with_capacity(size_guess);
 
         let mut iter = bytes.iter().enumerate();

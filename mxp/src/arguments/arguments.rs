@@ -99,10 +99,18 @@ impl<'a, S: AsRef<str>> Arguments<'a, S> {
         Scan::new(decoder, &self.positional, &self.named)
     }
 
+    pub(crate) fn shrink_to_fit(&mut self) {
+        self.named.shrink_to_fit();
+        self.positional.shrink_to_fit();
+    }
+
     fn extend_inner<'b, T>(&mut self, mut iter: Words<'b>) -> crate::Result<()>
     where
         T: From<&'b str> + Into<S> + Into<Uncased<'a>>,
     {
+        let generous_size_guess = iter.size_hint().1.unwrap();
+        self.named.reserve(generous_size_guess);
+        self.positional.reserve(generous_size_guess);
         while let Some(name) = iter.next() {
             if name == "/" {
                 if iter.next().is_none() {
@@ -148,7 +156,9 @@ impl<'a> Arguments<'a, Cow<'a, str>> {
 
 impl Arguments<'static, String> {
     pub(crate) fn extend(&mut self, iter: Words<'_>) -> crate::Result<()> {
-        self.extend_inner::<String>(iter)
+        self.extend_inner::<String>(iter)?;
+        self.shrink_to_fit();
+        Ok(())
     }
 }
 
@@ -178,8 +188,6 @@ impl TryFrom<Words<'_>> for Arguments<'static, String> {
     fn try_from(value: Words<'_>) -> crate::Result<Self> {
         let mut this = Self::new();
         this.extend(value)?;
-        this.named.shrink_to_fit();
-        this.positional.shrink_to_fit();
         Ok(this)
     }
 }

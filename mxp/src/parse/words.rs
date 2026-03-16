@@ -1,6 +1,7 @@
 use std::iter::FusedIterator;
 use std::{fmt, slice};
 
+use super::count_bytes;
 use crate::arguments::Arguments;
 use crate::{Error, ErrorKind};
 
@@ -41,6 +42,10 @@ impl<'a> Words<'a> {
 
     pub fn as_str(&self) -> &'a str {
         &self.source[self.get_offset()..]
+    }
+
+    pub fn as_bytes(&self) -> &'a [u8] {
+        &self.source.as_bytes()[self.get_offset()..]
     }
 
     fn get_offset(&self) -> usize {
@@ -117,6 +122,11 @@ impl<'a> Iterator for Words<'a> {
         }
         // SAFETY: `offset` and `end` are both valid character boundaries.
         Some(unsafe { self.source.get_unchecked(offset..end) })
+    }
+
+    // A generous size hint reflecting the total number of spaces in the string.
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, Some(count_bytes(self.as_bytes(), b' ') + 1))
     }
 }
 
