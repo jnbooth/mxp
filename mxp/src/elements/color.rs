@@ -39,6 +39,16 @@ impl Color {
     }
 }
 
+impl From<RgbColor> for Color {
+    /// Constructs a `<COLOR>` with the specified color as its foreground, and no background color.
+    fn from(fore: RgbColor) -> Self {
+        Self {
+            fore: Some(fore),
+            ..Default::default()
+        }
+    }
+}
+
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<crate::parse::Scan<'a, D, S>> for Color {
     type Error = crate::Error;
     #[inline]
