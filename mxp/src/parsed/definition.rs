@@ -2,7 +2,6 @@ use std::str::FromStr;
 
 use flagset::FlagSet;
 
-use super::arguments_str::ArgumentsStr;
 use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _};
 use crate::color::RgbColor;
 use crate::element::{Element, ElementItem};
@@ -93,10 +92,9 @@ impl<'a> ParsedDefinition<'a> {
 pub struct AttributeListDefinition<'a> {
     /// Name of the element for which the additional attributes are being defined.
     pub name: &'a str,
-    /// The rest of the definition as a string slice. This can be parsed to [`Arguments`], but there
-    /// is no need to do so; [`State::define`](crate::State::define) forwards the body directly to
-    /// the previously defined arguments.
-    pub attributes: ArgumentsStr<'a>,
+    /// [`State::define`](crate::State::define) forwards the attributes directly to the previously
+    /// defined arguments.
+    pub attributes: &'a str,
 }
 
 impl<'a> AttributeListDefinition<'a> {
@@ -105,7 +103,7 @@ impl<'a> AttributeListDefinition<'a> {
         crate::validate(name, ErrorKind::InvalidElementName)?;
         Ok(Self {
             name,
-            attributes: ArgumentsStr(words.as_str()),
+            attributes: words.as_str(),
         })
     }
 }

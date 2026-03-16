@@ -1,5 +1,5 @@
-use super::arguments_str::ArgumentsStr;
 use super::definition::ParsedDefinition;
+use crate::arguments::Arguments;
 use crate::parse::Words;
 use crate::{Error, ErrorKind};
 
@@ -29,6 +29,8 @@ impl<'a> ParsedElement<'a> {
     /// Returns an error if `secure` is false and the data is a definition tag (`<!...>`).
     /// Definitions can only be processed if the current line mode is
     /// [secure](crate::Mode::is_secure).
+    ///
+    /// Important note: this function expects `source` to omit the starting `<` and ending `>`.
     pub fn parse(source: &'a str, secure: bool) -> crate::Result<Self> {
         let source = source.trim_ascii();
 
@@ -63,18 +65,12 @@ impl<'a> ParsedTagClose<'a> {
 }
 
 /// Parsed representation of an opening tag from the server, in the form of `<{name} ...>`.
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ParsedTagOpen<'a> {
     /// Element name.
     pub name: &'a str,
-    /// The rest of the definition as a string slice. This should be parsed with
-    /// [`arguments.parse_args()`] for use with functions such as [`AtomicTag::decode`] and
-    /// [`Element::decode`].
-    ///
-    /// [`arguments.parse_args()`]: ArgumentsStr::parse_args
-    /// [`AtomicTag::decode`]: crate::AtomicTag::decode
-    /// [`Element::decode`]: crate::Element::decode
-    pub arguments: ArgumentsStr<'a>,
+    /// Parsed element arguments.
+    pub arguments: Arguments<'a>,
 }
 
 impl<'a> ParsedTagOpen<'a> {
@@ -84,7 +80,7 @@ impl<'a> ParsedTagOpen<'a> {
         crate::validate(name, ErrorKind::InvalidElementName)?;
         Ok(Self {
             name,
-            arguments: ArgumentsStr(words.as_str()),
+            arguments: words.parse_args()?,
         })
     }
 }

@@ -150,10 +150,15 @@ impl State {
     /// Handles an MXP definition from the server, which may define an [attribute list], [element],
     /// [entity], or [line tag].
     ///
+    /// Returns an [`EntityEntry`] if the operation alters the definition of an entity. The client
+    /// can use this to keep track of entity updates, especially if the entity has
+    /// [`EntityVisibility::Publish`].
+    ///
     /// [attribute list]: https://www.zuggsoft.com/zmud/mxp.htm#ATTLIST
     /// [element]: https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT
     /// [entity]: https://www.zuggsoft.com/zmud/mxp.htm#ENTITY
     /// [line tag]: https://www.zuggsoft.com/zmud/mxp.htm#User-defined%20Line%20Tags
+    /// [`EntityVisibility::Publish`]: crate::entity::EntityVisibility::Publish
     pub fn define<'a>(
         &'a mut self,
         definition: ParsedDefinition,
@@ -168,7 +173,7 @@ impl State {
     }
 
     fn define_attributes(&mut self, definition: &AttributeListDefinition) -> crate::Result<()> {
-        let words = Words::new(definition.attributes.0);
+        let words = Words::new(definition.attributes);
         self.elements
             .get_mut(definition.name)
             .ok_or_else(|| Error::new(definition.name, ErrorKind::UnknownElementInAttlist))?

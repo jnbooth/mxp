@@ -348,7 +348,7 @@ impl Transformer {
             }
             ParsedElement::TagOpen(tag) => {
                 let mxp_state = self.mxp_state.take();
-                let result = self.mxp_start_tag(tag, secure, &mxp_state);
+                let result = self.mxp_start_tag(&tag, secure, &mxp_state);
                 self.mxp_state.set(mxp_state);
                 result
             }
@@ -369,7 +369,7 @@ impl Transformer {
 
     fn mxp_start_tag(
         &mut self,
-        tag: ParsedTagOpen,
+        tag: &ParsedTagOpen,
         secure: bool,
         mxp_state: &mxp::State,
     ) -> mxp::Result<()> {
@@ -383,11 +383,9 @@ impl Transformer {
             });
         }
 
-        let args = tag.arguments.parse_args()?;
-
         match component {
             mxp::Component::AtomicTag(atom) => {
-                let action = atom.decode(&args, mxp_state)?;
+                let action = atom.decode(&tag.arguments, mxp_state)?;
                 self.mxp_apply_action(action, mxp_state);
                 Ok(())
             }
@@ -395,7 +393,7 @@ impl Transformer {
                 if let Some(variable) = &el.variable {
                     self.output.set_mxp_variable(variable);
                 }
-                self.mxp_open_element(el, &args, mxp_state)
+                self.mxp_open_element(el, &tag.arguments, mxp_state)
             }
         }
     }
