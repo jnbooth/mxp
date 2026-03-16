@@ -1,4 +1,4 @@
-use super::tag::Tag;
+use super::atomic_tag::AtomicTag;
 use crate::arguments::Arguments;
 use crate::parse::Words;
 use crate::{Error, ErrorKind};
@@ -7,7 +7,7 @@ use crate::{Error, ErrorKind};
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ElementItem {
     /// Standard atomic tag to apply. Determines the [`Action`](crate::Action) of this item.
-    pub tag: &'static Tag,
+    pub tag: &'static AtomicTag,
     /// Arguments for the tag. These may contain custom entities meant to be supplied as arguments
     /// to the custom element. An [`ElementDecoder`](crate::element::ElementDecoder) replaces
     /// those entities with the custom element's arguments.
@@ -25,7 +25,7 @@ impl ElementItem {
             "!" => return Err(Error::braced(source, ErrorKind::DefinitionInDefinition)),
             _ => (),
         }
-        if let Some(tag) = Tag::well_known(tag_name) {
+        if let Some(tag) = AtomicTag::well_known(tag_name) {
             let arguments = words.try_into()?;
             tag.check_arguments(&arguments)?;
             return Ok(Self { tag, arguments });

@@ -9,7 +9,7 @@ use crate::{Error, ErrorKind};
 
 /// Atomic MXP tags, such as `<A>`.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct Tag {
+pub struct AtomicTag {
     /// Tag name, such as `"A"`.
     pub name: &'static str,
     /// Action applied by the tag.
@@ -35,14 +35,14 @@ macro_rules! tag {
     };
 }
 
-impl Tag {
-    /// Lists all tags supported by the `mxp` crate.
+impl AtomicTag {
+    /// Lists all atomic tags supported by the `mxp` crate.
     pub const fn supported() -> &'static [Self] {
         Self::SUPPORTED
     }
 
-    /// Resolves a [`Tag`] into an [`Action`] by decoding arguments and supplying them to the tag's
-    /// definition.
+    /// Resolves an `AtomicTag` into an [`Action`] by decoding arguments and supplying them to the
+    /// tag's definition.
     pub fn decode<'a, D: Decoder>(
         &self,
         args: &'a Arguments<'a>,
@@ -59,7 +59,7 @@ impl Tag {
     /// # Examples
     ///
     /// ```
-    /// const COLOR: &mxp::Tag = mxp::Tag::well_known("color").unwrap();
+    /// const COLOR: &mxp::AtomicTag = mxp::AtomicTag::well_known("color").unwrap();
     /// assert!(COLOR.supports("fore"));
     /// assert!(!COLOR.supports("invalid_arg"));
     /// ```
@@ -82,19 +82,19 @@ impl Tag {
         }
     }
 
-    /// Returns a `Tag` if `name` is a well-known MXP tag, such as `"A"` or `"image"`.
+    /// Returns an `AtomicTag` if `name` is a well-known MXP tag, such as `"A"` or `"image"`.
     ///
     /// Case-insensitive.
     ///
     /// # Examples
     ///
     /// ```
-    /// let em = mxp::Tag::well_known("em").unwrap();
+    /// let em = mxp::AtomicTag::well_known("em").unwrap();
     /// assert_eq!(em.action, mxp::ActionKind::Italic);
     /// ```
     pub const fn well_known(name: &str) -> Option<&'static Self> {
         const MAX_LEN: usize = {
-            let tags = Tag::SUPPORTED;
+            let tags = AtomicTag::SUPPORTED;
             let mut max_len = 0;
             let mut i = 0;
             while i < tags.len() {
@@ -169,19 +169,19 @@ impl Tag {
         }
     }
 
-    const A: Tag = tag!("a", Hyperlink, "href", "hint", "expire");
-    const B: Tag = tag!("b", Bold);
-    const BOLD: Tag = tag!("bold", Bold);
-    const BR: Tag = tag!("br", Br);
-    const C: Tag = tag!("c", Color, "fore", "back");
-    const COLOR: Tag = tag!("color", Color, "fore", "back");
-    const DEST: Tag = tag!("dest", Dest);
-    const DESTINATION: Tag = tag!("destination", Dest);
-    const EM: Tag = tag!("em", Italic);
-    const EXPIRE: Tag = tag!("expire", Expire);
-    const FILTER: Tag = tag!("filter", Filter);
-    const FONT: Tag = tag!("font", Font, "face", "size", "color", "back");
-    const FRAME: Tag = tag!(
+    const A: AtomicTag = tag!("a", Hyperlink, "href", "hint", "expire");
+    const B: AtomicTag = tag!("b", Bold);
+    const BOLD: AtomicTag = tag!("bold", Bold);
+    const BR: AtomicTag = tag!("br", Br);
+    const C: AtomicTag = tag!("c", Color, "fore", "back");
+    const COLOR: AtomicTag = tag!("color", Color, "fore", "back");
+    const DEST: AtomicTag = tag!("dest", Dest);
+    const DESTINATION: AtomicTag = tag!("destination", Dest);
+    const EM: AtomicTag = tag!("em", Italic);
+    const EXPIRE: AtomicTag = tag!("expire", Expire);
+    const FILTER: AtomicTag = tag!("filter", Filter);
+    const FONT: AtomicTag = tag!("font", Font, "face", "size", "color", "back");
+    const FRAME: AtomicTag = tag!(
         "frame",
         Frame,
         "name",
@@ -196,49 +196,49 @@ impl Tag {
         "scrolling",
         "floating"
     );
-    const GAUGE: Tag = tag!("gauge", Gauge);
-    const H: Tag = tag!("h", Highlight);
-    const H1: Tag = tag!("h1", H1);
-    const H2: Tag = tag!("h2", H2);
-    const H3: Tag = tag!("h3", H3);
-    const H4: Tag = tag!("h4", H4);
-    const H5: Tag = tag!("h5", H5);
-    const H6: Tag = tag!("h6", H6);
-    const HIGH: Tag = tag!("high", Highlight);
-    const HR: Tag = tag!("hr", Hr);
-    const I: Tag = tag!("i", Italic);
-    const IMAGE: Tag = tag!(
+    const GAUGE: AtomicTag = tag!("gauge", Gauge);
+    const H: AtomicTag = tag!("h", Highlight);
+    const H1: AtomicTag = tag!("h1", H1);
+    const H2: AtomicTag = tag!("h2", H2);
+    const H3: AtomicTag = tag!("h3", H3);
+    const H4: AtomicTag = tag!("h4", H4);
+    const H5: AtomicTag = tag!("h5", H5);
+    const H6: AtomicTag = tag!("h6", H6);
+    const HIGH: AtomicTag = tag!("high", Highlight);
+    const HR: AtomicTag = tag!("hr", Hr);
+    const I: AtomicTag = tag!("i", Italic);
+    const IMAGE: AtomicTag = tag!(
         "image", Image, "url", "fname", "t", "h", "w", "hspace", "vspace", "align", "ismap"
     );
-    const ITALIC: Tag = tag!("italic", Italic);
-    const MUSIC: Tag = tag!("music", Music, "fname", "v", "l", "c", "t", "u");
-    const MXP: Tag = tag!("mxp", Mxp, "off");
-    const NOBR: Tag = tag!("nobr", NoBr);
-    const P: Tag = tag!("p", P);
-    const PASS: Tag = tag!("pass", Password);
-    const PASSWORD: Tag = tag!("password", Password);
-    const RELOCATE: Tag = tag!("relocate", Relocate);
-    const RESET: Tag = tag!("reset", Reset);
-    const S: Tag = tag!("s", Strikeout);
-    const SBR: Tag = tag!("sbr", SBr);
-    const SEND: Tag = tag!("send", Send, "href", "hint", "prompt", "expire");
-    const SMALL: Tag = tag!("small", Small);
-    const SOUND: Tag = tag!("sound", Sound, "fname", "v", "l", "p", "t", "u");
-    const STAT: Tag = tag!("stat", Stat);
-    const STRIKE: Tag = tag!("strike", Strikeout);
-    const STRIKEOUT: Tag = tag!("strikeout", Strikeout);
-    const STRONG: Tag = tag!("strong", Bold);
-    const SUPPORT: Tag = tag!("support", Support);
-    const TT: Tag = tag!("tt", Tt);
-    const U: Tag = tag!("u", Underline);
-    const UNDERLINE: Tag = tag!("underline", Underline);
-    const USER: Tag = tag!("user", User);
-    const USERNAME: Tag = tag!("username", User);
-    const V: Tag = tag!("v", Var);
-    const VAR: Tag = tag!("var", Var);
-    const VERSION: Tag = tag!("version", Version);
+    const ITALIC: AtomicTag = tag!("italic", Italic);
+    const MUSIC: AtomicTag = tag!("music", Music, "fname", "v", "l", "c", "t", "u");
+    const MXP: AtomicTag = tag!("mxp", Mxp, "off");
+    const NOBR: AtomicTag = tag!("nobr", NoBr);
+    const P: AtomicTag = tag!("p", P);
+    const PASS: AtomicTag = tag!("pass", Password);
+    const PASSWORD: AtomicTag = tag!("password", Password);
+    const RELOCATE: AtomicTag = tag!("relocate", Relocate);
+    const RESET: AtomicTag = tag!("reset", Reset);
+    const S: AtomicTag = tag!("s", Strikeout);
+    const SBR: AtomicTag = tag!("sbr", SBr);
+    const SEND: AtomicTag = tag!("send", Send, "href", "hint", "prompt", "expire");
+    const SMALL: AtomicTag = tag!("small", Small);
+    const SOUND: AtomicTag = tag!("sound", Sound, "fname", "v", "l", "p", "t", "u");
+    const STAT: AtomicTag = tag!("stat", Stat);
+    const STRIKE: AtomicTag = tag!("strike", Strikeout);
+    const STRIKEOUT: AtomicTag = tag!("strikeout", Strikeout);
+    const STRONG: AtomicTag = tag!("strong", Bold);
+    const SUPPORT: AtomicTag = tag!("support", Support);
+    const TT: AtomicTag = tag!("tt", Tt);
+    const U: AtomicTag = tag!("u", Underline);
+    const UNDERLINE: AtomicTag = tag!("underline", Underline);
+    const USER: AtomicTag = tag!("user", User);
+    const USERNAME: AtomicTag = tag!("username", User);
+    const V: AtomicTag = tag!("v", Var);
+    const VAR: AtomicTag = tag!("var", Var);
+    const VERSION: AtomicTag = tag!("version", Version);
 
-    const SUPPORTED: &[Tag] = &[
+    const SUPPORTED: &[AtomicTag] = &[
         Self::A,
         Self::B,
         Self::BOLD,

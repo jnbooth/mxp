@@ -6,6 +6,9 @@ pub use action::Action;
 mod action_kind;
 pub use action_kind::ActionKind;
 
+mod atomic_tag;
+pub use atomic_tag::AtomicTag;
+
 mod decoder;
 pub use decoder::ElementDecoder;
 
@@ -17,6 +20,3 @@ pub use item::ElementItem;
 
 mod parse_as;
 pub use parse_as::ParseAs;
-
-mod tag;
-pub use tag::Tag;

@@ -2,7 +2,7 @@ use std::fmt;
 
 use flagset::FlagSet;
 
-use crate::element::{ActionKind, Tag};
+use crate::element::{ActionKind, AtomicTag};
 
 /// Formats a [`<SUPPORT>`] response.
 ///
@@ -44,7 +44,7 @@ where
             Some((name, arg)) => (name, Some(arg)),
             None => (query, None),
         };
-        match Tag::well_known(name) {
+        match AtomicTag::well_known(name) {
             Some(tag) if self.supported.contains(tag.action) => match arg {
                 None => Self::write_can(f, name),
                 Some("*") => Self::write_can_args(f, tag),
@@ -56,7 +56,7 @@ where
     }
 
     fn write_all_supported(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        for tag in Tag::supported() {
+        for tag in AtomicTag::supported() {
             if self.supported.contains(tag.action) {
                 Self::write_can(f, tag.name)?;
                 Self::write_can_args(f, tag)?;
@@ -86,7 +86,7 @@ where
         write!(f, " -{tag}.{arg}")
     }
 
-    fn write_can_args(f: &mut fmt::Formatter, tag: &Tag) -> fmt::Result {
+    fn write_can_args(f: &mut fmt::Formatter, tag: &AtomicTag) -> fmt::Result {
         let name = tag.name;
         for arg in tag.args {
             write!(f, " +{name}.{arg}")?;

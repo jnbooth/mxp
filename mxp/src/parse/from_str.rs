@@ -4,7 +4,7 @@ use std::fmt;
 use super::words::Words;
 use crate::ErrorKind;
 use crate::arguments::Arguments;
-use crate::element::{ActionKind, Tag};
+use crate::element::{ActionKind, AtomicTag};
 use crate::parse::OwnedScan;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -91,7 +91,7 @@ where
     let mut words = Words::new(source);
     let name = words.next_or(ErrorKind::EmptyElement)?;
     crate::validate(name, ErrorKind::InvalidElementName)?;
-    Tag::well_known(name)
+    AtomicTag::well_known(name)
         .filter(|tag| tag.action == T::ACTION_KIND)
         .ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;
     let args: Arguments = words.try_into()?;

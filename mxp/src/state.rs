@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use crate::CaseFoldMap;
 use crate::arguments::Arguments;
-use crate::element::{Action, Element, ElementDecoder, Tag};
+use crate::element::{Action, AtomicTag, Element, ElementDecoder};
 use crate::elements::Var;
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
 use crate::keyword::KeywordFilter;
@@ -94,8 +94,8 @@ impl State {
     pub fn get_component(&self, name: &str, secure: bool) -> crate::Result<Component<'_>> {
         let component = if let Some(custom) = self.elements.get(name) {
             Component::Element(custom)
-        } else if let Some(tag) = Tag::well_known(name) {
-            Component::Atom(tag)
+        } else if let Some(tag) = AtomicTag::well_known(name) {
+            Component::AtomicTag(tag)
         } else {
             return Err(Error::new(name, ErrorKind::UnknownElement));
         };
@@ -141,7 +141,7 @@ impl State {
     /// Decodes the action of a predefined tag.
     pub fn decode_tag<'a>(
         &self,
-        tag: &Tag,
+        tag: &AtomicTag,
         args: &'a Arguments<'a>,
     ) -> crate::Result<Action<Cow<'a, str>>> {
         tag.decode(args, self)
@@ -226,7 +226,7 @@ impl Decoder for State {
 #[derive(Copy, Clone, Debug)]
 pub enum Component<'a> {
     /// A built-in MXP tag.
-    Atom(&'static Tag),
+    AtomicTag(&'static AtomicTag),
     /// A user-defined custom tag element.
     Element(&'a Element),
 }
@@ -237,7 +237,7 @@ impl Component<'_> {
     /// For example, the name of `<SOUND "ouch.wav">` is `"SOUND"`.
     pub const fn name(&self) -> &str {
         match self {
-            Self::Atom(tag) => tag.name,
+            Self::AtomicTag(tag) => tag.name,
             Self::Element(el) => el.name.as_str(),
         }
     }
@@ -245,7 +245,7 @@ impl Component<'_> {
     /// Returns `true` if the element has no closing tag, e.g. `<BR>`.
     pub const fn is_command(&self) -> bool {
         match self {
-            Self::Atom(tag) => tag.action.is_command(),
+            Self::AtomicTag(tag) => tag.action.is_command(),
             Self::Element(el) => el.command,
         }
     }
@@ -253,7 +253,7 @@ impl Component<'_> {
     /// Returns `true` if the element is in Open mode, meaning users can override it.
     pub const fn is_open(&self) -> bool {
         match self {
-            Self::Atom(tag) => tag.action.is_open(),
+            Self::AtomicTag(tag) => tag.action.is_open(),
             Self::Element(el) => el.open,
         }
     }
@@ -261,7 +261,7 @@ impl Component<'_> {
     /// Returns the element's variable name, if it has one.
     pub const fn variable(&self) -> Option<&str> {
         match self {
-            Self::Atom(_) => None,
+            Self::AtomicTag(_) => None,
             Self::Element(el) => match &el.variable {
                 Some(name) => Some(name.as_str()),
                 None => None,

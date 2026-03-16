@@ -386,7 +386,7 @@ impl Transformer {
         let args = tag.arguments.parse_args()?;
 
         match component {
-            mxp::Component::Atom(atom) => {
+            mxp::Component::AtomicTag(atom) => {
                 let action = atom.decode(&args, mxp_state)?;
                 self.mxp_apply_action(action, mxp_state);
                 Ok(())

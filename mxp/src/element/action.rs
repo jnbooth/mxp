@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::str::FromStr;
 
 use super::action_kind::ActionKind;
-use super::tag::Tag;
+use super::atomic_tag::AtomicTag;
 use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _};
 use crate::elements::{
     Color, Dest, Expire, Filter, Font, Frame, Gauge, Heading, Hyperlink, Image, Music, Relocate,
@@ -11,9 +11,9 @@ use crate::elements::{
 use crate::parse::{FromStrError, Words};
 use crate::{Error, ErrorKind};
 
-/// Effect caused by an element. Created by applying [`Arguments`] to an element [`Tag`].
+/// Effect caused by an element. Created by applying [`Arguments`] to an element [`AtomicTag`].
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Action<S> {
+pub enum Action<S = String> {
     /// [`<BOLD>`](https://www.zuggsoft.com/zmud/mxp.htm#Text%20Formatting):
     /// Make text bold.
     Bold,
@@ -270,8 +270,8 @@ impl FromStr for Action<String> {
         let mut words = Words::new(s);
         let name = words.next_or(ErrorKind::EmptyElement)?;
         crate::validate(name, ErrorKind::InvalidElementName)?;
-        let tag =
-            Tag::well_known(name).ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;
+        let tag = AtomicTag::well_known(name)
+            .ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;
         let args: Arguments<Cow<str>> = words.try_into()?;
         tag.check_arguments(&args)?;
         Ok(Action::decode(tag.action, args.scan(()))?.into_owned())

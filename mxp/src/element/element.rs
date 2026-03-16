@@ -1,14 +1,14 @@
+use super::atomic_tag::AtomicTag;
 use super::decoder::ElementDecoder;
 use super::item::ElementItem;
 use super::parse_as::ParseAs;
-use super::tag::Tag;
 use crate::arguments::Arguments;
 use crate::line::Mode;
 use crate::parse::{Decoder, Words};
 
 /// User-defined MXP tags.
 ///
-/// An `Element` is a combination of atomic [`Tag`]s, with its own argument schema. When a custom
+/// An `Element` is a combination of [`AtomicTag`]s, with its own argument schema. When a custom
 /// element is used, the arguments supplied to it are parsed and passed on to its child
 /// [`items`], each of which applies an [`Action`].
 ///
@@ -52,7 +52,7 @@ impl Element {
     }
 
     pub(crate) fn well_known() -> [(String, Element); 8] {
-        const COLOR: &Tag = Tag::well_known("color").unwrap();
+        const COLOR: &AtomicTag = AtomicTag::well_known("color").unwrap();
 
         fn color_el(name: &str, body: &str) -> (String, Element) {
             (

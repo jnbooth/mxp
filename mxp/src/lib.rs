@@ -15,8 +15,8 @@
 //! use mxp::{Dimension, FrameAction, FrameLayout};
 //!
 //! assert_eq!(
-//!     "<FRAME NAME=Map LEFT=-20c TOP=0 WIDTH=20c HEIGHT=20c>".parse::<mxp::Frame>(),
-//!     Ok(mxp::Frame {
+//!     "<FRAME NAME=Map LEFT=-20c TOP=0 WIDTH=20c HEIGHT=20c>".parse::<mxp::Action>(),
+//!     Ok(mxp::Action::Frame(mxp::Frame {
 //!         name: "Map".into(),
 //!         action: FrameAction::Open,
 //!         title: "Map".into(),
@@ -28,7 +28,7 @@
 //!             height: Some(Dimension::character_spacing(20)),
 //!             floating: false,
 //!         },
-//!     }),
+//!     })),
 //! );
 //! ```
 //!
@@ -56,7 +56,7 @@
 //!     let component = mxp_state.get_component(tag.name, secure)?;
 //!     let args = tag.arguments.parse_args()?;
 //!     match component {
-//!         mxp::Component::Atom(atom) => {
+//!         mxp::Component::AtomicTag(atom) => {
 //!             let action = atom.decode(&args, mxp_state)?;
 //!             handle_action(&action);
 //!         }
@@ -101,7 +101,7 @@ pub mod color;
 pub use color::RgbColor;
 
 pub mod element;
-pub use element::{Action, ActionKind, Element, Tag};
+pub use element::{Action, ActionKind, AtomicTag, Element};
 
 pub mod elements;
 pub use elements::*;
