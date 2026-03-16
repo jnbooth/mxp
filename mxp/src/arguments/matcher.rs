@@ -1,11 +1,9 @@
 use std::borrow::Cow;
 use std::ops::{Deref, DerefMut};
-use std::str::FromStr;
-
-use flagset::{FlagSet, Flags};
 
 use crate::CaseFoldMap;
-use crate::keyword::{KeywordFilter, KeywordFilterIter};
+use crate::arguments::ArgumentScanner;
+use crate::keyword::KeywordFilter;
 
 #[derive(Clone, Debug)]
 pub(crate) struct ArgumentMatcher<'a, I, S = Cow<'a, str>>
@@ -30,45 +28,37 @@ where
         }
     }
 
-    pub fn map<F, U>(self, f: F) -> ArgumentMatcher<'a, U, S>
-    where
-        F: FnOnce(I) -> U,
-        U: Iterator<Item = &'a S>,
-    {
-        ArgumentMatcher {
-            inner: f(self.inner),
-            named: self.named,
-        }
-    }
-
     pub fn next(&mut self) -> Option<I::Item> {
         self.inner.next()
     }
+}
 
-    pub fn next_or(&mut self, name: &str) -> Option<I::Item> {
+impl<'a, I, S> ArgumentScanner for ArgumentMatcher<'a, I, S>
+where
+    I: Iterator<Item = &'a S>,
+    S: AsRef<str>,
+{
+    type Output = &'a S;
+    type RawOutput = Self::Output;
+
+    fn decode<F: KeywordFilter>(&self, raw: Self::RawOutput) -> crate::Result<Self::Output> {
+        Ok(raw)
+    }
+
+    fn get_next(&mut self) -> Option<Self::RawOutput> {
+        self.inner.next()
+    }
+    fn get_next_or(&mut self, name: &str) -> Option<Self::RawOutput> {
         match self.named.get(name) {
             Some(arg) => Some(arg),
             None => self.inner.next(),
         }
     }
-
-    pub fn with_keywords<K>(self) -> ArgumentMatcher<'a, KeywordFilterIter<K, I>, S>
-    where
-        K: Flags + FromStr + KeywordFilter,
-        S: AsRef<str>,
-    {
-        self.map(KeywordFilterIter::new)
+    fn decode_next(&mut self) -> crate::Result<Option<Self::Output>> {
+        Ok(self.next())
     }
-}
-
-impl<'a, K, I, S> ArgumentMatcher<'a, KeywordFilterIter<K, I>, S>
-where
-    K: Flags + FromStr,
-    I: Iterator<Item = &'a S>,
-    S: AsRef<str>,
-{
-    pub fn into_keywords(self) -> Result<FlagSet<K>, K::Err> {
-        self.inner.into_keywords()
+    fn decode_next_or(&mut self, name: &str) -> crate::Result<Option<Self::Output>> {
+        Ok(self.get_next_or(name))
     }
 }
 
@@ -117,45 +107,8 @@ where
         }
     }
 
-    pub fn map<F, U>(self, f: F) -> OwnedArgumentMatcher<'a, U, S>
-    where
-        F: FnOnce(I) -> U,
-        U: Iterator<Item = S>,
-    {
-        OwnedArgumentMatcher {
-            inner: f(self.inner),
-            named: self.named,
-        }
-    }
-
     pub fn next(&mut self) -> Option<I::Item> {
         self.inner.next()
-    }
-
-    pub fn next_or(&mut self, name: &str) -> Option<I::Item> {
-        match self.named.remove(name) {
-            Some(arg) => Some(arg),
-            None => self.inner.next(),
-        }
-    }
-
-    pub fn with_keywords<K>(self) -> OwnedArgumentMatcher<'a, KeywordFilterIter<K, I>, S>
-    where
-        K: Flags + FromStr + KeywordFilter,
-        S: AsRef<str>,
-    {
-        self.map(KeywordFilterIter::new)
-    }
-}
-
-impl<K, I, S> OwnedArgumentMatcher<'_, KeywordFilterIter<K, I>, S>
-where
-    K: Flags + FromStr,
-    I: Iterator<Item = S>,
-    S: AsRef<str>,
-{
-    pub fn into_keywords(self) -> Result<FlagSet<K>, K::Err> {
-        self.inner.into_keywords()
     }
 }
 
@@ -178,5 +131,34 @@ where
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
+    }
+}
+
+impl<I, S> ArgumentScanner for OwnedArgumentMatcher<'_, I, S>
+where
+    I: Iterator<Item = S>,
+    S: AsRef<str>,
+{
+    type Output = S;
+    type RawOutput = Self::Output;
+
+    fn decode<F: KeywordFilter>(&self, raw: Self::RawOutput) -> crate::Result<Self::Output> {
+        Ok(raw)
+    }
+
+    fn get_next(&mut self) -> Option<Self::RawOutput> {
+        self.inner.next()
+    }
+    fn get_next_or(&mut self, name: &str) -> Option<Self::RawOutput> {
+        match self.named.remove(name) {
+            Some(arg) => Some(arg),
+            None => self.inner.next(),
+        }
+    }
+    fn decode_next(&mut self) -> crate::Result<Option<Self::Output>> {
+        Ok(self.next())
+    }
+    fn decode_next_or(&mut self, name: &str) -> crate::Result<Option<Self::Output>> {
+        Ok(self.get_next_or(name))
     }
 }

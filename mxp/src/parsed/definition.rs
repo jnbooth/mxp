@@ -3,7 +3,7 @@ use std::str::FromStr;
 use flagset::FlagSet;
 
 use super::arguments_str::ArgumentsStr;
-use crate::arguments::{Arguments, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _};
 use crate::color::RgbColor;
 use crate::element::{Element, ElementItem};
 use crate::keyword::{ElementKeyword, EntityKeyword, LineTagKeyword};
@@ -140,19 +140,19 @@ impl<'a> ElementDefinition<'a> {
         crate::validate(name, ErrorKind::InvalidElementName)?;
         let args = words.parse_args()?;
 
-        let mut iter = args.matcher().with_keywords();
+        let mut iter = args.scan(()).with_keywords();
 
-        let items = match iter.next() {
+        let items = match iter.get_next() {
             Some(&arg) => ElementItem::parse_all(arg)?,
             None => Vec::new(),
         };
 
-        let attributes = match iter.next_or("att") {
+        let attributes = match iter.get_next_or("att") {
             Some(&atts) => Words::new(atts).try_into()?,
             None => Arguments::default(),
         };
 
-        let tag = match iter.next_or("tag") {
+        let tag = match iter.get_next_or("tag") {
             Some(&tag) => match tag.parse() {
                 Ok(tag) if Mode(tag).is_user_defined() => Some(Mode(tag)),
                 _ => {
@@ -165,7 +165,7 @@ impl<'a> ElementDefinition<'a> {
             None => None,
         };
 
-        let (parse_as, variable) = match iter.next_or("flag") {
+        let (parse_as, variable) = match iter.get_next_or("flag") {
             Some(&flag) if flag[.."set ".len()].eq_ignore_ascii_case("set ") => {
                 (None, Some(flag["set ".len()..].to_owned()))
             }
@@ -232,12 +232,12 @@ impl<'a> EntityDefinition<'a> {
         let name = words.next_or(ErrorKind::IncompleteElement)?;
         crate::validate(name, ErrorKind::InvalidElementName)?;
         let args = words.parse_args()?;
-        let mut matcher = args.matcher().with_keywords();
-        let Some(value) = matcher.next() else {
+        let mut scanner = args.scan(()).with_keywords();
+        let Some(value) = scanner.get_next() else {
             return Err(Error::new(source, ErrorKind::EmptyElementInDefinition));
         };
-        let desc = matcher.next_or("desc").copied();
-        let keywords = matcher.into_keywords()?;
+        let desc = scanner.get_next_or("desc").copied();
+        let keywords = scanner.into_keywords()?;
         Ok(Self {
             name,
             desc,
@@ -282,15 +282,15 @@ pub struct LineTagDefinition<'a> {
 impl<'a> LineTagDefinition<'a> {
     fn parse(words: Words<'a>) -> crate::Result<Self> {
         let args = words.parse_args()?;
-        let mut matcher = args.matcher().with_keywords();
-        let index = Mode(matcher.next().expect_number()?.expect_some("Tag")?);
+        let mut scanner = args.scan(()).with_keywords();
+        let index = Mode(scanner.get_next().expect_number()?.expect_some("Tag")?);
         if !index.is_user_defined() {
             return Err(Error::new(index.to_string(), ErrorKind::IllegalLineTag));
         }
-        let window = matcher.next_or("windowname").copied();
-        let fore = matcher.next_or("fore").expect_color()?;
-        let back = matcher.next_or("back").expect_color()?;
-        let keywords = matcher.into_keywords()?;
+        let window = scanner.get_next_or("windowname").copied();
+        let fore = scanner.get_next_or("fore").expect_color()?;
+        let back = scanner.get_next_or("back").expect_color()?;
+        let keywords = scanner.into_keywords()?;
         let gag = if keywords.contains(LineTagKeyword::Gag) {
             Some(true)
         } else {

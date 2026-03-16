@@ -54,7 +54,7 @@ impl<S: AsRef<str>> Expire<S> {
     where
         A: ArgumentScanner<Output = S>,
     {
-        let name = scanner.next()?;
+        let name = scanner.decode_next()?;
         scanner.expect_end()?;
         Ok(Self { name })
     }

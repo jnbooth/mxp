@@ -1,9 +1,6 @@
 use std::borrow::Cow;
 
-use crate::arguments::{
-    ArgumentScanner as _, ArgumentScannerWithKeywords as _, ExpectArg as _,
-    IntoArgumentScannerWithKeywords,
-};
+use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::keyword::ImageKeyword;
 use crate::parse::Decoder;
 use crate::screen::{Align, Dimension};
@@ -136,17 +133,17 @@ impl_partial_eq!(Image);
 impl<S: AsRef<str>> Image<S> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: IntoArgumentScannerWithKeywords<ImageKeyword, S>,
+        A: ArgumentScanner<Output = S>,
     {
         let mut scanner = scanner.with_keywords();
-        let fname = scanner.next_or("fname")?.expect_some("fname")?;
-        let url = scanner.next_or("url")?;
-        let class = scanner.next_or("t")?;
-        let height = scanner.next_or("h")?.expect_number()?;
-        let width = scanner.next_or("w")?.expect_number()?;
-        let hspace = scanner.next_or("hspace")?.expect_number()?;
-        let vspace = scanner.next_or("vspace")?.expect_number()?;
-        let align = scanner.next_or("align")?.expect_variant()?;
+        let fname = scanner.decode_next_or("fname")?.expect_some("fname")?;
+        let url = scanner.decode_next_or("url")?;
+        let class = scanner.decode_next_or("t")?;
+        let height = scanner.decode_next_or("h")?.expect_number()?;
+        let width = scanner.decode_next_or("w")?.expect_number()?;
+        let hspace = scanner.decode_next_or("hspace")?.expect_number()?;
+        let vspace = scanner.decode_next_or("vspace")?.expect_number()?;
+        let align = scanner.decode_next_or("align")?.expect_variant()?;
         let keywords = scanner.into_keywords()?;
         let is_map = keywords.contains(ImageKeyword::IsMap);
         Ok(Self {

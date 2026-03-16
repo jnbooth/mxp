@@ -70,10 +70,13 @@ impl<S: AsRef<str>> Filter<S> {
     where
         A: ArgumentScanner<Output = S>,
     {
-        let src = scanner.next_or("src")?.expect_some("src")?;
-        let dest = scanner.next_or("dest")?;
-        let name = scanner.next_or("name")?.expect_some("name")?;
-        let proc = scanner.next_or("proc")?.expect_number()?.unwrap_or(0);
+        let src = scanner.decode_next_or("src")?.expect_some("src")?;
+        let dest = scanner.decode_next_or("dest")?;
+        let name = scanner.decode_next_or("name")?.expect_some("name")?;
+        let proc = scanner
+            .decode_next_or("proc")?
+            .expect_number()?
+            .unwrap_or(0);
         scanner.expect_end()?;
         Ok(Self {
             src,

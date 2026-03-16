@@ -1,9 +1,7 @@
 use std::borrow::Cow;
 use std::{fmt, str};
 
-use crate::arguments::{
-    ArgumentScanner as _, ArgumentScannerWithKeywords as _, IntoArgumentScannerWithKeywords,
-};
+use crate::arguments::ArgumentScanner;
 use crate::keyword::SendKeyword;
 use crate::parse::Decoder;
 
@@ -166,14 +164,16 @@ impl<'a> Send<&'a str> {
 impl<'a, S: AsRef<str> + From<&'a str> + Clone> Send<S> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: IntoArgumentScannerWithKeywords<SendKeyword, S>,
+        A: ArgumentScanner<Output = S>,
     {
         let mut scanner = scanner.with_keywords();
         let href = scanner
-            .next_or("href")?
+            .decode_next_or("href")?
             .unwrap_or(Send::EMBED_ENTITY.into());
-        let hint = scanner.next_or("hint")?.unwrap_or_else(|| href.clone());
-        let expire = scanner.next_or("expire")?;
+        let hint = scanner
+            .decode_next_or("hint")?
+            .unwrap_or_else(|| href.clone());
+        let expire = scanner.decode_next_or("expire")?;
         let keywords = scanner.into_keywords()?;
         Ok(Self {
             href,

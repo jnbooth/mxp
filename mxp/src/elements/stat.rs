@@ -65,9 +65,9 @@ impl<S: AsRef<str>> Stat<S> {
     where
         A: ArgumentScanner<Output = S>,
     {
-        let entity = scanner.next()?.expect_some("EntityName")?;
-        let max = scanner.next_or("max")?;
-        let caption = scanner.next_or("caption")?;
+        let entity = scanner.decode_next()?.expect_some("EntityName")?;
+        let max = scanner.decode_next_or("max")?;
+        let caption = scanner.decode_next_or("caption")?;
         scanner.expect_end()?;
         Ok(Self {
             entity,

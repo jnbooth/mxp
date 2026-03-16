@@ -92,13 +92,13 @@ impl<S: AsRef<str>> Font<S> {
     where
         A: ArgumentScanner<Output = S>,
     {
-        let face = scanner.next_or("face")?;
+        let face = scanner.decode_next_or("face")?;
         let size = scanner
-            .next_or("size")?
+            .decode_next_or("size")?
             .expect_number()?
             .and_then(NonZero::new);
-        let fore = scanner.next_or("color")?;
-        let back = scanner.next_or("back")?.expect_color()?;
+        let fore = scanner.decode_next_or("color")?;
+        let back = scanner.decode_next_or("back")?.expect_color()?;
         let mut color: Option<RgbColor> = None;
         let mut style: FlagSet<FontStyle> = FlagSet::empty();
         if let Some(fore) = fore {

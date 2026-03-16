@@ -64,9 +64,11 @@ impl<S: AsRef<str> + Clone> Hyperlink<S> {
     where
         A: ArgumentScanner<Output = S>,
     {
-        let href = scanner.next_or("href")?.expect_some("href")?;
-        let hint = scanner.next_or("hint")?.unwrap_or_else(|| href.clone());
-        let expire = scanner.next_or("expire")?;
+        let href = scanner.decode_next_or("href")?.expect_some("href")?;
+        let hint = scanner
+            .decode_next_or("hint")?
+            .unwrap_or_else(|| href.clone());
+        let expire = scanner.decode_next_or("expire")?;
         scanner.expect_end()?;
         Ok(Self { href, hint, expire })
     }

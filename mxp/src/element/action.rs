@@ -3,12 +3,12 @@ use std::str::FromStr;
 
 use super::action_kind::ActionKind;
 use super::tag::Tag;
-use crate::arguments::{Arguments, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _};
 use crate::elements::{
     Color, Dest, Expire, Filter, Font, Frame, Gauge, Heading, Hyperlink, Image, Music, Relocate,
     Send, Sound, Stat, StyleVersion, Support, Var,
 };
-use crate::parse::{Decoder, FromStrError, Scan, Words};
+use crate::parse::{FromStrError, Words};
 use crate::{Error, ErrorKind};
 
 /// Effect caused by an element. Created by applying [`Arguments`] to an element [`Tag`].
@@ -129,20 +129,20 @@ pub enum Action<S> {
 }
 
 impl<'a> Action<Cow<'a, str>> {
-    pub(crate) fn decode<D: Decoder, S: AsRef<str>>(
-        action: ActionKind,
-        mut scanner: Scan<'a, D, S>,
-    ) -> crate::Result<Self> {
+    pub(crate) fn decode<A>(action: ActionKind, mut scanner: A) -> crate::Result<Self>
+    where
+        A: ArgumentScanner<Output = Cow<'a, str>>,
+    {
         Ok(match action {
             ActionKind::Bold => Self::Bold,
             ActionKind::Br => Self::Br,
-            ActionKind::Color => Self::Color(scanner.try_into()?),
-            ActionKind::Dest => Self::Dest(scanner.try_into()?),
-            ActionKind::Expire => Self::Expire(scanner.try_into()?),
-            ActionKind::Filter => Self::Filter(scanner.try_into()?),
-            ActionKind::Font => Self::Font(scanner.try_into()?),
-            ActionKind::Frame => Self::Frame(scanner.try_into()?),
-            ActionKind::Gauge => Self::Gauge(scanner.try_into()?),
+            ActionKind::Color => Self::Color(Color::scan(scanner)?),
+            ActionKind::Dest => Self::Dest(Dest::scan(scanner)?),
+            ActionKind::Expire => Self::Expire(Expire::scan(scanner)?),
+            ActionKind::Filter => Self::Filter(Filter::scan(scanner)?),
+            ActionKind::Font => Self::Font(Font::scan(scanner)?),
+            ActionKind::Frame => Self::Frame(Frame::scan(scanner)?),
+            ActionKind::Gauge => Self::Gauge(Gauge::scan(scanner)?),
             ActionKind::H1 => Self::Heading(Heading::H1),
             ActionKind::H2 => Self::Heading(Heading::H2),
             ActionKind::H3 => Self::Heading(Heading::H3),
@@ -151,11 +151,11 @@ impl<'a> Action<Cow<'a, str>> {
             ActionKind::H6 => Self::Heading(Heading::H6),
             ActionKind::Highlight => Self::Highlight,
             ActionKind::Hr => Self::Hr,
-            ActionKind::Hyperlink => Self::Hyperlink(scanner.try_into()?),
-            ActionKind::Image => Self::Image(Image::try_from(scanner)?),
+            ActionKind::Hyperlink => Self::Hyperlink(Hyperlink::scan(scanner)?),
+            ActionKind::Image => Self::Image(Image::scan(scanner)?),
             ActionKind::Italic => Self::Italic,
             ActionKind::Mxp => {
-                let command = scanner.next()?.expect_some("off")?;
+                let command = scanner.decode_next()?.expect_some("off")?;
                 if command.eq_ignore_ascii_case("off") {
                     Self::MxpOff
                 } else {
@@ -163,7 +163,7 @@ impl<'a> Action<Cow<'a, str>> {
                 }
             }
             ActionKind::Music => {
-                let music = Music::try_from(scanner)?;
+                let music = Music::scan(scanner)?;
                 if music.is_off() {
                     Self::MusicOff
                 } else {
@@ -173,28 +173,28 @@ impl<'a> Action<Cow<'a, str>> {
             ActionKind::NoBr => Self::NoBr,
             ActionKind::P => Self::P,
             ActionKind::Password => Self::Password,
-            ActionKind::Relocate => Self::Relocate(scanner.try_into()?),
+            ActionKind::Relocate => Self::Relocate(Relocate::scan(scanner)?),
             ActionKind::Reset => Self::Reset,
             ActionKind::SBr => Self::SBr,
-            ActionKind::Send => Self::Send(scanner.try_into()?),
+            ActionKind::Send => Self::Send(Send::scan(scanner)?),
             ActionKind::Small => Self::Small,
             ActionKind::Sound => {
-                let sound = Sound::try_from(scanner)?;
+                let sound = Sound::scan(scanner)?;
                 if sound.is_off() {
                     Self::SoundOff
                 } else {
                     Self::Sound(sound)
                 }
             }
-            ActionKind::Stat => Self::Stat(scanner.try_into()?),
+            ActionKind::Stat => Self::Stat(Stat::scan(scanner)?),
             ActionKind::Strikeout => Self::Strikeout,
-            ActionKind::Support => Self::Support(scanner.try_into()?),
+            ActionKind::Support => Self::Support(Support::scan(scanner)?),
             ActionKind::Tt => Self::Tt,
             ActionKind::Underline => Self::Underline,
             ActionKind::User => Self::User,
-            ActionKind::Var => Self::Var(scanner.try_into()?),
+            ActionKind::Var => Self::Var(Var::scan(scanner)?),
             ActionKind::Version => {
-                if let Some(styleversion) = scanner.next()? {
+                if let Some(styleversion) = scanner.decode_next()? {
                     Self::StyleVersion(StyleVersion { styleversion })
                 } else {
                     Self::Version

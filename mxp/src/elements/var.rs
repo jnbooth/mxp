@@ -2,10 +2,7 @@ use std::borrow::Cow;
 
 use flagset::FlagSet;
 
-use crate::arguments::{
-    ArgumentScanner as _, ArgumentScannerWithKeywords as _, ExpectArg as _,
-    IntoArgumentScannerWithKeywords,
-};
+use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::keyword::EntityKeyword;
 use crate::parse::Decoder;
 use crate::parsed::EntityDefinition;
@@ -79,11 +76,11 @@ impl_partial_eq!(Var);
 impl<S: AsRef<str>> Var<S> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: IntoArgumentScannerWithKeywords<EntityKeyword, S>,
+        A: ArgumentScanner<Output = S>,
     {
         let mut scanner = scanner.with_keywords();
-        let variable = scanner.next()?.expect_some("Variable")?;
-        let desc = scanner.next_or("desc")?;
+        let variable = scanner.decode_next()?.expect_some("Variable")?;
+        let desc = scanner.decode_next_or("desc")?;
         let keywords = scanner.into_keywords()?;
         Ok(Self {
             name: variable,

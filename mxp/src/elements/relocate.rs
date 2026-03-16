@@ -58,8 +58,11 @@ impl<S: AsRef<str>> Relocate<S> {
     where
         A: ArgumentScanner<Output = S>,
     {
-        let hostname = scanner.next()?.expect_some("Hostname")?;
-        let port = scanner.next()?.expect_number()?.expect_some("Port")?;
+        let hostname = scanner.decode_next()?.expect_some("Hostname")?;
+        let port = scanner
+            .decode_next()?
+            .expect_number()?
+            .expect_some("Port")?;
         scanner.expect_end()?;
         Ok(Self { hostname, port })
     }

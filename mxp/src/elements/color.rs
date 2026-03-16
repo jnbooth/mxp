@@ -1,8 +1,6 @@
-use std::str::FromStr;
-
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::color::RgbColor;
-use crate::parse::{Decoder, OwnedScan, Scan};
+use crate::parse::Decoder;
 
 /// Sets the color of the text.
 ///
@@ -34,33 +32,38 @@ impl Color {
     where
         A: ArgumentScanner,
     {
-        let fore = scanner.next_or("fore")?.expect_color()?;
-        let back = scanner.next_or("back")?.expect_color()?;
+        let fore = scanner.decode_next_or("fore")?.expect_color()?;
+        let back = scanner.decode_next_or("back")?.expect_color()?;
         scanner.expect_end()?;
         Ok(Self { fore, back })
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Color {
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<crate::parse::Scan<'a, D, S>> for Color {
     type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+    #[inline]
+    fn try_from(scanner: crate::parse::Scan<'a, D, S>) -> crate::Result<Self> {
         Self::scan(scanner)
     }
 }
-
-impl<'a, D: Decoder> TryFrom<OwnedScan<'a, D>> for Color {
+impl<'a, D: Decoder> TryFrom<crate::parse::OwnedScan<'a, D>> for Color {
     type Error = crate::Error;
-
-    fn try_from(scanner: OwnedScan<'a, D>) -> crate::Result<Self> {
+    #[inline]
+    fn try_from(scanner: crate::parse::OwnedScan<'a, D>) -> Result<Self, Self::Error> {
         Self::scan(scanner)
     }
 }
-
-impl FromStr for Color {
-    type Err = crate::parse::FromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl<'a> TryFrom<&'a str> for Color {
+    type Error = crate::parse::FromStrError;
+    #[inline]
+    fn try_from(s: &'a str) -> Result<Self, Self::Error> {
         crate::parse::parse_element(s)
+    }
+}
+impl std::str::FromStr for Color {
+    type Err = crate::parse::FromStrError;
+    #[inline]
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        crate::parse::parse_element::<Color>(s)
     }
 }

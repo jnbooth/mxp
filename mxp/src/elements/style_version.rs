@@ -57,7 +57,7 @@ impl<S: AsRef<str>> StyleVersion<S> {
     where
         A: ArgumentScanner<Output = S>,
     {
-        let styleversion = scanner.next()?.expect_some("StyleVersion")?;
+        let styleversion = scanner.decode_next()?.expect_some("StyleVersion")?;
         scanner.expect_end()?;
         Ok(Self { styleversion })
     }

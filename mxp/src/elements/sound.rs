@@ -136,12 +136,15 @@ impl<S: AsRef<str>> Sound<S> {
     where
         A: ArgumentScanner<Output = S>,
     {
-        let fname = scanner.next_or("fname")?.expect_some("fname")?;
-        let volume = scanner.next_or("v")?.expect_number()?.unwrap_or(100);
-        let repeat = scanner.next_or("l")?.expect_number()?.unwrap_or_default();
-        let priority = scanner.next_or("p")?.expect_number()?.unwrap_or(50);
-        let class = scanner.next_or("t")?;
-        let url = scanner.next_or("u")?;
+        let fname = scanner.decode_next_or("fname")?.expect_some("fname")?;
+        let volume = scanner.decode_next_or("v")?.expect_number()?.unwrap_or(100);
+        let repeat = scanner
+            .decode_next_or("l")?
+            .expect_number()?
+            .unwrap_or_default();
+        let priority = scanner.decode_next_or("p")?.expect_number()?.unwrap_or(50);
+        let class = scanner.decode_next_or("t")?;
+        let url = scanner.decode_next_or("u")?;
         scanner.expect_end()?;
         Ok(Self {
             fname,

@@ -3,6 +3,7 @@ use std::{slice, vec};
 
 use flagset::FlagSet;
 
+use crate::arguments::ArgumentScanner;
 use crate::element::ActionKind;
 use crate::parse::Decoder;
 use crate::responses::SupportResponse;
@@ -74,13 +75,15 @@ impl<'a, S> IntoIterator for &'a Support<S> {
 }
 
 impl<S: AsRef<str>> Support<S> {
-    pub(crate) fn scan<I>(scanner: I) -> crate::Result<Self>
+    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
     where
-        I: IntoIterator<Item = crate::Result<S>>,
+        A: ArgumentScanner<Output = S>,
     {
-        Ok(Self {
-            questions: scanner.into_iter().collect::<Result<_, _>>()?,
-        })
+        let mut questions = Vec::new();
+        while let Some(question) = scanner.decode_next()? {
+            questions.push(question);
+        }
+        Ok(Self { questions })
     }
 }
 

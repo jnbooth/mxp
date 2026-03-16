@@ -71,10 +71,10 @@ impl<S: AsRef<str>> Gauge<S> {
     where
         A: ArgumentScanner<Output = S>,
     {
-        let entity = scanner.next()?.expect_some("EntityName")?;
-        let max = scanner.next_or("max")?;
-        let caption = scanner.next_or("caption")?;
-        let color = scanner.next_or("color")?.expect_color()?;
+        let entity = scanner.decode_next()?.expect_some("EntityName")?;
+        let max = scanner.decode_next_or("max")?;
+        let caption = scanner.decode_next_or("caption")?;
+        let color = scanner.decode_next_or("color")?.expect_color()?;
         scanner.expect_end()?;
         Ok(Self {
             entity,

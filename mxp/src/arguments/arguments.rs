@@ -1,13 +1,10 @@
 use std::borrow::Cow;
 use std::collections::hash_map;
-use std::{slice, vec};
 
 use uncased::Uncased;
 
 use super::iter::{Named, Positional};
-use super::matcher::ArgumentMatcher;
 use crate::CaseFoldMap;
-use crate::arguments::OwnedArgumentMatcher;
 use crate::keyword::KeywordFilter;
 use crate::parse::{Decoder, OwnedScan, Scan, Words, validate};
 use crate::{Error, ErrorKind};
@@ -98,10 +95,6 @@ impl<'a, S: AsRef<str>> Arguments<'a, S> {
         }
     }
 
-    pub(crate) fn matcher(&self) -> ArgumentMatcher<'_, slice::Iter<'_, S>, S> {
-        ArgumentMatcher::new(&self.positional, &self.named)
-    }
-
     pub(crate) fn scan<D: Decoder>(&self, decoder: D) -> Scan<'_, D, S> {
         Scan::new(decoder, &self.positional, &self.named)
     }
@@ -188,12 +181,6 @@ impl TryFrom<Words<'_>> for Arguments<'static, String> {
         this.named.shrink_to_fit();
         this.positional.shrink_to_fit();
         Ok(this)
-    }
-}
-
-impl<'a, S> From<Arguments<'a, S>> for OwnedArgumentMatcher<'a, vec::IntoIter<S>, S> {
-    fn from(value: Arguments<'a, S>) -> Self {
-        OwnedArgumentMatcher::new(value.positional, value.named)
     }
 }
 

@@ -9,10 +9,5 @@ pub(crate) use expect_arg::ExpectArg;
 mod iter;
 pub use iter::{Named, Positional};
 
-mod matcher;
-pub(crate) use matcher::{ArgumentMatcher, OwnedArgumentMatcher};
-
 mod scanner;
-pub(crate) use scanner::{
-    ArgumentScanner, ArgumentScannerWithKeywords, IntoArgumentScannerWithKeywords,
-};
+pub(crate) use scanner::ArgumentScanner;

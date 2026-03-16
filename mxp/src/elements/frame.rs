@@ -1,9 +1,6 @@
 use std::borrow::Cow;
 
-use crate::arguments::{
-    ArgumentScanner as _, ArgumentScannerWithKeywords as _, ExpectArg as _,
-    IntoArgumentScannerWithKeywords,
-};
+use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::keyword::FrameKeyword;
 use crate::parse::{Decoder, UnrecognizedVariant};
 use crate::screen::{Align, Dimension};
@@ -164,27 +161,33 @@ impl_parse_enum!(YesOrNo, No, Yes);
 impl<S: AsRef<str> + Clone> Frame<S> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: IntoArgumentScannerWithKeywords<FrameKeyword, S>,
+        A: ArgumentScanner<Output = S>,
     {
         let mut scanner = scanner.with_keywords();
-        let name = scanner.next_or("name")?.expect_some("name")?;
+        let name = scanner.decode_next_or("name")?.expect_some("name")?;
         let action = scanner
-            .next_or("action")?
+            .decode_next_or("action")?
             .expect_variant()?
             .unwrap_or_default();
-        let title = scanner.next_or("title")?.unwrap_or_else(|| name.clone());
+        let title = scanner
+            .decode_next_or("title")?
+            .unwrap_or_else(|| name.clone());
         let align = scanner
-            .next_or("align")?
+            .decode_next_or("align")?
             .expect_variant()?
             .unwrap_or_default();
         let left = scanner
-            .next_or("left")?
+            .decode_next_or("left")?
             .expect_number()?
             .unwrap_or_default();
-        let top = scanner.next_or("top")?.expect_number()?.unwrap_or_default();
-        let width = scanner.next_or("width")?.expect_number()?;
-        let height = scanner.next_or("height")?.expect_number()?;
-        let scrolling = scanner.next_or("scrolling")?.expect_variant()? == Some(YesOrNo::Yes);
+        let top = scanner
+            .decode_next_or("top")?
+            .expect_number()?
+            .unwrap_or_default();
+        let width = scanner.decode_next_or("width")?.expect_number()?;
+        let height = scanner.decode_next_or("height")?.expect_number()?;
+        let scrolling =
+            scanner.decode_next_or("scrolling")?.expect_variant()? == Some(YesOrNo::Yes);
         let keywords = scanner.into_keywords()?;
         let layout = if keywords.contains(FrameKeyword::Internal) {
             FrameLayout::Internal { align }

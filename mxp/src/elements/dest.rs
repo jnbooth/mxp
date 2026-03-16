@@ -1,10 +1,7 @@
 use std::borrow::Cow;
 use std::num::NonZero;
 
-use crate::arguments::{
-    ArgumentScanner as _, ArgumentScannerWithKeywords as _, ExpectArg as _,
-    IntoArgumentScannerWithKeywords,
-};
+use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::keyword::DestKeyword;
 use crate::parse::Decoder;
 
@@ -101,16 +98,16 @@ impl<S: AsRef<str>> From<S> for Dest<S> {
 impl<S: AsRef<str>> Dest<S> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: IntoArgumentScannerWithKeywords<DestKeyword, S>,
+        A: ArgumentScanner<Output = S>,
     {
         let mut scanner = scanner.with_keywords();
-        let name = scanner.next()?;
+        let name = scanner.decode_next()?;
         let column = scanner
-            .next_or("x")?
+            .decode_next_or("x")?
             .expect_number()?
             .and_then(NonZero::new);
         let line = scanner
-            .next_or("y")?
+            .decode_next_or("y")?
             .expect_number()?
             .and_then(NonZero::new);
         let keywords = scanner.into_keywords()?;
