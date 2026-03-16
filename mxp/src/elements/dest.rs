@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::num::NonZero;
 use std::str::FromStr;
 
-use crate::arguments::ExpectArg as _;
+use crate::arguments::{ArgumentScannerWithKeywords, ExpectArg as _};
 use crate::keyword::DestKeyword;
 use crate::parse::{Decoder, Scan};
 
@@ -96,11 +96,11 @@ impl<S: AsRef<str>> From<S> for Dest<S> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Dest<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        let mut scanner = scanner.with_keywords::<DestKeyword>();
+impl<S: AsRef<str>> Dest<S> {
+    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    where
+        A: ArgumentScannerWithKeywords<Keyword = DestKeyword, Output = S>,
+    {
         let name = scanner.next()?;
         let column = scanner
             .next_or("x")?
@@ -118,6 +118,15 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Dest<Cow<'a, str
             eof: keywords.contains(DestKeyword::Eof),
             eol: keywords.contains(DestKeyword::Eol),
         })
+    }
+}
+
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Dest<Cow<'a, str>> {
+    type Error = crate::Error;
+
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+        let scanner = scanner.with_keywords::<DestKeyword>();
+        Self::scan(scanner)
     }
 }
 

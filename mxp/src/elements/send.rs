@@ -2,6 +2,7 @@ use std::borrow::Cow;
 use std::fmt;
 use std::str::{self, FromStr};
 
+use crate::arguments::ArgumentScannerWithKeywords;
 use crate::keyword::SendKeyword;
 use crate::parse::{Decoder, Scan};
 
@@ -161,14 +162,14 @@ impl<'a> Send<&'a str> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Send<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        let mut scanner = scanner.with_keywords();
+impl<'a, S: AsRef<str> + From<&'a str> + Clone> Send<S> {
+    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    where
+        A: ArgumentScannerWithKeywords<Keyword = SendKeyword, Output = S>,
+    {
         let href = scanner
             .next_or("href")?
-            .unwrap_or(Cow::Borrowed(Send::EMBED_ENTITY));
+            .unwrap_or(Send::EMBED_ENTITY.into());
         let hint = scanner.next_or("hint")?.unwrap_or_else(|| href.clone());
         let expire = scanner.next_or("expire")?;
         let keywords = scanner.into_keywords()?;
@@ -178,6 +179,14 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Send<Cow<'a, str
             expire,
             prompt: keywords.contains(SendKeyword::Prompt),
         })
+    }
+}
+
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Send<Cow<'a, str>> {
+    type Error = crate::Error;
+
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+        Self::scan(scanner.with_keywords())
     }
 }
 

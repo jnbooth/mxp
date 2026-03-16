@@ -3,7 +3,7 @@ use std::fmt;
 use std::num::{NonZero, ParseIntError};
 use std::str::FromStr;
 
-use crate::arguments::ExpectArg as _;
+use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::parse::{Decoder, Scan};
 
 /// Specifies the number of times a sound/music file should be played.
@@ -131,10 +131,11 @@ impl<S: AsRef<str>> Sound<S> {
 
 impl_partial_eq!(Sound);
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Sound<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+impl<S: AsRef<str>> Sound<S> {
+    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    where
+        A: ArgumentScanner<Output = S>,
+    {
         let fname = scanner.next_or("fname")?.expect_some("fname")?;
         let volume = scanner.next_or("v")?.expect_number()?.unwrap_or(100);
         let repeat = scanner.next_or("l")?.expect_number()?.unwrap_or_default();
@@ -149,6 +150,14 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Sound<Cow<'a, st
             class,
             url,
         })
+    }
+}
+
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Sound<Cow<'a, str>> {
+    type Error = crate::Error;
+
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+        Self::scan(scanner)
     }
 }
 

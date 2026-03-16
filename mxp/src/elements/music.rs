@@ -2,7 +2,7 @@ use std::borrow::Cow;
 use std::str::FromStr;
 
 use super::AudioRepetition;
-use crate::arguments::ExpectArg as _;
+use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::parse::{Decoder, Scan, StringVariant, UnrecognizedVariant};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
@@ -115,10 +115,11 @@ impl<S: AsRef<str>> Music<S> {
 
 impl_partial_eq!(Music);
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Music<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+impl<S: AsRef<str>> Music<S> {
+    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    where
+        A: ArgumentScanner<Output = S>,
+    {
         let fname = scanner.next_or("fname")?.expect_some("fname")?;
         let volume = scanner.next_or("v")?.expect_number()?.unwrap_or(100);
         let repeat = scanner.next_or("l")?.expect_number()?.unwrap_or_default();
@@ -135,6 +136,14 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Music<Cow<'a, st
             class,
             url,
         })
+    }
+}
+
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Music<Cow<'a, str>> {
+    type Error = crate::Error;
+
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+        Self::scan(scanner)
     }
 }
 

@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
-use crate::arguments::ExpectArg as _;
+use crate::arguments::{ArgumentScannerWithKeywords, ExpectArg as _};
 use crate::keyword::ImageKeyword;
 use crate::parse::{Decoder, Scan};
 use crate::screen::{Align, Dimension};
@@ -131,11 +131,11 @@ impl<S: AsRef<str>> Image<S> {
 
 impl_partial_eq!(Image);
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Image<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        let mut scanner = scanner.with_keywords();
+impl<S: AsRef<str>> Image<S> {
+    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    where
+        A: ArgumentScannerWithKeywords<Keyword = ImageKeyword, Output = S>,
+    {
         let fname = scanner.next_or("fname")?.expect_some("fname")?;
         let url = scanner.next_or("url")?;
         let class = scanner.next_or("t")?;
@@ -157,6 +157,14 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Image<Cow<'a, st
             align,
             is_map,
         })
+    }
+}
+
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Image<Cow<'a, str>> {
+    type Error = crate::Error;
+
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+        Self::scan(scanner.with_keywords())
     }
 }
 

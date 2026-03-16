@@ -11,3 +11,6 @@ pub use iter::{Named, Positional};
 
 mod matcher;
 pub(crate) use matcher::ArgumentMatcher;
+
+mod scanner;
+pub(crate) use scanner::{ArgumentScanner, ArgumentScannerWithKeywords};

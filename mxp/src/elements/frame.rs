@@ -1,7 +1,7 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
-use crate::arguments::ExpectArg as _;
+use crate::arguments::{ArgumentScannerWithKeywords, ExpectArg as _};
 use crate::keyword::FrameKeyword;
 use crate::parse::{Decoder, Scan, UnrecognizedVariant};
 use crate::screen::{Align, Dimension};
@@ -159,11 +159,11 @@ enum YesOrNo {
 
 impl_parse_enum!(YesOrNo, No, Yes);
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Frame<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        let mut scanner = scanner.with_keywords();
+impl<S: AsRef<str> + Clone> Frame<S> {
+    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    where
+        A: ArgumentScannerWithKeywords<Keyword = FrameKeyword, Output = S>,
+    {
         let name = scanner.next_or("name")?.expect_some("name")?;
         let action = scanner
             .next_or("action")?
@@ -201,6 +201,14 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Frame<Cow<'a, st
             layout,
             scrolling,
         })
+    }
+}
+
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Frame<Cow<'a, str>> {
+    type Error = crate::Error;
+
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+        Self::scan(scanner.with_keywords())
     }
 }
 

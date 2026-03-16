@@ -41,6 +41,10 @@ where
         }
     }
 
+    pub fn next(&mut self) -> Option<I::Item> {
+        self.inner.next()
+    }
+
     pub fn next_or(&mut self, name: &str) -> Option<I::Item> {
         match self.named.get(name) {
             Some(arg) => Some(arg),

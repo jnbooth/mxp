@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::str::FromStr;
 
+use crate::arguments::ArgumentScanner;
 use crate::parse::{Decoder, Scan};
 
 /// Removes previously displayed links. For example, when moving to a new room, links from the
@@ -49,13 +50,22 @@ impl<S: AsRef<str>> Expire<S> {
 
 impl_partial_eq!(Expire);
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Expire<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+impl<S: AsRef<str>> Expire<S> {
+    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    where
+        A: ArgumentScanner<Output = S>,
+    {
         let name = scanner.next()?;
         scanner.expect_end()?;
         Ok(Self { name })
+    }
+}
+
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Expire<Cow<'a, str>> {
+    type Error = crate::Error;
+
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+        Self::scan(scanner)
     }
 }
 

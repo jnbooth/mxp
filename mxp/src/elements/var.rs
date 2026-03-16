@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use flagset::FlagSet;
 
-use crate::arguments::ExpectArg as _;
+use crate::arguments::{ArgumentScannerWithKeywords, ExpectArg as _};
 use crate::keyword::EntityKeyword;
 use crate::parse::{Decoder, Scan};
 use crate::parsed::EntityDefinition;
@@ -74,11 +74,11 @@ impl<S: AsRef<str>> Var<S> {
 
 impl_partial_eq!(Var);
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Var<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        let mut scanner = scanner.with_keywords();
+impl<S: AsRef<str>> Var<S> {
+    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    where
+        A: ArgumentScannerWithKeywords<Keyword = EntityKeyword, Output = S>,
+    {
         let variable = scanner.next()?.expect_some("Variable")?;
         let desc = scanner.next_or("desc")?;
         let keywords = scanner.into_keywords()?;
@@ -87,6 +87,14 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Var<Cow<'a, str>
             desc,
             keywords,
         })
+    }
+}
+
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Var<Cow<'a, str>> {
+    type Error = crate::Error;
+
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+        Self::scan(scanner.with_keywords())
     }
 }
 

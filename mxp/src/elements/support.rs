@@ -74,13 +74,22 @@ impl<'a, S> IntoIterator for &'a Support<S> {
     }
 }
 
+impl<S: AsRef<str>> Support<S> {
+    pub(crate) fn scan<I>(scanner: I) -> crate::Result<Self>
+    where
+        I: IntoIterator<Item = crate::Result<S>>,
+    {
+        Ok(Self {
+            questions: scanner.into_iter().collect::<Result<_, _>>()?,
+        })
+    }
+}
+
 impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Support<Cow<'a, str>> {
     type Error = crate::Error;
 
     fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        Ok(Self {
-            questions: scanner.collect::<Result<_, _>>()?,
-        })
+        Self::scan(scanner)
     }
 }
 

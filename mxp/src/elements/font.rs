@@ -4,7 +4,7 @@ use std::str::{self, FromStr};
 
 use flagset::{FlagSet, flags};
 
-use crate::arguments::ExpectArg as _;
+use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::color::RgbColor;
 use crate::parse::{Decoder, Scan, UnrecognizedVariant};
 
@@ -88,10 +88,11 @@ impl<S: AsRef<str>> Font<S> {
 
 impl_partial_eq!(Font);
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Font<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+impl<S: AsRef<str>> Font<S> {
+    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    where
+        A: ArgumentScanner<Output = S>,
+    {
         let face = scanner.next_or("face")?;
         let size = scanner
             .next_or("size")?
@@ -102,7 +103,7 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Font<Cow<'a, str
         let mut color: Option<RgbColor> = None;
         let mut style: FlagSet<FontStyle> = FlagSet::empty();
         if let Some(fore) = fore {
-            for effect in fore.split(',') {
+            for effect in fore.as_ref().split(',') {
                 let effect = effect.trim_ascii();
                 if let Ok(flag) = effect.parse::<FontStyle>() {
                     style |= flag;
@@ -119,6 +120,14 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Font<Cow<'a, str
             style,
             back,
         })
+    }
+}
+
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Font<Cow<'a, str>> {
+    type Error = crate::Error;
+
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+        Self::scan(scanner)
     }
 }
 

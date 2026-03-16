@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::arguments::ExpectArg as _;
+use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::color::RgbColor;
 use crate::parse::{Decoder, Scan};
 
@@ -29,14 +29,23 @@ pub struct Color {
     pub back: Option<RgbColor>,
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Color {
-    type Error = crate::Error;
-
-    fn try_from(mut scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+impl Color {
+    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    where
+        A: ArgumentScanner,
+    {
         let fore = scanner.next_or("fore")?.expect_color()?;
         let back = scanner.next_or("back")?.expect_color()?;
         scanner.expect_end()?;
         Ok(Self { fore, back })
+    }
+}
+
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Color {
+    type Error = crate::Error;
+
+    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
+        Self::scan(scanner)
     }
 }
 
