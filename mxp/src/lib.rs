@@ -35,10 +35,9 @@
 //! ```
 //!
 //! However, this approach lacks the most important aspect of MXP parsing: custom entities and
-//! elements. It also has no way to differentiate between secure modes and open modes.
-//! (It's also inefficient, because it uses owned strings rather than borrowed string slices.)
-//! The intended way to use this library is with state management via [`mxp::State`] and
-//! [`mxp::ModeState`].
+//! elements. It also has no way to protect secure tags during OPEN line modes. (It's also
+//! inefficient, because it uses owned strings rather than borrowed string slices.) The intended way
+//! to use this library is with state management via [`mxp::State`] and [`mxp::ModeState`].
 //!
 //! [`mxp::State`]: State
 //! [`mxp::ModeState`]: ModeState
@@ -50,12 +49,11 @@
 //! In this approach, rather than using [`FromStr`] to parse tags with owned strings,
 //! [`ParsedElement::parse`] is used to deserialize tags in-place using borrowed string slices.
 //!
-//! Furthermore, [`mxp::ModeState`] can be used to handle differentiation between open and closed
-//! modes, as well as retrieving custom elements from user-defined line tags. Rather than being
-//! parsed from XML tags like everything else in MXP, modes are set by ANSI escape sequences. For
-//! example, to set the MXP mode to 20, a server would send `<ESC>[20z`. As such, it is up to the
-//! client to  recognize MXP mode changes and apply them with [`ModeState::update`] (or one of its
-//! convenience aliases, such as [`ModeState::set`]).
+//! Furthermore, [`mxp::ModeState`] can be used to handle line modes, as well as retrieving custom
+//! elements from user-defined line tags. Rather than being parsed from XML tags like everything
+//! else in MXP, modes are set by ANSI escape sequences. For example, to set the MXP mode to 20,
+//! server would send `<ESC>[20z`. As such, it is up to the client to recognize MXP mode changes and
+//! apply them with [`ModeState::set`] and [`ModeState::revert`].
 //!
 //! [`FromStr`]: std::str::FromStr
 //! [`ParsedElement::parse`]: parsed::ParsedElement::parse
@@ -164,7 +162,7 @@ mod line;
 pub use line::{LineTag, LineTagProperties, Mode, ModeRangeError, ModeState};
 
 mod parse;
-pub use parse::{Error, ErrorKind, is_valid, validate, validate_utf8};
+pub use parse::{Decoder, Error, ErrorKind, is_valid, validate, validate_utf8};
 
 pub mod parsed;
 
@@ -176,6 +174,7 @@ pub use screen::{Align, Dimension, DimensionUnit};
 mod state;
 pub use state::{Component, State};
 
+/// Type alias for `Result<T, mxp::Error>`.
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Reexport from the [`flagset`](flagset::FlagSet) package.

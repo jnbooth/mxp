@@ -36,8 +36,8 @@ pub struct Element {
     /// If specified, text contained by this element should be stored as a local variable with the
     /// given name.
     pub variable: Option<String>,
-    /// Open elements can be used in any [`Mode`]. By default, elements are secure (not open),
-    /// meaning they can only be used if the current line mode is [secure](Mode::is_secure).
+    /// OPEN elements can be used in any [`Mode`]. By default, elements can only be used if the
+    /// current line mode is not [OPEN](Mode::is_open).
     pub open: bool,
     /// Command tags do not have content, so they have no closing tag.
     pub command: bool,

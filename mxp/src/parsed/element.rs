@@ -27,10 +27,12 @@ impl<'a> ParsedElement<'a> {
     /// Parses an element from data sent by the server.
     ///
     /// Returns an error if `secure` is false and the data is a definition tag (`<!...>`).
-    /// Definitions can only be processed if the current line mode is
-    /// [secure](crate::Mode::is_secure).
+    /// Definitions can only be processed if the current line mode is not OPEN. See
+    /// [`Mode::is_open`] for more.
     ///
     /// Important note: this function expects `source` to omit the starting `<` and ending `>`.
+    ///
+    /// [`Mode::is_open`]: crate::Mode::is_open
     pub fn parse(source: &'a str, secure: bool) -> crate::Result<Self> {
         let source = source.trim_ascii();
 

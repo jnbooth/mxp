@@ -89,7 +89,7 @@ impl State {
     }
 
     /// Retrieves a tag or element by name. Returns an error if no tag or element is defined by
-    /// that name, or if the tag or element is not Open  (see [`Component::is_open`]) and `secure`
+    /// that name, or if the tag or element is not OPEN (see [`Component::is_open`]) and `secure`
     /// is false.
     pub fn get_component(&self, name: &str, secure: bool) -> crate::Result<Component<'_>> {
         let component = if let Some(custom) = self.elements.get(name) {
@@ -255,7 +255,7 @@ impl Component<'_> {
         }
     }
 
-    /// Returns `true` if the element is in Open mode, meaning users can override it.
+    /// Returns `true` if the element is in OPEN mode, meaning users can override it.
     pub const fn is_open(&self) -> bool {
         match self {
             Self::AtomicTag(tag) => tag.action.is_open(),

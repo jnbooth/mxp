@@ -12,8 +12,9 @@ pub(crate) use from_str::{cleanup_source, parse_element};
 mod into_owned_string;
 pub use into_owned_string::IntoOwnedString;
 
-mod scan;
-pub(crate) use scan::{Decoder, OwnedScan, Scan};
+mod decoder;
+pub use decoder::Decoder;
+pub(crate) use decoder::{OwnedScan, Scan};
 
 mod validation;
 pub use validation::{is_valid, validate, validate_utf8};

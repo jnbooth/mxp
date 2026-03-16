@@ -81,7 +81,7 @@ pub enum Action<S = String> {
     /// Prompt client to switch to a new network connection.
     Relocate(Relocate<S>),
     /// [`<RESET>`](https://gpascal.com/forum/?id=232):
-    /// Close all open tags. This is an unofficial extension to the MXP protocol.
+    /// Close all OPEN tags. This is an unofficial extension to the MXP protocol.
     Reset,
     /// [`<SBR>`](https://www.zuggsoft.com/zmud/mxp.htm#Line%20Spacing):
     /// Insert a soft linebreak.

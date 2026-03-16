@@ -39,7 +39,7 @@ impl TagList {
         self.inner.push(tag);
     }
 
-    pub fn last_unsecure_index(&self) -> usize {
+    pub fn last_open_index(&self) -> usize {
         match self.inner.iter().rposition(|x| x.secure) {
             None => 0,
             Some(i) => i + 1,

@@ -1,11 +1,12 @@
-use std::cmp;
-
 use super::mode::Mode;
+use super::tag::LineTag;
 use crate::element::ParseAs;
 
-/// State tracker for [`Mode`](crate::Mode).
+/// State tracker for [`Mode`].
 ///
 /// See [MXP specification: MXP Line Tags](https://www.zuggsoft.com/zmud/mxp.htm#MXP%20Line%20Tags).
+//
+// Note: these modes are never PERM_LOCKED, PERM_OPEN, PERM_SECURE, or RESET.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct ModeState {
     active_mode: Mode,
@@ -14,6 +15,7 @@ pub struct ModeState {
 }
 
 impl Default for ModeState {
+    /// See [`ModeState::new`].
     fn default() -> Self {
         Self::new()
     }
@@ -28,7 +30,7 @@ impl ModeState {
     /// use mxp::ModeState;
     ///
     /// let mode_state = ModeState::new();
-    /// assert_eq!(mode_state, mxp::Mode::OPEN);
+    /// assert_eq!(mode_state.get(), mxp::Mode::OPEN);
     /// ```
     pub const fn new() -> Self {
         Self {
@@ -47,17 +49,28 @@ impl ModeState {
     ///
     /// let mut mode_state = ModeState::new();
     /// mode_state.set(mxp::Mode::SECURE);
-    /// assert_eq!(mode_state, mxp::Mode::SECURE);
+    /// assert_eq!(mode_state.get(), mxp::Mode::SECURE);
     /// ```
+    #[inline]
     pub const fn get(&self) -> Mode {
         self.active_mode
     }
 
-    /// Applies a new line mode. If the line defines a specific mode, use `self.update(Some(mode))`.
-    /// Otherwise, use `self.update(None)` to restore the default mode.
+    /// Retrieves the element associated with a line tag for a specified mode, if one exists.
+    pub fn line_tag<'a>(&self, state: &'a crate::State) -> Option<LineTag<'a>> {
+        state.get_line_tag(self.active_mode)
+    }
+
+    const fn lock(&mut self, mode: Mode) {
+        self.active_mode = mode;
+        self.default_mode = mode;
+    }
+
+    /// Applies a new line mode. Returns `true` if the change in mode means all tags since the
+    /// most recent OPEN tag should be closed.
     ///
-    /// Returns `true` if the previous mode was open but the new mode is not, meaning all tags
-    /// since the most recent unsecure tag should be closed.
+    /// Note: If the mode is set to [`Mode::SECURE_ONCE`], the client must immediately process an
+    /// incoming element and call [`ModeState::use_secure`] for it.
     ///
     /// # Examples
     ///
@@ -65,49 +78,45 @@ impl ModeState {
     /// use mxp::ModeState;
     ///
     /// let mut mode_state = ModeState::new();
-    /// mode_state.update(Some(mxp::Mode::PERM_OPEN));
-    /// mode_state.update(Some(mxp::Mode::SECURE_ONCE));
-    /// assert_eq!(mode_state, mxp::Mode::SECURE_ONCE);
-    /// mode_state.update(None);
-    /// assert_eq!(mode_state, mxp::Mode::PERM_OPEN);
+    /// mode_state.set(mxp::Mode::SECURE);
+    /// assert_eq!(mode_state.get(), mxp::Mode::SECURE);
+    /// mode_state.set(mxp::Mode::OPEN);
+    /// assert_eq!(mode_state.get(), mxp::Mode::OPEN);
     /// ```
-    pub const fn update(&mut self, mode: Option<Mode>) -> bool {
-        self.set(match mode {
-            Some(mode) => mode,
-            None => self.default_mode,
-        })
-    }
-
-    /// Alias for `self.update(Some(mode))`.
-    /// See the documentation for [`update`](Self::update) for more.
     pub const fn set(&mut self, mode: Mode) -> bool {
-        let closing = self.active_mode.is_open() && !mode.is_open();
+        let closing = self.is_open() && !mode.is_open();
         match mode {
-            Mode::OPEN | Mode::SECURE | Mode::LOCKED => {
-                self.default_mode = Mode::OPEN;
+            Mode::SECURE_ONCE => {
+                self.previous_mode = self.active_mode;
+                self.active_mode = mode;
             }
-            Mode::SECURE_ONCE => self.previous_mode = self.active_mode,
-            Mode::PERM_OPEN | Mode::PERM_SECURE | Mode::PERM_LOCKED => {
-                self.default_mode = mode;
-            }
-            Mode::RESET => {
-                self.default_mode = Mode::OPEN;
-                self.active_mode = Mode::OPEN;
-                return closing;
-            }
-            _ => (),
+            Mode::PERM_OPEN | Mode::RESET => self.lock(Mode::OPEN),
+            Mode::PERM_SECURE => self.lock(Mode::SECURE),
+            Mode::PERM_LOCKED => self.lock(Mode::LOCKED),
+            _ => self.active_mode = mode,
         }
-        self.active_mode = mode;
         closing
     }
 
-    /// Alias for `self.update(None)`.
-    /// See the documentation for [`update`](Self::update) for more.
-    pub const fn revert(&mut self) -> bool {
-        self.set(self.default_mode)
+    /// Revert to the default line mode. This function should be called whenever the client receives
+    /// a newline.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::ModeState;
+    ///
+    /// let mut mode_state = ModeState::new();
+    /// mode_state.set(mxp::Mode::PERM_LOCKED);
+    /// mode_state.set(mxp::Mode::SECURE);
+    /// mode_state.revert();
+    /// assert_eq!(mode_state.get(), mxp::Mode::LOCKED);
+    /// ```
+    pub const fn revert(&mut self) {
+        self.set(self.default_mode);
     }
 
-    /// Returns `true` if the active mode is secure. Additionally, if the active mode is
+    /// Returns `true` if the active mode is SECURE. Additionally, if the active mode is
     /// [`Mode::SECURE_ONCE`], the active mode reverts to the previous mode.
     ///
     /// # Examples
@@ -116,98 +125,80 @@ impl ModeState {
     /// use mxp::ModeState;
     ///
     /// let mut mode_state = ModeState::new();
-    /// mode_state.set(mxp::Mode::PERM_OPEN);
-    /// mode_state.revert();
-    /// assert_eq!(mode_state, mxp::Mode::PERM_OPEN);
-    /// mode_state.set(mxp::Mode::SECURE_ONCE);
-    /// assert!(mode_state.use_secure());
-    /// assert_eq!(mode_state, mxp::Mode::PERM_OPEN);
+    /// mode_state.set(mxp::Mode::OPEN);
+    /// assert!(!mode_state.use_secure());
+    ///
     /// mode_state.set(mxp::Mode::SECURE);
     /// assert!(mode_state.use_secure());
-    /// assert_eq!(mode_state, mxp::Mode::SECURE);
+    /// assert!(mode_state.use_secure()); // still secure
+    ///
+    /// mode_state.set(mxp::Mode::OPEN);
+    /// mode_state.set(mxp::Mode::SECURE_ONCE);
+    /// assert!(mode_state.use_secure());
+    /// assert!(!mode_state.use_secure()); // no longer secure
     /// ```
+    #[inline]
     pub const fn use_secure(&mut self) -> bool {
-        if matches!(self.active_mode, Mode::SECURE_ONCE) {
+        if self.is_secure_once() {
             self.active_mode = self.previous_mode;
-            true
-        } else {
-            self.active_mode.is_secure()
+            return true;
         }
+        !self.is_open()
+    }
+
+    /// If the active mode is [`Mode::SECURE_ONCE`] and the character byte is not `b'<'`, unsets
+    /// the mode and returns an error.
+    #[inline]
+    pub fn validate_next_character(&mut self, c: u8) -> crate::Result<()> {
+        #[cold]
+        #[inline(never)]
+        fn create_error(c: u8) -> crate::Error {
+            crate::Error::new(c as char, crate::ErrorKind::TextAfterSecureOnce)
+        }
+
+        if c == b'<' || !self.is_secure_once() {
+            return Ok(());
+        }
+        self.active_mode = self.previous_mode;
+        Err(create_error(c))
+    }
+
+    /// Returns `true` if the active mode is [`Mode::SECURE_ONCE`].
+    ///
+    /// If this function returns `true`, the server must send '<' as its next character to start a
+    /// tag.
+    #[inline]
+    pub const fn is_secure_once(&self) -> bool {
+        self.active_mode.0 == Mode::SECURE_ONCE.0
     }
 
     /// See [`Mode::is_open`].
+    #[inline]
     pub const fn is_open(&self) -> bool {
-        self.get().is_open()
-    }
-
-    /// See [`Mode::is_secure`].
-    pub const fn is_secure(&self) -> bool {
-        self.get().is_secure()
+        self.active_mode.0 == Mode::OPEN.0 || self.active_mode.0 >= Mode::USER_DEFINED_MIN.0
     }
 
     /// See [`Mode::is_locked`].
+    #[inline]
     pub const fn is_locked(&self) -> bool {
-        self.get().is_locked()
+        self.active_mode.0 == Mode::LOCKED.0
     }
 
     /// See [`Mode::is_automapping`].
+    #[inline]
     pub const fn is_automapping(&self) -> bool {
-        self.get().is_secure()
+        self.active_mode.is_automapping()
     }
 
     /// See [`Mode::parse_as`].
+    #[inline]
     pub fn parse_as(&self) -> Option<ParseAs> {
-        self.get().parse_as()
-    }
-
-    /// See [`Mode::is_welcome`].
-    pub const fn is_welcome(&self) -> bool {
-        self.get().is_welcome()
+        self.active_mode.parse_as()
     }
 
     /// See [`Mode::is_user_defined`].
+    #[inline]
     pub const fn is_user_defined(&self) -> bool {
-        self.get().is_user_defined()
-    }
-}
-
-impl PartialEq<Mode> for ModeState {
-    fn eq(&self, other: &Mode) -> bool {
-        self.active_mode == *other
-    }
-}
-impl PartialEq<ModeState> for Mode {
-    fn eq(&self, other: &ModeState) -> bool {
-        *self == other.active_mode
-    }
-}
-impl PartialOrd<Mode> for ModeState {
-    fn partial_cmp(&self, other: &Mode) -> Option<cmp::Ordering> {
-        self.active_mode.partial_cmp(other)
-    }
-}
-impl PartialOrd<ModeState> for Mode {
-    fn partial_cmp(&self, other: &ModeState) -> Option<cmp::Ordering> {
-        self.partial_cmp(&other.active_mode)
-    }
-}
-impl PartialEq<u8> for ModeState {
-    fn eq(&self, other: &u8) -> bool {
-        self.active_mode.0 == *other
-    }
-}
-impl PartialEq<ModeState> for u8 {
-    fn eq(&self, other: &ModeState) -> bool {
-        *self == other.active_mode.0
-    }
-}
-impl PartialOrd<u8> for ModeState {
-    fn partial_cmp(&self, other: &u8) -> Option<cmp::Ordering> {
-        self.active_mode.0.partial_cmp(other)
-    }
-}
-impl PartialOrd<ModeState> for u8 {
-    fn partial_cmp(&self, other: &ModeState) -> Option<cmp::Ordering> {
-        self.partial_cmp(&other.active_mode.0)
+        self.active_mode.is_user_defined()
     }
 }

@@ -76,7 +76,7 @@ flags! {
         /// Prompt client to switch to a new network connection.
         Relocate,
         /// [`<RESET>`](https://gpascal.com/forum/?id=232):
-        /// Close all open tags. This is an unofficial extension to the MXP protocol.
+        /// Close all OPEN tags. This is an unofficial extension to the MXP protocol.
         Reset,
         /// [`<SBR>`](https://www.zuggsoft.com/zmud/mxp.htm#Line%20Spacing):
         /// Insert a soft linebreak.
@@ -145,9 +145,9 @@ impl ActionKind {
         )
     }
 
-    /// Returns `true` if the action can be used if the MXP line [`Mode`](crate::Mode) is Open.
+    /// Returns `true` if the action can be used if the MXP line [`Mode`](crate::Mode) is OPEN.
     ///
-    /// The following actions are open:
+    /// The following actions are OPEN:
     ///
     /// - [`Bold`](Self::Bold)
     /// - [`Color`](Self::Color)

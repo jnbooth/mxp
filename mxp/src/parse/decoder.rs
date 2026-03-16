@@ -8,9 +8,15 @@ use crate::entity::{DecodedEntity, Entity};
 use crate::keyword::KeywordFilter;
 use crate::{Error, ErrorKind};
 
+/// Trait for decoding entities to values.
 pub trait Decoder {
+    /// Retrieves the definition for an entity by name. The `KeywordFilter` hints at which items
+    /// in a string should be considered keywords rather than positional arguments. It can generally
+    /// be ignored.
     fn get_entity<K: KeywordFilter>(&self, name: &str) -> Option<&str>;
 
+    /// Decodes an entity by either parsing a numeric entity (e.g. `"&#32"`) or calling
+    /// [`get_entity`](Self::get_entity).
     fn decode_entity<K: KeywordFilter>(&self, name: &str) -> crate::Result<DecodedEntity<'_>> {
         let (start, radix) = match name.as_bytes() {
             [b'#', b'x', ..] => (2, 16),
@@ -28,12 +34,17 @@ pub trait Decoder {
         };
         match char::from_u32(code) {
             Some('\0'..='\x08' | '\x0a'..='\x1f' | '\x7f'..='\u{9f}') | None => {
-                Err(Error::new(name, ErrorKind::IllegalEntityNumber))
+                // ignored per MXP standard
+                Ok(DecodedEntity::Custom(""))
             }
             Some(c) => Ok(c.into()),
         }
     }
 
+    /// Decodes an entire string, replacing all entities inside it with their values resolved by
+    /// [`decode_entity`](Self::decode_entity). If the string does not contain any entities, it is
+    /// returned unchanged as a borrowed string slice. Otherwise, an owned string containing the
+    /// replacements is returned.
     fn decode_string<'a, K: KeywordFilter>(&self, mut s: &'a str) -> crate::Result<Cow<'a, str>> {
         let mut res = String::new();
         while let Some((before, rest)) = s.split_once('&') {

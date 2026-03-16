@@ -65,8 +65,12 @@ flags! {
 
 /// A trait for filtering out keywords from a list of strings.
 ///
-/// `KeywordFilter` is implemented for all types that implement [`FromStr`], filtering out strings
-/// that can be parsed to the type.
+/// `KeywordFilter` ensures that [`Decoder`]s do not parse element keywords as positional arguments.
+/// It is used by [`ElementDecoder`] to resolve attribute entities (e.g. the `&col;` in
+/// `<!ELEMENT boldtext '<COLOR &col;><B>' ATT='col=red'>`).
+///
+/// [`Decoder`]: crate::parse::Decoder
+/// [`ElementDecoder`]: crate::element::ElementDecoder
 pub trait KeywordFilter {
     /// The type of iterator produced by the filter.
     type Iter<'a, S: 'a>: Iterator<Item = &'a S>;

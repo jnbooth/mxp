@@ -250,7 +250,7 @@ impl EntityMap {
     /// ```
     pub fn guard_global(&self, name: &str) -> crate::Result<()> {
         if self.is_global(name) {
-            return Err(Error::new(name, ErrorKind::CannotRedefineEntity));
+            return Err(Error::new(name, ErrorKind::CannotRedefineGlobalEntity));
         }
         Ok(())
     }
@@ -470,17 +470,11 @@ mod tests {
 
     #[test]
     fn decode_below_range() {
-        assert_eq!(
-            EntityMap::new().decode("#10"),
-            Err(Error::new("#10", ErrorKind::IllegalEntityNumber))
-        );
+        assert_eq!(EntityMap::new().decode("#10"), Ok("".into()));
     }
 
     #[test]
     fn decode_above_range() {
-        assert_eq!(
-            EntityMap::new().decode("#x90"),
-            Err(Error::new("#x90", ErrorKind::IllegalEntityNumber))
-        );
+        assert_eq!(EntityMap::new().decode("#x90"), Ok("".into()));
     }
 }

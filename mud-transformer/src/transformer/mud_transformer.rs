@@ -276,7 +276,7 @@ impl Transformer {
         }
         self.mxp_active = true;
         self.output.append(TelnetFragment::Mxp { enabled: true });
-        self.mxp_mode.set(mxp::Mode::OPEN);
+        self.mxp_mode.set(mxp::Mode::RESET);
         self.mxp_tags.clear();
         self.mxp_state.clear();
     }
@@ -291,7 +291,7 @@ impl Transformer {
             return;
         }
         self.mxp_reset();
-        self.mxp_mode_change(Some(mxp::Mode::OPEN));
+        self.mxp_mode_change(Some(mxp::Mode::RESET));
         if self.phase.is_mxp() {
             self.phase = Phase::Normal;
         }
@@ -300,13 +300,15 @@ impl Transformer {
     }
 
     fn mxp_mode_change(&mut self, newmode: Option<mxp::Mode>) {
-        if newmode == Some(mxp::Mode::RESET) {
-            self.mxp_reset();
-            return;
-        }
-        if self.mxp_mode.update(newmode) {
-            let closed = self.mxp_tags.last_unsecure_index();
-            self.mxp_close_tags_from(closed);
+        let should_close = if let Some(newmode) = newmode {
+            self.mxp_mode.set(newmode)
+        } else {
+            self.mxp_mode.revert();
+            true
+        };
+        if should_close {
+            let close_from = self.mxp_tags.last_open_index();
+            self.mxp_close_tags_from(close_from);
         }
         if !self.mxp_mode.is_user_defined() {
             return;
@@ -319,7 +321,7 @@ impl Transformer {
     }
 
     fn mxp_set_line_tag(&mut self, mxp_state: &mxp::State) -> mxp::Result<()> {
-        let Some(tag) = mxp_state.get_line_tag(self.mxp_mode.get()) else {
+        let Some(tag) = self.mxp_mode.line_tag(mxp_state) else {
             return Ok(());
         };
         self.output.set_mxp_line_tag(&tag);
@@ -465,6 +467,7 @@ impl Transformer {
         let entity_string = String::from_utf8_lossy(&self.mxp_entity_string);
         self.output.append(mxp::Error::new(entity_string, error));
         self.mxp_entity_string.clear();
+        self.mxp_mode.use_secure(); // clear SECURE_ONCE
     }
 
     #[allow(clippy::match_same_arms)]
@@ -500,6 +503,13 @@ impl Transformer {
             Phase::Normal => {
                 let last_char = self.last_char;
                 self.last_char = c;
+                if self.mxp_active && c != b'<' && self.mxp_mode.is_secure_once() {
+                    self.output.append(mxp::Error::new(
+                        c as char,
+                        mxp::ErrorKind::TextAfterSecureOnce,
+                    ));
+                    self.mxp_mode.use_secure();
+                }
                 match c {
                     b' ' if self.in_paragraph && last_char == b' ' => (),
                     b'<' if self.mxp_active && !self.mxp_mode.is_locked() => {

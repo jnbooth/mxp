@@ -27,18 +27,18 @@ impl Deref for LineTag<'_> {
 pub struct LineTagProperties {
     /// Use this tag.
     pub enable: bool,
-    /// Override foreground color (from line tag)
+    /// Override foreground color.
     pub fore: Option<RgbColor>,
-    /// Override background color (from line tag)
+    /// Override background color.
     pub back: Option<RgbColor>,
-    /// Suppress output in main window (from line tag)
+    /// Suppress output in main window.
     pub gag: bool,
-    /// Redirect output to another window (from line tag)
+    /// Redirect output to another window.
     pub window: Option<String>,
 }
 
 impl LineTagProperties {
-    pub fn apply(&mut self, definition: ParsedLineTagDefinition) {
+    pub(crate) fn apply(&mut self, definition: ParsedLineTagDefinition) {
         if let Some(enable) = definition.enable {
             self.enable = enable;
         }
