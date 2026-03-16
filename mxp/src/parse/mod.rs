@@ -9,6 +9,9 @@ mod from_str;
 pub use from_str::FromStrError;
 pub(crate) use from_str::{cleanup_source, parse_element};
 
+mod into_owned_string;
+pub use into_owned_string::IntoOwnedString;
+
 mod scan;
 pub(crate) use scan::{Decoder, OwnedScan, Scan};
 

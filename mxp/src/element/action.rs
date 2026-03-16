@@ -8,7 +8,7 @@ use crate::elements::{
     Color, Dest, Expire, Filter, Font, Frame, Gauge, Heading, Hyperlink, Image, Music, Relocate,
     Send, Sound, Stat, StyleVersion, Support, Var,
 };
-use crate::parse::{FromStrError, Words};
+use crate::parse::{FromStrError, IntoOwnedString, Words};
 use crate::{Error, ErrorKind};
 
 /// Effect caused by an element. Created by applying [`Arguments`] to an element [`AtomicTag`].
@@ -202,15 +202,11 @@ impl<'a> Action<Cow<'a, str>> {
             }
         })
     }
-
-    pub fn into_owned(self) -> Action<String> {
-        self.map_text(Cow::into_owned)
-    }
 }
 
-impl Action<&str> {
+impl<S: IntoOwnedString> Action<S> {
     pub fn into_owned(self) -> Action<String> {
-        self.map_text(ToOwned::to_owned)
+        self.map_text(IntoOwnedString::into_owned_string)
     }
 }
 
