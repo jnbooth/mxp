@@ -1,11 +1,10 @@
 use std::borrow::Cow;
-use std::str::FromStr;
 use std::{slice, vec};
 
 use flagset::FlagSet;
 
 use crate::element::ActionKind;
-use crate::parse::{Decoder, Scan};
+use crate::parse::Decoder;
 use crate::responses::SupportResponse;
 
 /// Determines exactly which tags are supported by the client.
@@ -85,18 +84,4 @@ impl<S: AsRef<str>> Support<S> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Support<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        Self::scan(scanner)
-    }
-}
-
-impl FromStr for Support {
-    type Err = crate::parse::FromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        crate::parse::parse_element(s, crate::ActionKind::Support)
-    }
-}
+impl_from_str!(Support);

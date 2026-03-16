@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::color::RgbColor;
-use crate::parse::{Decoder, Scan};
+use crate::parse::{Decoder, OwnedScan, Scan};
 
 /// Sets the color of the text.
 ///
@@ -49,10 +49,18 @@ impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Color {
     }
 }
 
+impl<'a, D: Decoder> TryFrom<OwnedScan<'a, D>> for Color {
+    type Error = crate::Error;
+
+    fn try_from(scanner: OwnedScan<'a, D>) -> crate::Result<Self> {
+        Self::scan(scanner)
+    }
+}
+
 impl FromStr for Color {
     type Err = crate::parse::FromStrError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        crate::parse::parse_element(s, crate::ActionKind::Color)
+        crate::parse::parse_element(s)
     }
 }

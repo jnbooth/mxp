@@ -86,7 +86,7 @@ impl Transformer {
             mxp_quote_terminator: None,
             mxp_entity_string: Vec::new(),
             mxp_tags: TagList::new(),
-            mxp_state: mxp::State::populated().into(),
+            mxp_state: mxp::State::with_globals().into(),
 
             charsets: charset::Charsets::new(),
             decompress: mccp::Decompress::new(),
@@ -386,9 +386,9 @@ impl Transformer {
         let args = tag.arguments.parse_args()?;
 
         match component {
-            mxp::Component::Tag(tag) => {
-                let action = tag.decode(&args, mxp_state)?;
-                self.mxp_open_tag(action, mxp_state);
+            mxp::Component::Atom(atom) => {
+                let action = atom.decode(&args, mxp_state)?;
+                self.mxp_apply_action(action, mxp_state);
                 Ok(())
             }
             mxp::Component::Element(el) => {
@@ -407,12 +407,12 @@ impl Transformer {
         mxp_state: &mxp::State,
     ) -> mxp::Result<()> {
         for action in el.decode(args, mxp_state) {
-            self.mxp_open_tag(action?, mxp_state);
+            self.mxp_apply_action(action?, mxp_state);
         }
         Ok(())
     }
 
-    fn mxp_open_tag(&mut self, action: mxp::Action<Cow<str>>, mxp_state: &mxp::State) {
+    fn mxp_apply_action(&mut self, action: mxp::Action<Cow<str>>, mxp_state: &mxp::State) {
         use mxp::Action;
 
         match action {

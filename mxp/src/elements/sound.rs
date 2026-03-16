@@ -4,7 +4,7 @@ use std::num::{NonZero, ParseIntError};
 use std::str::FromStr;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
-use crate::parse::{Decoder, Scan};
+use crate::parse::Decoder;
 
 /// Specifies the number of times a sound/music file should be played.
 ///
@@ -142,6 +142,7 @@ impl<S: AsRef<str>> Sound<S> {
         let priority = scanner.next_or("p")?.expect_number()?.unwrap_or(50);
         let class = scanner.next_or("t")?;
         let url = scanner.next_or("u")?;
+        scanner.expect_end()?;
         Ok(Self {
             fname,
             volume,
@@ -153,21 +154,7 @@ impl<S: AsRef<str>> Sound<S> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Sound<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        Self::scan(scanner)
-    }
-}
-
-impl FromStr for Sound {
-    type Err = crate::parse::FromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        crate::parse::parse_element(s, crate::ActionKind::Sound)
-    }
-}
+impl_from_str!(Sound);
 
 #[cfg(test)]
 mod tests {

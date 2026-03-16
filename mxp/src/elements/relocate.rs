@@ -1,8 +1,7 @@
 use std::borrow::Cow;
-use std::str::FromStr;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
-use crate::parse::{Decoder, Scan};
+use crate::parse::Decoder;
 
 /// Closes the current MUD connection and causes a new connect to open on a new server.
 ///
@@ -66,18 +65,4 @@ impl<S: AsRef<str>> Relocate<S> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Relocate<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        Self::scan(scanner)
-    }
-}
-
-impl FromStr for Relocate {
-    type Err = crate::parse::FromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        crate::parse::parse_element(s, crate::ActionKind::Relocate)
-    }
-}
+impl_from_str!(Relocate);

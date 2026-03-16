@@ -1,10 +1,12 @@
 use std::borrow::Cow;
 use std::num::NonZero;
-use std::str::FromStr;
 
-use crate::arguments::{ArgumentScannerWithKeywords, ExpectArg as _};
+use crate::arguments::{
+    ArgumentScanner as _, ArgumentScannerWithKeywords as _, ExpectArg as _,
+    IntoArgumentScannerWithKeywords,
+};
 use crate::keyword::DestKeyword;
-use crate::parse::{Decoder, Scan};
+use crate::parse::Decoder;
 
 /// Positions text at a certain position in a frame.
 ///
@@ -97,10 +99,11 @@ impl<S: AsRef<str>> From<S> for Dest<S> {
 }
 
 impl<S: AsRef<str>> Dest<S> {
-    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScannerWithKeywords<Keyword = DestKeyword, Output = S>,
+        A: IntoArgumentScannerWithKeywords<DestKeyword, S>,
     {
+        let mut scanner = scanner.with_keywords();
         let name = scanner.next()?;
         let column = scanner
             .next_or("x")?
@@ -121,19 +124,4 @@ impl<S: AsRef<str>> Dest<S> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Dest<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        let scanner = scanner.with_keywords::<DestKeyword>();
-        Self::scan(scanner)
-    }
-}
-
-impl FromStr for Dest {
-    type Err = crate::parse::FromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        crate::parse::parse_element(s, crate::ActionKind::Dest)
-    }
-}
+impl_from_str!(Dest);

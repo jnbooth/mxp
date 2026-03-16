@@ -1,8 +1,7 @@
 use std::borrow::Cow;
-use std::str::FromStr;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
-use crate::parse::{Decoder, Scan};
+use crate::parse::Decoder;
 
 /// Displays an MXP entity value as status bar text.
 ///
@@ -78,18 +77,4 @@ impl<S: AsRef<str>> Stat<S> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Stat<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        Self::scan(scanner)
-    }
-}
-
-impl FromStr for Stat {
-    type Err = crate::parse::FromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        crate::parse::parse_element(s, crate::ActionKind::Stat)
-    }
-}
+impl_from_str!(Stat);

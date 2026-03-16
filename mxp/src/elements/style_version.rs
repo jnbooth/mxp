@@ -1,8 +1,7 @@
 use std::borrow::Cow;
-use std::str::FromStr;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
-use crate::parse::{Decoder, Scan};
+use crate::parse::Decoder;
 
 /// A MUD sets a style-sheet version number by sending the `<VERSION styleversion>` tag to the
 /// client.
@@ -64,18 +63,4 @@ impl<S: AsRef<str>> StyleVersion<S> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for StyleVersion<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        Self::scan(scanner)
-    }
-}
-
-impl FromStr for StyleVersion {
-    type Err = crate::parse::FromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        crate::parse::parse_element(s, crate::ActionKind::Version)
-    }
-}
+impl_from_str!(StyleVersion);

@@ -1,10 +1,11 @@
 use std::borrow::Cow;
-use std::fmt;
-use std::str::{self, FromStr};
+use std::{fmt, str};
 
-use crate::arguments::ArgumentScannerWithKeywords;
+use crate::arguments::{
+    ArgumentScanner as _, ArgumentScannerWithKeywords as _, IntoArgumentScannerWithKeywords,
+};
 use crate::keyword::SendKeyword;
-use crate::parse::{Decoder, Scan};
+use crate::parse::Decoder;
 
 /// Specifies that a span of text can be clicked on to cause an action.
 ///
@@ -163,10 +164,11 @@ impl<'a> Send<&'a str> {
 }
 
 impl<'a, S: AsRef<str> + From<&'a str> + Clone> Send<S> {
-    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScannerWithKeywords<Keyword = SendKeyword, Output = S>,
+        A: IntoArgumentScannerWithKeywords<SendKeyword, S>,
     {
+        let mut scanner = scanner.with_keywords();
         let href = scanner
             .next_or("href")?
             .unwrap_or(Send::EMBED_ENTITY.into());
@@ -182,13 +184,7 @@ impl<'a, S: AsRef<str> + From<&'a str> + Clone> Send<S> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Send<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        Self::scan(scanner.with_keywords())
-    }
-}
+impl_from_str!(Send);
 
 /// This struct is created by [`Send::menu`]. See its documentation for more.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
@@ -222,13 +218,5 @@ impl<'a> Iterator for SendMenu<'a> {
             command,
             label: self.labels.next().unwrap_or(command),
         })
-    }
-}
-
-impl FromStr for Send {
-    type Err = crate::parse::FromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        crate::parse::parse_element(s, crate::ActionKind::Send)
     }
 }

@@ -78,6 +78,7 @@ where
 {
     type Target = I;
 
+    #[inline]
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
@@ -87,6 +88,94 @@ impl<'a, I, S> DerefMut for ArgumentMatcher<'a, I, S>
 where
     I: Iterator<Item = &'a S>,
 {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.inner
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct OwnedArgumentMatcher<'a, I, S = Cow<'a, str>>
+where
+    I: Iterator<Item = S>,
+{
+    inner: I,
+    named: CaseFoldMap<'a, S>,
+}
+
+impl<'a, I, S> OwnedArgumentMatcher<'a, I, S>
+where
+    I: Iterator<Item = S>,
+{
+    pub fn new<P>(positional: P, named: CaseFoldMap<'a, S>) -> Self
+    where
+        P: IntoIterator<IntoIter = I>,
+    {
+        Self {
+            inner: positional.into_iter(),
+            named,
+        }
+    }
+
+    pub fn map<F, U>(self, f: F) -> OwnedArgumentMatcher<'a, U, S>
+    where
+        F: FnOnce(I) -> U,
+        U: Iterator<Item = S>,
+    {
+        OwnedArgumentMatcher {
+            inner: f(self.inner),
+            named: self.named,
+        }
+    }
+
+    pub fn next(&mut self) -> Option<I::Item> {
+        self.inner.next()
+    }
+
+    pub fn next_or(&mut self, name: &str) -> Option<I::Item> {
+        match self.named.remove(name) {
+            Some(arg) => Some(arg),
+            None => self.inner.next(),
+        }
+    }
+
+    pub fn with_keywords<K>(self) -> OwnedArgumentMatcher<'a, KeywordFilterIter<K, I>, S>
+    where
+        K: Flags + FromStr + KeywordFilter,
+        S: AsRef<str>,
+    {
+        self.map(KeywordFilterIter::new)
+    }
+}
+
+impl<K, I, S> OwnedArgumentMatcher<'_, KeywordFilterIter<K, I>, S>
+where
+    K: Flags + FromStr,
+    I: Iterator<Item = S>,
+    S: AsRef<str>,
+{
+    pub fn into_keywords(self) -> Result<FlagSet<K>, K::Err> {
+        self.inner.into_keywords()
+    }
+}
+
+impl<I, S> Deref for OwnedArgumentMatcher<'_, I, S>
+where
+    I: Iterator<Item = S>,
+{
+    type Target = I;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<I, S> DerefMut for OwnedArgumentMatcher<'_, I, S>
+where
+    I: Iterator<Item = S>,
+{
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }

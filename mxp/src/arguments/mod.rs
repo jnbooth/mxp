@@ -10,7 +10,9 @@ mod iter;
 pub use iter::{Named, Positional};
 
 mod matcher;
-pub(crate) use matcher::ArgumentMatcher;
+pub(crate) use matcher::{ArgumentMatcher, OwnedArgumentMatcher};
 
 mod scanner;
-pub(crate) use scanner::{ArgumentScanner, ArgumentScannerWithKeywords};
+pub(crate) use scanner::{
+    ArgumentScanner, ArgumentScannerWithKeywords, IntoArgumentScannerWithKeywords,
+};

@@ -1,11 +1,13 @@
 use std::borrow::Cow;
-use std::str::FromStr;
 
 use flagset::FlagSet;
 
-use crate::arguments::{ArgumentScannerWithKeywords, ExpectArg as _};
+use crate::arguments::{
+    ArgumentScanner as _, ArgumentScannerWithKeywords as _, ExpectArg as _,
+    IntoArgumentScannerWithKeywords,
+};
 use crate::keyword::EntityKeyword;
-use crate::parse::{Decoder, Scan};
+use crate::parse::Decoder;
 use crate::parsed::EntityDefinition;
 
 /// The `<VAR>` tag is just like the `<!ENTITY>` tag, except that the value of the variable is
@@ -75,10 +77,11 @@ impl<S: AsRef<str>> Var<S> {
 impl_partial_eq!(Var);
 
 impl<S: AsRef<str>> Var<S> {
-    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScannerWithKeywords<Keyword = EntityKeyword, Output = S>,
+        A: IntoArgumentScannerWithKeywords<EntityKeyword, S>,
     {
+        let mut scanner = scanner.with_keywords();
         let variable = scanner.next()?.expect_some("Variable")?;
         let desc = scanner.next_or("desc")?;
         let keywords = scanner.into_keywords()?;
@@ -87,14 +90,6 @@ impl<S: AsRef<str>> Var<S> {
             desc,
             keywords,
         })
-    }
-}
-
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Var<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        Self::scan(scanner.with_keywords())
     }
 }
 
@@ -108,10 +103,4 @@ impl<S> From<S> for Var<S> {
     }
 }
 
-impl FromStr for Var {
-    type Err = crate::parse::FromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        crate::parse::parse_element(s, crate::ActionKind::Var)
-    }
-}
+impl_from_str!(Var);

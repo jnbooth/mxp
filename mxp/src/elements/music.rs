@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use super::AudioRepetition;
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
-use crate::parse::{Decoder, Scan, StringVariant, UnrecognizedVariant};
+use crate::parse::{Decoder, StringVariant, UnrecognizedVariant};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 enum AudioContinuation {
@@ -139,18 +139,4 @@ impl<S: AsRef<str>> Music<S> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Music<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        Self::scan(scanner)
-    }
-}
-
-impl FromStr for Music {
-    type Err = crate::parse::FromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        crate::parse::parse_element(s, crate::ActionKind::Music)
-    }
-}
+impl_from_str!(Music);

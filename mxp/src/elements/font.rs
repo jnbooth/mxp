@@ -1,12 +1,11 @@
 use std::borrow::Cow;
 use std::num::NonZero;
-use std::str::{self, FromStr};
 
 use flagset::{FlagSet, flags};
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::color::RgbColor;
-use crate::parse::{Decoder, Scan, UnrecognizedVariant};
+use crate::parse::{Decoder, UnrecognizedVariant};
 
 flags! {
     /// Font modifier applied by the [`color`](Font::color) argument of a [`Font`] tag.
@@ -123,21 +122,7 @@ impl<S: AsRef<str>> Font<S> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Font<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        Self::scan(scanner)
-    }
-}
-
-impl FromStr for Font {
-    type Err = crate::parse::FromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        crate::parse::parse_element(s, crate::ActionKind::Font)
-    }
-}
+impl_from_str!(Font);
 
 #[cfg(test)]
 mod tests {

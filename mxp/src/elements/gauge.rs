@@ -1,9 +1,8 @@
 use std::borrow::Cow;
-use std::str::FromStr;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::color::RgbColor;
-use crate::parse::{Decoder, Scan};
+use crate::parse::Decoder;
 
 /// Displays an MXP entity value as a gauge.
 ///
@@ -86,18 +85,4 @@ impl<S: AsRef<str>> Gauge<S> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Gauge<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        Self::scan(scanner)
-    }
-}
-
-impl FromStr for Gauge {
-    type Err = crate::parse::FromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        crate::parse::parse_element(s, crate::ActionKind::Gauge)
-    }
-}
+impl_from_str!(Gauge);

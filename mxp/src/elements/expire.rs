@@ -1,8 +1,7 @@
 use std::borrow::Cow;
-use std::str::FromStr;
 
 use crate::arguments::ArgumentScanner;
-use crate::parse::{Decoder, Scan};
+use crate::parse::Decoder;
 
 /// Removes previously displayed links. For example, when moving to a new room, links from the
 /// previous room description are no longer valid and need to be removed.
@@ -61,18 +60,4 @@ impl<S: AsRef<str>> Expire<S> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<Scan<'a, D, S>> for Expire<Cow<'a, str>> {
-    type Error = crate::Error;
-
-    fn try_from(scanner: Scan<'a, D, S>) -> crate::Result<Self> {
-        Self::scan(scanner)
-    }
-}
-
-impl FromStr for Expire {
-    type Err = crate::parse::FromStrError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        crate::parse::parse_element(s, crate::ActionKind::Expire)
-    }
-}
+impl_from_str!(Expire);

@@ -27,7 +27,7 @@ impl State {
     ///
     /// Unlike `State::default()`, this function populates the state with elements and entities
     /// defined by the MXP protocol specification, allocating memory in the process.
-    pub fn populated() -> Self {
+    pub fn with_globals() -> Self {
         let mut elements = CaseFoldMap::<Element>::new();
         elements.extend(Element::well_known());
         Self {
@@ -95,7 +95,7 @@ impl State {
         let component = if let Some(custom) = self.elements.get(name) {
             Component::Element(custom)
         } else if let Some(tag) = Tag::well_known(name) {
-            Component::Tag(tag)
+            Component::Atom(tag)
         } else {
             return Err(Error::new(name, ErrorKind::UnknownElement));
         };
@@ -225,10 +225,10 @@ impl Decoder for State {
 /// This struct is created by [`State::get_component`]. See its documentation for more.
 #[derive(Copy, Clone, Debug)]
 pub enum Component<'a> {
+    /// A built-in MXP tag.
+    Atom(&'static Tag),
     /// A user-defined custom tag element.
     Element(&'a Element),
-    /// A built-in MXP tag.
-    Tag(&'static Tag),
 }
 
 impl Component<'_> {
@@ -237,35 +237,35 @@ impl Component<'_> {
     /// For example, the name of `<SOUND "ouch.wav">` is `"SOUND"`.
     pub const fn name(&self) -> &str {
         match self {
+            Self::Atom(tag) => tag.name,
             Self::Element(el) => el.name.as_str(),
-            Self::Tag(tag) => tag.name,
         }
     }
 
     /// Returns `true` if the element has no closing tag, e.g. `<BR>`.
     pub const fn is_command(&self) -> bool {
         match self {
+            Self::Atom(tag) => tag.action.is_command(),
             Self::Element(el) => el.command,
-            Self::Tag(tag) => tag.action.is_command(),
         }
     }
 
     /// Returns `true` if the element is in Open mode, meaning users can override it.
     pub const fn is_open(&self) -> bool {
         match self {
+            Self::Atom(tag) => tag.action.is_open(),
             Self::Element(el) => el.open,
-            Self::Tag(tag) => tag.action.is_open(),
         }
     }
 
     /// Returns the element's variable name, if it has one.
     pub const fn variable(&self) -> Option<&str> {
         match self {
+            Self::Atom(_) => None,
             Self::Element(el) => match &el.variable {
                 Some(name) => Some(name.as_str()),
                 None => None,
             },
-            Self::Tag(_) => None,
         }
     }
 }
