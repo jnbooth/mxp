@@ -186,6 +186,10 @@ pub struct TransformerConfig {
     /// MXP tags supported by the client.
     /// Default: all tags.
     pub supports: FlagSet<Tag>,
+    /// Transmitted in response to an MXP `<VERSION>` response with the optional styleversion
+    /// feature. Unlikely to be used.
+    /// Default: `None`.
+    pub style_version: Option<String>,
     /// Behavior when the server sends a tab (`'\t'`) character.
     /// Default: [`TabBehavior::TabCharacter`].
     pub tab: TabBehavior,
@@ -231,6 +235,7 @@ impl TransformerConfig {
             proxy: false,
             screen_reader: false,
             ssl: false,
+            style_version: None,
             supports: FlagSet::full(),
             tab: TabBehavior::TabCharacter,
             terminal_identification: String::new(),
@@ -261,7 +266,8 @@ impl TransformerConfig {
         VersionResponse {
             client: &self.app_name,
             version: &self.version,
-            ..Default::default()
+            style: self.style_version.as_deref(),
+            registered: None,
         }
     }
 }

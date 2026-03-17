@@ -459,7 +459,11 @@ impl Transformer {
             Action::SoundOff => self.output.append(MxpFragment::SoundOff),
             Action::Stat(stat) => self.output.append(stat.into_owned()),
             Action::Strikeout => self.output.set_mxp_flag(TextStyle::Strikeout),
-            Action::StyleVersion(styleversion) => self.output.append(styleversion.into_owned()),
+            Action::StyleVersion(styleversion) => {
+                let styleversion = styleversion.into_owned();
+                self.config.style_version = Some(styleversion.styleversion.clone());
+                self.output.append(styleversion);
+            }
             Action::Support(support) => {
                 write!(self.input, "{}", self.config.support_response(support));
             }
