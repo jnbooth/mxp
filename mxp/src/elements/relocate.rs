@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
+use crate::keyword::RelocateKeyword;
 use crate::parse::Decoder;
 
 /// Closes the current MUD connection and causes a new connect to open on a new server.
@@ -15,6 +16,7 @@ use crate::parse::Decoder;
 ///     Ok(mxp::Relocate {
 ///         hostname: "new.server.com".into(),
 ///         port: 1000,
+///         quiet: false,
 ///     }),
 /// );
 /// ```
@@ -24,6 +26,8 @@ pub struct Relocate<S = String> {
     pub hostname: S,
     /// Port of the new connection.
     pub port: u16,
+    /// The optional keyword QUIET can be used to suppress further output from the MUD. When the closing </RELOCATE> tag is used, MUD output is resumed.
+    pub quiet: bool,
 }
 
 impl<S> Relocate<S> {
@@ -35,6 +39,7 @@ impl<S> Relocate<S> {
         Relocate {
             hostname: f(self.hostname),
             port: self.port,
+            quiet: self.quiet,
         }
     }
 }
@@ -47,6 +52,7 @@ impl<S: AsRef<str>> Relocate<S> {
         Relocate {
             hostname: self.hostname.as_ref(),
             port: self.port,
+            quiet: self.quiet,
         }
     }
 }
@@ -54,17 +60,22 @@ impl<S: AsRef<str>> Relocate<S> {
 impl_partial_eq!(Relocate);
 
 impl<S: AsRef<str>> Relocate<S> {
-    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
         A: ArgumentScanner<Output = S>,
     {
+        let mut scanner = scanner.with_keywords();
         let hostname = scanner.decode_next()?.expect_some("Hostname")?;
         let port = scanner
             .decode_next()?
             .expect_number()?
             .expect_some("Port")?;
-        scanner.expect_end()?;
-        Ok(Self { hostname, port })
+        let keywords = scanner.into_keywords()?;
+        Ok(Self {
+            hostname,
+            port,
+            quiet: keywords.contains(RelocateKeyword::Quiet),
+        })
     }
 }
 

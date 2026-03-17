@@ -57,9 +57,14 @@ flags! {
         Disable,
     }
 
+    /// Keywords for [`<RELOCATE>`](crate::Relocate) tags.
+    pub(crate) enum RelocateKeyword: u8 {
+        Quiet,
+    }
+
     /// Keywords for [`<SEND>`](crate::Link) tags.
     pub(crate) enum SendKeyword: u8 {
-        Prompt
+        Prompt,
     }
 }
 
@@ -115,6 +120,9 @@ impl_keyword_filter!(FrameKeyword);
 
 impl_parse_enum!(ImageKeyword, IsMap);
 impl_keyword_filter!(ImageKeyword);
+
+impl_parse_enum!(RelocateKeyword, Quiet);
+impl_keyword_filter!(RelocateKeyword);
 
 impl_parse_enum!(SendKeyword, Prompt);
 impl_keyword_filter!(SendKeyword);
