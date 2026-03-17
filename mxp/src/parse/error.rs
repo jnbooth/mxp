@@ -17,7 +17,7 @@ impl fmt::Display for Error {
         if target.is_empty() {
             write!(f, "{kind}")
         } else {
-            write!(f, "{kind}: \"{target}\"")
+            write!(f, "{kind}: {target}")
         }
     }
 }
@@ -27,9 +27,13 @@ impl std::error::Error for Error {}
 impl Error {
     /// Constructs an error of the specified kind from a stringlike target being parsed.
     pub fn new<T: Into<String>>(target: T, error: ErrorKind) -> Self {
+        let mut target = target.into();
+        if !target.contains('"') {
+            target = format!("\"{target}\"");
+        }
         Self {
             kind: error,
-            target: target.into(),
+            target,
         }
     }
 
