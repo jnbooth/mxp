@@ -203,6 +203,29 @@ impl BufferedOutput {
         self.text_buf.split().freeze()
     }
 
+    fn flush_with(&self, text: ByteString, span: &Span) -> TextFragment {
+        let foreground = if self.ignore_mxp_colors || span.foreground == TermColor::Unset {
+            self.ansi_foreground
+        } else {
+            span.foreground
+        };
+        let background = if self.ignore_mxp_colors || span.background == TermColor::Unset {
+            self.ansi_background
+        } else {
+            span.background
+        };
+        TextFragment {
+            flags: span.flags | self.ansi_flags,
+            foreground: self.color(foreground),
+            background: self.color(background),
+            font: span.font.clone(),
+            size: span.size,
+            link: span.link.as_ref().map(|link| link.for_text(&text)),
+            heading: span.heading,
+            text,
+        }
+    }
+
     fn flush_last(&mut self, i: usize) {
         if self.text_buf.is_empty() {
             return;
@@ -222,26 +245,7 @@ impl BufferedOutput {
             return;
         }
         let span = &self.spans[self.spans.len() - i];
-        let foreground = if self.ignore_mxp_colors || span.foreground == TermColor::Unset {
-            self.ansi_foreground
-        } else {
-            span.foreground
-        };
-        let background = if self.ignore_mxp_colors || span.background == TermColor::Unset {
-            self.ansi_background
-        } else {
-            span.background
-        };
-        self.append(TextFragment {
-            flags: span.flags | self.ansi_flags,
-            foreground: self.color(foreground),
-            background: self.color(background),
-            font: span.font.clone(),
-            size: span.size,
-            link: span.link.as_ref().map(|link| link.for_text(&text)),
-            heading: span.heading,
-            text,
-        });
+        self.append(self.flush_with(text, span));
     }
 
     fn flush_mxp(&mut self) {
@@ -330,19 +334,24 @@ impl BufferedOutput {
             return None;
         }
         if !self.in_variable {
-            self.flush();
+            if !self.text_buf.is_empty() {
+                let text = self.take_buf();
+                self.append(self.flush_with(text, &span));
+            }
             return None;
         }
         self.in_variable =
             active_span.is_some_and(|span| span.entity.is_some() || span.variable.is_some());
         let set_entity = span.entity.take();
         let set_variable = span.variable.take();
-        let need_flush = match active_span {
-            Some(active_span) => span != *active_span,
-            None => span != Span::default(),
-        };
+        let need_flush = !self.text_buf.is_empty()
+            && match active_span {
+                Some(active_span) => span != *active_span,
+                None => span != Span::default(),
+            };
         if need_flush {
-            self.flush();
+            let text = self.take_buf();
+            self.append(self.flush_with(text, &span));
         }
         if set_entity.is_none() && set_variable.is_none() {
             return None;
