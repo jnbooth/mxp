@@ -126,7 +126,7 @@ impl<'a, S: AsRef<str>> Arguments<'a, S> {
         self.positional.shrink_to_fit();
     }
 
-    fn extend_inner<'b, T>(&mut self, mut iter: Words<'b>) -> crate::Result<()>
+    fn append_inner<'b, T>(&mut self, mut iter: Words<'b>) -> crate::Result<()>
     where
         T: From<&'b str> + Into<S> + Into<Uncased<'a>>,
     {
@@ -186,8 +186,8 @@ impl<'a> Arguments<'a> {
         Words::new(source).try_into()
     }
 
-    pub(crate) fn extend(&mut self, iter: Words<'a>) -> crate::Result<()> {
-        self.extend_inner::<&str>(iter)
+    pub(crate) fn append(&mut self, iter: Words<'a>) -> crate::Result<()> {
+        self.append_inner::<&str>(iter)
     }
 
     pub(crate) fn into_scan<D: Decoder>(self, decoder: D) -> OwnedScan<'a, D> {
@@ -197,13 +197,13 @@ impl<'a> Arguments<'a> {
 
 impl<'a> Arguments<'a, Cow<'a, str>> {
     pub(crate) fn append(&mut self, iter: Words<'a>) -> crate::Result<()> {
-        self.extend_inner::<&str>(iter)
+        self.append_inner::<&str>(iter)
     }
 }
 
 impl Arguments<'static, String> {
     pub(crate) fn append(&mut self, iter: Words<'_>) -> crate::Result<()> {
-        self.extend_inner::<String>(iter)?;
+        self.append_inner::<String>(iter)?;
         self.shrink_to_fit();
         Ok(())
     }
@@ -214,7 +214,7 @@ impl<'a> TryFrom<Words<'a>> for Arguments<'a> {
 
     fn try_from(value: Words<'a>) -> crate::Result<Self> {
         let mut this = Self::new();
-        this.extend(value)?;
+        this.append(value)?;
         Ok(this)
     }
 }

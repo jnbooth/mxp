@@ -1,13 +1,19 @@
 use std::borrow::Cow;
 use std::collections::{HashMap, hash_map};
-use std::iter;
 use std::ops::{Deref, DerefMut};
+use std::{fmt, iter};
 
 use uncased::{Uncased, UncasedStr};
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub(crate) struct CaseFoldMap<'a, V> {
     inner: HashMap<Uncased<'a>, V>,
+}
+
+impl<V: fmt::Debug> fmt::Debug for CaseFoldMap<'_, V> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        self.inner.fmt(f)
+    }
 }
 
 impl<'a, V> CaseFoldMap<'a, V> {
