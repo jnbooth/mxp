@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::keyword::RelocateKeyword;
@@ -80,3 +81,19 @@ impl<S: AsRef<str>> Relocate<S> {
 }
 
 impl_from_str!(Relocate);
+
+impl<S: AsRef<str>> fmt::Display for Relocate<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Relocate {
+            hostname,
+            port,
+            quiet,
+        } = self.borrow_text();
+        crate::display::ElementFormatter {
+            name: "RELOCATE",
+            arguments: &[&hostname, &port],
+            keywords: &[("QUIET", quiet)],
+        }
+        .fmt(f)
+    }
+}

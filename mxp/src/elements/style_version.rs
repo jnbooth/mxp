@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::parse::Decoder;
@@ -64,3 +65,15 @@ impl<S: AsRef<str>> StyleVersion<S> {
 }
 
 impl_from_str!(StyleVersion);
+
+impl<S: AsRef<str>> fmt::Display for StyleVersion<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let StyleVersion { styleversion } = self.borrow_text();
+        crate::display::ElementFormatter {
+            name: "VERSION",
+            arguments: &[&styleversion],
+            keywords: &[],
+        }
+        .fmt(f)
+    }
+}

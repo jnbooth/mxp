@@ -1,3 +1,4 @@
+use std::fmt;
 use std::str::FromStr;
 
 /// Sets text heading level.
@@ -53,5 +54,11 @@ impl FromStr for Heading {
             b'6' => Ok(Self::H6),
             _ => Err(Self::Err::UnexpectedTag(s.to_owned())),
         }
+    }
+}
+
+impl fmt::Display for Heading {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "<H{}>", self.level())
     }
 }

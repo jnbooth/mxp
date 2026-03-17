@@ -16,6 +16,19 @@ pub enum Align {
 
 impl_parse_enum!(Align, Top, Bottom, Left, Right, Middle);
 
+impl fmt::Display for Align {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Top => "TOP",
+            Self::Bottom => "BOTTOM",
+            Self::Left => "LEFT",
+            Self::Right => "RIGHT",
+            Self::Middle => "MIDDLE",
+        }
+        .fmt(f)
+    }
+}
+
 /// Specifies the units of a [`Dimension`].
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub enum DimensionUnit {

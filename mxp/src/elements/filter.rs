@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::parse::Decoder;
@@ -88,3 +89,20 @@ impl<S: AsRef<str>> Filter<S> {
 }
 
 impl_from_str!(Filter);
+
+impl<S: AsRef<str>> fmt::Display for Filter<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Filter {
+            src,
+            dest,
+            name,
+            proc,
+        } = self.borrow_text();
+        crate::display::ElementFormatter {
+            name: "FILTER",
+            arguments: &[&src, &dest, &name, &(proc, 0)],
+            keywords: &[],
+        }
+        .fmt(f)
+    }
+}

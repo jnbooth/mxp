@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::keyword::ImageKeyword;
@@ -161,3 +162,27 @@ impl<S: AsRef<str>> Image<S> {
 }
 
 impl_from_str!(Image);
+
+impl<S: AsRef<str>> fmt::Display for Image<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Image {
+            fname,
+            url,
+            class,
+            height,
+            width,
+            hspace,
+            vspace,
+            align,
+            is_map,
+        } = self.borrow_text();
+        crate::display::ElementFormatter {
+            name: "IMAGE",
+            arguments: &[
+                &fname, &url, &class, &height, &width, &hspace, &vspace, &align,
+            ],
+            keywords: &[("ISMAP", is_map)],
+        }
+        .fmt(f)
+    }
+}

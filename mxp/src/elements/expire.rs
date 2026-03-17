@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 
 use crate::arguments::ArgumentScanner;
 use crate::parse::Decoder;
@@ -61,3 +62,15 @@ impl<S: AsRef<str>> Expire<S> {
 }
 
 impl_from_str!(Expire);
+
+impl<S: AsRef<str>> fmt::Display for Expire<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Expire { name } = self.borrow_text();
+        crate::display::ElementFormatter {
+            name: "EXPIRE",
+            arguments: &[&name],
+            keywords: &[],
+        }
+        .fmt(f)
+    }
+}

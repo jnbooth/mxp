@@ -1,5 +1,5 @@
 use std::borrow::Cow;
-use std::{slice, vec};
+use std::{fmt, slice, vec};
 
 use flagset::FlagSet;
 
@@ -88,3 +88,17 @@ impl<S: AsRef<str>> Support<S> {
 }
 
 impl_from_str!(Support);
+
+impl<S: AsRef<str>> fmt::Display for Support<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Support { questions } = self;
+        if questions.is_empty() {
+            return f.write_str("<SUPPORT>");
+        }
+        f.write_str("<SUPPORT")?;
+        for question in questions {
+            write!(f, " \"{}\"", question.as_ref())?;
+        }
+        f.write_str(">")
+    }
+}

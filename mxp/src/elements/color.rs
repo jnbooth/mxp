@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::color::RgbColor;
 use crate::parse::Decoder;
@@ -75,5 +77,17 @@ impl std::str::FromStr for Color {
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         crate::parse::parse_element::<Color>(s)
+    }
+}
+
+impl fmt::Display for Color {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Color { fore, back } = self;
+        crate::display::ElementFormatter {
+            name: "COLOR",
+            arguments: &[fore, back],
+            keywords: &[],
+        }
+        .fmt(f)
     }
 }

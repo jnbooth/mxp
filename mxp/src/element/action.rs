@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 use std::str::FromStr;
 
 use super::action_kind::ActionKind;
@@ -271,5 +272,49 @@ impl FromStr for Action<String> {
         let args: Arguments<Cow<str>> = words.try_into()?;
         tag.check_arguments(&args)?;
         Ok(Action::decode(tag.action, args.scan(()))?.into_owned())
+    }
+}
+
+impl<S: AsRef<str>> fmt::Display for Action<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Bold => f.write_str("<B>"),
+            Self::Br => f.write_str("<BR>"),
+            Self::Color(color) => color.fmt(f),
+            Self::Dest(dest) => dest.fmt(f),
+            Self::Expire(expire) => expire.fmt(f),
+            Self::Filter(filter) => filter.fmt(f),
+            Self::Font(font) => font.fmt(f),
+            Self::Frame(frame) => frame.fmt(f),
+            Self::Gauge(gauge) => gauge.fmt(f),
+            Self::Heading(heading) => heading.fmt(f),
+            Self::Highlight => f.write_str("<H>"),
+            Self::Hr => f.write_str("<HR>"),
+            Self::Hyperlink(hyperlink) => hyperlink.fmt(f),
+            Self::Image(image) => image.fmt(f),
+            Self::Italic => f.write_str("<I>"),
+            Self::Music(music) => music.fmt(f),
+            Self::MusicOff => f.write_str("<MUSIC OFF>"),
+            Self::MxpOff => f.write_str("<MXP OFF>"),
+            Self::NoBr => f.write_str("<NOBR>"),
+            Self::P => f.write_str("<P>"),
+            Self::Password => f.write_str("<PASSWORD>"),
+            Self::Relocate(relocate) => relocate.fmt(f),
+            Self::Reset => f.write_str("<RESET>"),
+            Self::SBr => f.write_str("<SBR>"),
+            Self::Send(send) => send.fmt(f),
+            Self::Small => f.write_str("<SMALL>"),
+            Self::Sound(sound) => sound.fmt(f),
+            Self::SoundOff => f.write_str("<SOUND OFF>"),
+            Self::Stat(stat) => stat.fmt(f),
+            Self::Strikeout => f.write_str("<S>"),
+            Self::StyleVersion(style_version) => style_version.fmt(f),
+            Self::Support(support) => support.fmt(f),
+            Self::Tt => f.write_str("<TT>"),
+            Self::Underline => f.write_str("<U>"),
+            Self::User => f.write_str("<USER>"),
+            Self::Var(var) => var.fmt(f),
+            Self::Version => f.write_str("<VERSION>"),
+        }
     }
 }

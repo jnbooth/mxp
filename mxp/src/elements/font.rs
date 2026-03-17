@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 use std::num::NonZero;
 
 use flagset::{FlagSet, flags};
@@ -19,6 +20,12 @@ flags! {
 }
 
 impl_parse_enum!(FontStyle, Blink, Bold, Italic, Underline, Inverse);
+
+impl fmt::Display for FontStyle {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
 
 /// Changes the font for subsequent text.
 ///
@@ -123,6 +130,24 @@ impl<S: AsRef<str>> Font<S> {
 }
 
 impl_from_str!(Font);
+
+impl<S: AsRef<str>> fmt::Display for Font<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Font {
+            face,
+            size,
+            color,
+            style,
+            back,
+        } = self.borrow_text();
+        crate::display::ElementFormatter {
+            name: "FONT",
+            arguments: &[&face, &size, &(color, style), &back],
+            keywords: &[],
+        }
+        .fmt(f)
+    }
+}
 
 #[cfg(test)]
 mod tests {

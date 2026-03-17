@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::color::RgbColor;
@@ -86,3 +87,20 @@ impl<S: AsRef<str>> Gauge<S> {
 }
 
 impl_from_str!(Gauge);
+
+impl<S: AsRef<str>> fmt::Display for Gauge<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Gauge {
+            entity,
+            max,
+            caption,
+            color,
+        } = self.borrow_text();
+        crate::display::ElementFormatter {
+            name: "GAUGE",
+            arguments: &[&entity, &max, &caption, &color],
+            keywords: &[],
+        }
+        .fmt(f)
+    }
+}

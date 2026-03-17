@@ -66,7 +66,7 @@ impl FromStr for AudioRepetition {
 ///     }),
 /// );
 /// ```
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Sound<S = String> {
     /// File name. May contain wildcards. If no extension is specified, ".wav" should be assumed.
     pub fname: S,
@@ -86,6 +86,19 @@ pub struct Sound<S = String> {
     /// Client should always look in local directories first, and only download the file if it's
     /// not available locally.
     pub url: Option<S>,
+}
+
+impl<S: Default> Default for Sound<S> {
+    fn default() -> Self {
+        Self {
+            fname: S::default(),
+            volume: 100,
+            repeat: AudioRepetition::default(),
+            priority: 50,
+            class: None,
+            url: None,
+        }
+    }
 }
 
 impl<S: AsRef<str>> Sound<S> {
@@ -158,6 +171,32 @@ impl<S: AsRef<str>> Sound<S> {
 }
 
 impl_from_str!(Sound);
+
+impl<S: AsRef<str>> fmt::Display for Sound<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Sound {
+            fname,
+            volume,
+            repeat,
+            priority,
+            class,
+            url,
+        } = self.borrow_text();
+        crate::display::ElementFormatter {
+            name: "SOUND",
+            arguments: &[
+                &fname,
+                &(volume, 100),
+                &(repeat, AudioRepetition::default()),
+                &(priority, 50),
+                &class,
+                &url,
+            ],
+            keywords: &[],
+        }
+        .fmt(f)
+    }
+}
 
 #[cfg(test)]
 mod tests {

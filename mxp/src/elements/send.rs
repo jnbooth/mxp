@@ -220,3 +220,26 @@ impl<'a> Iterator for SendMenu<'a> {
         })
     }
 }
+
+impl<S: AsRef<str>> fmt::Display for Send<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Send {
+            mut href,
+            mut hint,
+            expire,
+            prompt,
+        } = self.borrow_text();
+        if hint == href {
+            hint = "";
+        }
+        if href == Send::EMBED_ENTITY {
+            href = "";
+        }
+        crate::display::ElementFormatter {
+            name: "SEND",
+            arguments: &[&href, &hint, &expire],
+            keywords: &[("PROMPT", prompt)],
+        }
+        .fmt(f)
+    }
+}

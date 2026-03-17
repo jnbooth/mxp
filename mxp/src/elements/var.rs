@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 
 use flagset::FlagSet;
 
@@ -101,3 +102,21 @@ impl<S> From<S> for Var<S> {
 }
 
 impl_from_str!(Var);
+
+impl<S: AsRef<str>> fmt::Display for Var<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Var {
+            name,
+            desc,
+            keywords,
+        } = self.borrow_text().map_text(crate::display::EscapeQuotes);
+        write!(f, "<VAR {name}")?;
+        if let Some(desc) = desc {
+            write!(f, " {desc}")?;
+        }
+        for keyword in keywords {
+            write!(f, " {keyword}")?;
+        }
+        f.write_str(">")
+    }
+}

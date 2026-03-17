@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::parse::Decoder;
@@ -75,3 +76,22 @@ impl<S: AsRef<str> + Clone> Hyperlink<S> {
 }
 
 impl_from_str!(Hyperlink);
+
+impl<S: AsRef<str>> fmt::Display for Hyperlink<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Hyperlink {
+            href,
+            mut hint,
+            expire,
+        } = self.borrow_text();
+        if hint == href {
+            hint = "";
+        }
+        crate::display::ElementFormatter {
+            name: "A",
+            arguments: &[&href, &hint, &expire],
+            keywords: &[],
+        }
+        .fmt(f)
+    }
+}

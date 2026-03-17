@@ -149,6 +149,8 @@ pub(crate) use case_fold_map::CaseFoldMap;
 pub mod color;
 pub use color::RgbColor;
 
+pub(crate) mod display;
+
 pub mod element;
 pub use element::{Action, ActionKind, AtomicTag, Element, ParseAs};
 

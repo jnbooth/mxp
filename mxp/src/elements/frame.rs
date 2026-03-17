@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::keyword::FrameKeyword;
@@ -111,10 +112,10 @@ pub struct Frame<S = String> {
     pub action: FrameAction,
     /// Specifies the full caption of the frame.
     pub title: S,
-    /// Frame layout.
-    pub layout: FrameLayout,
     /// Determines whether the frame is allowed to scroll.
     pub scrolling: bool,
+    /// Frame layout.
+    pub layout: FrameLayout,
 }
 
 impl<S> Frame<S> {
@@ -127,8 +128,8 @@ impl<S> Frame<S> {
             name: f(self.name),
             action: self.action,
             title: f(self.title),
-            layout: self.layout,
             scrolling: self.scrolling,
+            layout: self.layout,
         }
     }
 }
@@ -142,8 +143,8 @@ impl<S: AsRef<str>> Frame<S> {
             name: self.name.as_ref(),
             action: self.action,
             title: self.title.as_ref(),
-            layout: self.layout,
             scrolling: self.scrolling,
+            layout: self.layout,
         }
     }
 }
@@ -204,10 +205,65 @@ impl<S: AsRef<str> + Clone> Frame<S> {
             name,
             action,
             title,
-            layout,
             scrolling,
+            layout,
         })
     }
 }
 
 impl_from_str!(Frame);
+
+impl<S: AsRef<str>> fmt::Display for Frame<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Frame {
+            name,
+            action,
+            title,
+            scrolling,
+            layout,
+        } = self.borrow_text().map_text(crate::display::EscapeQuotes);
+        write!(f, "<FRAME NAME={name}")?;
+        match action {
+            FrameAction::Close => f.write_str(" CLOSE")?,
+            FrameAction::Open => (),
+            FrameAction::Redirect => f.write_str(" REDIRECT")?,
+        }
+        if title != name {
+            write!(f, " TITLE={title}")?;
+        }
+        if scrolling {
+            f.write_str(" SCROLLING=yes")?;
+        }
+        match layout {
+            FrameLayout::External {
+                left,
+                top,
+                width,
+                height,
+                floating,
+            } => {
+                if left.amount != 0 {
+                    write!(f, " LEFT=\"{left}\"")?;
+                }
+                if top.amount != 0 {
+                    write!(f, " TOP=\"{top}\"")?;
+                }
+                if let Some(width) = width {
+                    write!(f, " WIDTH=\"{width}\"")?;
+                }
+                if let Some(height) = height {
+                    write!(f, " HEIGHT=\"{height}\"")?;
+                }
+                if floating {
+                    f.write_str(" FLOATING")?;
+                }
+            }
+            FrameLayout::Internal { align } => {
+                if align != Align::default() {
+                    write!(f, " ALIGN={align}")?;
+                }
+            }
+        }
+        f.write_str(">")
+    }
+}

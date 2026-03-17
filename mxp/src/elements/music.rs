@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 use std::str::FromStr;
 
 use super::AudioRepetition;
@@ -30,6 +31,16 @@ impl FromStr for AudioContinuation {
     }
 }
 
+impl fmt::Display for AudioContinuation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Restart => 0,
+            Self::Continue => 1,
+        }
+        .fmt(f)
+    }
+}
+
 /// Music triggers are typically background MID (MIDI) files. Only one music trigger can be active
 /// at once.
 ///
@@ -53,7 +64,7 @@ impl FromStr for AudioContinuation {
 ///     }),
 /// );
 /// ```
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Music<S = String> {
     /// File name. May contain wildcards. If no extension is specified, ".midi" should be assumed.
     pub fname: S,
@@ -70,6 +81,19 @@ pub struct Music<S = String> {
     /// Client should always look in local directories first, and only download the file if it's
     /// not available locally.
     pub url: Option<S>,
+}
+
+impl<S: Default> Default for Music<S> {
+    fn default() -> Self {
+        Self {
+            fname: S::default(),
+            volume: 100,
+            repeat: AudioRepetition::default(),
+            continual: false,
+            class: None,
+            url: None,
+        }
+    }
 }
 
 impl<S: AsRef<str>> Music<S> {
@@ -143,3 +167,29 @@ impl<S: AsRef<str>> Music<S> {
 }
 
 impl_from_str!(Music);
+
+impl<S: AsRef<str>> fmt::Display for Music<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Music {
+            fname,
+            volume,
+            repeat,
+            continual,
+            class,
+            url,
+        } = self.borrow_text();
+        crate::display::ElementFormatter {
+            name: "MUSIC",
+            arguments: &[
+                &fname,
+                &(volume, 100),
+                &(repeat, AudioRepetition::default()),
+                &(u8::from(continual), 0),
+                &class,
+                &url,
+            ],
+            keywords: &[],
+        }
+        .fmt(f)
+    }
+}

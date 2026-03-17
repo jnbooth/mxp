@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::parse::Decoder;
@@ -78,3 +79,19 @@ impl<S: AsRef<str>> Stat<S> {
 }
 
 impl_from_str!(Stat);
+
+impl<S: AsRef<str>> fmt::Display for Stat<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Stat {
+            entity,
+            max,
+            caption,
+        } = self.borrow_text();
+        crate::display::ElementFormatter {
+            name: "STAT",
+            arguments: &[&entity, &max, &caption],
+            keywords: &[],
+        }
+        .fmt(f)
+    }
+}

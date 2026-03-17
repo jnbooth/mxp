@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::fmt;
 use std::num::NonZero;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
@@ -122,3 +123,21 @@ impl<S: AsRef<str>> Dest<S> {
 }
 
 impl_from_str!(Dest);
+
+impl<S: AsRef<str>> fmt::Display for Dest<S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Dest {
+            name,
+            column,
+            line,
+            eof,
+            eol,
+        } = self.borrow_text();
+        crate::display::ElementFormatter {
+            name: "DEST",
+            arguments: &[&name, &column, &line],
+            keywords: &[("EOF", eof), ("EOL", eol)],
+        }
+        .fmt(f)
+    }
+}
