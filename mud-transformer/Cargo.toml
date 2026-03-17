@@ -1,5 +1,6 @@
 [package]
 name = "mud-transformer"
+publish = false
 version = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }
