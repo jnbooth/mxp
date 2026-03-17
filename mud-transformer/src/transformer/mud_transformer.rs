@@ -861,7 +861,7 @@ impl Transformer {
                     mem::swap(&mut entity_string, &mut self.mxp_entity_string);
                     if let Err(mut e) = self.mxp_collect_element(&entity_string) {
                         if let Ok(source) = str::from_utf8(&entity_string) {
-                            e = e.with_context(format_args!(" (in \"{source}\")"));
+                            e = e.with_context(format_args!(" (in <{source}>)"));
                         }
                         self.output.append(e);
                     }
