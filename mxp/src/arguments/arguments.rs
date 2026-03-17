@@ -156,34 +156,26 @@ impl<'a, S: AsRef<str>> Arguments<'a, S> {
 }
 
 impl<S> Extend<S> for Arguments<'_, S> {
-    /// Adds new positional arguments. Mainly useful for server-side implementations.
+    /// Adds new positional arguments or keywords. Mainly useful for server-side implementations.
     ///
     /// Note: this function does not escape special characters. If the value is unescaped, you
     /// should use [`html_escape::encode_double_quoted_attribute`] on it before inerting
     /// it.
-    fn extend<T: IntoIterator<Item = S>>(&mut self, iter: T) {
+    fn extend<I: IntoIterator<Item = S>>(&mut self, iter: I) {
         self.positional.extend(iter);
     }
 }
 
-impl<'a, S> Extend<(&'a str, S)> for Arguments<'a, S> {
+impl<'a, K, S> Extend<(K, S)> for Arguments<'a, S>
+where
+    K: Into<Cow<'a, str>>,
+{
     /// Adds new named arguments. Mainly useful for server-side implementations.
     ///
     /// Note: this function does not escape special characters. If the value is unescaped, you
     /// should use [`html_escape::encode_double_quoted_attribute`] on it before inerting
     /// it.
-    fn extend<T: IntoIterator<Item = (&'a str, S)>>(&mut self, iter: T) {
-        self.named.extend(iter);
-    }
-}
-
-impl<S> Extend<(String, S)> for Arguments<'_, S> {
-    /// Adds new named arguments. Mainly useful for server-side implementations.
-    ///
-    /// Note: this function does not escape special characters. If the value is unescaped, you
-    /// should use [`html_escape::encode_double_quoted_attribute`] on it before inerting
-    /// it.
-    fn extend<T: IntoIterator<Item = (String, S)>>(&mut self, iter: T) {
+    fn extend<T: IntoIterator<Item = (K, S)>>(&mut self, iter: T) {
         self.named.extend(iter);
     }
 }
@@ -204,13 +196,13 @@ impl<'a> Arguments<'a> {
 }
 
 impl<'a> Arguments<'a, Cow<'a, str>> {
-    pub(crate) fn extend(&mut self, iter: Words<'a>) -> crate::Result<()> {
+    pub(crate) fn append(&mut self, iter: Words<'a>) -> crate::Result<()> {
         self.extend_inner::<&str>(iter)
     }
 }
 
 impl Arguments<'static, String> {
-    pub(crate) fn extend(&mut self, iter: Words<'_>) -> crate::Result<()> {
+    pub(crate) fn append(&mut self, iter: Words<'_>) -> crate::Result<()> {
         self.extend_inner::<String>(iter)?;
         self.shrink_to_fit();
         Ok(())
@@ -232,7 +224,7 @@ impl<'a> TryFrom<Words<'a>> for Arguments<'a, Cow<'a, str>> {
 
     fn try_from(value: Words<'a>) -> crate::Result<Self> {
         let mut this = Self::new();
-        this.extend(value)?;
+        this.append(value)?;
         Ok(this)
     }
 }
@@ -242,7 +234,7 @@ impl TryFrom<Words<'_>> for Arguments<'static, String> {
 
     fn try_from(value: Words<'_>) -> crate::Result<Self> {
         let mut this = Self::new();
-        this.extend(value)?;
+        this.append(value)?;
         Ok(this)
     }
 }

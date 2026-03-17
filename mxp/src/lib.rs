@@ -87,8 +87,7 @@
 //! }
 //!
 //! fn handle_open(tag: TagOpen, mxp_state: &mxp::State, secure: bool) -> mxp::Result<()> {
-//!     let component = mxp_state.get_component(tag.name, secure)?;
-//!     match component {
+//!     match mxp_state.get_component(tag.name, secure)? {
 //!         mxp::Component::AtomicTag(atom) => {
 //!             let action = atom.decode(&tag.arguments, mxp_state)?;
 //!             handle_action(&action);
@@ -114,10 +113,14 @@
 //!
 //! let mut mxp_state = mxp::State::with_globals();
 //! let mut mode = mxp::ModeState::new();
+//!
 //! mode.set(mxp::Mode::SECURE_ONCE);
-//! let secure = mode.use_secure(); // true
+//! let secure = mode.use_secure();
+//! assert!(secure); // Mode must be secure in order to define elements
 //! handle_element(&mut mxp_state, "<!ELEMENT custom '<HR><BR>'> EMPTY OPEN>", secure).unwrap();
-//! let secure = mode.use_secure(); // false – SECURE_ONCE reverts back to OPEN mode after use
+//!
+//! let secure = mode.use_secure();
+//! assert!(!secure); // SECURE_ONCE reverts back to OPEN mode after use
 //! handle_element(&mut mxp_state, "<custom>", secure).unwrap(); // prints "----\n"
 //! ```
 //!
@@ -139,6 +142,10 @@
 //! };
 //! assert_eq!(entity.to_string(), "<!EN Guilds \"Wizards\" PUBLISH ADD>");
 //! ```
+//!
+//! For advanced tag building, see [`TagBuilder`].
+//!
+//! [`TagBuilder`]: node::TagBuilder
 //!
 //! # Memory allocation
 //!

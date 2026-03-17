@@ -6,4 +6,4 @@ pub use definition::{
 };
 
 mod tag;
-pub use tag::{Tag, TagClose, TagOpen};
+pub use tag::{Tag, TagBuilder, TagClose, TagOpen};
