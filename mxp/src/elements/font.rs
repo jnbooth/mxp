@@ -30,13 +30,13 @@ impl_parse_enum!(FontStyle, Blink, Bold, Italic, Underline, Inverse);
 /// use mxp::RgbColor;
 ///
 /// assert_eq!(
-///     "<FONT 'Times New Roman' SIZE=10 COLOR=black BACK=#123456>".parse::<mxp::Font>(),
+///     "<FONT 'Times New Roman' SIZE=10 COLOR=black,blink BACK=#123456>".parse::<mxp::Font>(),
 ///     Ok(mxp::Font {
 ///         face: Some("Times New Roman".into()),
 ///         size: 10.try_into().ok(),
 ///         color: Some(RgbColor::hex(0x000000)),
 ///         back: Some(RgbColor::hex(0x123456)),
-///         style: Default::default(),
+///         style: mxp::FontStyle::Blink.into(),
 ///     }),
 /// );
 /// ```
