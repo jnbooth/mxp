@@ -2,7 +2,7 @@ use super::mode::Mode;
 use super::tag::{LineTag, LineTagProperties};
 use crate::CaseFoldMap;
 use crate::element::Element;
-use crate::parsed::ParsedLineTagDefinition;
+use crate::node::LineTagDefinition;
 use crate::{Error, ErrorKind};
 
 const OFFSET: usize = Mode::USER_DEFINED_MIN.0 as usize;
@@ -61,8 +61,8 @@ impl LineTags {
         el.properties.enable = true;
     }
 
-    pub fn update(&mut self, update: ParsedLineTagDefinition) -> crate::Result<()> {
-        fn create_error(update: &ParsedLineTagDefinition) -> crate::Error {
+    pub fn update(&mut self, update: LineTagDefinition) -> crate::Result<()> {
+        fn create_error(update: &LineTagDefinition) -> crate::Error {
             Error::new(update.index.0.to_string(), ErrorKind::IllegalLineTag)
         }
 

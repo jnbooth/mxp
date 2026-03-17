@@ -27,7 +27,8 @@ pub struct Relocate<S = String> {
     pub hostname: S,
     /// Port of the new connection.
     pub port: u16,
-    /// The optional keyword QUIET can be used to suppress further output from the MUD. When the closing </RELOCATE> tag is used, MUD output is resumed.
+    /// The optional keyword QUIET can be used to suppress further output from the MUD.
+    /// When the closing `</RELOCATE>` tag is used, MUD output is resumed.
     pub quiet: bool,
 }
 

@@ -7,11 +7,10 @@ use crate::elements::Var;
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
 use crate::keyword::KeywordFilter;
 use crate::line::{LineTag, LineTags, Mode};
-use crate::parse::{Decoder, Words};
-use crate::parsed::{
-    AttributeListDefinition, ParsedDefinition, ParsedElementDefinition, ParsedEntityDefinition,
-    ParsedLineTagDefinition,
+use crate::node::{
+    AttributeListDefinition, Definition, ElementDefinition, EntityDefinition, LineTagDefinition,
 };
+use crate::parse::{Decoder, Words};
 use crate::{Error, ErrorKind};
 
 /// A store of MXP state: elements, entities, and line tags.
@@ -161,13 +160,13 @@ impl State {
     /// [`EntityVisibility::Publish`]: crate::entity::EntityVisibility::Publish
     pub fn define<'a>(
         &'a mut self,
-        definition: ParsedDefinition,
+        definition: Definition,
     ) -> crate::Result<Option<EntityEntry<'a>>> {
         match definition {
-            ParsedDefinition::AttributeList(def) => self.define_attributes(&def)?,
-            ParsedDefinition::Element(def) => self.define_element(def),
-            ParsedDefinition::Entity(def) => return self.define_entity(def),
-            ParsedDefinition::LineTag(def) => self.define_line_tag(def)?,
+            Definition::AttributeList(def) => self.define_attributes(&def)?,
+            Definition::Element(def) => self.define_element(def),
+            Definition::Entity(def) => return self.define_entity(def),
+            Definition::LineTag(def) => self.define_line_tag(def)?,
         }
         Ok(None)
     }
@@ -181,7 +180,7 @@ impl State {
             .extend(words)
     }
 
-    fn define_element(&mut self, definition: ParsedElementDefinition) {
+    fn define_element(&mut self, definition: ElementDefinition) {
         let Some(el) = definition.element else {
             self.elements.remove(definition.name);
             return;
@@ -194,9 +193,9 @@ impl State {
 
     fn define_entity<'a>(
         &'a mut self,
-        definition: ParsedEntityDefinition,
+        definition: EntityDefinition,
     ) -> crate::Result<Option<EntityEntry<'a>>> {
-        let ParsedEntityDefinition {
+        let EntityDefinition {
             name,
             desc,
             value,
@@ -207,7 +206,7 @@ impl State {
             None => None,
         };
         let value = self.decode_string::<()>(value)?;
-        let entity = self.entities.define(ParsedEntityDefinition {
+        let entity = self.entities.define(EntityDefinition {
             name,
             desc: desc.as_deref(),
             value: &value,
@@ -216,7 +215,7 @@ impl State {
         Ok(EntityEntry::new(entity))
     }
 
-    fn define_line_tag(&mut self, definition: ParsedLineTagDefinition) -> crate::Result<()> {
+    fn define_line_tag(&mut self, definition: LineTagDefinition) -> crate::Result<()> {
         self.line_tags.update(definition)
     }
 }

@@ -15,14 +15,14 @@ use crate::parse::{Decoder, Words};
 /// element is used, the arguments supplied to it are parsed and passed on to its child
 /// [`items`], each of which applies an [`Action`].
 ///
-/// An element is defined by an [`ParsedElementDefinition`] in a [`ParsedDefinition`].
+/// An element is defined by an [`ElementDefinition`] in a [`Definition`].
 ///
 /// See [MXP specification: Elements](https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT).
 ///
 /// [`items`]: Self::items
 /// [`Action`]: crate::Action
-/// [`ParsedElementDefinition`]: crate::parsed::ParsedElementDefinition
-/// [`ParsedDefinition`]: crate::parsed::ParsedDefinition
+/// [`ElementDefinition`]: crate::node::ElementDefinition
+/// [`Definition`]: crate::node::Definition
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Element {
     /// Tag name.

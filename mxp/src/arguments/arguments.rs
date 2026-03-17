@@ -195,14 +195,14 @@ impl TryFrom<Words<'_>> for Arguments<'static, String> {
 
 impl<S: AsRef<str>> fmt::Display for Arguments<'_, S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use crate::display::{DelimAfterFirst, Escape};
+        use crate::display::DelimAfterFirst;
 
         let delim = DelimAfterFirst::new(" ");
         for positional in &self.positional {
-            write!(f, "{delim}{}", Escape(positional.as_ref()))?;
+            write!(f, "{delim}\"{}\"", positional.as_ref())?;
         }
         for (k, v) in &self.named {
-            write!(f, "{delim}{k}={}", Escape(v.as_ref()))?;
+            write!(f, "{delim}{k}=\"{}\"", v.as_ref())?;
         }
 
         Ok(())
@@ -215,7 +215,7 @@ mod tests {
 
     #[test]
     fn arguments() {
-        let words = Words::new(r#"EL RName '<FONT COLOR=Red><B>' FLAG="RoomName""#);
+        let words = Words::new("EL RName '<FONT COLOR=Red><B>' FLAG=\"RoomName\"");
         let args: Arguments = words.try_into().unwrap();
         let expected = Arguments {
             positional: vec!["EL", "RName", "<FONT COLOR=Red><B>"],

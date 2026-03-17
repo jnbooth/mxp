@@ -6,7 +6,7 @@ use bytes::BytesMut;
 use bytestringmut::ByteStringMut;
 use mxp::entity::PublishedIter;
 use mxp::escape::{ansi, telnet};
-use mxp::parsed::{ParsedDefinition, ParsedElement, ParsedTagOpen};
+use mxp::node::{Definition, Tag as TagNode, TagOpen};
 
 use super::config::{TabBehavior, TransformerConfig, UseMxp};
 use super::cursor::ReceiveCursor;
@@ -348,14 +348,14 @@ impl Transformer {
     fn mxp_collect_element(&mut self, entity_string: &[u8]) -> mxp::Result<()> {
         let secure = self.mxp_mode.use_secure();
         let source = mxp::validate_utf8(entity_string)?;
-        match ParsedElement::parse(source, secure)? {
-            ParsedElement::Definition(definition) => self.mxp_define(definition),
-            ParsedElement::TagClose(tag) => {
+        match TagNode::parse(source, secure)? {
+            TagNode::Definition(definition) => self.mxp_define(definition),
+            TagNode::Close(tag) => {
                 let (closed, _) = self.mxp_tags.find_last(secure, tag.name)?;
                 self.mxp_close_tags_from(closed);
                 Ok(())
             }
-            ParsedElement::TagOpen(tag) => {
+            TagNode::Open(tag) => {
                 let mxp_state = self.mxp_state.take();
                 let result = self.mxp_start_tag(&tag, secure, &mxp_state);
                 self.mxp_state.set(mxp_state);
@@ -364,7 +364,7 @@ impl Transformer {
         }
     }
 
-    fn mxp_define(&mut self, definition: ParsedDefinition) -> mxp::Result<()> {
+    fn mxp_define(&mut self, definition: Definition) -> mxp::Result<()> {
         let name = definition.name();
         if let Some(entry) = self.mxp_state.define(definition)? {
             self.output.append(EntityFragment {
@@ -378,7 +378,7 @@ impl Transformer {
 
     fn mxp_start_tag(
         &mut self,
-        tag: &ParsedTagOpen,
+        tag: &TagOpen,
         secure: bool,
         mxp_state: &mxp::State,
     ) -> mxp::Result<()> {

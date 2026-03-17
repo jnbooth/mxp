@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fmt;
 use std::sync::LazyLock;
 
 use super::visibility::EntityVisibility;
@@ -136,27 +135,6 @@ impl Entity {
             .filter(|item| *item != value)
             .collect::<Vec<_>>()
             .join("|");
-    }
-}
-
-impl fmt::Display for Entity {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use crate::display::Escape;
-
-        let Self {
-            value,
-            description,
-            visibility,
-        } = self;
-        write!(f, "{}", Escape(value))?;
-        if !description.is_empty() {
-            write!(f, " DESC={}", Escape(description))?;
-        }
-        match visibility {
-            EntityVisibility::Default => Ok(()),
-            EntityVisibility::Private => f.write_str(" PRIVATE"),
-            EntityVisibility::Publish => f.write_str(" PUBLISH"),
-        }
     }
 }
 

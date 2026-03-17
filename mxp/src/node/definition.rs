@@ -33,22 +33,22 @@ impl FromStr for DefinitionKind {
     }
 }
 
-/// Parsed representation of a definition tag from the server, in the form of `<!...>`.
+/// Syntax tree of a definition tag from the server, in the form of `<!...>`.
 ///
 /// Note: This is the parameter type of [`State::define`](crate::State::define).
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum ParsedDefinition<'a> {
+pub enum Definition<'a> {
     /// `<!ATTLIST ...>` or `<!ATT ...>`.
     AttributeList(AttributeListDefinition<'a>),
     /// `<!ELEMENT ...>` or `<!EL ...>`.
-    Element(ParsedElementDefinition<'a>),
+    Element(ElementDefinition<'a>),
     /// `<!ENTITY ...>` or `<!EN ...>`.
-    Entity(ParsedEntityDefinition<'a>),
+    Entity(EntityDefinition<'a>),
     /// `<!TAG ...>`.
-    LineTag(ParsedLineTagDefinition<'a>),
+    LineTag(LineTagDefinition<'a>),
 }
 
-impl fmt::Display for ParsedDefinition<'_> {
+impl fmt::Display for Definition<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::AttributeList(def) => def.fmt(f),
@@ -59,10 +59,10 @@ impl fmt::Display for ParsedDefinition<'_> {
     }
 }
 
-impl<'a> ParsedDefinition<'a> {
+impl<'a> Definition<'a> {
     /// Returns the name of the item being defined.
     ///
-    /// Note: A [`ParsedLineTagDefinition`] does not contain a name, so it will return `""` instead.
+    /// Note: A [`LineTagDefinition`] does not contain a name, so it will return `""` instead.
     pub fn name(&self) -> &'a str {
         match self {
             Self::AttributeList(def) => def.name,
@@ -82,14 +82,14 @@ impl<'a> ParsedDefinition<'a> {
             DefinitionKind::AttributeList => {
                 Self::AttributeList(AttributeListDefinition::parse(words)?)
             }
-            DefinitionKind::Element => Self::Element(ParsedElementDefinition::parse(words)?),
-            DefinitionKind::Entity => Self::Entity(ParsedEntityDefinition::parse(words)?),
-            DefinitionKind::LineTag => Self::LineTag(ParsedLineTagDefinition::parse(words)?),
+            DefinitionKind::Element => Self::Element(ElementDefinition::parse(words)?),
+            DefinitionKind::Entity => Self::Entity(EntityDefinition::parse(words)?),
+            DefinitionKind::LineTag => Self::LineTag(LineTagDefinition::parse(words)?),
         })
     }
 }
 
-/// Parsed representation of an attribute list definition from the server, in the form of
+/// Syntax tree of an attribute list definition from the server, in the form of
 /// `<!ATTLIST {name} ...>`.
 ///
 /// Full definition:
@@ -131,8 +131,7 @@ impl<'a> AttributeListDefinition<'a> {
     }
 }
 
-/// Parsed representation of an entity definition from the server, in the form of
-/// `<!ENTITY {name} ...>`.
+/// Syntax tree of an entity definition from the server, in the form of `<!ENTITY {name} ...>`.
 ///
 /// Full definition:
 ///
@@ -148,14 +147,14 @@ impl<'a> AttributeListDefinition<'a> {
 ///     [EMPTY]
 /// >
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ParsedElementDefinition<'a> {
+pub struct ElementDefinition<'a> {
     /// Name of the element.
     pub name: &'a str,
     /// Definition of the element, or `None` if this is a `DELETE` instruction.
     pub element: Option<Element>,
 }
 
-impl fmt::Display for ParsedElementDefinition<'_> {
+impl fmt::Display for ElementDefinition<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let Self { name, element } = self;
         if let Some(element) = element {
@@ -166,7 +165,7 @@ impl fmt::Display for ParsedElementDefinition<'_> {
     }
 }
 
-impl<'a> ParsedElementDefinition<'a> {
+impl<'a> ElementDefinition<'a> {
     fn parse(mut words: Words<'a>) -> crate::Result<Self> {
         let name = words.next_or(ErrorKind::IncompleteElement)?;
         crate::validate(name, ErrorKind::InvalidElementName)?;
@@ -230,7 +229,7 @@ impl<'a> ParsedElementDefinition<'a> {
     }
 }
 
-/// Parsed representation of an entity definition from the server, in the form of
+/// Syntax tree of an entity definition from the server, in the form of
 /// `<!ENTITY {name} {value} ...>`.
 ///
 /// Full definition:
@@ -247,7 +246,7 @@ impl<'a> ParsedElementDefinition<'a> {
 ///     [REMOVE]
 /// >
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct ParsedEntityDefinition<'a> {
+pub struct EntityDefinition<'a> {
     /// Name of the entity.
     pub name: &'a str,
     /// Value of the entity.
@@ -258,7 +257,7 @@ pub struct ParsedEntityDefinition<'a> {
     pub keywords: FlagSet<EntityKeyword>,
 }
 
-impl fmt::Display for ParsedEntityDefinition<'_> {
+impl fmt::Display for EntityDefinition<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let &Self {
             name,
@@ -266,9 +265,9 @@ impl fmt::Display for ParsedEntityDefinition<'_> {
             desc,
             keywords,
         } = self;
-        write!(f, "<!EN {name} {value}")?;
+        write!(f, "<!EN {name} \"{value}\"")?;
         if let Some(desc) = desc {
-            write!(f, " DESC={desc}")?;
+            write!(f, " DESC=\"{desc}\"")?;
         }
         for keyword in keywords {
             write!(f, " {keyword}")?;
@@ -277,7 +276,7 @@ impl fmt::Display for ParsedEntityDefinition<'_> {
     }
 }
 
-impl<'a> ParsedEntityDefinition<'a> {
+impl<'a> EntityDefinition<'a> {
     fn parse(mut words: Words<'a>) -> crate::Result<Self> {
         let source = words.source();
         let name = words.next_or(ErrorKind::IncompleteElement)?;
@@ -315,7 +314,7 @@ impl<'a> ParsedEntityDefinition<'a> {
 /// >
 /// ```
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct ParsedLineTagDefinition<'a> {
+pub struct LineTagDefinition<'a> {
     /// Tag number (20-99) to change.
     pub index: Mode,
     /// Window to redirect the text to.
@@ -330,7 +329,7 @@ pub struct ParsedLineTagDefinition<'a> {
     pub enable: Option<bool>,
 }
 
-impl fmt::Display for ParsedLineTagDefinition<'_> {
+impl fmt::Display for LineTagDefinition<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let &Self {
             index,
@@ -342,7 +341,7 @@ impl fmt::Display for ParsedLineTagDefinition<'_> {
         } = self;
         write!(f, "<!TAG {index}")?;
         if let Some(window) = window {
-            write!(f, " WINDOWNAME={window}")?;
+            write!(f, " WINDOWNAME=\"{window}\"")?;
         }
         if gag == Some(true) {
             f.write_str(" GAG")?;
@@ -361,7 +360,7 @@ impl fmt::Display for ParsedLineTagDefinition<'_> {
     }
 }
 
-impl<'a> ParsedLineTagDefinition<'a> {
+impl<'a> LineTagDefinition<'a> {
     fn parse(words: Words<'a>) -> crate::Result<Self> {
         let args = words.parse_args()?;
         let mut scanner = args.scan(()).with_keywords();

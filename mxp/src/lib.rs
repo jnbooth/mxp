@@ -5,7 +5,9 @@
 //! # Description
 //!
 //! [MXP (MUD eXtension Protocol)] is an open communication protocol for MUD servers and clients.
-//! The mxp library is a lightweight yet robust implementation of the entire protocol.
+//! The mxp library is a lightweight but robust implementation of the protocol in its entirety.
+//! This library is geared toward client implementations, but it can also be used for server-side
+//! syntax handling.
 //!
 //! By default, mxp processes all tags described in the MXP standard (above). To restrict which
 //! elements your client supports, send a [`SupportResponse`] to the MUD server.
@@ -52,7 +54,7 @@
 //! mxp provides state management via [`mxp::State`]: the central hub of MXP logic.
 //! `mxp::State` stores custom [`Element`]s, custom [`Entity`]s, and user-defined [`LineTag`]s.
 //! In this approach, rather than using [`FromStr`] to parse tags with owned strings,
-//! [`ParsedElement::parse`] is used to deserialize tags in-place using borrowed string slices.
+//! [`Tag::parse`] is used to deserialize tags in-place using borrowed string slices.
 //!
 //! Furthermore, [`mxp::ModeState`] can be used to handle line modes, as well as retrieving custom
 //! elements from user-defined line tags. Rather than being parsed from XML tags like everything
@@ -61,27 +63,30 @@
 //! apply them with [`ModeState::set`] and [`ModeState::revert`].
 //!
 //! [`FromStr`]: std::str::FromStr
-//! [`ParsedElement::parse`]: parsed::ParsedElement::parse
+//! [`Tag::parse`]: node::Tag::parse
 //!
 //! ```
 //! use std::borrow::Cow;
-//! use mxp::parsed::{ParsedElement, ParsedTagClose, ParsedTagOpen};
+//! // Alternatively:
+//! // - `use mxp::node;` for prefixed names, e.g. `node::TagOpen`
+//! // - `use mxp::node::{Tag as TagNode, TagOpen as TagOpenNode};`
+//! use mxp::node::{Tag, TagOpen};
 //!
 //! fn handle_element(mxp_state: &mut mxp::State, mut src: &str, secure: bool) -> mxp::Result<()> {
 //!     src = &src[1..src.len() - 1]; // remove < and >
-//!     match ParsedElement::parse(src, secure)? {
-//!         ParsedElement::Definition(definition) => {
+//!     match Tag::parse(src, secure)? {
+//!         Tag::Definition(definition) => {
 //!             mxp_state.define(definition)?;
 //!         }
-//!         ParsedElement::TagOpen(tag) => {
+//!         Tag::Open(tag) => {
 //!             handle_open(tag, mxp_state, secure)?;
 //!         }
-//!         ParsedElement::TagClose(tag) => (),
+//!         Tag::Close(tag) => (),
 //!     }
 //!     Ok(())
 //! }
 //!
-//! fn handle_open(tag: ParsedTagOpen, mxp_state: &mxp::State, secure: bool) -> mxp::Result<()> {
+//! fn handle_open(tag: TagOpen, mxp_state: &mxp::State, secure: bool) -> mxp::Result<()> {
 //!     let component = mxp_state.get_component(tag.name, secure)?;
 //!     match component {
 //!         mxp::Component::AtomicTag(atom) => {
@@ -116,12 +121,31 @@
 //! handle_element(&mut mxp_state, "<custom>", secure).unwrap(); // prints "----\n"
 //! ```
 //!
+//! ## Server-side usage
+//!
+//! All of the types exported by mxp can be serialized to MXP syntax with their [`Display`]
+//! implementation.
+//!
+//! [`Display`]: std::fmt::Display
+//!
+//! ```
+//! use mxp::entity::EntityKeyword;
+//!
+//! let entity = mxp::node::EntityDefinition {
+//!     name: "Guilds",
+//!     value: "Wizards",
+//!     desc: None,
+//!     keywords: EntityKeyword::Publish | EntityKeyword::Add,
+//! };
+//! assert_eq!(entity.to_string(), "<!EN Guilds \"Wizards\" PUBLISH ADD>");
+//! ```
+//!
 //! # Memory allocation
 //!
-//! [`ParsedElement::parse`] allocates memory if it parses a custom element definition (as
-//! [`ParsedElementDefinition`]), which needs to use owned strings because custom elements are
+//! [`Tag::parse`] allocates memory if it parses a custom element definition (as
+//! [`node::ElementDefinition`]), which needs to use owned strings because custom elements are
 //! stored long-term in state. Otherwise, it only allocates memory to parse arguments passed to
-//! an opening tag (as [`ParsedTagOpen`]), as described in the next paragraph.
+//! an opening tag (as [`node::TagOpen`]), as described in the next paragraph.
 //!
 //! [`Arguments`] parsing allocates a `Vec<&'a str>` and `HashMap<&'a str, &'a str>` for positional
 //! and named arguments respectively. Both use generous size guesses (based on the number of spaces
@@ -133,8 +157,6 @@
 //! replace entities with their definitions (e.g. replacing `"&lt;"` with `"<"`). If the MXP string
 //! does not contain entities, no allocations are performed.
 //!
-//! [`ParsedElementDefinition`]: parsed::ParsedElementDefinition
-//! [`ParsedTagOpen`]: parsed::ParsedTagOpen
 //! [`Cow`]: std::borrow::Cow
 
 #[macro_use]
@@ -171,7 +193,7 @@ pub use line::{LineTag, LineTagProperties, Mode, ModeRangeError, ModeState};
 mod parse;
 pub use parse::{Decoder, Error, ErrorKind, is_valid, validate, validate_utf8};
 
-pub mod parsed;
+pub mod node;
 
 pub mod responses;
 

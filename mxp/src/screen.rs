@@ -44,7 +44,7 @@ impl fmt::Display for DimensionUnit {
         match self {
             Self::Pixel => Ok(()),
             Self::Percentage => "%".fmt(f),
-            Self::CharacterSpacing => "%c".fmt(f),
+            Self::CharacterSpacing => "c".fmt(f),
         }
     }
 }

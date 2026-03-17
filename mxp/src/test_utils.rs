@@ -2,7 +2,7 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 use crate::element::Action;
-use crate::parsed::{ParsedDefinition, ParsedElement, ParsedTagOpen};
+use crate::node::{Definition, Tag, TagOpen};
 use crate::{Component, State};
 
 pub type StringPair<T> = (T, &'static str);
@@ -13,21 +13,21 @@ fn strip_brackets(mut source: &str) -> &str {
 }
 
 #[track_caller]
-pub fn parse_definition(source: &str) -> ParsedDefinition<'_> {
-    match ParsedElement::parse(strip_brackets(source), true) {
-        Ok(ParsedElement::Definition(definition)) => definition,
-        Ok(ParsedElement::TagClose(_)) => panic!("expected definition, got closing tag"),
-        Ok(ParsedElement::TagOpen(_)) => panic!("expected definition, got opening tag"),
+pub fn parse_definition(source: &str) -> Definition<'_> {
+    match Tag::parse(strip_brackets(source), true) {
+        Ok(Tag::Definition(definition)) => definition,
+        Ok(Tag::Close(_)) => panic!("expected definition, got closing tag"),
+        Ok(Tag::Open(_)) => panic!("expected definition, got opening tag"),
         Err(e) => panic!("failed to parse definition: {e}"),
     }
 }
 
 #[track_caller]
-pub fn parse_tag_open(source: &str) -> ParsedTagOpen<'_> {
-    match ParsedElement::parse(strip_brackets(source), true) {
-        Ok(ParsedElement::Definition(_)) => panic!("expected opening tag, got definition"),
-        Ok(ParsedElement::TagClose(_)) => panic!("expected opening tag, got closing tag"),
-        Ok(ParsedElement::TagOpen(tag)) => tag,
+pub fn parse_tag_open(source: &str) -> TagOpen<'_> {
+    match Tag::parse(strip_brackets(source), true) {
+        Ok(Tag::Definition(_)) => panic!("expected opening tag, got definition"),
+        Ok(Tag::Close(_)) => panic!("expected opening tag, got closing tag"),
+        Ok(Tag::Open(tag)) => tag,
         Err(e) => panic!("failed to parse opening tag: {e}"),
     }
 }
