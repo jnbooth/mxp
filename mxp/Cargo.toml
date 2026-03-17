@@ -4,6 +4,7 @@ version = { workspace = true }
 repository = { workspace = true }
 license = { workspace = true }
 edition = { workspace = true }
+readme = "README.md"
 authors = ["Joshua Booth <joshua.n.booth@gmail.com>"]
 description = "Rust implementation of the MXP (Mud eXtension Protocol) standard"
 
