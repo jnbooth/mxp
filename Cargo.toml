@@ -27,6 +27,3 @@ bytes = "1.11.0"
 flagset = "0.4.7"
 html-escape = "0.2.13"
 serde = "1.0.228"
-
-[patch.crates-io]
-mxp = { path = 'mxp' }
