@@ -117,7 +117,7 @@
 //! mode.set(mxp::Mode::SECURE_ONCE);
 //! let secure = mode.use_secure();
 //! assert!(secure); // Mode must be secure in order to define elements
-//! handle_element(&mut mxp_state, "<!ELEMENT custom '<HR><BR>'> EMPTY OPEN>", secure).unwrap();
+//! handle_element(&mut mxp_state, "<!ELEMENT custom '<HR><BR>' EMPTY OPEN>", secure).unwrap();
 //!
 //! let secure = mode.use_secure();
 //! assert!(!secure); // SECURE_ONCE reverts back to OPEN mode after use

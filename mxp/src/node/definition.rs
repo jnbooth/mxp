@@ -178,12 +178,12 @@ impl<'a> ElementDefinition<'a> {
             None => Vec::new(),
         };
 
-        let attributes = match iter.get_next_or("att") {
+        let attributes = match iter.get_named("att") {
             Some(&atts) => Words::new(atts).try_into()?,
             None => Arguments::default(),
         };
 
-        let tag = match iter.get_next_or("tag") {
+        let tag = match iter.get_named("tag") {
             Some(&tag) => match tag.parse() {
                 Ok(tag) if Mode(tag).is_user_defined() => Some(Mode(tag)),
                 _ => {
@@ -196,7 +196,7 @@ impl<'a> ElementDefinition<'a> {
             None => None,
         };
 
-        let (parse_as, variable) = match iter.get_next_or("flag") {
+        let (parse_as, variable) = match iter.get_named("flag") {
             Some(&flag) if flag[.."set ".len()].eq_ignore_ascii_case("set ") => {
                 (None, Some(flag["set ".len()..].to_owned()))
             }
@@ -286,7 +286,7 @@ impl<'a> EntityDefinition<'a> {
         let Some(value) = scanner.get_next() else {
             return Err(Error::new(source, ErrorKind::EmptyElementInDefinition));
         };
-        let desc = scanner.get_next_or("desc").copied();
+        let desc = scanner.get_named("desc").copied();
         let keywords = scanner.into_keywords()?;
         Ok(Self {
             name,
@@ -368,9 +368,9 @@ impl<'a> LineTagDefinition<'a> {
         if !index.is_user_defined() {
             return Err(Error::new(index.to_string(), ErrorKind::IllegalLineTag));
         }
-        let window = scanner.get_next_or("windowname").copied();
-        let fore = scanner.get_next_or("fore").expect_color()?;
-        let back = scanner.get_next_or("back").expect_color()?;
+        let window = scanner.get_named("windowname").copied();
+        let fore = scanner.get_named("fore").expect_color()?;
+        let back = scanner.get_named("back").expect_color()?;
         let keywords = scanner.into_keywords()?;
         let gag = if keywords.contains(LineTagKeyword::Gag) {
             Some(true)
