@@ -69,6 +69,27 @@ impl<'a, S> Arguments<'a, S> {
         }
     }
 
+    /// Adds a new positional argument. Mainly useful for server-side implementations.
+    ///
+    /// Note: this function does not escape special characters. If the value is unescaped, you
+    /// should use [`html_escape::encode_double_quoted_attribute`] on it before inerting
+    /// it.
+    pub fn push(&mut self, arg: S) {
+        self.positional.push(arg);
+    }
+    /// Adds a new named argument argument, returning the value that was previously associated with
+    /// that name if one existed. Mainly useful for server-side implementations.
+    ///
+    /// Note: this function does not escape special characters. If the value is unescaped, you
+    /// should use [`html_escape::encode_double_quoted_attribute`] on it before inerting
+    /// it.
+    pub fn insert<K>(&mut self, name: K, arg: S) -> Option<S>
+    where
+        K: Into<Cow<'a, str>>,
+    {
+        self.named.insert(name.into(), arg)
+    }
+
     pub(crate) fn keys(&self) -> hash_map::Keys<'_, Uncased<'a>, S> {
         self.named.keys()
     }
@@ -131,6 +152,39 @@ impl<'a, S: AsRef<str>> Arguments<'a, S> {
             }
         }
         Ok(())
+    }
+}
+
+impl<S> Extend<S> for Arguments<'_, S> {
+    /// Adds new positional arguments. Mainly useful for server-side implementations.
+    ///
+    /// Note: this function does not escape special characters. If the value is unescaped, you
+    /// should use [`html_escape::encode_double_quoted_attribute`] on it before inerting
+    /// it.
+    fn extend<T: IntoIterator<Item = S>>(&mut self, iter: T) {
+        self.positional.extend(iter);
+    }
+}
+
+impl<'a, S> Extend<(&'a str, S)> for Arguments<'a, S> {
+    /// Adds new named arguments. Mainly useful for server-side implementations.
+    ///
+    /// Note: this function does not escape special characters. If the value is unescaped, you
+    /// should use [`html_escape::encode_double_quoted_attribute`] on it before inerting
+    /// it.
+    fn extend<T: IntoIterator<Item = (&'a str, S)>>(&mut self, iter: T) {
+        self.named.extend(iter);
+    }
+}
+
+impl<S> Extend<(String, S)> for Arguments<'_, S> {
+    /// Adds new named arguments. Mainly useful for server-side implementations.
+    ///
+    /// Note: this function does not escape special characters. If the value is unescaped, you
+    /// should use [`html_escape::encode_double_quoted_attribute`] on it before inerting
+    /// it.
+    fn extend<T: IntoIterator<Item = (String, S)>>(&mut self, iter: T) {
+        self.named.extend(iter);
     }
 }
 
