@@ -3,6 +3,7 @@ use std::str::FromStr;
 
 use flagset::FlagSet;
 
+use super::error::TryFromNodeError;
 use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _};
 use crate::color::RgbColor;
 use crate::element::{Element, ElementItem};
@@ -394,3 +395,112 @@ impl<'a> LineTagDefinition<'a> {
         })
     }
 }
+
+impl<'a> From<AttributeListDefinition<'a>> for Definition<'a> {
+    fn from(value: AttributeListDefinition<'a>) -> Self {
+        Self::AttributeList(value)
+    }
+}
+impl<'a> From<ElementDefinition<'a>> for Definition<'a> {
+    fn from(value: ElementDefinition<'a>) -> Self {
+        Self::Element(value)
+    }
+}
+impl<'a> From<EntityDefinition<'a>> for Definition<'a> {
+    fn from(value: EntityDefinition<'a>) -> Self {
+        Self::Entity(value)
+    }
+}
+impl<'a> From<LineTagDefinition<'a>> for Definition<'a> {
+    fn from(value: LineTagDefinition<'a>) -> Self {
+        Self::LineTag(value)
+    }
+}
+impl<'a> TryFrom<Definition<'a>> for AttributeListDefinition<'a> {
+    type Error = TryFromNodeError;
+
+    fn try_from(value: Definition<'a>) -> Result<Self, Self::Error> {
+        let got = match value {
+            Definition::AttributeList(def) => return Ok(def),
+            Definition::Element(_) => "Element",
+            Definition::Entity(_) => "Entity",
+            Definition::LineTag(_) => "LineTag",
+        };
+        Err(TryFromNodeError {
+            prefix: "Definition",
+            expected: "AttributeList",
+            got,
+        })
+    }
+}
+impl<'a> TryFrom<Definition<'a>> for ElementDefinition<'a> {
+    type Error = TryFromNodeError;
+
+    fn try_from(value: Definition<'a>) -> Result<Self, Self::Error> {
+        let got = match value {
+            Definition::AttributeList(_) => "AttributeList",
+            Definition::Element(def) => return Ok(def),
+            Definition::Entity(_) => "Entity",
+            Definition::LineTag(_) => "LineTag",
+        };
+        Err(TryFromNodeError {
+            prefix: "Definition",
+            expected: "Element",
+            got,
+        })
+    }
+}
+impl<'a> TryFrom<Definition<'a>> for EntityDefinition<'a> {
+    type Error = TryFromNodeError;
+
+    fn try_from(value: Definition<'a>) -> Result<Self, Self::Error> {
+        let got = match value {
+            Definition::AttributeList(_) => "AttributeList",
+            Definition::Element(_) => "Element",
+            Definition::Entity(def) => return Ok(def),
+            Definition::LineTag(_) => "LineTag",
+        };
+        Err(TryFromNodeError {
+            prefix: "Definition",
+            expected: "Entity",
+            got,
+        })
+    }
+}
+impl<'a> TryFrom<Definition<'a>> for LineTagDefinition<'a> {
+    type Error = TryFromNodeError;
+
+    fn try_from(value: Definition<'a>) -> Result<Self, Self::Error> {
+        let got = match value {
+            Definition::AttributeList(_) => "AttributeList",
+            Definition::Element(_) => "Element",
+            Definition::Entity(_) => "Entity",
+            Definition::LineTag(def) => return Ok(def),
+        };
+        Err(TryFromNodeError {
+            prefix: "Definition",
+            expected: "LineTag",
+            got,
+        })
+    }
+}
+macro_rules! impl_try_from_tag {
+    ($t:ident) => {
+        impl<'a> From<$t<'a>> for super::Tag<'a> {
+            fn from(value: $t<'a>) -> Self {
+                Self::Definition(value.into())
+            }
+        }
+        impl<'a> TryFrom<super::Tag<'a>> for $t<'a> {
+            type Error = TryFromNodeError;
+
+            fn try_from(value: super::Tag<'a>) -> Result<Self, Self::Error> {
+                Definition::try_from(value)?.try_into()
+            }
+        }
+    };
+}
+impl_try_from_tag!(AttributeListDefinition);
+impl_try_from_tag!(ElementDefinition);
+impl_try_from_tag!(EntityDefinition);
+impl_try_from_tag!(LineTagDefinition);

@@ -1,9 +1,7 @@
-use std::borrow::{Borrow, Cow};
 use std::fmt;
 
-use html_escape::encode_double_quoted_attribute as escape;
-
 use super::definition::Definition;
+use super::error::TryFromNodeError;
 use crate::arguments::Arguments;
 use crate::parse::Words;
 use crate::{Error, ErrorKind};
@@ -116,121 +114,66 @@ impl<'a> TagOpen<'a> {
     }
 }
 
-/// Utility for servers to build custom opening tags.
-///
-/// # Examples
-///
-/// ```
-/// let mut builder = mxp::node::TagBuilder::new("monster");
-/// builder
-///     .push("hostile")
-///     .push_all(&["Minotaur", "veteran"])
-///     .insert("hp", "150");
-/// let tag = builder.build();
-/// assert_eq!(
-///     tag.to_string(),
-///     r#"<monster "hostile" "Minotaur" "veteran" hp="150">"#
-/// );
-/// ```
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct TagBuilder<'a> {
-    tag: TagOpen<'a, Cow<'a, str>>,
+impl<'a> From<Definition<'a>> for Tag<'a> {
+    fn from(value: Definition<'a>) -> Self {
+        Self::Definition(value)
+    }
 }
-
-/// A server-side utility for building opening tags.
-///
-///
-impl<'a> TagBuilder<'a> {
-    /// Creates a builder for an opening tag with the specified element name.
-    pub fn new(name: &'a str) -> Self {
-        Self {
-            tag: TagOpen {
-                name,
-                arguments: Arguments::default(),
-            },
-        }
+impl<'a> From<TagClose<'a>> for Tag<'a> {
+    fn from(value: TagClose<'a>) -> Self {
+        Self::Close(value)
     }
-
-    /// Converts this builder into a finalized `TagOpen`.
-    pub fn build(self) -> TagOpen<'a, Cow<'a, str>> {
-        self.tag
+}
+impl<'a> From<TagOpen<'a>> for Tag<'a> {
+    fn from(value: TagOpen<'a>) -> Self {
+        Self::Open(value)
     }
+}
+impl<'a> TryFrom<Tag<'a>> for Definition<'a> {
+    type Error = TryFromNodeError;
 
-    /// Adds a positional argument or keyword without escaping special characters.
-    pub fn push(&mut self, value: &'a str) -> &mut Self {
-        self.tag.arguments.push(value.into());
-        self
+    fn try_from(value: Tag<'a>) -> Result<Self, Self::Error> {
+        let got = match value {
+            Tag::Definition(def) => return Ok(def),
+            Tag::Close(_) => "Close",
+            Tag::Open(_) => "Open",
+        };
+        Err(TryFromNodeError {
+            prefix: "Tag",
+            expected: "Definition",
+            got,
+        })
     }
+}
+impl<'a> TryFrom<Tag<'a>> for TagClose<'a> {
+    type Error = TryFromNodeError;
 
-    /// Adds a positional argument or keyword after escaping special characters.
-    pub fn escape_and_push(&mut self, value: &'a str) -> &mut Self {
-        self.tag.arguments.push(escape(value));
-        self
+    fn try_from(value: Tag<'a>) -> Result<Self, Self::Error> {
+        let got = match value {
+            Tag::Definition(_) => "Definition",
+            Tag::Close(tag) => return Ok(tag),
+            Tag::Open(_) => "Open",
+        };
+        Err(TryFromNodeError {
+            prefix: "Tag",
+            expected: "Close",
+            got,
+        })
     }
+}
+impl<'a> TryFrom<Tag<'a>> for TagOpen<'a> {
+    type Error = TryFromNodeError;
 
-    /// Adds multiple positional arguments or keywords without escaping special characters.
-    pub fn push_all<I>(&mut self, iter: I) -> &mut Self
-    where
-        I: IntoIterator,
-        I::Item: Borrow<&'a str>,
-    {
-        self.tag
-            .arguments
-            .extend(iter.into_iter().map(|s| Cow::Borrowed(*s.borrow())));
-        self
-    }
-
-    /// Adds multiple positional arguments or keywords after escaping special characters.
-    pub fn escape_and_push_all<I>(&mut self, iter: I) -> &mut Self
-    where
-        I: IntoIterator,
-        I::Item: Borrow<&'a str>,
-    {
-        self.tag
-            .arguments
-            .extend(iter.into_iter().map(|s| escape(*s.borrow())));
-        self
-    }
-
-    /// Inserts a named argument without escaping special characters.
-    pub fn insert(&mut self, name: &'a str, value: &'a str) -> &mut Self {
-        self.tag.arguments.insert(name, value.into());
-        self
-    }
-
-    /// Inserts a named argument after escaping special characters.
-    pub fn escape_and_insert(&mut self, name: &'a str, value: &'a str) -> &mut Self {
-        self.tag.arguments.insert(name, escape(value));
-        self
-    }
-
-    /// Inserts multiple named arguments without escaping special characters.
-    pub fn insert_all<I, K, V>(&mut self, iter: I) -> &mut Self
-    where
-        I: IntoIterator,
-        I::Item: Borrow<(K, V)>,
-        K: Borrow<&'a str>,
-        V: Borrow<&'a str>,
-    {
-        self.tag.arguments.extend(iter.into_iter().map(|entry| {
-            let (k, v) = entry.borrow();
-            (*k.borrow(), Cow::Borrowed(*v.borrow()))
-        }));
-        self
-    }
-
-    /// Inserts multiple named arguments after escaping special characters.
-    pub fn escape_and_insert_all<I, K, V>(&mut self, iter: I) -> &mut Self
-    where
-        I: IntoIterator,
-        I::Item: Borrow<(K, V)>,
-        K: Borrow<&'a str>,
-        V: Borrow<&'a str>,
-    {
-        self.tag.arguments.extend(iter.into_iter().map(|entry| {
-            let (k, v) = entry.borrow();
-            (*k.borrow(), escape(*v.borrow()))
-        }));
-        self
+    fn try_from(value: Tag<'a>) -> Result<Self, Self::Error> {
+        let got = match value {
+            Tag::Definition(_) => "Definition",
+            Tag::Close(_) => "Close",
+            Tag::Open(tag) => return Ok(tag),
+        };
+        Err(TryFromNodeError {
+            prefix: "Tag",
+            expected: "Open",
+            got,
+        })
     }
 }
