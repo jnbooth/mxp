@@ -1,3 +1,4 @@
+use std::fmt;
 use std::ops::Deref;
 
 use crate::color::RgbColor;
@@ -25,16 +26,16 @@ impl Deref for LineTag<'_> {
 /// See [MXP specification: Line Tags](https://www.zuggsoft.com/zmud/mxp.htm#Line%20Tags).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct LineTagProperties {
-    /// Use this tag.
-    pub enable: bool,
+    /// Redirect output to another window.
+    pub window: Option<String>,
     /// Override foreground color.
     pub fore: Option<RgbColor>,
     /// Override background color.
     pub back: Option<RgbColor>,
     /// Suppress output in main window.
     pub gag: bool,
-    /// Redirect output to another window.
-    pub window: Option<String>,
+    /// Use this tag.
+    pub enable: bool,
 }
 
 impl LineTagProperties {
@@ -54,5 +55,36 @@ impl LineTagProperties {
         if let Some(window) = definition.window {
             self.window = Some(window.to_owned());
         }
+    }
+}
+
+impl fmt::Display for LineTagProperties {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use crate::display::{DelimAfterFirst, Escape};
+
+        let Self {
+            window,
+            fore,
+            back,
+            gag,
+            enable,
+        } = self;
+        let delim = DelimAfterFirst::new(" ");
+        if let Some(window) = window {
+            write!(f, "{delim}WINDOWNAME={}", Escape(window))?;
+        }
+        if let Some(fore) = fore {
+            write!(f, "{delim}FORE={fore}")?;
+        }
+        if let Some(back) = back {
+            write!(f, "{delim}BACK={back}")?;
+        }
+        if *gag {
+            write!(f, "{delim}GAG")?;
+        }
+        if !*enable {
+            write!(f, "{delim}DISABLE")?;
+        }
+        Ok(())
     }
 }

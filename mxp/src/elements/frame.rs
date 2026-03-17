@@ -23,6 +23,7 @@ pub enum FrameAction {
 }
 
 impl_parse_enum!(FrameAction, Open, Close, Redirect);
+impl_display_enum!(FrameAction, Open, Close, Redirect);
 
 /// Alignment and position of a [`Frame`], which may either be an external (floating) frame or
 /// an internal (docked) frame.
@@ -221,7 +222,7 @@ impl<S: AsRef<str>> fmt::Display for Frame<S> {
             title,
             scrolling,
             layout,
-        } = self.borrow_text().map_text(crate::display::EscapeQuotes);
+        } = self.borrow_text().map_text(crate::display::Escape);
         write!(f, "<FRAME NAME={name}")?;
         match action {
             FrameAction::Close => f.write_str(" CLOSE")?,

@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::collections::hash_map;
+use std::fmt;
 
 use uncased::Uncased;
 
@@ -189,6 +190,22 @@ impl TryFrom<Words<'_>> for Arguments<'static, String> {
         let mut this = Self::new();
         this.extend(value)?;
         Ok(this)
+    }
+}
+
+impl<S: AsRef<str>> fmt::Display for Arguments<'_, S> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use crate::display::{DelimAfterFirst, Escape};
+
+        let delim = DelimAfterFirst::new(" ");
+        for positional in &self.positional {
+            write!(f, "{delim}{}", Escape(positional.as_ref()))?;
+        }
+        for (k, v) in &self.named {
+            write!(f, "{delim}{k}={}", Escape(v.as_ref()))?;
+        }
+
+        Ok(())
     }
 }
 

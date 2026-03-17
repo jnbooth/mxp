@@ -18,14 +18,7 @@ impl_parse_enum!(Align, Top, Bottom, Left, Right, Middle);
 
 impl fmt::Display for Align {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::Top => "TOP",
-            Self::Bottom => "BOTTOM",
-            Self::Left => "LEFT",
-            Self::Right => "RIGHT",
-            Self::Middle => "MIDDLE",
-        }
-        .fmt(f)
+        fmt::Debug::fmt(self, f)
     }
 }
 
@@ -44,6 +37,16 @@ pub enum DimensionUnit {
     /// character X if it is a proportional font), and 25 character spacings from the top of the
     /// screen (using the height of the capital X character).
     CharacterSpacing = b'c' as _,
+}
+
+impl fmt::Display for DimensionUnit {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Pixel => Ok(()),
+            Self::Percentage => "%".fmt(f),
+            Self::CharacterSpacing => "%c".fmt(f),
+        }
+    }
 }
 
 /// A measurement of screen space, specified as a pixel amount, a percentage, or an amount of
@@ -84,11 +87,8 @@ impl<T> Dimension<T> {
 
 impl<T: fmt::Display> fmt::Display for Dimension<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.unit {
-            DimensionUnit::Pixel => write!(f, "{}", self.amount),
-            DimensionUnit::CharacterSpacing => write!(f, "{}c", self.amount),
-            DimensionUnit::Percentage => write!(f, "{}%", self.amount),
-        }
+        let Self { amount, unit } = self;
+        write!(f, "{amount}{unit}")
     }
 }
 

@@ -1,5 +1,5 @@
 use std::str::FromStr;
-use std::{fmt, iter, slice};
+use std::{iter, slice};
 
 use flagset::flags;
 
@@ -113,6 +113,7 @@ impl_parse_enum!(ElementKeyword, Open, Empty, Delete);
 impl_keyword_filter!(ElementKeyword);
 
 impl_parse_enum!(EntityKeyword, Private, Publish, Delete, Add, Remove);
+impl_display_enum!(EntityKeyword, Private, Publish, Delete, Add, Remove);
 impl_keyword_filter!(EntityKeyword);
 
 impl_parse_enum!(FrameKeyword, Floating, Internal);
@@ -129,19 +130,6 @@ impl_keyword_filter!(SendKeyword);
 
 impl_parse_enum!(LineTagKeyword, Gag, Enable, Disable);
 impl_keyword_filter!(LineTagKeyword);
-
-impl fmt::Display for EntityKeyword {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::Private => "PRIVATE",
-            Self::Publish => "PUBLISH",
-            Self::Delete => "DELETE",
-            Self::Add => "ADD",
-            Self::Remove => "REMOVE",
-        }
-        .fmt(f)
-    }
-}
 
 #[cfg(test)]
 mod tests {

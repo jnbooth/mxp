@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::fmt;
 use std::num::NonZero;
 
@@ -5,17 +6,37 @@ use flagset::FlagSet;
 
 use crate::{Dimension, RgbColor};
 
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
-pub(crate) struct EscapeQuotes<'a>(pub &'a str);
+pub(crate) struct DelimAfterFirst {
+    delim: &'static str,
+    after_first: Cell<bool>,
+}
 
-impl fmt::Display for EscapeQuotes<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.0.contains('"') {
-            let escaped = self.0.replace('"', "&quot;");
-            write!(f, "\"{escaped}\"")
-        } else {
-            write!(f, "\"{}\"", self.0)
+impl DelimAfterFirst {
+    pub const fn new(delim: &'static str) -> Self {
+        Self {
+            delim,
+            after_first: Cell::new(false),
         }
+    }
+}
+
+impl fmt::Display for DelimAfterFirst {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if self.after_first.replace(true) {
+            f.write_str(self.delim)
+        } else {
+            Ok(())
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord)]
+pub(crate) struct Escape<'a>(pub &'a str);
+
+impl fmt::Display for Escape<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let escaped = html_escape::encode_double_quoted_attribute(self.0);
+        write!(f, "\"{escaped}\"")
     }
 }
 
@@ -95,16 +116,12 @@ impl DisplayArg for (Option<RgbColor>, FlagSet<crate::FontStyle>) {
     }
 
     fn display(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut delim = match self.0 {
-            Some(color) => {
-                color.display(f)?;
-                ","
-            }
-            None => "",
-        };
+        let delim = DelimAfterFirst::new(",");
+        if let Some(color) = self.0 {
+            write!(f, "{color}{delim}")?;
+        }
         for style in self.1 {
             write!(f, "{delim}{style}")?;
-            delim = ",";
         }
         Ok(())
     }
@@ -116,7 +133,7 @@ impl DisplayArg for &str {
     }
 
     fn display(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fmt::Display::fmt(&EscapeQuotes(self), f)
+        fmt::Display::fmt(&Escape(self), f)
     }
 }
 

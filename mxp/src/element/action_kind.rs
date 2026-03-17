@@ -1,3 +1,5 @@
+use std::fmt;
+
 use flagset::flags;
 
 flags! {
@@ -171,5 +173,52 @@ impl ActionKind {
                 | Self::Tt
                 | Self::Underline
         )
+    }
+}
+
+impl fmt::Display for ActionKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Bold => "B",
+            Self::Br => "BR",
+            Self::Color => "COLOR",
+            Self::Dest => "DEST",
+            Self::Expire => "EXPIRE",
+            Self::Filter => "FILTER",
+            Self::Font => "FONT",
+            Self::Frame => "FRAME",
+            Self::Gauge => "GAUGE",
+            Self::H1 => "H1",
+            Self::H2 => "H2",
+            Self::H3 => "H3",
+            Self::H4 => "H4",
+            Self::H5 => "H5",
+            Self::H6 => "H6",
+            Self::Highlight => "H",
+            Self::Hr => "HR",
+            Self::Hyperlink => "A",
+            Self::Image => "IMAGE",
+            Self::Italic => "I",
+            Self::Music => "MUSIC",
+            Self::Mxp => "MXP",
+            Self::NoBr => "NOBR",
+            Self::P => "P",
+            Self::Password => "PASSWORD",
+            Self::Relocate => "RELOCATE",
+            Self::Reset => "RESET",
+            Self::SBr => "SBR",
+            Self::Send => "SEND",
+            Self::Small => "SMALL",
+            Self::Sound => "SOUND",
+            Self::Stat => "STAT",
+            Self::Strikeout => "S",
+            Self::Support => "SUPPORT",
+            Self::Tt => "TT",
+            Self::Underline => "U",
+            Self::User => "USER",
+            Self::Var => "VAR",
+            Self::Version => "VERSION",
+        }
+        .fmt(f)
     }
 }

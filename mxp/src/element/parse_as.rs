@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::parse::UnrecognizedVariant;
 
 /// The MUD server can tag a line to be parsed in a specific way by the client.
@@ -18,3 +20,9 @@ pub enum ParseAs {
 }
 
 impl_parse_enum!(ParseAs, RoomName, RoomDesc, RoomExit, RoomNum, Prompt);
+
+impl fmt::Display for ParseAs {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}

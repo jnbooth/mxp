@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::atomic_tag::AtomicTag;
 use super::decoder::ElementDecoder;
 use super::item::ElementItem;
@@ -91,5 +93,45 @@ impl Element {
             color_el("CyanMXP", "fore=#00FFFF"),
             color_el("WhiteMXP", "fore=#FFFFFF"),
         ]
+    }
+}
+
+impl fmt::Display for Element {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Note: element definitions aren't decoded, so nothing here needs to be escaped.
+        let Self {
+            name,
+            items,
+            attributes,
+            line_tag,
+            parse_as,
+            variable,
+            open,
+            command,
+        } = self;
+        write!(f, "<!EL {name}'")?;
+        for item in items {
+            write!(f, "{item}")?;
+        }
+        f.write_str("'")?;
+        if !attributes.is_empty() {
+            write!(f, " ATT='{attributes}'")?;
+        }
+        if let Some(line_tag) = line_tag {
+            write!(f, " TAG={line_tag}")?;
+        }
+        if let Some(parse_as) = parse_as {
+            write!(f, " FLAG=\"{parse_as}\"")?;
+        }
+        if let Some(variable) = variable {
+            write!(f, " FLAG=\"SET {variable}\"")?;
+        }
+        if *open {
+            f.write_str(" OPEN")?;
+        }
+        if *command {
+            f.write_str(" EMPTY")?;
+        }
+        f.write_str(">")
     }
 }

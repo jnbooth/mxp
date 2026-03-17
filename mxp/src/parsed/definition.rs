@@ -1,3 +1,4 @@
+use std::fmt;
 use std::str::FromStr;
 
 use flagset::FlagSet;
@@ -45,6 +46,17 @@ pub enum ParsedDefinition<'a> {
     Entity(ParsedEntityDefinition<'a>),
     /// `<!TAG ...>`.
     LineTag(ParsedLineTagDefinition<'a>),
+}
+
+impl fmt::Display for ParsedDefinition<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::AttributeList(def) => def.fmt(f),
+            Self::Element(def) => def.fmt(f),
+            Self::Entity(def) => def.fmt(f),
+            Self::LineTag(def) => def.fmt(f),
+        }
+    }
 }
 
 impl<'a> ParsedDefinition<'a> {
@@ -97,14 +109,25 @@ pub struct AttributeListDefinition<'a> {
     pub attributes: &'a str,
 }
 
+impl fmt::Display for AttributeListDefinition<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Self { name, attributes } = self;
+        write!(f, "<!ATT {name} {attributes}>")
+    }
+}
+
 impl<'a> AttributeListDefinition<'a> {
     fn parse(mut words: Words<'a>) -> crate::Result<Self> {
         let name = words.next_or(ErrorKind::IncompleteElement)?;
         crate::validate(name, ErrorKind::InvalidElementName)?;
-        Ok(Self {
-            name,
-            attributes: words.as_str(),
-        })
+        let attributes = words.as_str();
+        let attributes = Self::unquote(attributes).unwrap_or(attributes);
+        Ok(Self { name, attributes })
+    }
+
+    fn unquote(s: &str) -> Option<&str> {
+        let s = s.trim().strip_prefix('\'')?.strip_suffix('\'')?;
+        if s.contains('\'') { None } else { Some(s) }
     }
 }
 
@@ -130,6 +153,17 @@ pub struct ParsedElementDefinition<'a> {
     pub name: &'a str,
     /// Definition of the element, or `None` if this is a `DELETE` instruction.
     pub element: Option<Element>,
+}
+
+impl fmt::Display for ParsedElementDefinition<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Self { name, element } = self;
+        if let Some(element) = element {
+            element.fmt(f)
+        } else {
+            write!(f, "<!EL {name} DELETE>")
+        }
+    }
 }
 
 impl<'a> ParsedElementDefinition<'a> {
@@ -216,12 +250,31 @@ impl<'a> ParsedElementDefinition<'a> {
 pub struct ParsedEntityDefinition<'a> {
     /// Name of the entity.
     pub name: &'a str,
-    /// Optional description of the entity.
-    pub desc: Option<&'a str>,
     /// Value of the entity.
     pub value: &'a str,
+    /// Optional description of the entity.
+    pub desc: Option<&'a str>,
     /// Set of keywords included in the definition.
     pub keywords: FlagSet<EntityKeyword>,
+}
+
+impl fmt::Display for ParsedEntityDefinition<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let &Self {
+            name,
+            value,
+            desc,
+            keywords,
+        } = self;
+        write!(f, "<!EN {name} {value}")?;
+        if let Some(desc) = desc {
+            write!(f, " DESC={desc}")?;
+        }
+        for keyword in keywords {
+            write!(f, " {keyword}")?;
+        }
+        f.write_str(">")
+    }
 }
 
 impl<'a> ParsedEntityDefinition<'a> {
@@ -238,8 +291,8 @@ impl<'a> ParsedEntityDefinition<'a> {
         let keywords = scanner.into_keywords()?;
         Ok(Self {
             name,
-            desc,
             value,
+            desc,
             keywords,
         })
     }
@@ -275,6 +328,37 @@ pub struct ParsedLineTagDefinition<'a> {
     pub back: Option<RgbColor>,
     /// If `Some(true)`, activates the line tag. If `Some(false)`, deactivates it.
     pub enable: Option<bool>,
+}
+
+impl fmt::Display for ParsedLineTagDefinition<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let &Self {
+            index,
+            window,
+            gag,
+            fore,
+            back,
+            enable,
+        } = self;
+        write!(f, "<!TAG {index}")?;
+        if let Some(window) = window {
+            write!(f, " WINDOWNAME={window}")?;
+        }
+        if gag == Some(true) {
+            f.write_str(" GAG")?;
+        }
+        if let Some(fore) = fore {
+            write!(f, " FORE={fore}")?;
+        }
+        if let Some(back) = back {
+            write!(f, " BACK={back}")?;
+        }
+        match enable {
+            Some(true) => f.write_str(" ENABLE"),
+            Some(false) => f.write_str(" DISABLE"),
+            None => Ok(()),
+        }
+    }
 }
 
 impl<'a> ParsedLineTagDefinition<'a> {

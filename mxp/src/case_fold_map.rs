@@ -1,5 +1,6 @@
 use std::borrow::Cow;
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map};
+use std::iter;
 use std::ops::{Deref, DerefMut};
 
 use uncased::{Uncased, UncasedStr};
@@ -68,5 +69,28 @@ where
         let mut map = Self::new();
         map.extend(iter);
         map
+    }
+}
+
+impl<'a, V> IntoIterator for &'a CaseFoldMap<'a, V> {
+    type Item = (&'a str, &'a V);
+
+    type IntoIter = iter::Map<
+        hash_map::Iter<'a, Uncased<'a>, V>,
+        fn((&'a Uncased<'a>, &'a V)) -> (&'a str, &'a V),
+    >;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.inner.iter().map(|(k, v)| (k.as_str(), v))
+    }
+}
+
+impl<'a, V> IntoIterator for CaseFoldMap<'a, V> {
+    type Item = (Uncased<'a>, V);
+
+    type IntoIter = hash_map::IntoIter<Uncased<'a>, V>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.inner.into_iter()
     }
 }

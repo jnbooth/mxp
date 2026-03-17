@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
+use std::fmt;
 
 use super::decoded::DecodedEntity;
 use super::entity::Entity;
@@ -44,7 +45,7 @@ impl<'a> EntityEntry<'a> {
 
 /// Stores all entities for the current environment, both MXP-defined entities (as [`Entity`]) and
 /// global XML entities (as `&'static str`).
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub struct EntityMap {
     inner: HashMap<String, Entity>,
     globals: HashMap<&'static [u8], &'static str>,
@@ -354,6 +355,19 @@ impl Decoder for EntityMap {
             return Some(global);
         }
         Some(self.inner.get(name)?.value.as_str())
+    }
+}
+
+impl fmt::Debug for EntityMap {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let globals = self
+            .globals
+            .iter()
+            .map(|(&k, &v)| (str::from_utf8(k).unwrap(), v));
+        f.debug_map()
+            .entries(globals)
+            .entries(self.inner.iter())
+            .finish()
     }
 }
 

@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::definition::ParsedDefinition;
 use crate::arguments::Arguments;
 use crate::parse::Words;
@@ -12,6 +14,16 @@ pub enum ParsedElement<'a> {
     TagClose(ParsedTagClose<'a>),
     /// An opening tag, e.g. `<BOLD>`.
     TagOpen(ParsedTagOpen<'a>),
+}
+
+impl fmt::Display for ParsedElement<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Definition(def) => def.fmt(f),
+            Self::TagClose(tag) => tag.fmt(f),
+            Self::TagOpen(tag) => tag.fmt(f),
+        }
+    }
 }
 
 impl<'a> ParsedElement<'a> {
@@ -54,6 +66,13 @@ pub struct ParsedTagClose<'a> {
     pub name: &'a str,
 }
 
+impl fmt::Display for ParsedTagClose<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Self { name } = self;
+        write!(f, "</{name}>")
+    }
+}
+
 impl<'a> ParsedTagClose<'a> {
     fn parse(source: &'a str) -> crate::Result<Self> {
         let mut words = Words::new(source);
@@ -73,6 +92,13 @@ pub struct ParsedTagOpen<'a> {
     pub name: &'a str,
     /// Parsed element arguments.
     pub arguments: Arguments<'a>,
+}
+
+impl fmt::Display for ParsedTagOpen<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Self { name, arguments } = self;
+        write!(f, "<{name} {arguments}>")
+    }
 }
 
 impl<'a> ParsedTagOpen<'a> {

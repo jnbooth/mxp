@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::atomic_tag::AtomicTag;
 use crate::arguments::Arguments;
 use crate::parse::{Words, count_bytes};
@@ -65,5 +67,18 @@ impl ElementItem {
         }
 
         Ok(items)
+    }
+}
+
+impl fmt::Display for ElementItem {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // Note: element definitions aren't decoded, so nothing here needs to be escaped.
+        let Self { tag, arguments } = self;
+        let name = tag.name;
+        if arguments.is_empty() {
+            write!(f, "<{name}>")
+        } else {
+            write!(f, "<{name} {arguments}>")
+        }
     }
 }

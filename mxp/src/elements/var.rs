@@ -109,7 +109,7 @@ impl<S: AsRef<str>> fmt::Display for Var<S> {
             name,
             desc,
             keywords,
-        } = self.borrow_text().map_text(crate::display::EscapeQuotes);
+        } = self.borrow_text().map_text(crate::display::Escape);
         write!(f, "<VAR {name}")?;
         if let Some(desc) = desc {
             write!(f, " {desc}")?;

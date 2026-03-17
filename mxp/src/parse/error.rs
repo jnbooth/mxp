@@ -13,7 +13,7 @@ pub struct Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let Error { kind, target } = self;
+        let Self { kind, target } = self;
         if target.is_empty() {
             write!(f, "{kind}")
         } else {

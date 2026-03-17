@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::sync::LazyLock;
 
 use super::visibility::EntityVisibility;
@@ -12,10 +13,10 @@ use super::visibility::EntityVisibility;
 pub struct Entity {
     /// Value stored in the variable.
     pub value: String,
-    /// Visibility to the client.
-    pub visibility: EntityVisibility,
     /// Longer description of the entity.
     pub description: String,
+    /// Visibility to the client.
+    pub visibility: EntityVisibility,
 }
 
 impl Entity {
@@ -85,8 +86,8 @@ impl Entity {
     pub const fn new(value: String) -> Self {
         Self {
             value,
-            visibility: EntityVisibility::Default,
             description: String::new(),
+            visibility: EntityVisibility::Default,
         }
     }
 
@@ -135,6 +136,27 @@ impl Entity {
             .filter(|item| *item != value)
             .collect::<Vec<_>>()
             .join("|");
+    }
+}
+
+impl fmt::Display for Entity {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        use crate::display::Escape;
+
+        let Self {
+            value,
+            description,
+            visibility,
+        } = self;
+        write!(f, "{}", Escape(value))?;
+        if !description.is_empty() {
+            write!(f, " DESC={}", Escape(description))?;
+        }
+        match visibility {
+            EntityVisibility::Default => Ok(()),
+            EntityVisibility::Private => f.write_str(" PRIVATE"),
+            EntityVisibility::Publish => f.write_str(" PUBLISH"),
+        }
     }
 }
 

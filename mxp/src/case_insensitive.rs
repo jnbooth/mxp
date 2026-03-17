@@ -24,6 +24,33 @@ macro_rules! impl_parse_enum {
     };
 }
 
+macro_rules! impl_display_enum {
+    ($t:ty, $($i:ident),* $(,)?) => {
+        impl std::fmt::Display for $t {
+            fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                match self {
+                    $(
+                        Self::$i => {
+                            const UPPERCASE: &str = match str::from_utf8(
+                                &const {
+                                    let mut buf = [0; stringify!($i).len()];
+                                    buf.copy_from_slice(stringify!($i).as_bytes());
+                                    buf.make_ascii_uppercase();
+                                    buf
+                                },
+                            ) {
+                                Ok(s) => s,
+                                Err(_) => unreachable!(),
+                            };
+                            f.write_str(UPPERCASE)
+                        }
+                    )*
+                }
+            }
+        }
+    }
+}
+
 pub const fn to_ascii_lowercase<'a>(text: &[u8], buf: &'a mut [u8]) -> Option<&'a [u8]> {
     let Some((lower_buf, _)) = buf.split_at_mut_checked(text.len()) else {
         return None;
