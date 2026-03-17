@@ -5,9 +5,10 @@ use bytestringmut::ByteStringMut;
 use flagset::FlagSet;
 use mxp::RgbColor;
 
+use super::span::{Span, SpanList};
 use super::{
-    ControlFragment, Link, Output, OutputDrain, OutputFragment, SpanList, TelnetFragment,
-    TextFragment, TextStyle, VariableFragment,
+    ControlFragment, Link, Output, OutputDrain, OutputFragment, TelnetFragment, TextFragment,
+    TextStyle, VariableFragment,
 };
 use crate::responses::SgrReport;
 use crate::term::{TermColor, XTermPalette};
@@ -217,7 +218,6 @@ impl BufferedOutput {
                 size: None,
                 link: None,
                 heading: None,
-                parse_as: None,
             });
             return;
         }
@@ -240,7 +240,6 @@ impl BufferedOutput {
             size: span.size,
             link: span.link.as_ref().map(|link| link.for_text(&text)),
             heading: span.heading,
-            parse_as: span.parse_as,
             text,
         });
     }
@@ -325,24 +324,41 @@ impl BufferedOutput {
     }
 
     pub fn truncate_spans(&mut self, i: usize) -> Option<(mxp::Var<ByteString>, ByteString)> {
-        self.flush();
-        let span = self.spans.truncate(i)?;
-        if span.entity.is_none() && span.variable.is_none() {
+        let mut span = self.spans.truncate(i)?;
+        let active_span = self.spans.get();
+        if active_span == Some(&span) {
+            return None;
+        }
+        if !self.in_variable {
+            self.flush();
+            return None;
+        }
+        self.in_variable =
+            active_span.is_some_and(|span| span.entity.is_some() || span.variable.is_some());
+        let set_entity = span.entity.take();
+        let set_variable = span.variable.take();
+        let need_flush = match active_span {
+            Some(active_span) => span != *active_span,
+            None => span != Span::default(),
+        };
+        if need_flush {
+            self.flush();
+        }
+        if set_entity.is_none() && set_variable.is_none() {
             return None;
         }
         let variable = self.variable.split().freeze();
-        self.in_variable = self.spans.in_variable();
         if self.in_variable {
             // not done with it yet
             self.variable.push_str(&variable);
         }
-        if let Some(name) = span.variable {
+        if let Some(name) = set_variable {
             self.append(VariableFragment {
                 name,
                 value: variable.clone(),
             });
         }
-        Some((span.entity?, variable))
+        Some((set_entity?, variable))
     }
 
     pub fn set_mxp_flag(&mut self, flag: TextStyle) {

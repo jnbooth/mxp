@@ -196,13 +196,6 @@ impl SpanList {
         self.spans.clear();
     }
 
-    pub const fn in_variable(&self) -> bool {
-        let Some(span) = self.get() else {
-            return false;
-        };
-        span.variable.is_some() || span.entity.is_some()
-    }
-
     pub const fn len(&self) -> usize {
         self.spans.len()
     }

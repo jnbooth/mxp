@@ -17,7 +17,6 @@ pub struct TextFragment {
     pub size: Option<NonZero<u8>>,
     pub link: Option<Link>,
     pub heading: Option<mxp::Heading>,
-    pub parse_as: Option<mxp::ParseAs>,
 }
 
 impl From<TextFragment> for OutputFragment {
@@ -56,7 +55,6 @@ impl fmt::Debug for TextFragment {
         debug_field!(size);
         debug_field!(link);
         debug_field!(heading);
-        debug_field!(parse_as);
         s.finish()
     }
 }
