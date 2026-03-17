@@ -17,6 +17,7 @@ pub struct TextFragment {
     pub size: Option<NonZero<u8>>,
     pub link: Option<Link>,
     pub heading: Option<mxp::Heading>,
+    pub parse_as: Option<mxp::ParseAs>,
 }
 
 impl From<TextFragment> for OutputFragment {
@@ -38,28 +39,24 @@ impl TextFragment {
 impl fmt::Debug for TextFragment {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut s = f.debug_struct("TextFragment");
+        macro_rules! debug_field {
+            ($i:ident) => {
+                if let Some($i) = &self.$i {
+                    s.field(stringify!($i), &$i);
+                }
+            };
+        }
         s.field("text", &self.text);
         if !self.flags.is_empty() {
             s.field("flags", &self.flags);
         }
-        if let Some(foreground) = self.foreground {
-            s.field("foreground", &foreground);
-        }
-        if let Some(background) = self.background {
-            s.field("background", &background);
-        }
-        if let Some(font) = &self.font {
-            s.field("font", font);
-        }
-        if let Some(size) = self.size {
-            s.field("size", &size);
-        }
-        if let Some(link) = &self.link {
-            s.field("link", link);
-        }
-        if let Some(heading) = self.heading {
-            s.field("heading", &heading);
-        }
+        debug_field!(foreground);
+        debug_field!(background);
+        debug_field!(font);
+        debug_field!(size);
+        debug_field!(link);
+        debug_field!(heading);
+        debug_field!(parse_as);
         s.finish()
     }
 }

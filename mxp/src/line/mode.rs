@@ -138,10 +138,36 @@ impl PartialOrd<Mode> for u8 {
         self.partial_cmp(&other.0)
     }
 }
+impl PartialEq<usize> for Mode {
+    fn eq(&self, other: &usize) -> bool {
+        usize::from(self.0) == *other
+    }
+}
+impl PartialEq<Mode> for usize {
+    fn eq(&self, other: &Mode) -> bool {
+        *self == usize::from(other.0)
+    }
+}
+impl PartialOrd<usize> for Mode {
+    fn partial_cmp(&self, other: &usize) -> Option<cmp::Ordering> {
+        usize::from(self.0).partial_cmp(other)
+    }
+}
+impl PartialOrd<Mode> for usize {
+    fn partial_cmp(&self, other: &Mode) -> Option<cmp::Ordering> {
+        self.partial_cmp(&usize::from(other.0))
+    }
+}
 
 impl fmt::Display for Mode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.fmt(f)
+    }
+}
+
+impl From<Mode> for usize {
+    fn from(value: Mode) -> Self {
+        value.0.into()
     }
 }
 

@@ -8,7 +8,7 @@ use crate::{Error, ErrorKind};
 const OFFSET: usize = Mode::USER_DEFINED_MIN.0 as usize;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Line {
+pub(crate) struct Line {
     pub element: String,
     pub properties: LineTagProperties,
 }
@@ -40,9 +40,6 @@ impl LineTags {
     ) -> Option<LineTag<'a>> {
         let i = mode.checked_sub(OFFSET)?;
         let line = self.inner.get(i)?;
-        if !line.properties.enable {
-            return None;
-        }
         Some(LineTag {
             element: elements.get(&line.element),
             properties: &line.properties,
@@ -50,6 +47,9 @@ impl LineTags {
     }
 
     pub fn set(&mut self, mode: usize, element: String) {
+        if mode > Mode::USER_DEFINED_MAX {
+            return;
+        }
         let Some(i) = mode.checked_sub(OFFSET) else {
             return;
         };
@@ -62,11 +62,15 @@ impl LineTags {
     }
 
     pub fn update(&mut self, update: ParsedLineTagDefinition) -> crate::Result<()> {
+        fn create_error(update: &ParsedLineTagDefinition) -> crate::Error {
+            Error::new(update.index.0.to_string(), ErrorKind::IllegalLineTag)
+        }
+
+        if update.index > Mode::USER_DEFINED_MAX {
+            return Err(create_error(&update));
+        }
         let Some(i) = usize::from(update.index.0).checked_sub(OFFSET) else {
-            return Err(Error::new(
-                update.index.0.to_string(),
-                ErrorKind::IllegalLineTag,
-            ));
+            return Err(create_error(&update));
         };
         if self.inner.len() <= i {
             self.inner.resize_with(i + 1, Default::default);

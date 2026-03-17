@@ -7,7 +7,7 @@ use crate::parse::UnrecognizedVariant;
 pub enum ParseAs {
     /// The text for the element is parsed by the automapper as the name of a room.
     RoomName,
-    /// he text for the element is parsed by the automapper as the description of a room.
+    /// The text for the element is parsed by the automapper as the description of a room.
     RoomDesc,
     /// The text for the element is parsed by the automapper as exits for the room.
     RoomExit,

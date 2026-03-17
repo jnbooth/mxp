@@ -74,6 +74,7 @@ pub(crate) struct Span {
     pub(super) window: Option<mxp::Dest<ByteString>>,
     pub(super) entity: Option<mxp::Var<ByteString>>,
     pub(super) variable: Option<ByteString>,
+    pub(super) parse_as: Option<mxp::ParseAs>,
 }
 
 macro_rules! set_flag {
@@ -246,6 +247,10 @@ impl SpanList {
 
     pub fn set_link(&mut self, link: Link, empty: bool) -> bool {
         set_opt_prop!(self, empty, link);
+    }
+
+    pub fn set_parse_as(&mut self, parse_as: mxp::ParseAs, empty: bool) -> bool {
+        set_opt_prop!(self, empty, parse_as);
     }
 
     pub fn set_size(&mut self, size: NonZero<u8>, empty: bool) -> bool {

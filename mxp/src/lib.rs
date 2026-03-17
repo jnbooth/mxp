@@ -145,7 +145,7 @@ pub mod color;
 pub use color::RgbColor;
 
 pub mod element;
-pub use element::{Action, ActionKind, AtomicTag, Element};
+pub use element::{Action, ActionKind, AtomicTag, Element, ParseAs};
 
 pub mod elements;
 pub use elements::*;

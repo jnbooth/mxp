@@ -2,6 +2,7 @@ use super::atomic_tag::AtomicTag;
 use super::decoder::ElementDecoder;
 use super::item::ElementItem;
 use super::parse_as::ParseAs;
+use crate::LineTagProperties;
 use crate::arguments::Arguments;
 use crate::line::Mode;
 use crate::parse::{Decoder, Words};
@@ -49,6 +50,17 @@ impl Element {
         D: Decoder + Copy,
     {
         ElementDecoder::new(self, args, decoder)
+    }
+
+    /// Retrieves the additional line tag properties defined for this element if [`line_tag`]
+    /// is Some.
+    ///
+    /// [`line_tag`]: Self::line_tag
+    pub fn line_tag_properties<'a>(
+        &self,
+        state: &'a crate::State,
+    ) -> Option<&'a LineTagProperties> {
+        Some(state.get_line_tag(self.line_tag?)?.properties)
     }
 
     pub(crate) fn well_known() -> [(String, Element); 8] {

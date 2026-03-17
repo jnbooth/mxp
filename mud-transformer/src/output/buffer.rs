@@ -217,6 +217,7 @@ impl BufferedOutput {
                 size: None,
                 link: None,
                 heading: None,
+                parse_as: None,
             });
             return;
         }
@@ -239,6 +240,7 @@ impl BufferedOutput {
             size: span.size,
             link: span.link.as_ref().map(|link| link.for_text(&text)),
             heading: span.heading,
+            parse_as: span.parse_as,
             text,
         });
     }
@@ -410,7 +412,7 @@ impl BufferedOutput {
         }
     }
 
-    pub fn set_mxp_line_tag(&mut self, tag: &mxp::LineTag) {
+    pub fn set_mxp_line_tag(&mut self, tag: &mxp::LineTagProperties) {
         if tag.gag {
             self.set_mxp_gag();
         }
@@ -453,6 +455,12 @@ impl BufferedOutput {
 
     pub fn set_mxp_gag(&mut self) {
         if self.spans.set_gag(self.text_buf.is_empty()) {
+            self.flush_mxp();
+        }
+    }
+
+    pub fn set_mxp_parse_as(&mut self, parse_as: mxp::ParseAs) {
+        if self.spans.set_parse_as(parse_as, self.text_buf.is_empty()) {
             self.flush_mxp();
         }
     }

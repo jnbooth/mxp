@@ -300,6 +300,10 @@ impl Transformer {
     }
 
     fn mxp_mode_change(&mut self, newmode: Option<mxp::Mode>) {
+        if newmode == Some(mxp::Mode::RESET) {
+            self.mxp_reset();
+            return;
+        }
         let should_close = if let Some(newmode) = newmode {
             self.mxp_mode.set(newmode)
         } else {
@@ -309,6 +313,9 @@ impl Transformer {
         if should_close {
             let close_from = self.mxp_tags.last_open_index();
             self.mxp_close_tags_from(close_from);
+        }
+        if let Some(parse_as) = newmode.and_then(mxp::Mode::parse_as) {
+            self.output.set_mxp_parse_as(parse_as);
         }
         if !self.mxp_mode.is_user_defined() {
             return;
@@ -324,7 +331,7 @@ impl Transformer {
         let Some(tag) = self.mxp_mode.line_tag(mxp_state) else {
             return Ok(());
         };
-        self.output.set_mxp_line_tag(&tag);
+        self.output.set_mxp_line_tag(tag.properties);
         let Some(element) = tag.element else {
             return Ok(());
         };
@@ -395,6 +402,9 @@ impl Transformer {
                 if let Some(variable) = &el.variable {
                     self.output.set_mxp_variable(variable);
                 }
+                if let Some(line_tag) = el.line_tag_properties(mxp_state) {
+                    self.output.set_mxp_line_tag(line_tag);
+                }
                 self.mxp_open_element(el, &tag.arguments, mxp_state)
             }
         }
@@ -406,6 +416,9 @@ impl Transformer {
         args: &mxp::Arguments,
         mxp_state: &mxp::State,
     ) -> mxp::Result<()> {
+        if let Some(parse_as) = el.parse_as {
+            self.output.set_mxp_parse_as(parse_as);
+        }
         for action in el.decode(args, mxp_state) {
             self.mxp_apply_action(action?, mxp_state);
         }
