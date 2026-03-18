@@ -12,16 +12,13 @@ use crate::parse::Decoder;
 #[derive(Copy, Clone, Debug)]
 struct DecodeElement<'a, D: Decoder> {
     decoder: D,
-    element: &'a Element,
+    attributes: &'a Arguments<'static, String>,
     args: &'a Arguments<'a>,
 }
 
 impl<D: Decoder> Decoder for DecodeElement<'_, D> {
     fn get_entity<K: KeywordFilter>(&self, name: &str) -> Option<&str> {
-        match self
-            .args
-            .find_from_attributes::<K>(name, &self.element.attributes)
-        {
+        match self.args.find_from_attributes::<K>(name, self.attributes) {
             Some(attr) => Some(attr),
             None => self.decoder.get_entity::<K>(name),
         }
@@ -42,7 +39,7 @@ impl<'a, D: Decoder + Copy> ElementDecoder<'a, D> {
         Self {
             decoder: DecodeElement {
                 decoder,
-                element,
+                attributes: &element.attributes,
                 args,
             },
             items: element.items.iter(),
