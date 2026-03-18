@@ -6,10 +6,10 @@
 //!
 //! [MXP (MUD eXtension Protocol)] is an open communication protocol for MUD servers and clients.
 //! The mxp library is a lightweight but robust implementation of the protocol in its entirety.
-//! This library is geared toward client implementations, but it can also be used for server-side
-//! syntax handling.
+//! It is geared toward client implementations, but it can also be used for server-side syntax
+//! handling.
 //!
-//! By default, mxp processes all tags described in the MXP standard (above). To restrict which
+//! By default, mxp processes all tags described in the above MXP standard. To restrict which
 //! elements your client supports, send a [`SupportResponse`] to the MUD server.
 //!
 //! [`SupportResponse`]: crate::responses::SupportResponse
