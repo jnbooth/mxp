@@ -62,7 +62,7 @@ impl LineTags {
     }
 
     pub fn update(&mut self, update: LineTagDefinition) -> crate::Result<()> {
-        fn create_error(update: &LineTagDefinition) -> crate::Error {
+        fn create_error(update: &LineTagDefinition) -> Error {
             Error::new(update.index.0.to_string(), ErrorKind::IllegalLineTag)
         }
 

@@ -169,20 +169,20 @@ impl AtomicTag {
         }
     }
 
-    const A: AtomicTag = tag!("a", Hyperlink, "href", "hint", "expire");
-    const B: AtomicTag = tag!("b", Bold);
-    const BOLD: AtomicTag = tag!("bold", Bold);
-    const BR: AtomicTag = tag!("br", Br);
-    const C: AtomicTag = tag!("c", Color, "fore", "back");
-    const COLOR: AtomicTag = tag!("color", Color, "fore", "back");
-    const DEST: AtomicTag = tag!("dest", Dest, "x", "y", "eof", "eol");
-    const DESTINATION: AtomicTag = tag!("destination", Dest, "x", "y", "eof", "eol");
-    const EM: AtomicTag = tag!("em", Italic);
-    const EXPIRE: AtomicTag = tag!("expire", Expire);
-    const FILTER: AtomicTag = tag!("filter", Filter, "src", "dest", "name", "proc");
-    const FONT: AtomicTag = tag!("font", Font, "face", "size", "color", "back");
+    const A: AtomicTag = tag!("A", Hyperlink, "href", "hint", "expire");
+    const B: AtomicTag = tag!("B", Bold);
+    const BOLD: AtomicTag = tag!("BOLD", Bold);
+    const BR: AtomicTag = tag!("BR", Br);
+    const C: AtomicTag = tag!("C", Color, "fore", "back");
+    const COLOR: AtomicTag = tag!("COLOR", Color, "fore", "back");
+    const DEST: AtomicTag = tag!("DEST", Dest, "x", "y", "eof", "eol");
+    const DESTINATION: AtomicTag = tag!("DESTINATION", Dest, "x", "y", "eof", "eol");
+    const EM: AtomicTag = tag!("EM", Italic);
+    const EXPIRE: AtomicTag = tag!("EXPIRE", Expire);
+    const FILTER: AtomicTag = tag!("FILTER", Filter, "src", "dest", "name", "proc");
+    const FONT: AtomicTag = tag!("FONT", Font, "face", "size", "color", "back");
     const FRAME: AtomicTag = tag!(
-        "frame",
+        "FRAME",
         Frame,
         "name",
         "action",
@@ -196,49 +196,49 @@ impl AtomicTag {
         "internal",
         "floating",
     );
-    const GAUGE: AtomicTag = tag!("gauge", Gauge, "max", "caption", "color");
-    const H: AtomicTag = tag!("h", Highlight);
-    const H1: AtomicTag = tag!("h1", H1);
-    const H2: AtomicTag = tag!("h2", H2);
-    const H3: AtomicTag = tag!("h3", H3);
-    const H4: AtomicTag = tag!("h4", H4);
-    const H5: AtomicTag = tag!("h5", H5);
-    const H6: AtomicTag = tag!("h6", H6);
-    const HIGH: AtomicTag = tag!("high", Highlight);
-    const HR: AtomicTag = tag!("hr", Hr);
-    const I: AtomicTag = tag!("i", Italic);
+    const GAUGE: AtomicTag = tag!("GAUGE", Gauge, "max", "caption", "color");
+    const H: AtomicTag = tag!("H", Highlight);
+    const H1: AtomicTag = tag!("H1", H1);
+    const H2: AtomicTag = tag!("H2", H2);
+    const H3: AtomicTag = tag!("H3", H3);
+    const H4: AtomicTag = tag!("H4", H4);
+    const H5: AtomicTag = tag!("H5", H5);
+    const H6: AtomicTag = tag!("H6", H6);
+    const HIGH: AtomicTag = tag!("HIGH", Highlight);
+    const HR: AtomicTag = tag!("HR", Hr);
+    const I: AtomicTag = tag!("I", Italic);
     const IMAGE: AtomicTag = tag!(
-        "image", Image, "fname", "url", "t", "h", "w", "hspace", "vspace", "align", "ismap"
+        "IMAGE", Image, "fname", "url", "t", "h", "w", "hspace", "vspace", "align", "ismap"
     );
-    const ITALIC: AtomicTag = tag!("italic", Italic);
-    const MUSIC: AtomicTag = tag!("music", Music, "fname", "v", "l", "c", "t", "u");
-    const MXP: AtomicTag = tag!("mxp", Mxp, "off");
-    const NOBR: AtomicTag = tag!("nobr", NoBr);
-    const P: AtomicTag = tag!("p", P);
-    const PASS: AtomicTag = tag!("pass", Password);
-    const PASSWORD: AtomicTag = tag!("password", Password);
-    const RELOCATE: AtomicTag = tag!("relocate", Relocate, "quiet");
-    const RESET: AtomicTag = tag!("reset", Reset);
-    const S: AtomicTag = tag!("s", Strikeout);
-    const SBR: AtomicTag = tag!("sbr", SBr);
-    const SEND: AtomicTag = tag!("send", Send, "href", "hint", "prompt", "expire");
-    const SMALL: AtomicTag = tag!("small", Small);
-    const SOUND: AtomicTag = tag!("sound", Sound, "fname", "v", "l", "p", "t", "u");
-    const STAT: AtomicTag = tag!("stat", Stat, "entity", "max", "caption");
-    const STRIKE: AtomicTag = tag!("strike", Strikeout);
-    const STRIKEOUT: AtomicTag = tag!("strikeout", Strikeout);
-    const STRONG: AtomicTag = tag!("strong", Bold);
-    const SUPPORT: AtomicTag = tag!("support", Support);
-    const TT: AtomicTag = tag!("tt", Tt);
-    const U: AtomicTag = tag!("u", Underline);
-    const UNDERLINE: AtomicTag = tag!("underline", Underline);
-    const USER: AtomicTag = tag!("user", User);
-    const USERNAME: AtomicTag = tag!("username", User);
-    const V: AtomicTag = tag!("v", Var);
+    const ITALIC: AtomicTag = tag!("ITALIC", Italic);
+    const MUSIC: AtomicTag = tag!("MUSIC", Music, "fname", "v", "l", "c", "t", "u");
+    const MXP: AtomicTag = tag!("MXP", Mxp, "off");
+    const NOBR: AtomicTag = tag!("NOBR", NoBr);
+    const P: AtomicTag = tag!("P", P);
+    const PASS: AtomicTag = tag!("PASS", Password);
+    const PASSWORD: AtomicTag = tag!("PASSWORD", Password);
+    const RELOCATE: AtomicTag = tag!("RELOCATE", Relocate, "quiet");
+    const RESET: AtomicTag = tag!("RESET", Reset);
+    const S: AtomicTag = tag!("S", Strikeout);
+    const SBR: AtomicTag = tag!("SBR", SBr);
+    const SEND: AtomicTag = tag!("SEND", Send, "href", "hint", "prompt", "expire");
+    const SMALL: AtomicTag = tag!("SMALL", Small);
+    const SOUND: AtomicTag = tag!("SOUND", Sound, "fname", "v", "l", "p", "t", "u");
+    const STAT: AtomicTag = tag!("STAT", Stat, "entity", "max", "caption");
+    const STRIKE: AtomicTag = tag!("STRIKE", Strikeout);
+    const STRIKEOUT: AtomicTag = tag!("STRIKEOUT", Strikeout);
+    const STRONG: AtomicTag = tag!("STRONG", Bold);
+    const SUPPORT: AtomicTag = tag!("SUPPORT", Support);
+    const TT: AtomicTag = tag!("TT", Tt);
+    const U: AtomicTag = tag!("U", Underline);
+    const UNDERLINE: AtomicTag = tag!("UNDERLINE", Underline);
+    const USER: AtomicTag = tag!("USER", User);
+    const USERNAME: AtomicTag = tag!("USERNAME", User);
+    const V: AtomicTag = tag!("V", Var);
     const VAR: AtomicTag = tag!(
-        "var", Var, "desc", "private", "publish", "delete", "add", "remove"
+        "VAR", Var, "desc", "private", "publish", "delete", "add", "remove"
     );
-    const VERSION: AtomicTag = tag!("version", Version);
+    const VERSION: AtomicTag = tag!("VERSION", Version);
 
     const SUPPORTED: &[AtomicTag] = &[
         Self::A,

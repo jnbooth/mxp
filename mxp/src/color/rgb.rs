@@ -271,4 +271,19 @@ mod tests {
         let codes = colors.map(RgbColor::code);
         assert_eq!(codes, [0x000000, 0x00FFFF, 0x010000, 0x100000, 0xFFFFFF]);
     }
+
+    #[test]
+    fn fmt_plain() {
+        assert_eq!(RgbColor::hex(0x1234AB).to_string(), "#1234ab");
+    }
+
+    #[test]
+    fn fmt_upper_hex() {
+        assert_eq!(format!("{:X}", RgbColor::hex(0x1234AB)), "1234AB");
+    }
+
+    #[test]
+    fn fmt_lower_hex() {
+        assert_eq!(format!("{:x}", RgbColor::hex(0x1234AB)), "1234ab");
+    }
 }

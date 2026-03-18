@@ -36,7 +36,7 @@ impl ElementItem {
         Err(Error::new(tag_name, ErrorKind::UnknownElementInDefinition))
     }
 
-    pub fn parse_all(source: &str) -> crate::Result<Vec<Self>> {
+    pub(crate) fn parse_all(source: &str) -> crate::Result<Vec<Self>> {
         let bytes = source.as_bytes();
         let size_guess = count_bytes(bytes, b'<');
         let mut items = Vec::with_capacity(size_guess);

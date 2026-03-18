@@ -23,7 +23,7 @@ impl Deref for LineTag<'_> {
 
 /// Properties defined for a line tag.
 ///
-/// See [MXP specification: Line Tags](https://www.zuggsoft.com/zmud/mxp.htm#Line%20Tags).
+/// See [MXP specification: Line Tags](https://www.zuggsoft.com/zmud/mxp.htm#User-defined%20Line%20Tags).
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct LineTagProperties {
     /// Redirect output to another window.
@@ -86,5 +86,25 @@ impl fmt::Display for LineTagProperties {
             write!(f, "{delim}DISABLE")?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fmt() {
+        let properties = LineTagProperties {
+            window: Some("_top".into()),
+            fore: Some(RgbColor::hex(0x123456)),
+            back: Some(RgbColor::hex(0x789abc)),
+            gag: true,
+            enable: false,
+        };
+        assert_eq!(
+            properties.to_string(),
+            "WINDOWNAME=\"_top\" FORE=#123456 BACK=#789abc GAG DISABLE"
+        );
     }
 }

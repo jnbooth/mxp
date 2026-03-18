@@ -2,7 +2,7 @@ use std::fmt::Display;
 use std::str::FromStr;
 
 use crate::element::Action;
-use crate::node::{Definition, Tag, TagOpen};
+use crate::node::{Tag, TagOpen, TryFromNodeError};
 use crate::{Component, State};
 
 pub type StringPair<T> = (T, &'static str);
@@ -13,11 +13,15 @@ fn strip_brackets(mut source: &str) -> &str {
 }
 
 #[track_caller]
-pub fn parse_definition(source: &str) -> Definition<'_> {
+pub fn try_from_node<'a, T>(source: &'a str) -> T
+where
+    T: TryFrom<Tag<'a>, Error = TryFromNodeError>,
+{
     match Tag::parse(strip_brackets(source), true) {
-        Ok(Tag::Definition(definition)) => definition,
-        Ok(Tag::Close(_)) => panic!("expected definition, got closing tag"),
-        Ok(Tag::Open(_)) => panic!("expected definition, got opening tag"),
+        Ok(tag) => match T::try_from(tag) {
+            Ok(node) => node,
+            Err(e) => panic!("{e}"),
+        },
         Err(e) => panic!("failed to parse definition: {e}"),
     }
 }

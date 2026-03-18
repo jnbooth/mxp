@@ -23,9 +23,9 @@ enum DefinitionKind {
 impl FromStr for DefinitionKind {
     type Err = Error;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s: &str) -> crate::Result<Self> {
         match_ci! {s,
-            "attlist" | "att" => Ok(Self::AttributeList),
+            "attlist" | "at" => Ok(Self::AttributeList),
             "element" | "el" => Ok(Self::Element),
             "entity" | "en" => Ok(Self::Entity),
             "tag" => Ok(Self::LineTag),
@@ -39,7 +39,7 @@ impl FromStr for DefinitionKind {
 /// Note: This is the parameter type of [`State::define`](crate::State::define).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Definition<'a> {
-    /// `<!ATTLIST ...>` or `<!ATT ...>`.
+    /// `<!ATTLIST ...>` or `<!AT ...>`.
     AttributeList(AttributeListDefinition<'a>),
     /// `<!ELEMENT ...>` or `<!EL ...>`.
     Element(ElementDefinition<'a>),
@@ -113,7 +113,7 @@ pub struct AttributeListDefinition<'a> {
 impl fmt::Display for AttributeListDefinition<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let Self { name, attributes } = self;
-        write!(f, "<!ATT {name} {attributes}>")
+        write!(f, "<!AT {name} '{attributes}'>")
     }
 }
 
@@ -188,10 +188,7 @@ impl<'a> ElementDefinition<'a> {
             Some(&tag) => match tag.parse() {
                 Ok(tag) if Mode(tag).is_user_defined() => Some(Mode(tag)),
                 _ => {
-                    return Err(crate::Error::new(
-                        tag,
-                        ErrorKind::IllegalLineTagInDefinition,
-                    ));
+                    return Err(Error::new(tag, ErrorKind::IllegalLineTagInDefinition));
                 }
             },
             None => None,
@@ -354,9 +351,9 @@ impl fmt::Display for LineTagDefinition<'_> {
             write!(f, " BACK={back}")?;
         }
         match enable {
-            Some(true) => f.write_str(" ENABLE"),
-            Some(false) => f.write_str(" DISABLE"),
-            None => Ok(()),
+            Some(true) => f.write_str(" ENABLE>"),
+            Some(false) => f.write_str(" DISABLE>"),
+            None => f.write_str(">"),
         }
     }
 }
@@ -504,3 +501,59 @@ impl_try_from_tag!(AttributeListDefinition);
 impl_try_from_tag!(ElementDefinition);
 impl_try_from_tag!(EntityDefinition);
 impl_try_from_tag!(LineTagDefinition);
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fmt_attlist() {
+        let def = AttributeListDefinition {
+            name: "custom",
+            attributes: "color=red background=white flags",
+        };
+        assert_eq!(
+            def.to_string(),
+            "<!AT custom 'color=red background=white flags'>"
+        );
+    }
+
+    #[test]
+    fn fmt_element_off() {
+        let def = ElementDefinition {
+            name: "custom",
+            element: None,
+        };
+        assert_eq!(def.to_string(), "<!EL custom DELETE>");
+    }
+
+    #[test]
+    fn fmt_entity() {
+        let def = EntityDefinition {
+            name: "custom",
+            value: "some&nbsp;value",
+            desc: Some("mydesc"),
+            keywords: EntityKeyword::Publish | EntityKeyword::Add,
+        };
+        assert_eq!(
+            def.to_string(),
+            "<!EN custom \"some&nbsp;value\" DESC=\"mydesc\" PUBLISH ADD>"
+        );
+    }
+
+    #[test]
+    fn fmt_linetag() {
+        let def = LineTagDefinition {
+            index: Mode(30),
+            window: Some("_top"),
+            gag: Some(true),
+            fore: Some(RgbColor::hex(0x123456)),
+            back: Some(RgbColor::hex(0x789abc)),
+            enable: Some(false),
+        };
+        assert_eq!(
+            def.to_string(),
+            "<!TAG 30 WINDOWNAME=\"_top\" GAG FORE=#123456 BACK=#789abc DISABLE>"
+        );
+    }
+}

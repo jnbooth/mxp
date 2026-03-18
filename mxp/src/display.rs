@@ -6,6 +6,13 @@ use flagset::FlagSet;
 
 use crate::{Dimension, RgbColor};
 
+fn is_plain_word(s: &str) -> bool {
+    const fn is_wordlike(c: u8) -> bool {
+        matches!(c, b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'+' | b'-')
+    }
+    s.bytes().all(is_wordlike)
+}
+
 pub(crate) struct DelimAfterFirst {
     delim: &'static str,
     after_first: Cell<bool>,
@@ -35,8 +42,29 @@ pub(crate) struct Escape<'a>(pub &'a str);
 
 impl fmt::Display for Escape<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if is_plain_word(self.0) {
+            return self.0.fmt(f);
+        }
         let escaped = html_escape::encode_double_quoted_attribute(self.0);
         write!(f, "\"{escaped}\"")
+    }
+}
+
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub(crate) struct MaybeQuote<'a>(pub &'a str);
+
+impl fmt::Display for MaybeQuote<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let body = self
+            .0
+            .strip_prefix('&')
+            .and_then(|s| s.strip_suffix(';'))
+            .unwrap_or(self.0);
+        if is_plain_word(body) {
+            self.0.fmt(f)
+        } else {
+            write!(f, "\"{}\"", self.0)
+        }
     }
 }
 
@@ -163,5 +191,23 @@ impl<T: DisplayArg + Eq> DisplayArg for (T, T) {
 
     fn display(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.0.display(f)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn delim_after_first() {
+        let delim = DelimAfterFirst::new(", ");
+        let output = format!("{delim}A{delim}B{delim}C");
+        assert_eq!(output, "A, B, C");
+    }
+
+    #[test]
+    fn escape() {
+        let output = Escape("this & \"that\"").to_string();
+        assert_eq!(output, "\"this &amp; &quot;that&quot;\"");
     }
 }

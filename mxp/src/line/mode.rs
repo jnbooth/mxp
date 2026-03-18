@@ -4,7 +4,7 @@ use crate::element::ParseAs;
 
 /// Mode defined by a line tag.
 ///
-/// See [MXP specification: MXP Line Tags](https://www.zuggsoft.com/zmud/mxp.htm#MXP%20Line%20Tags).
+/// See [MXP specification: MXP Line Tags](https://www.zuggsoft.com/zmud/mxp.htm#User-defined%20Line%20Tags).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Mode(pub u8);
 

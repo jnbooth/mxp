@@ -82,7 +82,7 @@ pub enum ErrorKind {
     CannotRedefineGlobalEntity,
 
     /// Definition tag (`<!...>`) does not begin begin with a recognized prefix
-    /// (`!ATTLIST`, `!ATT`, `!ELEMENT`, `!EL`, `!ENTITY`, `!EN`, or `!TAG`).
+    /// (`!ATTLIST`, `!AT`, `!ELEMENT`, `!EL`, `!ENTITY`, `!EN`, or `!TAG`).
     ///
     /// Example: `<!FOO ...>`
     InvalidDefinition,

@@ -109,7 +109,7 @@ impl fmt::Display for Element {
             open,
             command,
         } = self;
-        write!(f, "<!EL {name}'")?;
+        write!(f, "<!EL {name} '")?;
         for item in items {
             write!(f, "{item}")?;
         }
@@ -133,5 +133,28 @@ impl fmt::Display for Element {
             f.write_str(" EMPTY")?;
         }
         f.write_str(">")
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fmt() {
+        let element = Element {
+            name: "custom".to_owned(),
+            items: ElementItem::parse_all("<COLOR &col;><B>").unwrap(),
+            attributes: "col=red".parse().unwrap(),
+            line_tag: Some(Mode(30)),
+            parse_as: None,
+            variable: Some("myvar".to_owned()),
+            open: true,
+            command: true,
+        };
+        assert_eq!(
+            element.to_string(),
+            "<!EL custom '<COLOR &col;><B>' ATT='col=red' TAG=30 FLAG=\"SET myvar\" OPEN EMPTY>"
+        );
     }
 }

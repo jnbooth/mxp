@@ -83,7 +83,7 @@ impl<D> FusedIterator for ElementDecoder<'_, D> where D: Decoder + Copy {}
 mod tests {
     use crate::element::Action;
     use crate::elements::Color;
-    use crate::test_utils::{decode_actions, parse_definition};
+    use crate::test_utils::{decode_actions, try_from_node};
 
     fn foreground(name: &str) -> Color {
         Color {
@@ -95,7 +95,7 @@ mod tests {
     #[test]
     fn custom_args() {
         let mut state = crate::State::default();
-        let definition = parse_definition("<!ELEMENT mycolor '<COLOR &col;>' ATT='col=red'>");
+        let definition = try_from_node("<!ELEMENT mycolor '<COLOR &col;>' ATT='col=red'>");
         state.define(definition).unwrap();
         let red = decode_actions("<mycolor>", &state).unwrap();
         assert_eq!(red, &[Action::Color(foreground("red"))]);

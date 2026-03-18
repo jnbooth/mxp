@@ -1,10 +1,11 @@
 use super::mode::Mode;
 use super::tag::LineTag;
 use crate::element::ParseAs;
+use crate::{Error, ErrorKind};
 
 /// State tracker for [`Mode`].
 ///
-/// See [MXP specification: MXP Line Tags](https://www.zuggsoft.com/zmud/mxp.htm#MXP%20Line%20Tags).
+/// See [MXP specification: MXP Line Tags](https://www.zuggsoft.com/zmud/mxp.htm#User-defined%20Line%20Tags).
 //
 // Note: these modes are never PERM_LOCKED, PERM_OPEN, PERM_SECURE, or RESET.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -152,8 +153,8 @@ impl ModeState {
     pub fn validate_next_character(&mut self, c: u8) -> crate::Result<()> {
         #[cold]
         #[inline(never)]
-        fn create_error(c: u8) -> crate::Error {
-            crate::Error::new(c as char, crate::ErrorKind::TextAfterSecureOnce)
+        fn create_error(c: u8) -> Error {
+            Error::new(c as char, ErrorKind::TextAfterSecureOnce)
         }
 
         if c == b'<' || !self.is_secure_once() {

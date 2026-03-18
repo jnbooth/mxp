@@ -177,3 +177,23 @@ impl<'a> TryFrom<Tag<'a>> for TagOpen<'a> {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fmt_close() {
+        let tag = TagClose { name: "custom" };
+        assert_eq!(tag.to_string(), "</custom>");
+    }
+
+    #[test]
+    fn fmt_open() {
+        let tag = TagOpen {
+            name: "custom",
+            arguments: "muffled col=red".parse().unwrap(),
+        };
+        assert_eq!(tag.to_string(), "<custom muffled col=red>");
+    }
+}

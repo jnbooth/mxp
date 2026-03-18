@@ -47,7 +47,7 @@ where
         match AtomicTag::well_known(name) {
             Some(tag) if self.supported.contains(tag.action) => match arg {
                 None => Self::write_can(f, name),
-                Some("*") => Self::write_can_args(f, tag),
+                Some("*") => Self::write_can_args(f, name, tag),
                 Some(arg) if tag.supports(arg) => Self::write_can_arg(f, name, arg),
                 Some(arg) => Self::write_cant_arg(f, name, arg),
             },
@@ -59,7 +59,7 @@ where
         for tag in AtomicTag::supported() {
             if self.supported.contains(tag.action) {
                 Self::write_can(f, tag.name)?;
-                Self::write_can_args(f, tag)?;
+                Self::write_can_args(f, tag.name, tag)?;
             }
         }
         if !self.supported.contains(ActionKind::Font) && self.supported.contains(ActionKind::Color)
@@ -86,8 +86,7 @@ where
         write!(f, " -{tag}.{arg}")
     }
 
-    fn write_can_args(f: &mut fmt::Formatter, tag: &AtomicTag) -> fmt::Result {
-        let name = tag.name;
+    fn write_can_args(f: &mut fmt::Formatter, name: &str, tag: &AtomicTag) -> fmt::Result {
         for arg in tag.args {
             write!(f, " +{name}.{arg}")?;
         }

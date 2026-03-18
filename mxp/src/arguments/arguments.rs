@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::collections::hash_map;
 use std::fmt;
+use std::str::FromStr;
 
 use uncased::Uncased;
 
@@ -210,7 +211,7 @@ impl Arguments<'static, String> {
 }
 
 impl<'a> TryFrom<Words<'a>> for Arguments<'a> {
-    type Error = crate::Error;
+    type Error = Error;
 
     fn try_from(value: Words<'a>) -> crate::Result<Self> {
         let mut this = Self::new();
@@ -220,7 +221,7 @@ impl<'a> TryFrom<Words<'a>> for Arguments<'a> {
 }
 
 impl<'a> TryFrom<Words<'a>> for Arguments<'a, Cow<'a, str>> {
-    type Error = crate::Error;
+    type Error = Error;
 
     fn try_from(value: Words<'a>) -> crate::Result<Self> {
         let mut this = Self::new();
@@ -230,7 +231,7 @@ impl<'a> TryFrom<Words<'a>> for Arguments<'a, Cow<'a, str>> {
 }
 
 impl TryFrom<Words<'_>> for Arguments<'static, String> {
-    type Error = crate::Error;
+    type Error = Error;
 
     fn try_from(value: Words<'_>) -> crate::Result<Self> {
         let mut this = Self::new();
@@ -241,17 +242,25 @@ impl TryFrom<Words<'_>> for Arguments<'static, String> {
 
 impl<S: AsRef<str>> fmt::Display for Arguments<'_, S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        use crate::display::DelimAfterFirst;
+        use crate::display::{DelimAfterFirst, MaybeQuote};
 
         let delim = DelimAfterFirst::new(" ");
         for positional in &self.positional {
-            write!(f, "{delim}\"{}\"", positional.as_ref())?;
+            write!(f, "{delim}{}", MaybeQuote(positional.as_ref()))?;
         }
         for (k, v) in &self.named {
-            write!(f, "{delim}{k}=\"{}\"", v.as_ref())?;
+            write!(f, "{delim}{k}={}", MaybeQuote(v.as_ref()))?;
         }
 
         Ok(())
+    }
+}
+
+impl FromStr for Arguments<'static, String> {
+    type Err = Error;
+
+    fn from_str(s: &str) -> crate::Result<Self> {
+        Words::new(s).try_into()
     }
 }
 
