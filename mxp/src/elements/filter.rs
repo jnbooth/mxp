@@ -66,10 +66,10 @@ impl<S: AsRef<str>> Filter<S> {
 
 impl_partial_eq!(Filter);
 
-impl<S: AsRef<str>> Filter<S> {
+impl<'a> Filter<Cow<'a, str>> {
     pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<Output = S>,
+        A: ArgumentScanner<'a>,
     {
         let src = scanner.decode_next_or("src")?.expect_some("src")?;
         let dest = scanner.decode_next_or("dest")?;

@@ -85,7 +85,7 @@ impl Decoder for () {
 }
 
 #[derive(Clone)]
-pub(crate) struct Scan<'a, D: Decoder, S: AsRef<str> = Cow<'a, str>> {
+pub(crate) struct Scan<'a, D: Decoder, S: AsRef<str>> {
     decoder: D,
     positional: slice::Iter<'a, S>,
     named: &'a CaseFoldMap<'a, S>,
@@ -101,19 +101,18 @@ impl<'a, D: Decoder, S: AsRef<str>> Scan<'a, D, S> {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> ArgumentScanner for Scan<'a, D, S> {
-    type Output = Cow<'a, str>;
-    type RawOutput = &'a S;
+impl<'a, D: Decoder, S: AsRef<str>> ArgumentScanner<'a> for Scan<'a, D, S> {
+    type Output = &'a S;
 
-    fn decode(&self, output: Self::RawOutput) -> crate::Result<Self::Output> {
+    fn decode(&self, output: Self::Output) -> crate::Result<Cow<'a, str>> {
         self.decoder.decode_string(output.as_ref())
     }
 
-    fn get_named(&mut self, name: &str) -> Option<Self::RawOutput> {
+    fn get_named(&mut self, name: &str) -> Option<Self::Output> {
         self.named.get(name)
     }
 
-    fn get_next(&mut self) -> Option<Self::RawOutput> {
+    fn get_next(&mut self) -> Option<Self::Output> {
         self.positional.next()
     }
 }
@@ -135,19 +134,18 @@ impl<'a, D: Decoder> OwnedScan<'a, D> {
     }
 }
 
-impl<'a, D: Decoder> ArgumentScanner for OwnedScan<'a, D> {
-    type Output = Cow<'a, str>;
-    type RawOutput = &'a str;
+impl<'a, D: Decoder> ArgumentScanner<'a> for OwnedScan<'a, D> {
+    type Output = &'a str;
 
-    fn decode(&self, output: Self::RawOutput) -> crate::Result<Self::Output> {
+    fn decode(&self, output: Self::Output) -> crate::Result<Cow<'a, str>> {
         self.decoder.decode_string(output.as_ref())
     }
 
-    fn get_named(&mut self, name: &str) -> Option<Self::RawOutput> {
+    fn get_named(&mut self, name: &str) -> Option<Self::Output> {
         self.named.remove(name)
     }
 
-    fn get_next(&mut self) -> Option<Self::RawOutput> {
+    fn get_next(&mut self) -> Option<Self::Output> {
         self.positional.next()
     }
 }

@@ -53,10 +53,10 @@ impl<S: AsRef<str>> StyleVersion<S> {
 
 impl_partial_eq!(StyleVersion);
 
-impl<S: AsRef<str>> StyleVersion<S> {
+impl<'a> StyleVersion<Cow<'a, str>> {
     pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<Output = S>,
+        A: ArgumentScanner<'a>,
     {
         let styleversion = scanner.decode_next()?.expect_some("StyleVersion")?;
         scanner.expect_end()?;

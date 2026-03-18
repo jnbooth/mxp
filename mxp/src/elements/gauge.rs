@@ -67,10 +67,10 @@ impl<S: AsRef<str>> Gauge<S> {
 
 impl_partial_eq!(Gauge);
 
-impl<S: AsRef<str>> Gauge<S> {
+impl<'a> Gauge<Cow<'a, str>> {
     pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<Output = S>,
+        A: ArgumentScanner<'a>,
     {
         let entity = scanner.decode_next()?.expect_some("EntityName")?;
         let max = scanner.decode_next_or("max")?;

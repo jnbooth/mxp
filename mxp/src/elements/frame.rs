@@ -160,10 +160,10 @@ enum YesOrNo {
 
 impl_parse_enum!(YesOrNo, No, Yes);
 
-impl<S: AsRef<str> + Clone> Frame<S> {
+impl<'a> Frame<Cow<'a, str>> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<Output = S>,
+        A: ArgumentScanner<'a>,
     {
         let mut scanner = scanner.with_keywords();
         let name = scanner.decode_next_or("name")?.expect_some("name")?;

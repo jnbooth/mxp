@@ -161,10 +161,10 @@ impl<'a> Send<&'a str> {
     }
 }
 
-impl<'a, S: AsRef<str> + From<&'a str> + Clone> Send<S> {
+impl<'a> Send<Cow<'a, str>> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<Output = S>,
+        A: ArgumentScanner<'a>,
     {
         let mut scanner = scanner.with_keywords();
         let href = scanner

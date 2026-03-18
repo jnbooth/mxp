@@ -144,10 +144,10 @@ impl<S: AsRef<str>> Sound<S> {
 
 impl_partial_eq!(Sound);
 
-impl<S: AsRef<str>> Sound<S> {
+impl<'a> Sound<Cow<'a, str>> {
     pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<Output = S>,
+        A: ArgumentScanner<'a>,
     {
         let fname = scanner.decode_next_or("fname")?.expect_some("fname")?;
         let volume = scanner.decode_next_or("v")?.expect_number()?.unwrap_or(100);

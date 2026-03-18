@@ -6,10 +6,12 @@ macro_rules! impl_into_owned {
             }
         }
 
-        impl<D: crate::parse::Decoder> TryFrom<crate::parse::Scan<'_, D>> for $t<String> {
+        impl<D: crate::parse::Decoder> TryFrom<crate::parse::Scan<'_, D, Cow<'_, str>>>
+            for $t<String>
+        {
             type Error = crate::Error;
 
-            fn try_from(scanner: crate::parse::Scan<'_, D>) -> crate::Result<Self> {
+            fn try_from(scanner: crate::parse::Scan<'_, D, Cow<'_, str>>) -> crate::Result<Self> {
                 Ok($t::<Cow<'_, str>>::try_from(scanner)?.into_owned())
             }
         }

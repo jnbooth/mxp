@@ -131,10 +131,10 @@ impl<S: AsRef<str>> Image<S> {
 
 impl_partial_eq!(Image);
 
-impl<S: AsRef<str>> Image<S> {
+impl<'a> Image<Cow<'a, str>> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<Output = S>,
+        A: ArgumentScanner<'a>,
     {
         let mut scanner = scanner.with_keywords();
         let fname = scanner.decode_next_or("fname")?.expect_some("fname")?;

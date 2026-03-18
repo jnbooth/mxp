@@ -132,7 +132,7 @@ pub enum Action<S = String> {
 impl<'a> Action<Cow<'a, str>> {
     pub(crate) fn decode<A>(action: ActionKind, mut scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<Output = Cow<'a, str>>,
+        A: ArgumentScanner<'a>,
     {
         Ok(match action {
             ActionKind::Bold => Self::Bold,

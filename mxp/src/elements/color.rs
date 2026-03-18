@@ -30,9 +30,9 @@ pub struct Color {
 }
 
 impl Color {
-    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
+    pub(crate) fn scan<'a, A>(mut scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner,
+        A: ArgumentScanner<'a>,
     {
         let fore = scanner.decode_next_or("fore")?.expect_color()?;
         let back = scanner.decode_next_or("back")?.expect_color()?;

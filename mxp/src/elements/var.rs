@@ -74,10 +74,10 @@ impl<S: AsRef<str>> Var<S> {
 
 impl_partial_eq!(Var);
 
-impl<S: AsRef<str>> Var<S> {
+impl<'a> Var<Cow<'a, str>> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<Output = S>,
+        A: ArgumentScanner<'a>,
     {
         let mut scanner = scanner.with_keywords();
         let variable = scanner.decode_next()?.expect_some("Variable")?;

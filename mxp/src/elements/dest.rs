@@ -96,10 +96,10 @@ impl<S: AsRef<str>> From<S> for Dest<S> {
     }
 }
 
-impl<S: AsRef<str>> Dest<S> {
+impl<'a> Dest<Cow<'a, str>> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<Output = S>,
+        A: ArgumentScanner<'a>,
     {
         let mut scanner = scanner.with_keywords();
         let name = scanner.decode_next()?;
