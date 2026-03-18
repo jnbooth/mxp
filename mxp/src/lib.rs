@@ -41,26 +41,25 @@
 //! );
 //! ```
 //!
-//! However, this approach lacks the most important aspect of MXP parsing: custom entities and
-//! elements. It also has no way to protect secure tags during OPEN line modes. (It's also
-//! inefficient, because it uses owned strings rather than borrowed string slices.) The intended way
-//! to use this library is with state management via [`mxp::State`] and [`mxp::ModeState`].
+//! Although useful for development, this approach lacks support for the most important aspect of
+//! MXP: defining custom entities and elements. (It's also inefficient, because it uses owned
+//! strings rather than borrowed string slices.) Instead, production environments should make use of
+//! mxp's state management system, provided by [`mxp::State`] and [`mxp::ModeState`].
 //!
 //! [`mxp::State`]: State
 //! [`mxp::ModeState`]: ModeState
 //!
 //! ## State management
 //!
-//! mxp provides state management via [`mxp::State`]: the central hub of MXP logic.
-//! `mxp::State` stores custom [`Element`]s, custom [`Entity`]s, and user-defined [`LineTag`]s.
-//! In this approach, rather than using [`FromStr`] to parse tags with owned strings,
-//! [`Tag::parse`] is used to deserialize tags in-place using borrowed string slices.
+//! [`mxp::State`] stores definitions for custom [`Element`]s, [`Entity`]s, and [`LineTag`]s. Once
+//! the state receives a definition, it can be used in all subsequent parses. With this approach,
+//! rather than using [`FromStr`] to parse tags into owned strings, [`Tag::parse`] is used to
+//! deserialize tags in-place using borrowed string slices.
 //!
-//! Furthermore, [`mxp::ModeState`] can be used to handle line modes, as well as retrieving custom
-//! elements from user-defined line tags. Rather than being parsed from XML tags like everything
-//! else in MXP, modes are set by ANSI escape sequences. For example, to set the MXP mode to 20,
-//! server would send `<ESC>[20z`. As such, it is up to the client to recognize MXP mode changes and
-//! apply them with [`ModeState::set`] and [`ModeState::revert`].
+//! Unlike everything else in MXP, which uses XML syntax, line modes are set by ANSI escape
+//! sequences. For example, to set the MXP mode to 20, the MUD server would send `<ESC>[20z`.
+//! As such, it is up to the client to recognize MXP mode changes and apply them with
+//! [`ModeState::set`] and [`ModeState::revert`].
 //!
 //! [`FromStr`]: std::str::FromStr
 //! [`Tag::parse`]: node::Tag::parse
@@ -72,26 +71,32 @@
 //! // - `use mxp::node::{Tag as TagNode, TagOpen as TagOpenNode};`
 //! use mxp::node::{Tag, TagOpen};
 //!
-//! fn handle_element(mxp_state: &mut mxp::State, mut src: &str, secure: bool) -> mxp::Result<()> {
-//!     src = &src[1..src.len() - 1]; // remove < and >
+//! // Handler function for receiving tags from the MUD server. A tag is anything surrounded by
+//! // `<` and `>`. The `secure` flag indicates whether the current line mode is secure.
+//! fn handle_tag(mxp_state: &mut mxp::State, mut src: &str, secure: bool) -> mxp::Result<()> {
+//!     src = &src[1..src.len() - 1]; // strip < and > from the source
 //!     match Tag::parse(src, secure)? {
-//!         Tag::Definition(definition) => {
+//!         Tag::Definition(definition) => { // <!...>
 //!             mxp_state.define(definition)?;
 //!         }
-//!         Tag::Open(tag) => {
-//!             handle_open(tag, mxp_state, secure)?;
+//!         Tag::Open(tag) => { // <...>
+//!             handle_open(tag, mxp_state, secure)?; // see below
 //!         }
-//!         Tag::Close(tag) => (),
+//!         Tag::Close(tag) => (), // </...>
 //!     }
 //!     Ok(())
 //! }
 //!
+//!
+//! // Handler function for receiving an opening tag. Called by `handle_tag`.
 //! fn handle_open(tag: TagOpen, mxp_state: &mxp::State, secure: bool) -> mxp::Result<()> {
 //!     match mxp_state.get_component(tag.name, secure)? {
+//!         // server sent a standard, atomic tag, such as <a> or <br>
 //!         mxp::Component::AtomicTag(atom) => {
 //!             let action = atom.decode(&tag.arguments, mxp_state)?;
 //!             handle_action(&action);
 //!         }
+//!         // server sent a previously-defined custom element
 //!         mxp::Component::Element(el) => {
 //!             for action in el.decode(&tag.arguments, mxp_state) {
 //!                 handle_action(&action?);
@@ -101,6 +106,8 @@
 //!     Ok(())
 //! }
 //!
+//! // Handler function for applying the action of an atomic tag.
+//! // This is where the actual client logic takes place.
 //! fn handle_action(action: &mxp::Action<Cow<str>>) {
 //!     use mxp::Action;
 //!
@@ -111,17 +118,19 @@
 //!     }
 //! }
 //!
+//! // initialize state
 //! let mut mxp_state = mxp::State::with_globals();
 //! let mut mode = mxp::ModeState::new();
 //!
 //! mode.set(mxp::Mode::SECURE_ONCE);
 //! let secure = mode.use_secure();
-//! assert!(secure); // Mode must be secure in order to define elements
-//! handle_element(&mut mxp_state, "<!ELEMENT custom '<HR><BR>' EMPTY OPEN>", secure).unwrap();
+//! assert!(secure); // line mode is secure, so elements may be defined
+//! handle_tag(&mut mxp_state, "<!ELEMENT MyEl '<HR><BR>' EMPTY OPEN>", secure).unwrap();
+//! // The <MyEl> element has now been defined, and can be used in subsequent parses.
 //!
 //! let secure = mode.use_secure();
 //! assert!(!secure); // SECURE_ONCE reverts back to OPEN mode after use
-//! handle_element(&mut mxp_state, "<custom>", secure).unwrap(); // prints "----\n"
+//! handle_tag(&mut mxp_state, "<myel>", secure).unwrap(); // prints "----\n" (<HR><BR>)
 //! ```
 //!
 //! ## Server-side usage

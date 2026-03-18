@@ -13,12 +13,12 @@ use crate::arguments::Arguments;
 /// let mut builder = mxp::node::TagBuilder::new("monster");
 /// builder
 ///     .push("hostile")
-///     .push_all(&["Minotaur", "veteran"])
+///     .push_all(&["Minotaur", "old veteran"])
 ///     .insert("hp", "150");
 /// let tag = builder.build();
 /// assert_eq!(
 ///     tag.to_string(),
-///     r#"<monster "hostile" "Minotaur" "veteran" hp="150">"#
+///     r#"<monster hostile Minotaur "old veteran" hp=150>"#
 /// );
 /// ```
 #[derive(Clone, Debug, PartialEq, Eq)]
