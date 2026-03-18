@@ -9,7 +9,7 @@ use super::iter::EntityInfo;
 use super::iter::PublishedIter;
 use super::visibility::EntityVisibility;
 use crate::Error;
-use crate::keyword::{EntityKeyword, KeywordFilter};
+use crate::keyword::EntityKeyword;
 use crate::node::EntityDefinition;
 use crate::parse::{Decoder, ErrorKind};
 
@@ -162,7 +162,7 @@ impl EntityMap {
     /// assert!(map.decode("#xQ").is_err());
     /// ```
     pub fn decode(&self, name: &str) -> crate::Result<DecodedEntity<'_>> {
-        self.decode_entity::<()>(name)
+        self.decode_entity(name)
     }
 
     /// Removes a key from the map, returning the value at the key if the key was previously in the
@@ -350,7 +350,7 @@ impl EntityMap {
 }
 
 impl Decoder for EntityMap {
-    fn get_entity<K: KeywordFilter>(&self, name: &str) -> Option<&str> {
+    fn get_entity(&self, name: &str) -> Option<&str> {
         if let Some(&global) = self.globals.get(name.as_bytes()) {
             return Some(global);
         }

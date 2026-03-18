@@ -2,13 +2,13 @@ use std::str::FromStr;
 
 use flagset::{FlagSet, Flags};
 
-use crate::{Error, ErrorKind, KeywordFilter};
+use crate::{Error, ErrorKind};
 
 pub(crate) trait ArgumentScanner: Sized {
     type Output: AsRef<str>;
     type RawOutput: AsRef<str>;
 
-    fn decode<F: KeywordFilter>(&self, raw: Self::RawOutput) -> crate::Result<Self::Output>;
+    fn decode(&self, raw: Self::RawOutput) -> crate::Result<Self::Output>;
     fn get_named(&mut self, name: &str) -> Option<Self::RawOutput>;
     fn get_next(&mut self) -> Option<Self::RawOutput>;
     fn get_next_or(&mut self, name: &str) -> Option<Self::RawOutput> {
@@ -16,13 +16,13 @@ pub(crate) trait ArgumentScanner: Sized {
     }
     fn decode_next(&mut self) -> crate::Result<Option<Self::Output>> {
         match self.get_next() {
-            Some(next) => Ok(Some(self.decode::<()>(next)?)),
+            Some(next) => Ok(Some(self.decode(next)?)),
             None => Ok(None),
         }
     }
     fn decode_next_or(&mut self, name: &str) -> crate::Result<Option<Self::Output>> {
         match self.get_next_or(name) {
-            Some(next) => Ok(Some(self.decode::<()>(next)?)),
+            Some(next) => Ok(Some(self.decode(next)?)),
             None => Ok(None),
         }
     }
@@ -65,13 +65,13 @@ impl<A, K> ArgumentScanner for KeywordArgumentScanner<A, K>
 where
     A: ArgumentScanner,
     A::Output: AsRef<str>,
-    K: Flags + FromStr + KeywordFilter,
+    K: Flags + FromStr,
 {
     type Output = A::Output;
     type RawOutput = A::RawOutput;
 
-    fn decode<F: KeywordFilter>(&self, output: Self::RawOutput) -> crate::Result<Self::Output> {
-        self.inner.decode::<K>(output)
+    fn decode(&self, output: Self::RawOutput) -> crate::Result<Self::Output> {
+        self.inner.decode(output)
     }
 
     fn get_named(&mut self, name: &str) -> Option<Self::RawOutput> {

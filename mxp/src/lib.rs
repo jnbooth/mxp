@@ -201,7 +201,6 @@ pub use entity::Entity;
 pub mod escape;
 
 mod keyword;
-pub use keyword::KeywordFilter;
 
 mod line;
 pub use line::{LineTag, LineTagProperties, Mode, ModeRangeError, ModeState};

@@ -7,7 +7,6 @@ use uncased::Uncased;
 
 use super::iter::{Named, Positional};
 use crate::CaseFoldMap;
-use crate::keyword::KeywordFilter;
 use crate::parse::{Decoder, OwnedScan, Scan, Words, validate};
 use crate::{Error, ErrorKind};
 
@@ -99,7 +98,7 @@ impl<'a, S> Arguments<'a, S> {
 impl<'a, S: AsRef<str>> Arguments<'a, S> {
     /// Finds the value of an entity, using an element's attribute list to identify arguments
     /// and provide default values.
-    pub(crate) fn find_from_attributes<K: KeywordFilter>(
+    pub(crate) fn find_from_attributes(
         &'a self,
         entity: &str,
         attributes: &'a Arguments<'static, String>,
@@ -110,9 +109,11 @@ impl<'a, S: AsRef<str>> Arguments<'a, S> {
                 None => Some(named),
             };
         }
-        let position =
-            K::iter(&attributes.positional).position(|attr| attr.eq_ignore_ascii_case(entity))?;
-        match K::iter(&self.positional).nth(position) {
+        let position = attributes
+            .positional
+            .iter()
+            .position(|attr| attr.eq_ignore_ascii_case(entity))?;
+        match self.positional.get(position) {
             Some(attr) => Some(attr.as_ref()),
             None => Some(""),
         }

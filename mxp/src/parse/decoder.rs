@@ -5,24 +5,21 @@ use super::validation::is_valid;
 use crate::CaseFoldMap;
 use crate::arguments::ArgumentScanner;
 use crate::entity::{DecodedEntity, Entity};
-use crate::keyword::KeywordFilter;
 use crate::{Error, ErrorKind};
 
 /// Trait for decoding entities to values.
 pub trait Decoder {
-    /// Retrieves the definition for an entity by name. The `KeywordFilter` hints at which items
-    /// in a string should be considered keywords rather than positional arguments. It can generally
-    /// be ignored.
-    fn get_entity<K: KeywordFilter>(&self, name: &str) -> Option<&str>;
+    /// Retrieves the definition for an entity by name.
+    fn get_entity(&self, name: &str) -> Option<&str>;
 
     /// Decodes an entity by either parsing a numeric entity (e.g. `"&#32"`) or calling
     /// [`get_entity`](Self::get_entity).
-    fn decode_entity<K: KeywordFilter>(&self, name: &str) -> crate::Result<DecodedEntity<'_>> {
+    fn decode_entity(&self, name: &str) -> crate::Result<DecodedEntity<'_>> {
         let (start, radix) = match name.as_bytes() {
             [b'#', b'x', ..] => (2, 16),
             [b'#', ..] => (1, 10),
             _ => {
-                return match self.get_entity::<K>(name) {
+                return match self.get_entity(name) {
                     Some(entity) => Ok(entity.into()),
                     None if is_valid(name) => Err(Error::new(name, ErrorKind::UnknownEntity)),
                     None => Err(Error::new(name, ErrorKind::InvalidEntityName)),
@@ -45,7 +42,7 @@ pub trait Decoder {
     /// [`decode_entity`](Self::decode_entity). If the string does not contain any entities, it is
     /// returned unchanged as a borrowed string slice. Otherwise, an owned string containing the
     /// replacements is returned.
-    fn decode_string<'a, K: KeywordFilter>(&self, mut s: &'a str) -> crate::Result<Cow<'a, str>> {
+    fn decode_string<'a>(&self, mut s: &'a str) -> crate::Result<Cow<'a, str>> {
         let mut res = String::new();
         while let Some((before, rest)) = s.split_once('&') {
             if !before.is_empty() {
@@ -57,7 +54,7 @@ pub trait Decoder {
                     ErrorKind::NoClosingSemicolon,
                 ));
             };
-            self.decode_entity::<K>(entity)?.push_to(&mut res);
+            self.decode_entity(entity)?.push_to(&mut res);
             s = after;
         }
         if res.is_empty() {
@@ -71,18 +68,18 @@ pub trait Decoder {
 }
 
 impl<D: Decoder> Decoder for &D {
-    fn get_entity<K: KeywordFilter>(&self, name: &str) -> Option<&str> {
-        D::get_entity::<K>(self, name)
+    fn get_entity(&self, name: &str) -> Option<&str> {
+        D::get_entity(self, name)
     }
 
-    fn decode_entity<K: KeywordFilter>(&self, entity: &str) -> crate::Result<DecodedEntity<'_>> {
-        D::decode_entity::<K>(self, entity)
+    fn decode_entity(&self, entity: &str) -> crate::Result<DecodedEntity<'_>> {
+        D::decode_entity(self, entity)
     }
 }
 
 /// Fallback `Decoder` that only looks up global entities (with [`Entity::global`]).
 impl Decoder for () {
-    fn get_entity<K: KeywordFilter>(&self, name: &str) -> Option<&str> {
+    fn get_entity(&self, name: &str) -> Option<&str> {
         Entity::global(name)
     }
 }
@@ -108,8 +105,8 @@ impl<'a, D: Decoder, S: AsRef<str>> ArgumentScanner for Scan<'a, D, S> {
     type Output = Cow<'a, str>;
     type RawOutput = &'a S;
 
-    fn decode<F: KeywordFilter>(&self, output: Self::RawOutput) -> crate::Result<Self::Output> {
-        self.decoder.decode_string::<F>(output.as_ref())
+    fn decode(&self, output: Self::RawOutput) -> crate::Result<Self::Output> {
+        self.decoder.decode_string(output.as_ref())
     }
 
     fn get_named(&mut self, name: &str) -> Option<Self::RawOutput> {
@@ -142,8 +139,8 @@ impl<'a, D: Decoder> ArgumentScanner for OwnedScan<'a, D> {
     type Output = Cow<'a, str>;
     type RawOutput = &'a str;
 
-    fn decode<F: KeywordFilter>(&self, output: Self::RawOutput) -> crate::Result<Self::Output> {
-        self.decoder.decode_string::<F>(output.as_ref())
+    fn decode(&self, output: Self::RawOutput) -> crate::Result<Self::Output> {
+        self.decoder.decode_string(output.as_ref())
     }
 
     fn get_named(&mut self, name: &str) -> Option<Self::RawOutput> {

@@ -6,7 +6,6 @@ use super::action::Action;
 use super::element::Element;
 use super::item::ElementItem;
 use crate::arguments::Arguments;
-use crate::keyword::KeywordFilter;
 use crate::parse::Decoder;
 
 #[derive(Copy, Clone, Debug)]
@@ -17,10 +16,10 @@ struct DecodeElement<'a, D: Decoder> {
 }
 
 impl<D: Decoder> Decoder for DecodeElement<'_, D> {
-    fn get_entity<K: KeywordFilter>(&self, name: &str) -> Option<&str> {
-        match self.args.find_from_attributes::<K>(name, self.attributes) {
+    fn get_entity(&self, name: &str) -> Option<&str> {
+        match self.args.find_from_attributes(name, self.attributes) {
             Some(attr) => Some(attr),
-            None => self.decoder.get_entity::<K>(name),
+            None => self.decoder.get_entity(name),
         }
     }
 }

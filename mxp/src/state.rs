@@ -5,7 +5,6 @@ use crate::arguments::Arguments;
 use crate::element::{Action, AtomicTag, Element, ElementDecoder};
 use crate::elements::Var;
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
-use crate::keyword::KeywordFilter;
 use crate::line::{LineTag, LineTags, Mode};
 use crate::node::{
     AttributeListDefinition, Definition, ElementDefinition, EntityDefinition, LineTagDefinition,
@@ -202,10 +201,10 @@ impl State {
             keywords,
         } = definition;
         let desc = match desc {
-            Some(desc) => Some(self.decode_string::<()>(desc)?),
+            Some(desc) => Some(self.decode_string(desc)?),
             None => None,
         };
-        let value = self.decode_string::<()>(value)?;
+        let value = self.decode_string(value)?;
         let entity = self.entities.define(EntityDefinition {
             name,
             desc: desc.as_deref(),
@@ -221,8 +220,8 @@ impl State {
 }
 
 impl Decoder for State {
-    fn get_entity<K: KeywordFilter>(&self, name: &str) -> Option<&str> {
-        self.entities.get_entity::<K>(name)
+    fn get_entity(&self, name: &str) -> Option<&str> {
+        self.entities.get_entity(name)
     }
 }
 
