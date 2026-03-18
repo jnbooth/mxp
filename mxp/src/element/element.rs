@@ -6,6 +6,7 @@ use super::item::ElementItem;
 use super::parse_as::ParseAs;
 use crate::LineTagProperties;
 use crate::arguments::Arguments;
+use crate::element::AttributeList;
 use crate::line::Mode;
 use crate::parse::{Decoder, Words};
 
@@ -30,7 +31,7 @@ pub struct Element {
     /// Atomic tags declared in its definition string.
     pub items: Vec<ElementItem>,
     /// Arguments or attributes declared in the element's definition or in a later `<!ATTLIST>`.
-    pub attributes: Arguments<'static, String>,
+    pub attributes: AttributeList,
     /// Line tag mode, if the element is associated with a user-defined line tag.
     pub line_tag: Option<Mode>,
     /// If specified, text contained by this element should be parsed in a specific way by an

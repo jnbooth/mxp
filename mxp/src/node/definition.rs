@@ -4,9 +4,9 @@ use std::str::FromStr;
 use flagset::FlagSet;
 
 use super::error::TryFromNodeError;
-use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::color::RgbColor;
-use crate::element::{Element, ElementItem};
+use crate::element::{AttributeList, Element, ElementItem};
 use crate::keyword::{ElementKeyword, EntityKeyword, LineTagKeyword};
 use crate::line::Mode;
 use crate::parse::Words;
@@ -181,7 +181,7 @@ impl<'a> ElementDefinition<'a> {
 
         let attributes = match iter.get_named("att") {
             Some(&atts) => Words::new(atts).try_into()?,
-            None => Arguments::default(),
+            None => AttributeList::default(),
         };
 
         let tag = match iter.get_named("tag") {

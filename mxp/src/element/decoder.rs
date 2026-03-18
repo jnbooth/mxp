@@ -6,18 +6,19 @@ use super::action::Action;
 use super::element::Element;
 use super::item::ElementItem;
 use crate::arguments::Arguments;
+use crate::element::AttributeList;
 use crate::parse::Decoder;
 
 #[derive(Copy, Clone, Debug)]
 struct DecodeElement<'a, D: Decoder> {
     decoder: D,
-    attributes: &'a Arguments<'static, String>,
+    attributes: &'a AttributeList,
     args: &'a Arguments<'a>,
 }
 
 impl<D: Decoder> Decoder for DecodeElement<'_, D> {
     fn get_entity(&self, name: &str) -> Option<&str> {
-        match self.args.find_from_attributes(name, self.attributes) {
+        match self.attributes.find(name, self.args) {
             Some(attr) => Some(attr),
             None => self.decoder.get_entity(name),
         }
@@ -77,13 +78,18 @@ impl<D> FusedIterator for ElementDecoder<'_, D> where D: Decoder + Copy {}
 
 #[cfg(test)]
 mod tests {
+    use crate::color::RgbColor;
     use crate::element::Action;
     use crate::elements::Color;
     use crate::test_utils::{decode_actions, try_from_node};
 
+    fn color(name: &str) -> RgbColor {
+        RgbColor::named(name).unwrap()
+    }
+
     fn foreground(name: &str) -> Color {
         Color {
-            fore: Some(crate::RgbColor::named(name).unwrap()),
+            fore: Some(color(name)),
             ..Default::default()
         }
     }
@@ -99,5 +105,16 @@ mod tests {
         assert_eq!(blue, &[Action::Color(foreground("blue"))]);
         let reset = decode_actions("<mycolor col=\"\">", &state).unwrap();
         assert_eq!(reset, &[Action::Color(Color::default())]);
+
+        let definition = try_from_node("<!ELEMENT mycolors '<COLOR &col; &bg;>' ATT='bg col=red'>");
+        state.define(definition).unwrap();
+        let positional = decode_actions("<mycolors col=blue green>", &state).unwrap();
+        assert_eq!(
+            positional,
+            &[Action::Color(Color {
+                fore: Some(color("blue")),
+                back: Some(color("green")),
+            })]
+        );
     }
 }

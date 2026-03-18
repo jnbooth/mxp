@@ -167,6 +167,11 @@ pub enum ErrorKind {
     /// Example: `<color 123=...>`
     InvalidArgumentName,
 
+    /// A named argument had no name.
+    ///
+    /// Example: `<color =...>`
+    MissingArgumentName,
+
     /// Numeric attribute cannot be parsed to an integer.
     ///
     /// Example: `12d4`
@@ -176,6 +181,7 @@ pub enum ErrorKind {
     ///
     /// Example: `<color octopus=green>`
     UnexpectedArgument,
+
     /// Attributes for a `<COLOR>`, `<FONT>`, or `<GAUGE>` specified an unrecognized color.
     /// Valid colors are hex codes (e.g. `#FF0000`) or names from the the standard list of
     /// [148 CSS colors], case-insensitive (e.g. `green`).
@@ -250,6 +256,7 @@ impl fmt::Display for ErrorKind {
             Self::EmptyArgument => "empty argument",
             Self::MissingArguments => "missing arguments for element",
             Self::InvalidArgumentName => "invalid name for argument",
+            Self::MissingArgumentName => "missing argument name",
             Self::InvalidNumber => "invalid number",
             Self::UnexpectedArgument => "found unexpected argument",
             Self::UnknownColor => "unrecognized color",

@@ -96,29 +96,6 @@ impl<'a, S> Arguments<'a, S> {
 }
 
 impl<'a, S: AsRef<str>> Arguments<'a, S> {
-    /// Finds the value of an entity, using an element's attribute list to identify arguments
-    /// and provide default values.
-    pub(crate) fn find_from_attributes(
-        &'a self,
-        entity: &str,
-        attributes: &'a Arguments<'static, String>,
-    ) -> Option<&'a str> {
-        if let Some(named) = attributes.named.get(entity) {
-            return match self.named.get(entity) {
-                Some(entity) => Some(entity.as_ref()),
-                None => Some(named),
-            };
-        }
-        let position = attributes
-            .positional
-            .iter()
-            .position(|attr| attr.eq_ignore_ascii_case(entity))?;
-        match self.positional.get(position) {
-            Some(attr) => Some(attr.as_ref()),
-            None => Some(""),
-        }
-    }
-
     pub(crate) fn scan<D: Decoder>(&self, decoder: D) -> Scan<'_, D, S> {
         Scan::new(decoder, &self.positional, &self.named)
     }
@@ -141,6 +118,13 @@ impl<'a, S: AsRef<str>> Arguments<'a, S> {
                     return Ok(());
                 }
                 return Err(Error::new(name, ErrorKind::InvalidArgumentName));
+            }
+            if name == "=" {
+                let target = match iter.next() {
+                    Some(next) => format!("={next}"),
+                    None => name.to_string(),
+                };
+                return Err(Error::new(target, ErrorKind::MissingArgumentName));
             }
             if iter.as_str().starts_with('=') {
                 validate(name, ErrorKind::InvalidArgumentName)?;
@@ -188,26 +172,8 @@ impl<'a> Arguments<'a> {
         Words::new(source).try_into()
     }
 
-    pub(crate) fn append(&mut self, iter: Words<'a>) -> crate::Result<()> {
-        self.append_inner::<&str>(iter)
-    }
-
     pub(crate) fn into_scan<D: Decoder>(self, decoder: D) -> OwnedScan<'a, D> {
         OwnedScan::new(decoder, self.positional, self.named)
-    }
-}
-
-impl<'a> Arguments<'a, Cow<'a, str>> {
-    pub(crate) fn append(&mut self, iter: Words<'a>) -> crate::Result<()> {
-        self.append_inner::<&str>(iter)
-    }
-}
-
-impl Arguments<'static, String> {
-    pub(crate) fn append(&mut self, iter: Words<'_>) -> crate::Result<()> {
-        self.append_inner::<String>(iter)?;
-        self.shrink_to_fit();
-        Ok(())
     }
 }
 
@@ -216,7 +182,7 @@ impl<'a> TryFrom<Words<'a>> for Arguments<'a> {
 
     fn try_from(value: Words<'a>) -> crate::Result<Self> {
         let mut this = Self::new();
-        this.append(value)?;
+        this.append_inner::<&str>(value)?;
         Ok(this)
     }
 }
@@ -226,7 +192,7 @@ impl<'a> TryFrom<Words<'a>> for Arguments<'a, Cow<'a, str>> {
 
     fn try_from(value: Words<'a>) -> crate::Result<Self> {
         let mut this = Self::new();
-        this.append(value)?;
+        this.append_inner::<&str>(value)?;
         Ok(this)
     }
 }
@@ -236,7 +202,8 @@ impl TryFrom<Words<'_>> for Arguments<'static, String> {
 
     fn try_from(value: Words<'_>) -> crate::Result<Self> {
         let mut this = Self::new();
-        this.append(value)?;
+        this.append_inner::<String>(value)?;
+        this.shrink_to_fit();
         Ok(this)
     }
 }
