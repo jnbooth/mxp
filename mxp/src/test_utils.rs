@@ -27,18 +27,8 @@ where
 }
 
 #[track_caller]
-pub fn parse_tag_open(source: &str) -> TagOpen<'_> {
-    match Tag::parse(strip_brackets(source), true) {
-        Ok(Tag::Definition(_)) => panic!("expected opening tag, got definition"),
-        Ok(Tag::Close(_)) => panic!("expected opening tag, got closing tag"),
-        Ok(Tag::Open(tag)) => tag,
-        Err(e) => panic!("failed to parse opening tag: {e}"),
-    }
-}
-
-#[track_caller]
 pub fn decode_actions(source: &str, state: &State) -> crate::Result<Vec<Action>> {
-    let tag = parse_tag_open(source);
+    let tag: TagOpen = try_from_node(source);
     match state.get_component(tag.name, true)? {
         Component::AtomicTag(atom) => Ok(vec![atom.decode(&tag.arguments, state)?.into_owned()]),
         Component::Element(el) => el
