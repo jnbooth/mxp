@@ -93,6 +93,11 @@ pub enum ErrorKind {
     /// Example: `<!TAG 3>`
     IllegalLineTag,
 
+    /// An ATTLIST added an attribute with the same name as an existing attribute.
+    ///
+    /// Example: `<!ELEMENT custom ATT='col=red'><ATTLIST custom 'col=blue'>
+    DuplicateAttributeInAttlist,
+
     /// ATTLIST adds attributes to a custom element that was never defined.
     ///
     /// Example: `<!ATTLIST foo>`
@@ -240,6 +245,7 @@ impl fmt::Display for ErrorKind {
             Self::CannotRedefineGlobalEntity => "cannot redefine global entity",
             Self::InvalidDefinition => "invalid definition type",
             Self::IllegalLineTag => "mode out of bounds for user-defined line tags",
+            Self::DuplicateAttributeInAttlist => "duplicate attribute name in attribute list",
             Self::UnknownElementInAttlist => "unrecognized element in attribute list",
             Self::UnsecuredDefinition => "received definition in OPEN mode",
             Self::CloseTagInDefinition => "closing tag inside element definition",

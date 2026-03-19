@@ -190,7 +190,7 @@ pub use color::RgbColor;
 pub(crate) mod display;
 
 pub mod element;
-pub use element::{Action, ActionKind, AtomicTag, Element, ParseAs};
+pub use element::{Action, ActionKind, AtomicTag, AttributeList, Element, ParseAs};
 
 pub mod elements;
 pub use elements::*;

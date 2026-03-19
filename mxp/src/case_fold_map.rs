@@ -23,6 +23,10 @@ impl<'a, V> CaseFoldMap<'a, V> {
         }
     }
 
+    pub fn contains_key(&self, key: &str) -> bool {
+        self.inner.contains_key(UncasedStr::new(key))
+    }
+
     pub fn get(&self, key: &str) -> Option<&V> {
         self.inner.get(UncasedStr::new(key))
     }

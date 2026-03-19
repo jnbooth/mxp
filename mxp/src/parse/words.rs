@@ -32,6 +32,10 @@ impl<'a> Words<'a> {
         }
     }
 
+    pub fn args(self) -> WordArguments<'a> {
+        WordArguments::new(self)
+    }
+
     pub fn parse_args(self) -> crate::Result<Arguments<'a>> {
         self.try_into()
     }
@@ -46,6 +50,10 @@ impl<'a> Words<'a> {
 
     pub fn as_bytes(&self) -> &'a [u8] {
         &self.source.as_bytes()[self.get_offset()..]
+    }
+
+    pub fn next_byte(&self) -> Option<u8> {
+        self.source.as_bytes().get(self.get_offset()).copied()
     }
 
     fn get_offset(&self) -> usize {
@@ -132,6 +140,49 @@ impl<'a> Iterator for Words<'a> {
 
 impl FusedIterator for Words<'_> {}
 
+/// Iterator over the word units of an MXP string, converted into named or unnamed arguments.
+#[must_use = "iterators are lazy and do nothing unless consumed"]
+#[derive(Clone)]
+pub(crate) struct WordArguments<'a> {
+    inner: Words<'a>,
+}
+
+impl<'a> WordArguments<'a> {
+    pub fn new(words: Words<'a>) -> Self {
+        Self { inner: words }
+    }
+}
+
+impl<'a> Iterator for WordArguments<'a> {
+    type Item = crate::Result<(&'a str, Option<&'a str>)>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let name = self.inner.next()?;
+        if name == "=" {
+            return Some(Err(Error::new(
+                format!("={}", self.inner.next().unwrap_or_default()),
+                ErrorKind::MissingArgumentName,
+            )));
+        }
+        if self.inner.next_byte() != Some(b'=') {
+            return Some(Ok((name, None)));
+        }
+        self.inner.next();
+        if let Some(val) = self.inner.next() {
+            return Some(Ok((name, Some(val))));
+        }
+        Some(Err(Error::new(
+            format!("{name}="),
+            ErrorKind::EmptyArgument,
+        )))
+    }
+
+    // A generous size hint reflecting the total number of spaces in the string.
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -168,5 +219,20 @@ mod tests {
             "{",
         ];
         assert_eq!(show_words(Words::new(unwords)), show_words(words));
+    }
+
+    #[test]
+    fn args() {
+        let words = Words::new("EL RName '<FONT COLOR=Red><B>' FLAG=\"RoomName\"");
+        let args = words.args().collect::<Result<Vec<_>, _>>().unwrap();
+        assert_eq!(
+            args,
+            &[
+                ("EL", None),
+                ("RName", None),
+                ("<FONT COLOR=Red><B>", None),
+                ("FLAG", Some("RoomName")),
+            ]
+        );
     }
 }

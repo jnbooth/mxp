@@ -105,34 +105,18 @@ impl<'a, S: AsRef<str>> Arguments<'a, S> {
         self.positional.shrink_to_fit();
     }
 
-    fn append_inner<'b, T>(&mut self, mut iter: Words<'b>) -> crate::Result<()>
+    fn append<'b, T>(&mut self, iter: Words<'b>) -> crate::Result<()>
     where
         T: From<&'b str> + Into<S> + Into<Uncased<'a>>,
     {
         let generous_size_guess = iter.size_hint().1.unwrap();
         self.named.reserve(generous_size_guess);
         self.positional.reserve(generous_size_guess);
-        while let Some(name) = iter.next() {
-            if name == "/" {
-                if iter.next().is_none() {
-                    return Ok(());
-                }
-                return Err(Error::new(name, ErrorKind::InvalidArgumentName));
-            }
-            if name == "=" {
-                let target = match iter.next() {
-                    Some(next) => format!("={next}"),
-                    None => name.to_string(),
-                };
-                return Err(Error::new(target, ErrorKind::MissingArgumentName));
-            }
-            if iter.as_str().starts_with('=') {
+        for entry in iter.args() {
+            let (name, value) = entry?;
+            if let Some(value) = value {
                 validate(name, ErrorKind::InvalidArgumentName)?;
-                iter.next();
-                let val = iter
-                    .next()
-                    .ok_or_else(|| Error::new(format!("{name}="), ErrorKind::EmptyArgument))?;
-                self.named.insert(T::from(name), T::from(val).into());
+                self.named.insert(T::from(name), T::from(value).into());
             } else {
                 self.positional.push(T::from(name).into());
             }
@@ -182,7 +166,7 @@ impl<'a> TryFrom<Words<'a>> for Arguments<'a> {
 
     fn try_from(value: Words<'a>) -> crate::Result<Self> {
         let mut this = Self::new();
-        this.append_inner::<&str>(value)?;
+        this.append::<&str>(value)?;
         Ok(this)
     }
 }
@@ -192,7 +176,7 @@ impl<'a> TryFrom<Words<'a>> for Arguments<'a, Cow<'a, str>> {
 
     fn try_from(value: Words<'a>) -> crate::Result<Self> {
         let mut this = Self::new();
-        this.append_inner::<&str>(value)?;
+        this.append::<&str>(value)?;
         Ok(this)
     }
 }
@@ -202,7 +186,7 @@ impl TryFrom<Words<'_>> for Arguments<'static, String> {
 
     fn try_from(value: Words<'_>) -> crate::Result<Self> {
         let mut this = Self::new();
-        this.append_inner::<String>(value)?;
+        this.append::<String>(value)?;
         this.shrink_to_fit();
         Ok(this)
     }
