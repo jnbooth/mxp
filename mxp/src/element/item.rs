@@ -28,8 +28,9 @@ impl ElementItem {
             _ => (),
         }
         if let Some(tag) = AtomicTag::well_known(tag_name) {
-            let arguments = words.try_into()?;
+            let mut arguments = words.try_into()?;
             tag.check_arguments(&arguments)?;
+            arguments.shrink_to_fit();
             return Ok(Self { tag, arguments });
         }
         crate::validate(tag_name, ErrorKind::InvalidElementName)?;

@@ -23,6 +23,12 @@ impl<'a, V> CaseFoldMap<'a, V> {
         }
     }
 
+    pub fn with_capacity(capacity: usize) -> Self {
+        Self {
+            inner: HashMap::with_capacity(capacity),
+        }
+    }
+
     pub fn contains_key(&self, key: &str) -> bool {
         self.inner.contains_key(UncasedStr::new(key))
     }

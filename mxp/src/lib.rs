@@ -161,18 +161,15 @@
 //! [`Tag::parse`] allocates memory if it parses a custom element definition (as
 //! [`node::ElementDefinition`]), which needs to use owned strings because custom elements are
 //! stored long-term in state. Otherwise, it only allocates memory to parse arguments passed to
-//! an opening tag (as [`node::TagOpen`]), as described in the next paragraph.
-//!
-//! [`Arguments`] parsing allocates a `Vec<&'a str>` and `HashMap<&'a str, &'a str>` for positional
-//! and named arguments respectively. Both use generous size guesses (based on the number of spaces
-//! in the string) in order to prevent reallocations. [`Arguments`] are ephemeral structs that drop
-//! as soon as they are done being used to decode tags.
+//! an opening tag (as [`node::TagOpen`]), and most MXP tags do not have arguments, so no allocation
+//! occurs.
 //!
 //! Tag decoding (via [`AtomicTag::decode`] and [`Element::decode`]) uses [`Cow`]s because
 //! attributes may contain entities, in which case they must be decoded to owned strings in order to
 //! replace entities with their definitions (e.g. replacing `"&lt;"` with `"<"`). If the MXP string
 //! does not contain entities, no allocations are performed.
 //!
+//! [triple-r]: https://docs.rs/triple-r/latest/triple_r/index.html
 //! [`Cow`]: std::borrow::Cow
 
 #[macro_use]

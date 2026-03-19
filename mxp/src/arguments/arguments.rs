@@ -16,6 +16,9 @@ use crate::{Error, ErrorKind};
 /// `<SOUND "ouch.wav" 50 T="combat" 2 P=80>`, `"ouch.wav"`, `50`, and `2` are positional arguments,
 /// and `T="combat"` and `P=80` are named arguments.
 ///
+/// Note: Although `Arguments` has a public API, it is unlikely that a client will need to do
+/// anything with `Arguments` beyond parsing them from text and passing them to mxp functions.
+///
 /// See [MXP specification: Attributes](https://www.zuggsoft.com/zmud/mxp.htm#ATTLIST).
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Arguments<'a, S = &'a str> {
@@ -38,17 +41,23 @@ impl<'a, S> Arguments<'a, S> {
         }
     }
 
-    /// Returns `true` if there are no parsed arguments.
+    /// Returns `true` if there are no arguments.
     pub fn is_empty(&self) -> bool {
         self.positional.is_empty() && self.named.is_empty()
     }
 
-    /// Finds the positional value at a specified index.
+    /// Removes all arguments.
+    pub fn clear(&mut self) {
+        self.named.clear();
+        self.positional.clear();
+    }
+
+    /// Finds the value of a positional argument at a specified index.
     pub fn at(&self, i: usize) -> Option<&S> {
         self.positional.get(i)
     }
 
-    /// Finds the value associated with a named key.
+    /// Finds the value of a named argument associated with the specified key.
     pub fn get(&self, name: &str) -> Option<&S> {
         self.named.get(name)
     }
@@ -95,7 +104,7 @@ impl<'a, S> Arguments<'a, S> {
     }
 }
 
-impl<'a, S: AsRef<str>> Arguments<'a, S> {
+impl<S: AsRef<str>> Arguments<'_, S> {
     pub(crate) fn scan<D: Decoder>(&self, decoder: D) -> Scan<'_, D, S> {
         Scan::new(decoder, &self.positional, &self.named)
     }
@@ -103,25 +112,6 @@ impl<'a, S: AsRef<str>> Arguments<'a, S> {
     pub(crate) fn shrink_to_fit(&mut self) {
         self.named.shrink_to_fit();
         self.positional.shrink_to_fit();
-    }
-
-    fn append<'b, T>(&mut self, iter: Words<'b>) -> crate::Result<()>
-    where
-        T: From<&'b str> + Into<S> + Into<Uncased<'a>>,
-    {
-        let generous_size_guess = iter.size_hint().1.unwrap();
-        self.named.reserve(generous_size_guess);
-        self.positional.reserve(generous_size_guess);
-        for entry in iter.args() {
-            let (name, value) = entry?;
-            if let Some(value) = value {
-                validate(name, ErrorKind::InvalidArgumentName)?;
-                self.named.insert(T::from(name), T::from(value).into());
-            } else {
-                self.positional.push(T::from(name).into());
-            }
-        }
-        Ok(())
     }
 }
 
@@ -161,34 +151,26 @@ impl<'a> Arguments<'a> {
     }
 }
 
-impl<'a> TryFrom<Words<'a>> for Arguments<'a> {
+impl<'a, 'b, S> TryFrom<Words<'b>> for Arguments<'a, S>
+where
+    S: From<&'b str> + Into<Cow<'a, str>>,
+{
     type Error = Error;
 
-    fn try_from(value: Words<'a>) -> crate::Result<Self> {
-        let mut this = Self::new();
-        this.append::<&str>(value)?;
-        Ok(this)
-    }
-}
-
-impl<'a> TryFrom<Words<'a>> for Arguments<'a, Cow<'a, str>> {
-    type Error = Error;
-
-    fn try_from(value: Words<'a>) -> crate::Result<Self> {
-        let mut this = Self::new();
-        this.append::<&str>(value)?;
-        Ok(this)
-    }
-}
-
-impl TryFrom<Words<'_>> for Arguments<'static, String> {
-    type Error = Error;
-
-    fn try_from(value: Words<'_>) -> crate::Result<Self> {
-        let mut this = Self::new();
-        this.append::<String>(value)?;
-        this.shrink_to_fit();
-        Ok(this)
+    fn try_from(words: Words<'b>) -> crate::Result<Self> {
+        let generous_size_guess = words.size_hint().1.unwrap();
+        let mut positional = Vec::with_capacity(generous_size_guess);
+        let mut named = CaseFoldMap::with_capacity(generous_size_guess);
+        for entry in words.args() {
+            let (name, value) = entry?;
+            if let Some(value) = value {
+                validate(name, ErrorKind::InvalidArgumentName)?;
+                named.insert(S::from(name).into(), S::from(value));
+            } else {
+                positional.push(S::from(name));
+            }
+        }
+        Ok(Self { positional, named })
     }
 }
 

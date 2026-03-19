@@ -13,8 +13,8 @@ struct Attribute {
 
 // Note: this count may be incorrect if the arguments are poorly formed (.e.g "==="), but that's
 // fine because the list won't be completely constructed in that case anyway.
-fn count_args(iter: Words) -> usize {
-    let (count, _) = iter.fold((0, false), |(count, in_named), word| {
+fn count_args(words: Words) -> usize {
+    let (count, _) = words.fold((0, false), |(count, in_named), word| {
         if in_named {
             return (count, false);
         }
@@ -141,10 +141,10 @@ impl AttributeList {
     }
 
     /// Adds attributes to the list from parsed arguments.
-    pub(crate) fn append(&mut self, iter: Words) -> crate::Result<()> {
-        let size = count_args(iter.clone());
+    pub(crate) fn append(&mut self, words: Words) -> crate::Result<()> {
+        let size = count_args(words.clone());
         self.attributes.reserve(size);
-        for entry in iter.args() {
+        for entry in words.args() {
             let (name, value) = entry?;
             validate(name, ErrorKind::InvalidArgumentName)?;
             if self.attributes.contains_key(name) {
