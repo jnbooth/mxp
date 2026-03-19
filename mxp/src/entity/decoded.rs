@@ -1,14 +1,21 @@
+use std::borrow::Cow;
 use std::fmt;
 
 /// A decoded MXP entity, either standard or server-defined.
 ///
 /// See [MXP specification: Entities](https://www.zuggsoft.com/zmud/mxp.htm#ENTITY).
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub enum DecodedEntity<'a> {
     /// A standard XML entity, such as `&amp;` or `&#032;`.
     Standard(char),
     /// A custom MXP entity defined by the server.
-    Custom(&'a str),
+    Custom(Cow<'a, str>),
+}
+
+impl Default for DecodedEntity<'_> {
+    fn default() -> Self {
+        Self::Custom(Cow::Borrowed(""))
+    }
 }
 
 impl<'a> DecodedEntity<'a> {
@@ -21,7 +28,7 @@ impl<'a> DecodedEntity<'a> {
     ///
     /// let mut buf = String::new();
     /// DecodedEntity::Standard('>').push_to(&mut buf);
-    /// DecodedEntity::Custom("Warrior").push_to(&mut buf);
+    /// DecodedEntity::Custom("Warrior".into()).push_to(&mut buf);
     /// assert_eq!(buf, ">Warrior");
     /// ```
     ///
@@ -33,7 +40,7 @@ impl<'a> DecodedEntity<'a> {
     ///
     /// # fn test() -> std::fmt::Result {
     /// let mut buf = String::new();
-    /// write!(buf, "{}{}", DecodedEntity::Standard('>'), DecodedEntity::Custom("Warrior"))?;
+    /// write!(buf, "{}{}", DecodedEntity::Standard('>'), DecodedEntity::Custom("Warrior".into()))?;
     /// assert_eq!(buf, ">Warrior");
     /// # Ok(())
     /// # }
@@ -42,18 +49,18 @@ impl<'a> DecodedEntity<'a> {
     pub fn push_to(self, buf: &mut String) {
         match self {
             Self::Standard(c) => buf.push(c),
-            Self::Custom(s) => buf.push_str(s),
+            Self::Custom(s) => buf.push_str(&s),
         }
     }
 
-    /// If this entity is a `&'static str` ([`Self::Custom`]), the entity is returned directly.
-    /// If this entity is a `char` ([`Self::Standard`]), encodes the character as UTF-8 into the
+    /// If this entity is a string ([`Self::Custom`]), the entity is returned directly.
+    /// If this entity is a character ([`Self::Standard`]), encodes the character as UTF-8 into the
     /// provided byte buffer, and then returns the subslice of the buffer that contains the encoded
     /// character.
     ///
     /// See [`char::encode_utf8`].
     #[inline]
-    pub fn encode(self, buf: &'a mut [u8]) -> &'a str {
+    pub fn encode(&'a self, buf: &'a mut [u8]) -> &'a str {
         match self {
             Self::Standard(c) => c.encode_utf8(buf),
             Self::Custom(s) => s,
@@ -71,7 +78,21 @@ impl From<char> for DecodedEntity<'_> {
 impl<'a> From<&'a str> for DecodedEntity<'a> {
     #[inline]
     fn from(value: &'a str) -> Self {
+        Self::Custom(value.into())
+    }
+}
+
+impl<'a> From<Cow<'a, str>> for DecodedEntity<'a> {
+    #[inline]
+    fn from(value: Cow<'a, str>) -> Self {
         Self::Custom(value)
+    }
+}
+
+impl From<String> for DecodedEntity<'_> {
+    #[inline]
+    fn from(value: String) -> Self {
+        Self::Custom(value.into())
     }
 }
 

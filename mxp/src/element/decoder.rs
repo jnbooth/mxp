@@ -7,6 +7,7 @@ use super::element::Element;
 use super::item::ElementItem;
 use crate::arguments::Arguments;
 use crate::element::AttributeList;
+use crate::entity::DecodedEntity;
 use crate::parse::Decoder;
 
 #[derive(Copy, Clone, Debug)]
@@ -16,11 +17,21 @@ struct DecodeElement<'a, D: Decoder> {
     args: &'a Arguments<'a>,
 }
 
+impl<'a, D: Decoder> DecodeElement<'a, D> {
+    fn find(&self, name: &str) -> Option<&'a str> {
+        self.attributes.find(name, self.args)
+    }
+}
+
 impl<D: Decoder> Decoder for DecodeElement<'_, D> {
     fn get_entity(&self, name: &str) -> Option<&str> {
-        match self.attributes.find(name, self.args) {
-            Some(attr) => Some(attr),
-            None => self.decoder.get_entity(name),
+        self.find(name).or_else(|| self.decoder.get_entity(name))
+    }
+
+    fn decode_entity(&self, name: &str) -> crate::Result<DecodedEntity<'_>> {
+        match self.find(name) {
+            Some(attr) => Ok(self.decoder.decode_string(attr)?.into()),
+            None => self.decoder.decode_entity(name),
         }
     }
 }

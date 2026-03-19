@@ -30,10 +30,19 @@ pub struct AttributeList {
 }
 
 impl AttributeList {
+    /// Constructs a new, empty attribute list.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Returns true if the list contains no elements.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut attrs = mxp::AttributeList::new();
+    /// assert!(attrs.is_empty());
+    /// ```
     pub fn is_empty(&self) -> bool {
         self.attributes.is_empty()
     }
@@ -52,16 +61,15 @@ impl AttributeList {
 
     /// Finds the value of an entity, using an element's attribute list to identify arguments
     /// and provide default values.
-    pub(crate) fn find<'a>(&'a self, entity: &str, args: &Arguments<'a>) -> Option<&'a str> {
-        if let Some(from_user) = args.get(entity) {
-            return Some(from_user);
+    pub(crate) fn find<'a>(&'a self, name: &str, args: &Arguments<'a>) -> Option<&'a str> {
+        if let Some(entity) = args.get(name) {
+            return Some(entity);
         }
-        if let Some(index) = self.position(entity)
-            && let Some(from_user) = args.at(index)
-        {
-            return Some(from_user);
+        let attribute = self.attributes.get(name)?;
+        if let Some(entity) = args.at(attribute.position) {
+            return Some(entity);
         }
-        self.get(entity)
+        attribute.value.as_deref()
     }
 
     pub(crate) fn append(&mut self, iter: Words) -> crate::Result<()> {

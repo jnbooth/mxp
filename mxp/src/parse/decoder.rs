@@ -32,7 +32,7 @@ pub trait Decoder {
         match char::from_u32(code) {
             Some('\0'..='\x08' | '\x0a'..='\x1f' | '\x7f'..='\u{9f}') | None => {
                 // ignored per MXP standard
-                Ok(DecodedEntity::Custom(""))
+                Ok(DecodedEntity::default())
             }
             Some(c) => Ok(c.into()),
         }
