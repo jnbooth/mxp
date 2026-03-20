@@ -16,7 +16,7 @@ bytestringmut = "1.0.0"
 flagset = { workspace = true }
 flate2 = "1.1.5"
 html-escape = { workspace = true }
-mxp = "1.0"
+mxp = { path = '../mxp' }
 serde = { workspace = true, features = ["derive"], optional = true }
 
 [dev-dependencies]
