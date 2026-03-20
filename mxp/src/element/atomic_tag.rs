@@ -194,7 +194,10 @@ impl AtomicTag {
         "height",
         "scrolling",
         "internal",
+        "external",
+        "persistent",
         "floating",
+        "dock",
     );
     const GAUGE: AtomicTag = tag!("GAUGE", Gauge, "max", "caption", "color");
     const H: AtomicTag = tag!("H", Highlight);

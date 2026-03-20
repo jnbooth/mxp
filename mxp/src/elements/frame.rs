@@ -25,12 +25,63 @@ pub enum FrameAction {
 impl_parse_enum!(FrameAction, Open, Close, Redirect);
 impl_display_enum!(FrameAction, Open, Close, Redirect);
 
+/// Alignment of an on-screen item.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub enum FrameAlign {
+    #[default]
+    Top,
+    Bottom,
+    Left,
+    Right,
+    Middle,
+    /// Indicates that the frame should be grouped into a tab with its parent (docked) window.
+    Client,
+}
+
+impl_parse_enum!(FrameAlign, Top, Bottom, Left, Right, Middle, Client);
+
+impl fmt::Display for FrameAlign {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
+
+impl From<Align> for FrameAlign {
+    fn from(value: Align) -> Self {
+        match value {
+            Align::Top => Self::Top,
+            Align::Bottom => Self::Bottom,
+            Align::Left => Self::Left,
+            Align::Right => Self::Right,
+            Align::Middle => Self::Middle,
+        }
+    }
+}
+
+impl TryFrom<FrameAlign> for Align {
+    type Error = UnrecognizedVariant<Self>;
+
+    fn try_from(value: FrameAlign) -> Result<Self, Self::Error> {
+        match value {
+            FrameAlign::Top => Ok(Self::Top),
+            FrameAlign::Bottom => Ok(Self::Bottom),
+            FrameAlign::Left => Ok(Self::Left),
+            FrameAlign::Right => Ok(Self::Right),
+            FrameAlign::Middle => Ok(Self::Middle),
+            FrameAlign::Client => Err(Self::Error::new("Client")),
+        }
+    }
+}
+
 /// Alignment and position of a [`Frame`], which may either be an external (floating) frame or
 /// an internal (docked) frame.
 ///
-/// See [MXP specification: `<FRAME>`](https://www.zuggsoft.com/zmud/mxp.htm#Frames).
+/// See [MXP specification: `<FRAME>`] and the additions documented in [`MUD Standards: Frames`].
+///
+/// [MXP specification: `<FRAME>`]: https://www.zuggsoft.com/zmud/mxp.htm#Frames
+/// [`MUD Standards: Frames`]: https://mudstandards.org/mud/mxp/#frames
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum FrameLayout {
+pub enum FrameLayout<S> {
     /// Specifies that the frame is a floating frame.
     External {
         /// The coordinate of the left side of the frame. If a negative number is used, it means
@@ -39,21 +90,27 @@ pub enum FrameLayout {
         /// The coordinate of the top of the frame. If a negative value is used, it means the frame
         /// is relative to the bottom of the screen instead of the top.
         top: Dimension<i32>,
-        /// The width of the frame.
+        /// The width of the frame. Percentage is calculated relative to screen width.
         width: Option<Dimension<u32>>,
-        /// The height of the frame.
+        /// The height of the frame. Percentage is calculated relative to screen height.
         height: Option<Dimension<u32>>,
         /// Forces the frame to "stay on top" of the main MUD window.
         floating: bool,
     },
-    /// Specifies that the frame is internal to the current MUD window.
+    /// Specifies that the frame is internal to another window.
     Internal {
         /// Specifies how the frame is docked with the MUD window.
-        align: Align,
+        align: FrameAlign,
+        /// The width of the frame. Percentage is calculated relative to main window width.
+        width: Option<Dimension<u32>>,
+        /// The height of the frame. Percentage is calculated relative to main window height.
+        height: Option<Dimension<u32>>,
+        /// Name of the window to dock into. If omitted, defaults to the main MUD window.
+        dock: Option<S>,
     },
 }
 
-impl Default for FrameLayout {
+impl<S> Default for FrameLayout<S> {
     fn default() -> Self {
         Self::External {
             left: Dimension::pixels(0),
@@ -65,6 +122,73 @@ impl Default for FrameLayout {
     }
 }
 
+impl<S> FrameLayout<S> {
+    /// Applies a type transformation to all text, returning a new struct.
+    pub fn map_text<T, F>(self, f: F) -> FrameLayout<T>
+    where
+        F: FnOnce(S) -> T,
+    {
+        match self {
+            Self::External {
+                left,
+                top,
+                width,
+                height,
+                floating,
+            } => FrameLayout::External {
+                left,
+                top,
+                width,
+                height,
+                floating,
+            },
+            Self::Internal {
+                align,
+                width,
+                height,
+                dock,
+            } => FrameLayout::Internal {
+                align,
+                width,
+                height,
+                dock: dock.map(f),
+            },
+        }
+    }
+}
+
+impl<S: AsRef<str>> FrameLayout<S> {
+    /// Applies a type transformation to all text, returning a new struct.
+    pub fn borrow_text(&self) -> FrameLayout<&str> {
+        match *self {
+            Self::External {
+                left,
+                top,
+                width,
+                height,
+                floating,
+            } => FrameLayout::External {
+                left,
+                top,
+                width,
+                height,
+                floating,
+            },
+            Self::Internal {
+                align,
+                width,
+                height,
+                ref dock,
+            } => FrameLayout::Internal {
+                align,
+                width,
+                height,
+                dock: dock.as_ref().map(AsRef::as_ref),
+            },
+        }
+    }
+}
+
 /// A separate browser window region with its own HTML document.
 ///
 /// See [MXP specification: `<FRAME>`](https://www.zuggsoft.com/zmud/mxp.htm#Frames).
@@ -72,7 +196,7 @@ impl Default for FrameLayout {
 /// # Examples
 ///
 /// ```
-/// use mxp::{Align, Dimension, FrameAction, FrameLayout};
+/// use mxp::{FrameAlign, Dimension, FrameAction, FrameLayout};
 ///
 /// assert_eq!(
 ///     "<FRAME NAME=Map LEFT=-20c TOP=0 WIDTH=20c HEIGHT=20c>".parse::<mxp::Frame>(),
@@ -81,6 +205,7 @@ impl Default for FrameLayout {
 ///         action: FrameAction::Open,
 ///         title: "Map".into(),
 ///         scrolling: false,
+///         persistent: false,
 ///         layout: FrameLayout::External {
 ///             left: Dimension::character_spacing(-20),
 ///             top: Dimension::pixels(0),
@@ -98,8 +223,12 @@ impl Default for FrameLayout {
 ///         action: FrameAction::Redirect,
 ///         title: "Tells".into(),
 ///         scrolling: true,
+///         persistent: false,
 ///         layout: FrameLayout::Internal {
-///             align: Align::Top,
+///             align: FrameAlign::Top,
+///             width: None,
+///             height: None,
+///             dock: None,
 ///         },
 ///     }),
 /// );
@@ -113,10 +242,13 @@ pub struct Frame<S = String> {
     pub action: FrameAction,
     /// Specifies the full caption of the frame.
     pub title: S,
+    /// Frame layout.
+    pub layout: FrameLayout<S>,
     /// Determines whether the frame is allowed to scroll.
     pub scrolling: bool,
-    /// Frame layout.
-    pub layout: FrameLayout,
+    /// Existing windows/frames are not changed in size or position. So the specified
+    /// top/left/width/height attributes only take effect when creating a new frame.
+    pub persistent: bool,
 }
 
 impl<S> Frame<S> {
@@ -129,8 +261,9 @@ impl<S> Frame<S> {
             name: f(self.name),
             action: self.action,
             title: f(self.title),
+            layout: self.layout.map_text(f),
             scrolling: self.scrolling,
-            layout: self.layout,
+            persistent: self.persistent,
         }
     }
 }
@@ -144,8 +277,9 @@ impl<S: AsRef<str>> Frame<S> {
             name: self.name.as_ref(),
             action: self.action,
             title: self.title.as_ref(),
+            layout: self.layout.borrow_text(),
             scrolling: self.scrolling,
-            layout: self.layout,
+            persistent: self.persistent,
         }
     }
 }
@@ -190,9 +324,15 @@ impl<'a> Frame<Cow<'a, str>> {
         let height = scanner.decode_next_or("height")?.expect_number()?;
         let scrolling =
             scanner.decode_next_or("scrolling")?.expect_variant()? == Some(YesOrNo::Yes);
+        let dock = scanner.decode_next_or("dock")?;
         let keywords = scanner.into_keywords()?;
-        let layout = if keywords.contains(FrameKeyword::Internal) {
-            FrameLayout::Internal { align }
+        let layout = if keywords.contains(FrameKeyword::Internal) || dock.is_some() {
+            FrameLayout::Internal {
+                dock,
+                align,
+                width,
+                height,
+            }
         } else {
             FrameLayout::External {
                 left,
@@ -206,8 +346,9 @@ impl<'a> Frame<Cow<'a, str>> {
             name,
             action,
             title,
-            scrolling,
             layout,
+            scrolling,
+            persistent: keywords.contains(FrameKeyword::Persistent),
         })
     }
 }
@@ -220,8 +361,9 @@ impl<S: AsRef<str>> fmt::Display for Frame<S> {
             name,
             action,
             title,
-            scrolling,
             layout,
+            scrolling,
+            persistent,
         } = self.borrow_text().map_text(crate::display::Escape);
         write!(f, "<FRAME NAME={name}")?;
         match action {
@@ -232,9 +374,6 @@ impl<S: AsRef<str>> fmt::Display for Frame<S> {
         if title != name {
             write!(f, " TITLE={title}")?;
         }
-        if scrolling {
-            f.write_str(" SCROLLING=yes")?;
-        }
         match layout {
             FrameLayout::External {
                 left,
@@ -244,26 +383,47 @@ impl<S: AsRef<str>> fmt::Display for Frame<S> {
                 floating,
             } => {
                 if left.amount != 0 {
-                    write!(f, " LEFT=\"{left}\"")?;
+                    write!(f, " LEFT={left}")?;
                 }
                 if top.amount != 0 {
-                    write!(f, " TOP=\"{top}\"")?;
+                    write!(f, " TOP={top}")?;
                 }
                 if let Some(width) = width {
-                    write!(f, " WIDTH=\"{width}\"")?;
+                    write!(f, " WIDTH={width}")?;
                 }
                 if let Some(height) = height {
-                    write!(f, " HEIGHT=\"{height}\"")?;
+                    write!(f, " HEIGHT={height}")?;
                 }
                 if floating {
                     f.write_str(" FLOATING")?;
                 }
             }
-            FrameLayout::Internal { align } => {
-                if align != Align::default() {
+            FrameLayout::Internal {
+                align,
+                width,
+                height,
+                dock,
+            } => {
+                if align != FrameAlign::default() {
                     write!(f, " ALIGN={align}")?;
                 }
+                if let Some(width) = width {
+                    write!(f, " WIDTH={width}")?;
+                }
+                if let Some(height) = height {
+                    write!(f, " HEIGHT={height}")?;
+                }
+                match dock {
+                    Some(dock) => write!(f, " DOCK={dock}")?,
+                    None => write!(f, " INTERNAL")?,
+                }
             }
+        }
+        if scrolling {
+            f.write_str(" SCROLLING=yes")?;
+        }
+        if persistent {
+            f.write_str(" PERSISTENT")?;
         }
         f.write_str(">")
     }

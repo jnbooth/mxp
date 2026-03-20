@@ -30,6 +30,7 @@
 //!         action: FrameAction::Open,
 //!         title: "Map".into(),
 //!         scrolling: false,
+//!         persistent: false,
 //!         layout: FrameLayout::External {
 //!             left: Dimension::character_spacing(-20),
 //!             top: Dimension::pixels(0),

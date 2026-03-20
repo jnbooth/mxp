@@ -40,6 +40,8 @@ flags! {
     pub(crate) enum FrameKeyword: u8 {
         Floating,
         Internal,
+        External,
+        Persistent,
     }
 
     /// Keywords for [`<IMAGE>`](crate::Image) tags.
@@ -72,7 +74,7 @@ impl_parse_enum!(ElementKeyword, Open, Empty, Delete);
 impl_parse_enum!(EntityKeyword, Private, Publish, Delete, Add, Remove);
 impl_display_enum!(EntityKeyword, Private, Publish, Delete, Add, Remove);
 
-impl_parse_enum!(FrameKeyword, Floating, Internal);
+impl_parse_enum!(FrameKeyword, Floating, Internal, External, Persistent);
 
 impl_parse_enum!(ImageKeyword, IsMap);
 

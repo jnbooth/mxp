@@ -23,7 +23,7 @@ mod heading;
 pub use heading::Heading;
 
 mod frame;
-pub use frame::{Frame, FrameAction, FrameLayout};
+pub use frame::{Frame, FrameAction, FrameAlign, FrameLayout};
 
 mod gauge;
 pub use gauge::Gauge;
