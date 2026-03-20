@@ -36,6 +36,7 @@ impl<'a> TagBuilder<'a> {
             tag: TagOpen {
                 name,
                 arguments: Arguments::default(),
+                empty: false,
             },
         }
     }
@@ -120,6 +121,12 @@ impl<'a> TagBuilder<'a> {
             let (k, v) = entry.borrow();
             (*k.borrow(), escape(*v.borrow()))
         }));
+        self
+    }
+
+    /// Tag will end with a `'/'` character, indicating that is empty.
+    pub fn set_empty(&mut self, empty: bool) -> &mut Self {
+        self.tag.empty = empty;
         self
     }
 }

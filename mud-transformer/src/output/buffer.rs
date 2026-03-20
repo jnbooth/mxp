@@ -10,6 +10,7 @@ use super::{
     ControlFragment, Link, Output, OutputDrain, OutputFragment, TelnetFragment, TextFragment,
     TextStyle, VariableFragment,
 };
+use crate::output::MapperFragment;
 use crate::responses::SgrReport;
 use crate::term::{TermColor, XTermPalette};
 
@@ -38,6 +39,8 @@ pub(crate) struct BufferedOutput {
     cursor: usize,
     in_variable: bool,
     variable: ByteStringMut,
+    in_parse_as: bool,
+    parse_as: ByteStringMut,
 }
 
 impl BufferedOutput {
@@ -123,7 +126,14 @@ impl BufferedOutput {
         }
         for _ in 0..times {
             self.text_buf.push_str(text);
-            if self.in_variable {
+        }
+        if self.in_parse_as {
+            for _ in 0..times {
+                self.parse_as.push_str(text);
+            }
+        }
+        if self.in_variable {
+            for _ in 0..times {
                 self.variable.push_str(text);
             }
         }
@@ -263,6 +273,9 @@ impl BufferedOutput {
     #[inline]
     pub fn append_char(&mut self, output: char) {
         self.text_buf.push(output);
+        if self.in_parse_as {
+            self.parse_as.push(output);
+        }
         if self.in_variable {
             self.variable.push(output);
         }
@@ -270,6 +283,9 @@ impl BufferedOutput {
 
     pub fn append_text(&mut self, output: &str) {
         self.text_buf.push_str(output);
+        if self.in_parse_as {
+            self.parse_as.push_str(output);
+        }
         if self.in_variable {
             self.variable.push_str(output);
         }
@@ -333,17 +349,38 @@ impl BufferedOutput {
         if active_span == Some(&span) {
             return None;
         }
-        if !self.in_variable {
+        if !self.in_parse_as && !self.in_variable {
             if !self.text_buf.is_empty() {
                 let text = self.take_buf();
                 self.append(self.flush_with(text, &span));
             }
             return None;
         }
-        self.in_variable =
-            active_span.is_some_and(|span| span.entity.is_some() || span.variable.is_some());
-        let set_entity = span.entity.take();
-        let set_variable = span.variable.take();
+        let mut set_parse_as = span.parse_as.take();
+        let mut set_entity = span.entity.take();
+        let mut set_variable = span.variable.take();
+        self.in_parse_as = false;
+        self.in_variable = false;
+        if let Some(active_span) = &active_span {
+            if active_span.parse_as.is_some() {
+                self.in_parse_as = true;
+                if set_parse_as == active_span.parse_as {
+                    set_parse_as = None;
+                }
+            }
+            if active_span.entity.is_some() {
+                self.in_variable = true;
+                if set_entity == active_span.entity {
+                    set_entity = None;
+                }
+            }
+            if active_span.variable.is_some() {
+                self.in_variable = true;
+                if set_variable == active_span.variable {
+                    set_variable = None;
+                }
+            }
+        }
         let need_flush = !self.text_buf.is_empty()
             && match active_span {
                 Some(active_span) => span != *active_span,
@@ -352,6 +389,10 @@ impl BufferedOutput {
         if need_flush {
             let text = self.take_buf();
             self.append(self.flush_with(text, &span));
+        }
+        if let Some(parse_as) = set_parse_as {
+            let value = self.parse_as.split().freeze();
+            self.append(MapperFragment { parse_as, value });
         }
         if set_entity.is_none() && set_variable.is_none() {
             return None;
@@ -362,10 +403,8 @@ impl BufferedOutput {
             self.variable.push_str(&variable);
         }
         if let Some(name) = set_variable {
-            self.append(VariableFragment {
-                name,
-                value: variable.clone(),
-            });
+            let value = variable.clone();
+            self.append(VariableFragment { name, value });
         }
         Some((set_entity?, variable))
     }
@@ -485,6 +524,7 @@ impl BufferedOutput {
     }
 
     pub fn set_mxp_parse_as(&mut self, parse_as: mxp::ParseAs) {
+        self.in_parse_as = true;
         if self.spans.set_parse_as(parse_as, self.text_buf.is_empty()) {
             self.flush_mxp();
         }

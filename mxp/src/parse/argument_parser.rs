@@ -12,11 +12,8 @@ pub(crate) struct ArgumentParser<'a> {
 
 impl<'a> ArgumentParser<'a> {
     pub fn new(source: &'a str) -> Self {
-        let bytes = match source.as_bytes() {
-            [bytes @ .., b'/'] | bytes => bytes,
-        };
         Self {
-            inner: bytes.iter(),
+            inner: source.as_bytes().iter(),
         }
     }
 

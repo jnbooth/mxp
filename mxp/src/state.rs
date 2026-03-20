@@ -2,7 +2,7 @@ use std::borrow::Cow;
 
 use crate::CaseFoldMap;
 use crate::arguments::Arguments;
-use crate::element::{Action, AtomicTag, Element, ElementDecoder};
+use crate::element::{Action, AtomicTag, Element, ElementFlag};
 use crate::elements::Var;
 use crate::entity::{DecodedEntity, EntityEntry, EntityMap, PublishedIter};
 use crate::line::{LineTag, LineTags, Mode};
@@ -118,15 +118,6 @@ impl State {
     /// See [`EntityMap::len`].
     pub fn custom_entities_len(&self) -> usize {
         self.entities.len()
-    }
-
-    /// Decodes the actions of an element, using the specified arguments.
-    pub fn decode_element<'a>(
-        &'a self,
-        element: &'a Element,
-        args: &'a Arguments<'a>,
-    ) -> ElementDecoder<'a, &'a State> {
-        element.decode(args, self)
     }
 
     /// Decodes the value of an entity.
@@ -254,7 +245,7 @@ impl Component<'_> {
     pub const fn is_command(&self) -> bool {
         match self {
             Self::AtomicTag(tag) => tag.action.is_command(),
-            Self::Element(el) => el.command,
+            Self::Element(el) => el.empty,
         }
     }
 
@@ -266,14 +257,11 @@ impl Component<'_> {
         }
     }
 
-    /// Returns the element's variable name, if it has one.
-    pub const fn variable(&self) -> Option<&str> {
+    /// Returns the element's flag, if it has one.
+    pub const fn flag(&self) -> Option<&ElementFlag> {
         match self {
             Self::AtomicTag(_) => None,
-            Self::Element(el) => match &el.variable {
-                Some(name) => Some(name.as_str()),
-                None => None,
-            },
+            Self::Element(el) => el.flag.as_ref(),
         }
     }
 }

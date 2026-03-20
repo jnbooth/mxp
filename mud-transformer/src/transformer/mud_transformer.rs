@@ -4,6 +4,7 @@ use std::{io, mem, slice};
 
 use bytes::BytesMut;
 use bytestringmut::ByteStringMut;
+use mxp::element::ElementFlag;
 use mxp::entity::PublishedIter;
 use mxp::escape::{ansi, telnet};
 use mxp::node::{Definition, Tag as TagNode, TagOpen};
@@ -15,8 +16,8 @@ use super::state::StateLock;
 use super::tag::{Tag, TagList};
 use crate::input::{BufferedInput, InputDrain};
 use crate::output::{
-    BufferedOutput, ByteStringMutExt as _, ControlFragment, EntityFragment, MxpFragment,
-    OutputDrain, OutputFragment, TelnetFragment, TextStyle,
+    BufferedOutput, ByteStringMutExt as _, ControlFragment, EntityFragment, MapperFragment,
+    MxpFragment, OutputDrain, OutputFragment, TelnetFragment, TextStyle, VariableFragment,
 };
 use crate::protocol::negotiate::{Negotiate, TelnetSource, TelnetVerb};
 use crate::protocol::{self, charset, mccp, mnes, msdp, mssp, mtts, xterm};
@@ -335,7 +336,7 @@ impl Transformer {
         let Some(element) = tag.element else {
             return Ok(());
         };
-        self.mxp_open_element(element, &mxp::Arguments::new(), mxp_state)
+        self.mxp_open_element(element, &mxp::Arguments::new(), false, mxp_state)
     }
 
     fn mxp_collect_entity(&mut self) -> mxp::Result<()> {
@@ -399,13 +400,10 @@ impl Transformer {
                 Ok(())
             }
             mxp::Component::Element(el) => {
-                if let Some(variable) = &el.variable {
-                    self.output.set_mxp_variable(variable);
-                }
                 if let Some(line_tag) = el.line_tag_properties(mxp_state) {
                     self.output.set_mxp_line_tag(line_tag);
                 }
-                self.mxp_open_element(el, &tag.arguments, mxp_state)
+                self.mxp_open_element(el, &tag.arguments, tag.empty, mxp_state)
             }
         }
     }
@@ -414,10 +412,27 @@ impl Transformer {
         &mut self,
         el: &mxp::Element,
         args: &mxp::Arguments,
+        empty: bool,
         mxp_state: &mxp::State,
     ) -> mxp::Result<()> {
-        if let Some(parse_as) = el.parse_as {
-            self.output.set_mxp_parse_as(parse_as);
+        let empty = empty || el.empty;
+        let empty_arg = if empty {
+            args.at(0).map(|value| self.mxp_buf.share(value))
+        } else {
+            None
+        };
+        match &el.flag {
+            Some(ElementFlag::ParseAs(parse_as)) if empty => self.output.append(MapperFragment {
+                parse_as: *parse_as,
+                value: empty_arg.unwrap_or_default(),
+            }),
+            Some(ElementFlag::Set(variable)) if empty => self.output.append(VariableFragment {
+                name: self.mxp_buf.share(variable),
+                value: empty_arg.unwrap_or_default(),
+            }),
+            Some(ElementFlag::ParseAs(parse_as)) => self.output.set_mxp_parse_as(*parse_as),
+            Some(ElementFlag::Set(variable)) => self.output.set_mxp_variable(variable),
+            None => (),
         }
         for action in el.decode(args, mxp_state) {
             self.mxp_apply_action(action?, mxp_state);

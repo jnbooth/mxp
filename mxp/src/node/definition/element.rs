@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::arguments::{ArgumentScanner, Arguments};
-use crate::element::{AttributeList, Element, ElementItem};
+use crate::element::{AttributeList, Element, ElementFlag, ElementItem};
 use crate::keyword::ElementKeyword;
 use crate::line::Mode;
 use crate::parse::{ArgumentParser, split_name, validate};
@@ -75,12 +75,9 @@ impl<'a> ElementDefinition<'a> {
             None => None,
         };
 
-        let (parse_as, variable) = match iter.get_named("flag") {
-            Some(&flag) if flag[.."set ".len()].eq_ignore_ascii_case("set ") => {
-                (None, Some(flag["set ".len()..].to_owned()))
-            }
-            Some(&flag) => (Some(flag.parse()?), None),
-            None => (None, None),
+        let flag = match iter.get_named("flag") {
+            Some(&flag) => Some(ElementFlag::parse(flag)?),
+            None => None,
         };
 
         let keywords = iter.into_keywords()?;
@@ -97,12 +94,11 @@ impl<'a> ElementDefinition<'a> {
             element: Some(Element {
                 name: name.to_owned(),
                 open: keywords.contains(ElementKeyword::Open),
-                command: keywords.contains(ElementKeyword::Empty),
+                empty: keywords.contains(ElementKeyword::Empty),
                 items,
                 attributes,
                 line_tag: tag,
-                parse_as,
-                variable,
+                flag,
             }),
         })
     }

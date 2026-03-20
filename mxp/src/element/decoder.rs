@@ -10,20 +10,32 @@ use crate::element::AttributeList;
 use crate::entity::DecodedEntity;
 use crate::parse::Decoder;
 
+/// This struct is created by [`Element::decoder`](crate::element::Element::decoder).
+/// See its documentation for more.
 #[derive(Copy, Clone, Debug)]
-struct DecodeElement<'a, D: Decoder> {
+pub struct ElementDecoder<'a, D: Decoder> {
     decoder: D,
     attributes: &'a AttributeList,
     args: &'a Arguments<'a>,
 }
 
-impl<'a, D: Decoder> DecodeElement<'a, D> {
+impl<'a, D: Decoder> ElementDecoder<'a, D> {
+    pub(super) fn new(decoder: D, attributes: &'a AttributeList, args: &'a Arguments<'a>) -> Self {
+        Self {
+            decoder,
+            attributes,
+            args,
+        }
+    }
+}
+
+impl<'a, D: Decoder> ElementDecoder<'a, D> {
     fn find(&self, name: &str) -> Option<&'a str> {
         self.attributes.find(name, self.args)
     }
 }
 
-impl<D: Decoder> Decoder for DecodeElement<'_, D> {
+impl<D: Decoder> Decoder for ElementDecoder<'_, D> {
     fn get_entity(&self, name: &str) -> Option<&str> {
         self.find(name).or_else(|| self.decoder.get_entity(name))
     }
@@ -36,19 +48,19 @@ impl<D: Decoder> Decoder for DecodeElement<'_, D> {
     }
 }
 
-/// This struct is created by [`State::decode_element`](crate::State::decode_element).
+/// This struct is created by [`Element::decode`](crate::element::Element::decode).
 /// See its documentation for more.
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone)]
-pub struct ElementDecoder<'a, D: Decoder + Copy> {
-    decoder: DecodeElement<'a, D>,
+pub struct ElementDecodeIter<'a, D: Decoder + Copy> {
+    decoder: ElementDecoder<'a, D>,
     items: slice::Iter<'a, ElementItem>,
 }
 
-impl<'a, D: Decoder + Copy> ElementDecoder<'a, D> {
+impl<'a, D: Decoder + Copy> ElementDecodeIter<'a, D> {
     pub(super) fn new(element: &'a Element, args: &'a Arguments<&'a str>, decoder: D) -> Self {
         Self {
-            decoder: DecodeElement {
+            decoder: ElementDecoder {
                 decoder,
                 attributes: &element.attributes,
                 args,
@@ -58,16 +70,11 @@ impl<'a, D: Decoder + Copy> ElementDecoder<'a, D> {
     }
 }
 
-impl<'a, D: Decoder + Copy> Iterator for ElementDecoder<'a, D> {
+impl<'a, D: Decoder + Copy> Iterator for ElementDecodeIter<'a, D> {
     type Item = crate::Result<Action<Cow<'a, str>>>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let item = self.items.next()?;
-        let scanner = item.arguments.scan(self.decoder);
-        Some(
-            Action::decode(item.tag.action, scanner)
-                .map_err(|e| e.with_context(format_args!(" for <{}>", item.tag.name))),
-        )
+        Some(self.items.next()?.decode(self.decoder))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -76,7 +83,7 @@ impl<'a, D: Decoder + Copy> Iterator for ElementDecoder<'a, D> {
     }
 }
 
-impl<D> ExactSizeIterator for ElementDecoder<'_, D>
+impl<D> ExactSizeIterator for ElementDecodeIter<'_, D>
 where
     D: Decoder + Copy,
 {
@@ -85,7 +92,7 @@ where
     }
 }
 
-impl<D> FusedIterator for ElementDecoder<'_, D> where D: Decoder + Copy {}
+impl<D> FusedIterator for ElementDecodeIter<'_, D> where D: Decoder + Copy {}
 
 #[cfg(test)]
 mod tests {

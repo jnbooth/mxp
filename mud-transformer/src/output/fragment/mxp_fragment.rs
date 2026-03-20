@@ -10,6 +10,7 @@ pub enum MxpFragment {
     Filter(mxp::Filter),
     Frame(mxp::Frame),
     Gauge(mxp::Gauge),
+    Mapper(MapperFragment),
     Music(mxp::Music),
     MusicOff,
     Relocate(mxp::Relocate),
@@ -25,6 +26,12 @@ pub struct EntityFragment {
     pub name: ByteString,
     pub value: Option<ByteString>,
     pub publish: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct MapperFragment {
+    pub parse_as: mxp::ParseAs,
+    pub value: ByteString,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -78,6 +85,12 @@ impl From<mxp::Gauge> for OutputFragment {
 impl From<mxp::Image> for OutputFragment {
     fn from(value: mxp::Image) -> Self {
         Self::Image(value)
+    }
+}
+
+impl From<MapperFragment> for OutputFragment {
+    fn from(value: MapperFragment) -> Self {
+        Self::Mxp(MxpFragment::Mapper(value))
     }
 }
 

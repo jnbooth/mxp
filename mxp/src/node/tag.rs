@@ -3,7 +3,7 @@ use std::fmt;
 use super::definition::Definition;
 use super::error::TryFromNodeError;
 use crate::arguments::Arguments;
-use crate::parse::{split_name, validate};
+use crate::parse::{split_name, strip_terminating_slash, validate};
 use crate::{Error, ErrorKind};
 
 /// The three types of MXP tag elements sent by the server.
@@ -96,25 +96,37 @@ pub struct TagOpen<'a, S = &'a str> {
     pub name: &'a str,
     /// Parsed element arguments.
     pub arguments: Arguments<'a, S>,
+    /// Element ends with `"/"`, indicating that it is empty (has no closing tag).
+    pub empty: bool,
 }
 
 impl<S: AsRef<str>> fmt::Display for TagOpen<'_, S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let Self { name, arguments } = self;
-        write!(f, "<{name} {arguments}>")
+        let Self {
+            name,
+            arguments,
+            empty,
+        } = self;
+        if *empty {
+            write!(f, "<{name} {arguments}/>")
+        } else {
+            write!(f, "<{name} {arguments}>")
+        }
     }
 }
 
 impl<'a> TagOpen<'a> {
     fn parse(source: &'a str) -> crate::Result<Self> {
-        let (name, args) = split_name(source);
+        let (name, body) = split_name(source);
         if name.is_empty() {
             return Err(Error::new("", ErrorKind::EmptyElement));
         }
         validate(name, ErrorKind::InvalidElementName)?;
+        let (args, empty) = strip_terminating_slash(body);
         Ok(Self {
             name,
             arguments: Arguments::parse(args)?,
+            empty,
         })
     }
 }
@@ -198,6 +210,7 @@ mod tests {
         let tag = TagOpen {
             name: "custom",
             arguments: "muffled col=red".parse().unwrap(),
+            empty: false,
         };
         assert_eq!(tag.to_string(), "<custom muffled col=red>");
     }

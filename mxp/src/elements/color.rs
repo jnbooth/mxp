@@ -1,4 +1,5 @@
 use std::fmt;
+use std::str::FromStr;
 
 use crate::arguments::{ArgumentScanner, ExpectArg as _};
 use crate::color::RgbColor;
@@ -72,7 +73,7 @@ impl<'a> TryFrom<&'a str> for Color {
         crate::parse::parse_element(s)
     }
 }
-impl std::str::FromStr for Color {
+impl FromStr for Color {
     type Err = crate::parse::FromStrError;
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {

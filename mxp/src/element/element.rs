@@ -1,7 +1,8 @@
 use std::fmt;
 
 use super::atomic_tag::AtomicTag;
-use super::decoder::ElementDecoder;
+use super::decoder::{ElementDecodeIter, ElementDecoder};
+use super::flag::ElementFlag;
 use super::item::ElementItem;
 use super::parse_as::ParseAs;
 use crate::LineTagProperties;
@@ -34,25 +35,54 @@ pub struct Element {
     pub attributes: AttributeList,
     /// Line tag mode, if the element is associated with a user-defined line tag.
     pub line_tag: Option<Mode>,
-    /// If specified, text contained by this element should be parsed in a specific way by an
-    /// automapper.
-    pub parse_as: Option<ParseAs>,
-    /// If specified, text contained by this element should be stored as a local variable with the
-    /// given name.
-    pub variable: Option<String>,
+    /// See [`ElementFlag`].
+    pub flag: Option<ElementFlag>,
     /// OPEN elements can be used in any [`Mode`]. By default, elements can only be used if the
     /// current line mode is not [OPEN](Mode::is_open).
     pub open: bool,
     /// Command tags do not have content, so they have no closing tag.
-    pub command: bool,
+    pub empty: bool,
 }
 
 impl Element {
-    pub fn decode<'a, D>(&'a self, args: &'a Arguments<'a>, decoder: D) -> ElementDecoder<'a, D>
+    /// If [`self.flag`] is [`Some(ElementFlag::ParseAs(parse_as))`], returns `parse_as`.
+    ///
+    /// [`self.flag`]: Element::flag
+    ///[`Some(ElementFlag::ParseAs(parse_as))`]: ElementFlag::ParseAs
+    pub fn parse_as(&self) -> Option<ParseAs> {
+        match self.flag {
+            Some(ElementFlag::ParseAs(parse_as)) => Some(parse_as),
+            _ => None,
+        }
+    }
+
+    /// If [`self.flag`] is [`Some(ElementFlag::Set(variable))`], returns `variable`.
+    ///
+    /// [`self.flag`]: Element::flag
+    ///[`Some(ElementFlag::Set(variable))`]: ElementFlag::Set
+    pub fn variable(&self) -> Option<&str> {
+        match &self.flag {
+            Some(ElementFlag::Set(variable)) => Some(variable),
+            _ => None,
+        }
+    }
+
+    /// Returns an iterator that decodes all child actions from [`items`](Self::items).
+    /// The iterator element type is `mxp::Result<Action<Cow<'a, str>>>`.
+    /// See also [`Action`](crate::Action).
+    pub fn decode<'a, D>(&'a self, args: &'a Arguments<'a>, decoder: D) -> ElementDecodeIter<'a, D>
     where
         D: Decoder + Copy,
     {
-        ElementDecoder::new(self, args, decoder)
+        ElementDecodeIter::new(self, args, decoder)
+    }
+
+    /// Returns a decoder used with [`ElementItem::decode`].
+    pub fn decoder<'a, D>(&'a self, args: &'a Arguments<'a>, decoder: D) -> ElementDecoder<'a, D>
+    where
+        D: Decoder + Copy,
+    {
+        ElementDecoder::new(decoder, &self.attributes, args)
     }
 
     /// Retrieves the additional line tag properties defined for this element if [`line_tag`]
@@ -69,7 +99,9 @@ impl Element {
     pub(crate) fn well_known() -> [(String, Element); 8] {
         const COLOR: &AtomicTag = AtomicTag::well_known("color").unwrap();
 
-        fn color_el(name: &str, body: &str) -> (String, Element) {
+        fn color_el(name: &str, fore: &str) -> (String, Element) {
+            let mut arguments = Arguments::new();
+            arguments.insert("fore", fore.to_owned());
             (
                 name.to_owned(),
                 Element {
@@ -77,7 +109,7 @@ impl Element {
                     open: true,
                     items: vec![ElementItem {
                         tag: COLOR,
-                        arguments: body.parse().unwrap(),
+                        arguments,
                     }],
                     ..Default::default()
                 },
@@ -85,14 +117,14 @@ impl Element {
         }
 
         [
-            color_el("BlackMXP", "fore=#000000"),
-            color_el("RedMXP", "fore=#FF0000"),
-            color_el("GreenMXP", "fore=#008000"),
-            color_el("YellowMXP", "fore=#FFFF00"),
-            color_el("BlueMXP", "fore=#0000FF"),
-            color_el("MagentaMXP", "fore=#FF00FF"),
-            color_el("CyanMXP", "fore=#00FFFF"),
-            color_el("WhiteMXP", "fore=#FFFFFF"),
+            color_el("BlackMXP", "#000000"),
+            color_el("RedMXP", "#FF0000"),
+            color_el("GreenMXP", "#008000"),
+            color_el("YellowMXP", "#FFFF00"),
+            color_el("BlueMXP", "#0000FF"),
+            color_el("MagentaMXP", "#FF00FF"),
+            color_el("CyanMXP", "#00FFFF"),
+            color_el("WhiteMXP", "#FFFFFF"),
         ]
     }
 }
@@ -105,10 +137,9 @@ impl fmt::Display for Element {
             items,
             attributes,
             line_tag,
-            parse_as,
-            variable,
+            flag,
             open,
-            command,
+            empty: command,
         } = self;
         write!(f, "<!EL {name} '")?;
         for item in items {
@@ -121,11 +152,8 @@ impl fmt::Display for Element {
         if let Some(line_tag) = line_tag {
             write!(f, " TAG={line_tag}")?;
         }
-        if let Some(parse_as) = parse_as {
-            write!(f, " FLAG=\"{parse_as}\"")?;
-        }
-        if let Some(variable) = variable {
-            write!(f, " FLAG=\"SET {variable}\"")?;
+        if let Some(flag) = flag {
+            write!(f, " FLAG=\"{flag}\"")?;
         }
         if *open {
             f.write_str(" OPEN")?;
@@ -148,10 +176,9 @@ mod tests {
             items: ElementItem::parse_all("<COLOR &col;><B>").unwrap(),
             attributes: "col=red".parse().unwrap(),
             line_tag: Some(Mode(30)),
-            parse_as: None,
-            variable: Some("myvar".to_owned()),
+            flag: Some(ElementFlag::Set("myvar".to_owned())),
             open: true,
-            command: true,
+            empty: true,
         };
         assert_eq!(
             element.to_string(),

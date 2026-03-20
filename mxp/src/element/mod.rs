@@ -13,10 +13,13 @@ mod attribute_list;
 pub use attribute_list::AttributeList;
 
 mod decoder;
-pub use decoder::ElementDecoder;
+pub use decoder::{ElementDecodeIter, ElementDecoder};
 
 mod element;
 pub use element::Element;
+
+mod flag;
+pub use flag::ElementFlag;
 
 mod item;
 pub use item::ElementItem;

@@ -9,6 +9,13 @@ pub(crate) fn split_name(s: &str) -> (&str, &str) {
     unsafe { (s.get_unchecked(..split_at), s.get_unchecked(split_at + 1..)) }
 }
 
+pub(crate) fn strip_terminating_slash(s: &str) -> (&str, bool) {
+    match s.as_bytes() {
+        [s @ .., b' ', b'/'] | [s @ .., b'/'] => (unsafe { str::from_utf8_unchecked(s) }, true),
+        _ => (s, false),
+    }
+}
+
 /// If the specified target is valid to use as an MXP identifier or value, returns `Ok(())`.
 /// Otherwise, returns an [`mxp::Error`](Error) for the target with the specified error kind.
 ///

@@ -1,8 +1,11 @@
+use std::borrow::Cow;
 use std::fmt;
 
+use super::action::Action;
 use super::atomic_tag::AtomicTag;
+use super::decoder::ElementDecoder;
 use crate::arguments::Arguments;
-use crate::parse::{count_bytes, split_name, validate};
+use crate::parse::{Decoder, count_bytes, split_name, strip_terminating_slash, validate};
 use crate::{Error, ErrorKind};
 
 /// List of arguments to an MXP tag.
@@ -17,6 +20,20 @@ pub struct ElementItem {
 }
 
 impl ElementItem {
+    /// Resolves an `ElementItem` into an [`Action`] by decoding arguments and supplying them to the
+    /// tag's definition.
+    pub fn decode<'a, D>(
+        &'a self,
+        decoder: ElementDecoder<'a, D>,
+    ) -> crate::Result<Action<Cow<'a, str>>>
+    where
+        D: Decoder,
+    {
+        let scanner = self.arguments.scan(decoder);
+        Action::decode(self.tag.action, scanner)
+            .map_err(|e| e.with_context(format_args!(" for <{}>", self.tag.name)))
+    }
+
     fn parse(source: &str) -> crate::Result<Self> {
         let (tag_name, body) = split_name(source);
         if tag_name.is_empty() {
@@ -27,8 +44,9 @@ impl ElementItem {
             Some(&b'!') => return Err(Error::braced(source, ErrorKind::DefinitionInDefinition)),
             _ => (),
         }
+        let (args, _) = strip_terminating_slash(body);
         if let Some(tag) = AtomicTag::well_known(tag_name) {
-            let arguments = body.parse()?;
+            let arguments = args.parse()?;
             tag.check_arguments(&arguments)?;
             return Ok(Self { tag, arguments });
         }

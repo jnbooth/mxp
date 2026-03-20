@@ -17,8 +17,8 @@ pub use decoder::Decoder;
 pub(crate) use decoder::{OwnedScan, Scan};
 
 mod validation;
-pub(crate) use validation::split_name;
 pub use validation::{is_valid, validate, validate_utf8};
+pub(crate) use validation::{split_name, strip_terminating_slash};
 
 mod argument_parser;
 pub(crate) use argument_parser::ArgumentParser;

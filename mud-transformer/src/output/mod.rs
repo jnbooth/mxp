@@ -6,8 +6,9 @@ pub(crate) use bytestringmut_ext::ByteStringMutExt;
 
 mod fragment;
 pub use fragment::{
-    ControlFragment, EntityFragment, MxpFragment, Output, OutputDrain, OutputFragment,
-    TelnetFragment, TextFragment, TextFragmentANSI, TextFragmentHtml, VariableFragment,
+    ControlFragment, EntityFragment, MapperFragment, MxpFragment, Output, OutputDrain,
+    OutputFragment, TelnetFragment, TextFragment, TextFragmentANSI, TextFragmentHtml,
+    VariableFragment,
 };
 
 mod interpret_ansi;
