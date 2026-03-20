@@ -17,5 +17,7 @@ pub use interpret_ansi::interpret_ansi;
 mod link;
 pub use link::{Link, SendTo};
 
+mod register;
+
 mod span;
 pub use span::TextStyle;

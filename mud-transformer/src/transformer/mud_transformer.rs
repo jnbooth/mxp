@@ -252,22 +252,8 @@ impl Transformer {
     }
 
     fn mxp_close_tags_from(&mut self, pos: usize) {
-        let Some(span_index) = self.mxp_tags.truncate(pos) else {
-            return;
-        };
-        let Some((entity, variable)) = self.output.truncate_spans(span_index) else {
-            return;
-        };
-        match self.mxp_state.set_entity(&entity, &variable) {
-            Ok(Some(entry)) => {
-                self.output.append(EntityFragment {
-                    name: entity.name,
-                    value: entry.value.map(|value| self.mxp_buf.share(value)),
-                    publish: entry.publish,
-                });
-            }
-            Err(e) => self.output.append(e),
-            _ => (),
+        if let Some(span_index) = self.mxp_tags.truncate(pos) {
+            self.output.truncate_spans(span_index, &mut self.mxp_state);
         }
     }
 

@@ -72,9 +72,9 @@ pub(crate) struct Span {
     pub(super) heading: Option<Heading>,
     pub(super) gag: bool,
     pub(super) window: Option<mxp::Dest<ByteString>>,
-    pub(super) entity: Option<mxp::Var<ByteString>>,
-    pub(super) variable: Option<ByteString>,
-    pub(super) parse_as: Option<mxp::ParseAs>,
+    pub(super) entity: Option<usize>,
+    pub(super) variable: Option<usize>,
+    pub(super) parse_as: Option<usize>,
 }
 
 macro_rules! set_flag {
@@ -212,8 +212,7 @@ impl SpanList {
         set_prop!(self, empty, background);
     }
 
-    pub fn set_entity<S: AsRef<str>>(&mut self, entity: mxp::Var<S>, empty: bool) -> bool {
-        let entity = entity.map_text(|text| self.buf.share(text.as_ref()));
+    pub fn set_entity(&mut self, entity: usize, empty: bool) -> bool {
         set_opt_prop!(self, empty, entity);
     }
 
@@ -242,7 +241,7 @@ impl SpanList {
         set_opt_prop!(self, empty, link);
     }
 
-    pub fn set_parse_as(&mut self, parse_as: mxp::ParseAs, empty: bool) -> bool {
+    pub fn set_parse_as(&mut self, parse_as: usize, empty: bool) -> bool {
         set_opt_prop!(self, empty, parse_as);
     }
 
@@ -255,7 +254,7 @@ impl SpanList {
         set_opt_prop!(self, empty, window);
     }
 
-    pub fn set_variable(&mut self, variable: &str, empty: bool) -> bool {
-        set_string_prop!(self, empty, variable);
+    pub fn set_variable(&mut self, variable: usize, empty: bool) -> bool {
+        set_opt_prop!(self, empty, variable);
     }
 }

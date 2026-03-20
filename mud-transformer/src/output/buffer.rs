@@ -5,12 +5,12 @@ use bytestringmut::ByteStringMut;
 use flagset::FlagSet;
 use mxp::RgbColor;
 
+use super::register::OutputRegister;
 use super::span::{Span, SpanList};
 use super::{
     ControlFragment, Link, Output, OutputDrain, OutputFragment, TelnetFragment, TextFragment,
-    TextStyle, VariableFragment,
+    TextStyle,
 };
-use crate::output::MapperFragment;
 use crate::responses::SgrReport;
 use crate::term::{TermColor, XTermPalette};
 
@@ -37,10 +37,8 @@ pub(crate) struct BufferedOutput {
     ignore_mxp_colors: bool,
 
     cursor: usize,
-    in_variable: bool,
-    variable: ByteStringMut,
-    in_parse_as: bool,
-    parse_as: ByteStringMut,
+    active_registers: usize,
+    registers: Vec<OutputRegister>,
 }
 
 impl BufferedOutput {
@@ -127,14 +125,9 @@ impl BufferedOutput {
         for _ in 0..times {
             self.text_buf.push_str(text);
         }
-        if self.in_parse_as {
+        for register in &mut self.registers[..self.active_registers] {
             for _ in 0..times {
-                self.parse_as.push_str(text);
-            }
-        }
-        if self.in_variable {
-            for _ in 0..times {
-                self.variable.push_str(text);
+                register.push_str(text);
             }
         }
         if let Some(c) = last_printable_char(text) {
@@ -213,6 +206,15 @@ impl BufferedOutput {
         self.text_buf.split().freeze()
     }
 
+    fn start_register(&mut self) -> usize {
+        if self.active_registers == self.registers.len() {
+            self.registers.push(OutputRegister::new());
+        }
+        let index = self.active_registers;
+        self.active_registers += 1;
+        index
+    }
+
     fn flush_with(&self, text: ByteString, span: &Span) -> TextFragment {
         let foreground = if self.ignore_mxp_colors || span.foreground == TermColor::Unset {
             self.ansi_foreground
@@ -273,21 +275,15 @@ impl BufferedOutput {
     #[inline]
     pub fn append_char(&mut self, output: char) {
         self.text_buf.push(output);
-        if self.in_parse_as {
-            self.parse_as.push(output);
-        }
-        if self.in_variable {
-            self.variable.push(output);
+        for register in &mut self.registers[..self.active_registers] {
+            register.push(output);
         }
     }
 
     pub fn append_text(&mut self, output: &str) {
         self.text_buf.push_str(output);
-        if self.in_parse_as {
-            self.parse_as.push_str(output);
-        }
-        if self.in_variable {
-            self.variable.push_str(output);
+        for register in &mut self.registers[..self.active_registers] {
+            register.push_str(output);
         }
     }
 
@@ -343,70 +339,50 @@ impl BufferedOutput {
         self.spans.len()
     }
 
-    pub fn truncate_spans(&mut self, i: usize) -> Option<(mxp::Var<ByteString>, ByteString)> {
-        let mut span = self.spans.truncate(i)?;
+    pub fn truncate_spans(&mut self, i: usize, mxp_state: &mut mxp::State) {
+        let Some(mut span) = self.spans.truncate(i) else {
+            return;
+        };
         let active_span = self.spans.get();
-        if active_span == Some(&span) {
-            return None;
-        }
-        if !self.in_parse_as && !self.in_variable {
+        if self.active_registers == 0 {
             if !self.text_buf.is_empty() {
                 let text = self.take_buf();
                 self.append(self.flush_with(text, &span));
             }
-            return None;
+            return;
         }
-        let mut set_parse_as = span.parse_as.take();
-        let mut set_entity = span.entity.take();
-        let mut set_variable = span.variable.take();
-        self.in_parse_as = false;
-        self.in_variable = false;
-        if let Some(active_span) = &active_span {
-            if active_span.parse_as.is_some() {
-                self.in_parse_as = true;
-                if set_parse_as == active_span.parse_as {
-                    set_parse_as = None;
-                }
-            }
-            if active_span.entity.is_some() {
-                self.in_variable = true;
-                if set_entity == active_span.entity {
-                    set_entity = None;
-                }
-            }
-            if active_span.variable.is_some() {
-                self.in_variable = true;
-                if set_variable == active_span.variable {
-                    set_variable = None;
-                }
+        let highest_active_register = match active_span {
+            Some(span) => span
+                .entity
+                .unwrap_or_default()
+                .max(span.parse_as.unwrap_or_default())
+                .max(span.variable.unwrap_or_default()),
+            None => 0,
+        };
+        for register in self.registers[highest_active_register..self.active_registers]
+            .iter_mut()
+            .rev()
+        {
+            if let Some(output) = register.finalize(mxp_state) {
+                self.fragments.push(output.into());
             }
         }
-        let need_flush = !self.text_buf.is_empty()
-            && match active_span {
-                Some(active_span) => span != *active_span,
-                None => span != Span::default(),
-            };
-        if need_flush {
-            let text = self.take_buf();
-            self.append(self.flush_with(text, &span));
+        self.active_registers = highest_active_register;
+        if self.text_buf.is_empty() {
+            return;
         }
-        if let Some(parse_as) = set_parse_as {
-            let value = self.parse_as.split().freeze();
-            self.append(MapperFragment { parse_as, value });
+        if let Some(active_span) = active_span {
+            span.entity = active_span.entity;
+            span.parse_as = active_span.parse_as;
+            span.variable = active_span.variable;
+            if span == *active_span {
+                return;
+            }
+        } else if span == Span::default() {
+            return;
         }
-        if set_entity.is_none() && set_variable.is_none() {
-            return None;
-        }
-        let variable = self.variable.split().freeze();
-        if self.in_variable {
-            // not done with it yet
-            self.variable.push_str(&variable);
-        }
-        if let Some(name) = set_variable {
-            let value = variable.clone();
-            self.append(VariableFragment { name, value });
-        }
-        Some((set_entity?, variable))
+        let text = self.take_buf();
+        self.append(self.flush_with(text, &span));
     }
 
     pub fn set_mxp_flag(&mut self, flag: TextStyle) {
@@ -504,15 +480,23 @@ impl BufferedOutput {
     }
 
     pub fn set_mxp_entity<S: AsRef<str>>(&mut self, var: mxp::Var<S>) {
-        self.in_variable = true;
-        if self.spans.set_entity(var, self.text_buf.is_empty()) {
+        let register = self.start_register();
+        self.registers[register].set_entity(var);
+        if self
+            .spans
+            .set_entity(register + 1, self.text_buf.is_empty())
+        {
             self.flush_mxp();
         }
     }
 
     pub fn set_mxp_variable(&mut self, var: &str) {
-        self.in_variable = true;
-        if self.spans.set_variable(var, self.text_buf.is_empty()) {
+        let register = self.start_register();
+        self.registers[register].set_variable(var);
+        if self
+            .spans
+            .set_variable(register + 1, self.text_buf.is_empty())
+        {
             self.flush_mxp();
         }
     }
@@ -524,8 +508,12 @@ impl BufferedOutput {
     }
 
     pub fn set_mxp_parse_as(&mut self, parse_as: mxp::ParseAs) {
-        self.in_parse_as = true;
-        if self.spans.set_parse_as(parse_as, self.text_buf.is_empty()) {
+        let register = self.start_register();
+        self.registers[register].set_parse_as(parse_as);
+        if self
+            .spans
+            .set_parse_as(register + 1, self.text_buf.is_empty())
+        {
             self.flush_mxp();
         }
     }
