@@ -1,5 +1,14 @@
 use crate::{Error, ErrorKind};
 
+pub(crate) fn split_name(s: &str) -> (&str, &str) {
+    let s = s.trim_ascii_start();
+    let Some(split_at) = s.as_bytes().iter().position(|&c| c == b' ') else {
+        return (s, "");
+    };
+    // SAFETY: `split_at` and `split_at + 1` are valid indices.
+    unsafe { (s.get_unchecked(..split_at), s.get_unchecked(split_at + 1..)) }
+}
+
 /// If the specified target is valid to use as an MXP identifier or value, returns `Ok(())`.
 /// Otherwise, returns an [`mxp::Error`](Error) for the target with the specified error kind.
 ///

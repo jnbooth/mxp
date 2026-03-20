@@ -2,7 +2,7 @@ use std::fmt;
 
 use super::atomic_tag::AtomicTag;
 use crate::arguments::Arguments;
-use crate::parse::{Words, count_bytes};
+use crate::parse::{count_bytes, split_name, validate};
 use crate::{Error, ErrorKind};
 
 /// List of arguments to an MXP tag.
@@ -18,22 +18,21 @@ pub struct ElementItem {
 
 impl ElementItem {
     fn parse(source: &str) -> crate::Result<Self> {
-        let mut words = Words::new(source);
-        let tag_name = words
-            .next()
-            .ok_or_else(|| Error::new("", ErrorKind::EmptyElementInDefinition))?;
-        match tag_name {
-            "/" => return Err(Error::braced(source, ErrorKind::CloseTagInDefinition)),
-            "!" => return Err(Error::braced(source, ErrorKind::DefinitionInDefinition)),
+        let (tag_name, body) = split_name(source);
+        if tag_name.is_empty() {
+            return Err(Error::new("", ErrorKind::EmptyElementInDefinition));
+        }
+        match tag_name.as_bytes().first() {
+            Some(&b'/') => return Err(Error::braced(source, ErrorKind::CloseTagInDefinition)),
+            Some(&b'!') => return Err(Error::braced(source, ErrorKind::DefinitionInDefinition)),
             _ => (),
         }
         if let Some(tag) = AtomicTag::well_known(tag_name) {
-            let mut arguments = words.try_into()?;
+            let arguments = body.parse()?;
             tag.check_arguments(&arguments)?;
-            arguments.shrink_to_fit();
             return Ok(Self { tag, arguments });
         }
-        crate::validate(tag_name, ErrorKind::InvalidElementName)?;
+        validate(tag_name, ErrorKind::InvalidElementName)?;
         Err(Error::new(tag_name, ErrorKind::UnknownElementInDefinition))
     }
 

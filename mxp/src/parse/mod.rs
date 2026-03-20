@@ -17,10 +17,11 @@ pub use decoder::Decoder;
 pub(crate) use decoder::{OwnedScan, Scan};
 
 mod validation;
+pub(crate) use validation::split_name;
 pub use validation::{is_valid, validate, validate_utf8};
 
-mod words;
-pub(crate) use words::Words;
+mod argument_parser;
+pub(crate) use argument_parser::ArgumentParser;
 
 pub fn count_bytes(haystack: &[u8], needle: u8) -> usize {
     haystack.iter().fold(0, |n, c| n + u32::from(*c == needle)) as usize

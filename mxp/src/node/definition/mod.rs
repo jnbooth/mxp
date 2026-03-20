@@ -2,7 +2,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use super::error::TryFromNodeError;
-use crate::parse::Words;
+use crate::parse::split_name;
 use crate::{Error, ErrorKind};
 
 mod attribute_list;
@@ -79,18 +79,18 @@ impl<'a> Definition<'a> {
     }
 
     pub(super) fn parse(source: &'a str) -> crate::Result<Self> {
-        let mut words = Words::new(source);
-        let kind = words
-            .next()
-            .ok_or_else(|| Error::new("<!>", ErrorKind::IncompleteElement))?
-            .parse()?;
+        let (name, rest) = split_name(source);
+        if name.is_empty() {
+            return Err(Error::new("empty definition", ErrorKind::IncompleteElement));
+        }
+        let kind = name.parse()?;
         Ok(match kind {
             DefinitionKind::AttributeList => {
-                Self::AttributeList(AttributeListDefinition::parse(words)?)
+                Self::AttributeList(AttributeListDefinition::parse(rest)?)
             }
-            DefinitionKind::Element => Self::Element(ElementDefinition::parse(words)?),
-            DefinitionKind::Entity => Self::Entity(EntityDefinition::parse(words)?),
-            DefinitionKind::LineTag => Self::LineTag(LineTagDefinition::parse(words)?),
+            DefinitionKind::Element => Self::Element(ElementDefinition::parse(rest)?),
+            DefinitionKind::Entity => Self::Entity(EntityDefinition::parse(rest)?),
+            DefinitionKind::LineTag => Self::LineTag(LineTagDefinition::parse(rest)?),
         })
     }
 }

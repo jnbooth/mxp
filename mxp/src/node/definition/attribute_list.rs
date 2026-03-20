@@ -1,7 +1,7 @@
 use std::fmt;
 
-use crate::ErrorKind;
-use crate::parse::Words;
+use crate::parse::{split_name, validate};
+use crate::{Error, ErrorKind};
 
 /// Syntax tree of an attribute list definition from the server, in the form of
 /// `<!ATTLIST {name} ...>`.
@@ -31,17 +31,26 @@ impl fmt::Display for AttributeListDefinition<'_> {
 }
 
 impl<'a> AttributeListDefinition<'a> {
-    pub(super) fn parse(mut words: Words<'a>) -> crate::Result<Self> {
-        let name = words.next_or(ErrorKind::IncompleteElement)?;
-        crate::validate(name, ErrorKind::InvalidElementName)?;
-        let attributes = words.as_str();
-        let attributes = Self::unquote(attributes).unwrap_or(attributes);
-        Ok(Self { name, attributes })
+    pub(super) fn parse(source: &'a str) -> crate::Result<Self> {
+        let (name, attributes) = split_name(source);
+        if name.is_empty() {
+            return Err(Error::new(
+                "empty attribute list",
+                ErrorKind::IncompleteElement,
+            ));
+        }
+        validate(name, ErrorKind::InvalidElementName)?;
+        Ok(Self {
+            name,
+            attributes: Self::unquote(attributes),
+        })
     }
 
-    fn unquote(s: &str) -> Option<&str> {
-        let s = s.trim().strip_prefix('\'')?.strip_suffix('\'')?;
-        if s.contains('\'') { None } else { Some(s) }
+    fn unquote(s: &str) -> &str {
+        let s = match s.as_bytes() {
+            [b'\'', s @ .., b'\''] | [b'\'', s @ ..] | [s @ .., b'\''] | s => s,
+        };
+        unsafe { str::from_utf8_unchecked(s) }
     }
 }
 

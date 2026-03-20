@@ -7,7 +7,7 @@ use uncased::Uncased;
 
 use super::iter::{Named, Positional};
 use crate::CaseFoldMap;
-use crate::parse::{Decoder, OwnedScan, Scan, Words, validate};
+use crate::parse::{ArgumentParser, Decoder, OwnedScan, Scan, validate};
 use crate::{Error, ErrorKind};
 
 /// Parsed arguments of an MXP command.
@@ -108,11 +108,6 @@ impl<S: AsRef<str>> Arguments<'_, S> {
     pub(crate) fn scan<D: Decoder>(&self, decoder: D) -> Scan<'_, D, S> {
         Scan::new(decoder, &self.positional, &self.named)
     }
-
-    pub(crate) fn shrink_to_fit(&mut self) {
-        self.named.shrink_to_fit();
-        self.positional.shrink_to_fit();
-    }
 }
 
 impl<S> Extend<S> for Arguments<'_, S> {
@@ -143,7 +138,7 @@ where
 impl<'a> Arguments<'a> {
     /// Parses arguments from a string slice without cloning the data.
     pub fn parse(source: &'a str) -> crate::Result<Self> {
-        Words::new(source).try_into()
+        ArgumentParser::new(source).try_into()
     }
 
     pub(crate) fn into_scan<D: Decoder>(self, decoder: D) -> OwnedScan<'a, D> {
@@ -151,17 +146,17 @@ impl<'a> Arguments<'a> {
     }
 }
 
-impl<'a, 'b, S> TryFrom<Words<'b>> for Arguments<'a, S>
+impl<'a, 'b, S> TryFrom<ArgumentParser<'b>> for Arguments<'a, S>
 where
     S: From<&'b str> + Into<Cow<'a, str>>,
 {
     type Error = Error;
 
-    fn try_from(words: Words<'b>) -> crate::Result<Self> {
-        let generous_size_guess = words.size_hint().1.unwrap();
+    fn try_from(args: ArgumentParser<'b>) -> crate::Result<Self> {
+        let generous_size_guess = args.size_hint().1.unwrap();
         let mut positional = Vec::with_capacity(generous_size_guess);
         let mut named = CaseFoldMap::with_capacity(generous_size_guess);
-        for entry in words.args() {
+        for entry in args {
             let (name, value) = entry?;
             if let Some(value) = value {
                 validate(name, ErrorKind::InvalidArgumentName)?;
@@ -194,7 +189,7 @@ impl FromStr for Arguments<'static, String> {
     type Err = Error;
 
     fn from_str(s: &str) -> crate::Result<Self> {
-        Words::new(s).try_into()
+        ArgumentParser::new(s).try_into()
     }
 }
 
@@ -204,8 +199,10 @@ mod tests {
 
     #[test]
     fn arguments() {
-        let words = Words::new("EL RName '<FONT COLOR=Red><B>' FLAG=\"RoomName\"");
-        let args: Arguments = words.try_into().unwrap();
+        let args: Arguments =
+            ArgumentParser::new("  EL      RName  '<FONT COLOR=Red><B>' FLAG=\"RoomName\"  ")
+                .try_into()
+                .unwrap();
         let expected = Arguments {
             positional: vec!["EL", "RName", "<FONT COLOR=Red><B>"],
             named: [("flag", "RoomName")].iter().copied().collect(),

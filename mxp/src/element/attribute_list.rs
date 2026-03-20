@@ -2,28 +2,13 @@ use std::fmt;
 use std::str::FromStr;
 
 use crate::arguments::Arguments;
-use crate::parse::Words;
+use crate::parse::ArgumentParser;
 use crate::{CaseFoldMap, Error, ErrorKind, validate};
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 struct Attribute {
     position: usize,
     value: Option<String>,
-}
-
-// Note: this count may be incorrect if the arguments are poorly formed (.e.g "==="), but that's
-// fine because the list won't be completely constructed in that case anyway.
-fn count_args(words: Words) -> usize {
-    let (count, _) = words.fold((0, false), |(count, in_named), word| {
-        if in_named {
-            return (count, false);
-        }
-        if word == "=" {
-            return (count, true);
-        }
-        (count + 1, false)
-    });
-    count
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -127,6 +112,12 @@ impl AttributeList {
         );
     }
 
+    /// Removes all attributes from the list with a positional index greater than or equal to the
+    /// specified length.
+    pub(crate) fn truncate(&mut self, i: usize) {
+        self.attributes.retain(|_, value| value.position < i);
+    }
+
     /// Finds the value of an entity, using an element's attribute list to identify arguments
     /// and provide default values.
     pub(crate) fn find<'a>(&'a self, name: &str, args: &Arguments<'a>) -> Option<&'a str> {
@@ -141,10 +132,14 @@ impl AttributeList {
     }
 
     /// Adds attributes to the list from parsed arguments.
-    pub(crate) fn append(&mut self, words: Words) -> crate::Result<()> {
-        let size = count_args(words.clone());
-        self.attributes.reserve(size);
-        for entry in words.args() {
+    pub(crate) fn append(&mut self, source: &str) -> crate::Result<()> {
+        self.append_args(ArgumentParser::new(source))
+    }
+
+    /// Adds attributes to the list from parsed arguments.
+    pub(crate) fn append_args(&mut self, args: ArgumentParser) -> crate::Result<()> {
+        self.attributes.reserve(args.size_hint().1.unwrap());
+        for entry in args {
             let (name, value) = entry?;
             validate(name, ErrorKind::InvalidArgumentName)?;
             if self.attributes.contains_key(name) {
@@ -176,12 +171,12 @@ impl fmt::Display for AttributeList {
     }
 }
 
-impl TryFrom<Words<'_>> for AttributeList {
+impl TryFrom<ArgumentParser<'_>> for AttributeList {
     type Error = Error;
 
-    fn try_from(value: Words) -> crate::Result<Self> {
+    fn try_from(value: ArgumentParser) -> crate::Result<Self> {
         let mut list = AttributeList::new();
-        list.append(value)?;
+        list.append_args(value)?;
         Ok(list)
     }
 }
@@ -190,7 +185,7 @@ impl FromStr for AttributeList {
     type Err = Error;
 
     fn from_str(s: &str) -> crate::Result<Self> {
-        Words::new(s).try_into()
+        ArgumentParser::new(s).try_into()
     }
 }
 
@@ -199,15 +194,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn args_count() {
-        let words = Words::new("EL RName '<FONT COLOR=Red><B>' FLAG=\"RoomName\"");
-        assert_eq!(count_args(words), 4);
-    }
-
-    #[test]
     fn fmt() {
-        let words = Words::new("EL RName FLAG=\"Room Name\" Owner Locked=0");
-        let formatted = AttributeList::try_from(words).unwrap().to_string();
+        let args = ArgumentParser::new("EL RName FLAG=\"Room Name\" Owner Locked=0");
+        let formatted = AttributeList::try_from(args).unwrap().to_string();
         assert_eq!(formatted, "EL RName FLAG=\"Room Name\" Owner Locked=0");
     }
 }

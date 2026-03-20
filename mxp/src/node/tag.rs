@@ -3,7 +3,7 @@ use std::fmt;
 use super::definition::Definition;
 use super::error::TryFromNodeError;
 use crate::arguments::Arguments;
-use crate::parse::Words;
+use crate::parse::{split_name, validate};
 use crate::{Error, ErrorKind};
 
 /// The three types of MXP tag elements sent by the server.
@@ -76,11 +76,14 @@ impl fmt::Display for TagClose<'_> {
 
 impl<'a> TagClose<'a> {
     fn parse(source: &'a str) -> crate::Result<Self> {
-        let mut words = Words::new(source);
-        let name = words.next_or(ErrorKind::IncompleteElement)?;
-        crate::validate(name, ErrorKind::InvalidElementName)?;
-        if let Some(next) = words.next() {
-            return Err(Error::new(next, ErrorKind::ArgumentsToClosingTag));
+        let (name, args) = split_name(source);
+        if name.is_empty() {
+            return Err(Error::new("</>", ErrorKind::IncompleteElement));
+        }
+        validate(name, ErrorKind::InvalidElementName)?;
+        let args = args.trim_ascii();
+        if !args.is_empty() {
+            return Err(Error::new(args, ErrorKind::ArgumentsToClosingTag));
         }
         Ok(Self { name })
     }
@@ -104,12 +107,14 @@ impl<S: AsRef<str>> fmt::Display for TagOpen<'_, S> {
 
 impl<'a> TagOpen<'a> {
     fn parse(source: &'a str) -> crate::Result<Self> {
-        let mut words = Words::new(source);
-        let name = words.next_or(ErrorKind::EmptyElement)?;
-        crate::validate(name, ErrorKind::InvalidElementName)?;
+        let (name, args) = split_name(source);
+        if name.is_empty() {
+            return Err(Error::new("", ErrorKind::EmptyElement));
+        }
+        validate(name, ErrorKind::InvalidElementName)?;
         Ok(Self {
             name,
-            arguments: words.parse_args()?,
+            arguments: Arguments::parse(args)?,
         })
     }
 }

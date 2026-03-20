@@ -1,10 +1,9 @@
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _};
 use crate::color::RgbColor;
 use crate::keyword::LineTagKeyword;
 use crate::line::Mode;
-use crate::parse::Words;
 use crate::{Error, ErrorKind};
 
 /// Parsed representation of a line tag definition from the server, in the form of
@@ -71,8 +70,8 @@ impl fmt::Display for LineTagDefinition<'_> {
 }
 
 impl<'a> LineTagDefinition<'a> {
-    pub(super) fn parse(words: Words<'a>) -> crate::Result<Self> {
-        let args = words.parse_args()?;
+    pub(super) fn parse(source: &'a str) -> crate::Result<Self> {
+        let args = Arguments::parse(source)?;
         let mut scanner = args.scan(()).with_keywords();
         let index = Mode(scanner.get_next().expect_number()?.expect_some("Tag")?);
         if !index.is_user_defined() {

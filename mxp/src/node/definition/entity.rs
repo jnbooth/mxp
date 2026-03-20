@@ -2,9 +2,9 @@ use std::fmt;
 
 use flagset::FlagSet;
 
-use crate::arguments::ArgumentScanner;
+use crate::arguments::{ArgumentScanner, Arguments};
 use crate::keyword::EntityKeyword;
-use crate::parse::Words;
+use crate::parse::{split_name, validate};
 use crate::{Error, ErrorKind};
 
 /// Syntax tree of an entity definition from the server, in the form of
@@ -55,11 +55,16 @@ impl fmt::Display for EntityDefinition<'_> {
 }
 
 impl<'a> EntityDefinition<'a> {
-    pub(super) fn parse(mut words: Words<'a>) -> crate::Result<Self> {
-        let source = words.source();
-        let name = words.next_or(ErrorKind::IncompleteElement)?;
-        crate::validate(name, ErrorKind::InvalidElementName)?;
-        let args = words.parse_args()?;
+    pub(super) fn parse(source: &'a str) -> crate::Result<Self> {
+        let (name, args) = split_name(source);
+        if name.is_empty() {
+            return Err(Error::new(
+                "empty entity definition",
+                ErrorKind::IncompleteElement,
+            ));
+        }
+        validate(name, ErrorKind::InvalidEntityName)?;
+        let args = Arguments::parse(args)?;
         let mut scanner = args.scan(()).with_keywords();
         let Some(value) = scanner.get_next() else {
             return Err(Error::new(source, ErrorKind::EmptyElementInDefinition));

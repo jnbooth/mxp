@@ -9,7 +9,7 @@ use crate::line::{LineTag, LineTags, Mode};
 use crate::node::{
     AttributeListDefinition, Definition, ElementDefinition, EntityDefinition, LineTagDefinition,
 };
-use crate::parse::{Decoder, Words};
+use crate::parse::Decoder;
 use crate::{Error, ErrorKind};
 
 /// A store of MXP state: elements, entities, and line tags.
@@ -171,12 +171,17 @@ impl State {
     }
 
     fn define_attributes(&mut self, definition: &AttributeListDefinition) -> crate::Result<()> {
-        let words = Words::new(definition.attributes);
-        self.elements
+        let attributes = &mut self
+            .elements
             .get_mut(definition.name)
             .ok_or_else(|| Error::new(definition.name, ErrorKind::UnknownElementInAttlist))?
-            .attributes
-            .append(words)
+            .attributes;
+        let len = attributes.len();
+        let result = attributes.append(definition.attributes);
+        if result.is_err() {
+            attributes.truncate(len);
+        }
+        result
     }
 
     fn define_element(&mut self, definition: ElementDefinition) {

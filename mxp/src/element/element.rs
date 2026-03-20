@@ -8,7 +8,7 @@ use crate::LineTagProperties;
 use crate::arguments::Arguments;
 use crate::element::AttributeList;
 use crate::line::Mode;
-use crate::parse::{Decoder, Words};
+use crate::parse::Decoder;
 
 /// User-defined MXP tags.
 ///
@@ -77,7 +77,7 @@ impl Element {
                     open: true,
                     items: vec![ElementItem {
                         tag: COLOR,
-                        arguments: Words::new(body).try_into().unwrap(),
+                        arguments: body.parse().unwrap(),
                     }],
                     ..Default::default()
                 },

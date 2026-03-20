@@ -9,7 +9,7 @@ use crate::elements::{
     Color, Dest, Expire, Filter, Font, Frame, Gauge, Heading, Hyperlink, Image, Music, Relocate,
     Send, Sound, Stat, StyleVersion, Support, Var,
 };
-use crate::parse::{FromStrError, IntoOwnedString, Words};
+use crate::parse::{FromStrError, IntoOwnedString, split_name, validate};
 use crate::{Error, ErrorKind};
 
 /// Effect caused by an element. Created by applying [`Arguments`] to an element [`AtomicTag`].
@@ -264,12 +264,14 @@ impl FromStr for Action<String> {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = crate::parse::cleanup_source(s)?;
-        let mut words = Words::new(s);
-        let name = words.next_or(ErrorKind::EmptyElement)?;
-        crate::validate(name, ErrorKind::InvalidElementName)?;
+        let (name, args) = split_name(s);
+        if name.is_empty() {
+            return Err(Error::new(s, ErrorKind::EmptyElement).into());
+        }
+        validate(name, ErrorKind::InvalidElementName)?;
         let tag = AtomicTag::well_known(name)
             .ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;
-        let args: Arguments<Cow<str>> = words.try_into()?;
+        let args = Arguments::parse(args)?;
         tag.check_arguments(&args)?;
         Ok(Action::decode(tag.action, args.scan(()))?.into_owned())
     }

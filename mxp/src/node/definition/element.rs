@@ -1,10 +1,10 @@
 use std::fmt;
 
-use crate::arguments::ArgumentScanner;
+use crate::arguments::{ArgumentScanner, Arguments};
 use crate::element::{AttributeList, Element, ElementItem};
 use crate::keyword::ElementKeyword;
 use crate::line::Mode;
-use crate::parse::Words;
+use crate::parse::{ArgumentParser, split_name, validate};
 use crate::{Error, ErrorKind};
 
 /// Syntax tree of an entity definition from the server, in the form of `<!ENTITY {name} ...>`.
@@ -42,11 +42,17 @@ impl fmt::Display for ElementDefinition<'_> {
 }
 
 impl<'a> ElementDefinition<'a> {
-    pub(super) fn parse(mut words: Words<'a>) -> crate::Result<Self> {
-        let name = words.next_or(ErrorKind::IncompleteElement)?;
-        crate::validate(name, ErrorKind::InvalidElementName)?;
-        let args = words.parse_args()?;
+    pub(super) fn parse(source: &'a str) -> crate::Result<Self> {
+        let (name, args) = split_name(source);
+        if name.is_empty() {
+            return Err(Error::new(
+                "empty element definition",
+                ErrorKind::IncompleteElement,
+            ));
+        }
+        validate(name, ErrorKind::InvalidElementName)?;
 
+        let args = Arguments::parse(args)?;
         let mut iter = args.scan(()).with_keywords();
 
         let items = match iter.get_next() {
@@ -55,7 +61,7 @@ impl<'a> ElementDefinition<'a> {
         };
 
         let attributes = match iter.get_named("att") {
-            Some(&atts) => Words::new(atts).try_into()?,
+            Some(&atts) => ArgumentParser::new(atts).try_into()?,
             None => AttributeList::default(),
         };
 

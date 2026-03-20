@@ -1,11 +1,10 @@
 use std::error::Error;
 use std::fmt;
 
-use super::words::Words;
 use crate::ErrorKind;
 use crate::arguments::Arguments;
 use crate::element::{ActionKind, AtomicTag};
-use crate::parse::OwnedScan;
+use crate::parse::{OwnedScan, split_name, validate};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FromStrError {
@@ -88,12 +87,14 @@ where
     T: HasActionKind + TryFrom<OwnedScan<'a, ()>, Error = crate::Error>,
 {
     let source = cleanup_source(source)?;
-    let mut words = Words::new(source);
-    let name = words.next_or(ErrorKind::EmptyElement)?;
-    crate::validate(name, ErrorKind::InvalidElementName)?;
+    let (name, args) = split_name(source);
+    if name.is_empty() {
+        return Err(crate::Error::new("", ErrorKind::EmptyElement).into());
+    }
+    validate(name, ErrorKind::InvalidElementName)?;
     AtomicTag::well_known(name)
         .filter(|tag| tag.action == T::ACTION_KIND)
         .ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;
-    let args: Arguments = words.try_into()?;
+    let args = Arguments::parse(args)?;
     Ok(args.into_scan(()).try_into()?)
 }
