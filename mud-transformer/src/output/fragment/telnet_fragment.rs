@@ -1,16 +1,11 @@
 use bytes::Bytes;
 
 use super::OutputFragment;
-use crate::protocol::msdp;
 use crate::protocol::negotiate::{TelnetSource, TelnetVerb};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TelnetFragment {
     GoAhead,
-    Msdp {
-        name: Bytes,
-        value: msdp::Data,
-    },
     Mxp {
         enabled: bool,
     },
@@ -19,10 +14,6 @@ pub enum TelnetFragment {
         source: TelnetSource,
         verb: TelnetVerb,
         code: u8,
-    },
-    ServerStatus {
-        variable: Bytes,
-        value: Bytes,
     },
     SetEcho {
         should_echo: bool,

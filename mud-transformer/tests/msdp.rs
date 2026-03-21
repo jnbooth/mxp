@@ -30,9 +30,14 @@ fn expect_msdp(fragment: Option<OutputFragment>, name: &str, value: msdp::Value)
         value: msdp::Value,
     }
     let expected = Msdp { name, value };
-    let Some(OutputFragment::Telnet(TelnetFragment::Msdp { name, value })) = fragment else {
-        panic!("expected TelnetFragment::Msdp, got {fragment:?}");
+    let Some(OutputFragment::Telnet(TelnetFragment::Subnegotiation {
+        code: msdp::OPT,
+        data,
+    })) = fragment
+    else {
+        panic!("expected TelnetFragment::Subnegotiation, got {fragment:?}");
     };
+    let (name, value) = msdp::parse(data).unwrap();
     let name = String::from_utf8_lossy(&name);
     let value = value.into_value();
     let actual = Msdp { name: &name, value };
@@ -57,12 +62,7 @@ fn msdp_array() {
         "REPORTABLE_VARIABLES",
         msdp::Value::Array(expected_array),
     );
-    let expected = &[TelnetFragment::Subnegotiation {
-        code: 69,
-        data: message.into(),
-    }
-    .into()];
-    assert_eq!(iter.as_slice(), expected);
+    assert_eq!(iter.as_slice(), &[]);
 }
 
 #[test]
@@ -83,10 +83,5 @@ fn msdp_table() {
     let mut iter = output.into_iter();
     expect_msdp(iter.next(), "ROOM", msdp::Value::Table(expected_map));
 
-    let expected = &[TelnetFragment::Subnegotiation {
-        code: 69,
-        data: message.into(),
-    }
-    .into()];
-    assert_eq!(iter.as_slice(), expected);
+    assert_eq!(iter.as_slice(), &[]);
 }

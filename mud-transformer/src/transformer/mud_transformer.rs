@@ -20,7 +20,7 @@ use crate::output::{
     MxpFragment, OutputDrain, OutputFragment, TelnetFragment, TextStyle, VariableFragment,
 };
 use crate::protocol::negotiate::{Negotiate, TelnetSource, TelnetVerb};
-use crate::protocol::{self, charset, mccp, mnes, msdp, mssp, mtts, xterm};
+use crate::protocol::{self, charset, mccp, mnes, mtts, xterm};
 use crate::term::{CursorEffect, EraseRange, EraseTarget};
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
@@ -675,11 +675,9 @@ impl Transformer {
                 });
                 let supported = match c {
                     protocol::MCCP2 => !self.config.disable_compression,
-                    protocol::SGA
-                    | protocol::MUD_SPECIFIC
-                    | protocol::CHARSET
-                    | protocol::MNES
-                    | protocol::MSSP => true,
+                    protocol::SGA | protocol::MUD_SPECIFIC | protocol::CHARSET | protocol::MNES => {
+                        true
+                    }
                     protocol::ECHO if self.config.no_echo_off => false,
                     protocol::ECHO => {
                         self.output
@@ -740,7 +738,6 @@ impl Transformer {
                     | protocol::MUD_SPECIFIC
                     | protocol::ECHO
                     | protocol::CHARSET
-                    | protocol::MSSP
                     | protocol::MNES => true,
                     protocol::MTTS => {
                         self.ttype_negotiator.reset();
@@ -831,17 +828,6 @@ impl Transformer {
                     protocol::CHARSET => {
                         self.charsets = charset::Charsets::from(&data);
                         self.subnegotiate(self.charsets);
-                    }
-                    protocol::MSDP => {
-                        if let Some((name, value)) = msdp::parse(data.clone()) {
-                            self.output.append(TelnetFragment::Msdp { name, value });
-                        }
-                    }
-                    protocol::MSSP => {
-                        for (variable, value) in mssp::iter(data.clone()) {
-                            self.output
-                                .append(TelnetFragment::ServerStatus { variable, value });
-                        }
                     }
                     protocol::MNES => {
                         if matches!(&*data, [mnes::SEND, ..]) {
