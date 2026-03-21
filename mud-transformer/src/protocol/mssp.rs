@@ -12,16 +12,18 @@ pub const VAL: u8 = 2;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone)]
-pub(crate) struct Iter {
+pub struct Iter {
     data: Bytes,
 }
 
-pub fn iter(data: &Bytes) -> Iter {
-    let data = match data.iter().position(|&c| c == VAR) {
-        Some(i) => data.slice(i + 1..),
-        None => Bytes::new(),
-    };
-    Iter { data }
+pub fn iter(mut data: Bytes) -> Iter {
+    match data.iter().position(|&c| c == VAR) {
+        Some(i) => {
+            data.advance(i + 1);
+            Iter { data }
+        }
+        None => Iter { data: Bytes::new() },
+    }
 }
 
 fn split_until(bytes: &mut Bytes, delim: u8) -> Option<Bytes> {
@@ -61,7 +63,7 @@ mod tests {
     #[test]
     fn mssp_iter() {
         let data = Bytes::copy_from_slice(b"abc\x01first\x02second\x01third\x02fourth");
-        let values: Vec<_> = iter(&data)
+        let values: Vec<_> = iter(data)
             .map(|(x, y)| {
                 (
                     String::from_utf8_lossy(&x).into_owned(),

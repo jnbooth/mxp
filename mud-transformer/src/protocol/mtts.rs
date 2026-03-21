@@ -8,7 +8,6 @@ use crate::transformer::TransformerConfig;
 /// https://tintin.mudhalla.net/protocols/mtts/
 pub const OPT: u8 = 24;
 
-#[allow(unused)]
 pub const IS: u8 = 0;
 pub const SEND: u8 = 1;
 
@@ -37,7 +36,7 @@ pub const MSLP: u16 = 1024;
 /// Client supports SSL for data encryption, preferably TLS 1.3 or higher.
 pub const SSL: u16 = 2048;
 
-pub const fn ttype(config: &TransformerConfig) -> &'static str {
+pub(crate) const fn ttype(config: &TransformerConfig) -> &'static str {
     if !config.console_controls {
         return "ANSI-TRUECOLOR";
     }
@@ -47,7 +46,7 @@ pub const fn ttype(config: &TransformerConfig) -> &'static str {
     "XTERM-TRUECOLOR"
 }
 
-pub const fn bitmask(config: &TransformerConfig) -> u16 {
+pub(crate) const fn bitmask(config: &TransformerConfig) -> u16 {
     const fn mask(enable: bool, capability: u16) -> u16 {
         if enable { capability } else { 0 }
     }

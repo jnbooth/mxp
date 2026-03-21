@@ -55,7 +55,7 @@ impl<'a> Iterator for ArgumentParser<'a> {
         let (slice1, is_named) = self.next_arg(true)?;
         // SAFETY: Valid UTF-8.
         let arg1 = unsafe { str::from_utf8_unchecked(slice1) };
-        if slice1.first() == Some(&b'=') {
+        if matches!(slice1, [b'=', ..]) {
             return Some(Err(Error::new(arg1, ErrorKind::MissingArgumentName)));
         }
         if !is_named {

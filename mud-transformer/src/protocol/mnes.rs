@@ -10,10 +10,8 @@ use crate::transformer::TransformerConfig;
 /// https://tintin.mudhalla.net/protocols/mnes/
 pub const OPT: u8 = 39;
 
-#[allow(unused)]
 pub const IS: u8 = 0;
 pub const SEND: u8 = 1;
-#[allow(unused)]
 pub const INFO: u8 = 2;
 
 pub const VAR: u8 = 0;
@@ -25,6 +23,7 @@ flags! {
         Charset,
         ClientName,
         ClientVersion,
+        IpAddress,
         Mtts,
         TerminalType,
     }
@@ -36,25 +35,48 @@ impl KnownVariable {
             b"CHARSET" => Some(Self::Charset),
             b"CLIENT_NAME" => Some(Self::ClientName),
             b"CLIENT_VERSION" => Some(Self::ClientVersion),
+            b"IPADDRESS" => Some(Self::IpAddress),
             b"MTTS" => Some(Self::Mtts),
             b"TERMINAL_TYPE" => Some(Self::TerminalType),
             _ => None,
         }
     }
 
-    fn negotiate<W: fmt::Write>(self, mut f: W, config: &TransformerConfig) -> fmt::Result {
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Charset => "CHARSET",
+            Self::ClientName => "CLIENT_NAME",
+            Self::ClientVersion => "CLIENT_VERSION",
+            Self::IpAddress => "IPADDRESS",
+            Self::Mtts => "MTTS",
+            Self::TerminalType => "TERMINAL_TYPE",
+        }
+    }
+
+    fn write<W: fmt::Write, T: fmt::Display>(self, mut f: W, val: T) -> fmt::Result {
+        write!(f, "\0{}\x01{}", self.as_str(), val)
+    }
+
+    fn negotiate<W: fmt::Write>(self, f: W, config: &TransformerConfig) -> fmt::Result {
         match self {
             Self::Charset => {
                 if config.disable_utf8 {
-                    f.write_str("\0CHARSET\x01ASCII")
+                    self.write(f, "ASCII")
                 } else {
-                    f.write_str("\0CHARSET\x01UTF-8")
+                    self.write(f, "UTF-8")
                 }
             }
-            Self::ClientName => write!(f, "\0CLIENT_NAME\x01{}", config.terminal_identification),
-            Self::ClientVersion => write!(f, "\0CLIENT_VERSION\x01{}", config.version),
-            Self::Mtts => write!(f, "\0MTTS\x01{}", mtts::bitmask(config)),
-            Self::TerminalType => write!(f, "\0TERMINAL_TYPE\x01{}", mtts::ttype(config)),
+            Self::ClientName => self.write(f, &config.terminal_identification),
+            Self::ClientVersion => self.write(f, &config.version),
+            Self::IpAddress => {
+                if let Some(client_ip) = &config.client_ip {
+                    self.write(f, client_ip)
+                } else {
+                    Ok(())
+                }
+            }
+            Self::Mtts => self.write(f, mtts::bitmask(config)),
+            Self::TerminalType => self.write(f, mtts::ttype(config)),
         }
     }
 }
@@ -119,6 +141,9 @@ impl Variables {
         }
         if self.inner.contains(KnownVariable::ClientVersion) && a.version != b.version {
             changes |= KnownVariable::ClientVersion;
+        }
+        if self.inner.contains(KnownVariable::IpAddress) && a.client_ip != b.client_ip {
+            changes |= KnownVariable::IpAddress;
         }
         if self.inner.contains(KnownVariable::Mtts) && mtts::bitmask(a) != mtts::bitmask(b) {
             changes |= KnownVariable::Mtts;

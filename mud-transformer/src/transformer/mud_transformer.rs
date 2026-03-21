@@ -822,7 +822,7 @@ impl Transformer {
                     }
                     protocol::MTTS => {
                         if !self.config.terminal_identification.is_empty()
-                            && data.first() == Some(&mtts::SEND)
+                            && matches!(&*data, [mtts::SEND, ..])
                         {
                             self.subnegotiate(self.ttype_negotiator);
                             self.ttype_negotiator.advance();
@@ -833,18 +833,18 @@ impl Transformer {
                         self.subnegotiate(self.charsets);
                     }
                     protocol::MSDP => {
-                        if let Some((name, value)) = msdp::MsdpValue::parse(&data) {
+                        if let Some((name, value)) = msdp::parse(data.clone()) {
                             self.output.append(TelnetFragment::Msdp { name, value });
                         }
                     }
                     protocol::MSSP => {
-                        for (variable, value) in mssp::iter(&data) {
+                        for (variable, value) in mssp::iter(data.clone()) {
                             self.output
                                 .append(TelnetFragment::ServerStatus { variable, value });
                         }
                     }
                     protocol::MNES => {
-                        if data.first() == Some(&mnes::SEND) {
+                        if matches!(&*data, [mnes::SEND, ..]) {
                             self.mnes_variables = mnes::Variables::from(&data);
                             self.subnegotiate(self.mnes_variables);
                         }

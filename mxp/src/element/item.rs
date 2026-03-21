@@ -39,9 +39,9 @@ impl ElementItem {
         if tag_name.is_empty() {
             return Err(Error::new("", ErrorKind::EmptyElementInDefinition));
         }
-        match tag_name.as_bytes().first() {
-            Some(&b'/') => return Err(Error::braced(source, ErrorKind::CloseTagInDefinition)),
-            Some(&b'!') => return Err(Error::braced(source, ErrorKind::DefinitionInDefinition)),
+        match tag_name.as_bytes() {
+            [b'/', ..] => return Err(Error::braced(source, ErrorKind::CloseTagInDefinition)),
+            [b'!', ..] => return Err(Error::braced(source, ErrorKind::DefinitionInDefinition)),
             _ => (),
         }
         let (args, _) = strip_terminating_slash(body);

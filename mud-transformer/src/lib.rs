@@ -7,7 +7,6 @@ mod input;
 pub use input::InputDrain;
 
 pub mod protocol;
-pub use protocol::msdp::MsdpValue;
 pub use protocol::naws::subnegotiate as naws;
 pub use protocol::negotiate::{TelnetSource, TelnetVerb};
 

@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::fmt;
+use std::net::IpAddr;
 
 use flagset::{FlagSet, flags};
 use mxp::RgbColor;
@@ -138,6 +139,8 @@ pub struct TransformerConfig {
     /// Transmitted in response to an MXP `<VERSION>` request.
     /// Default: empty.
     pub app_name: String,
+    /// Transmitted as IPADDRESS in an MNES response.
+    pub client_ip: Option<IpAddr>,
     /// Overrides for ANSI/XTerm colors. 0 = black, 1 = maroon, etc.
     /// Default: empty.
     pub colors: Vec<RgbColor>,
@@ -220,6 +223,7 @@ impl TransformerConfig {
     pub fn new() -> Self {
         Self {
             app_name: String::new(),
+            client_ip: None,
             colors: Vec::new(),
             console_controls: false,
             convert_ga_to_newline: false,
