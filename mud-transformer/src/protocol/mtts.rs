@@ -6,7 +6,7 @@ use crate::transformer::TransformerConfig;
 /// MUD Terminal Type Standard
 ///
 /// https://tintin.mudhalla.net/protocols/mtts/
-pub const CODE: u8 = 24;
+pub const OPT: u8 = 24;
 
 #[allow(unused)]
 pub const IS: u8 = 0;
@@ -95,7 +95,7 @@ impl Negotiator {
 }
 
 impl Negotiate for Negotiator {
-    const CODE: u8 = CODE;
+    const OPT: u8 = OPT;
 
     fn negotiate<W: fmt::Write>(self, mut f: W, config: &TransformerConfig) -> fmt::Result {
         match self.sequence {

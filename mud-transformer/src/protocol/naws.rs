@@ -3,7 +3,7 @@ use mxp::escape::telnet;
 /// Negotiate About Window Size
 ///
 /// https://datatracker.ietf.org/doc/html/rfc1073
-pub const CODE: u8 = 31;
+pub const OPT: u8 = 31;
 
 pub const fn subnegotiate(width: u16, height: u16) -> [u8; 9] {
     let [width_high, width_low] = width.to_be_bytes();
@@ -11,7 +11,7 @@ pub const fn subnegotiate(width: u16, height: u16) -> [u8; 9] {
     [
         telnet::IAC,
         telnet::SB,
-        CODE,
+        OPT,
         width_high,
         width_low,
         height_high,

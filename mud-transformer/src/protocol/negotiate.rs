@@ -5,7 +5,7 @@ use mxp::escape::telnet;
 use crate::TransformerConfig;
 
 pub(crate) trait Negotiate {
-    const CODE: u8;
+    const OPT: u8;
 
     fn negotiate<W: fmt::Write>(self, f: W, config: &TransformerConfig) -> fmt::Result;
 }

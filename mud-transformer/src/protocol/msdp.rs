@@ -6,7 +6,7 @@ use bytes::{Buf, Bytes};
 /// MUD Server Data Protocol
 ///
 /// https://tintin.mudhalla.net/protocols/msdp/
-pub const CODE: u8 = 69;
+pub const OPT: u8 = 69;
 
 pub const VAR: u8 = 1;
 pub const VAL: u8 = 2;

@@ -5,7 +5,7 @@ use bytes::{Buf, Bytes};
 /// MUD Server Status Protocol
 ///
 /// https://tintin.mudhalla.net/protocols/mssp/
-pub const CODE: u8 = 70;
+pub const OPT: u8 = 70;
 
 pub const VAR: u8 = 1;
 pub const VAL: u8 = 2;

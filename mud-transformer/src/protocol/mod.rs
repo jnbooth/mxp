@@ -1,25 +1,25 @@
 pub(crate) mod ansi;
 
 pub(crate) mod charset;
-pub use charset::CODE as CHARSET;
+pub use charset::OPT as CHARSET;
 
 pub(crate) mod mccp;
-pub use mccp::CODE as MCCP2;
+pub use mccp::OPT as MCCP2;
 
 pub(crate) mod mnes;
-pub use mnes::CODE as MNES;
+pub use mnes::OPT as MNES;
 
 pub(crate) mod msdp;
-pub use msdp::CODE as MSDP;
+pub use msdp::OPT as MSDP;
 
 pub(crate) mod mssp;
-pub use mssp::CODE as MSSP;
+pub use mssp::OPT as MSSP;
 
 pub(crate) mod mtts;
-pub use mtts::CODE as MTTS;
+pub use mtts::OPT as MTTS;
 
 pub(crate) mod naws;
-pub use naws::CODE as NAWS;
+pub use naws::OPT as NAWS;
 
 pub(crate) mod negotiate;
 

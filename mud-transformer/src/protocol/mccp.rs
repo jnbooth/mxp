@@ -3,7 +3,7 @@ use std::io::{self, BufRead};
 use flate2::FlushDecompress;
 
 /// MUD Client Compression Protocol v2
-pub const CODE: u8 = 86;
+pub const OPT: u8 = 86;
 
 #[derive(Debug)]
 pub(crate) struct Decompress {

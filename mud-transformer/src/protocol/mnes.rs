@@ -8,7 +8,7 @@ use crate::transformer::TransformerConfig;
 
 /// MUD New-Environ Standard
 /// https://tintin.mudhalla.net/protocols/mnes/
-pub const CODE: u8 = 39;
+pub const OPT: u8 = 39;
 
 #[allow(unused)]
 pub const IS: u8 = 0;
@@ -135,7 +135,7 @@ impl Variables {
 }
 
 impl Negotiate for Variables {
-    const CODE: u8 = CODE;
+    const OPT: u8 = OPT;
 
     fn negotiate<W: fmt::Write>(self, mut f: W, config: &TransformerConfig) -> fmt::Result {
         f.write_str(self.prefix)?;

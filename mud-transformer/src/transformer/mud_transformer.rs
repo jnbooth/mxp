@@ -246,7 +246,7 @@ impl Transformer {
     }
 
     fn subnegotiate<T: Negotiate>(&mut self, negotiator: T) {
-        self.input.write(&[telnet::IAC, telnet::SB, T::CODE]);
+        self.input.write(&[telnet::IAC, telnet::SB, T::OPT]);
         negotiator.negotiate(&mut self.input, &self.config).unwrap();
         self.input.write(&[telnet::IAC, telnet::SE]);
     }

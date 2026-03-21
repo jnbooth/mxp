@@ -6,7 +6,7 @@ use super::negotiate::Negotiate;
 use crate::transformer::TransformerConfig;
 
 /// Negotiate About Character Set
-pub const CODE: u8 = 42;
+pub const OPT: u8 = 42;
 
 flags! {
     enum Charset: u8 {
@@ -73,7 +73,7 @@ impl fmt::Display for Charsets {
 }
 
 impl Negotiate for Charsets {
-    const CODE: u8 = CODE;
+    const OPT: u8 = OPT;
 
     fn negotiate<W: fmt::Write>(mut self, mut f: W, config: &TransformerConfig) -> fmt::Result {
         if config.disable_utf8 {
