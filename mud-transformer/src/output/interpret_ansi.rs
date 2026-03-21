@@ -19,7 +19,7 @@ pub fn interpret_ansi(input: &str) -> impl Iterator<Item = TextFragment> {
     let mut ignored = BufferedInput::new();
     let mut interpreter = ansi::Interpreter::new();
     let mut output = BufferedOutput::new();
-    output.append_text(start);
+    output.write_str(start);
     for sequence in iter {
         let Some(end) = sequence.find(|c: char| matches!(c, '@'..='z')) else {
             continue;
@@ -31,7 +31,7 @@ pub fn interpret_ansi(input: &str) -> impl Iterator<Item = TextFragment> {
         for c in escape.bytes() {
             interpreter.interpret(c, &mut output, &mut ignored);
         }
-        output.append_text(rest);
+        output.write_str(rest);
     }
     iter_ansi(output.into_output())
 }

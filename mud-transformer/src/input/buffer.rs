@@ -22,11 +22,6 @@ impl BufferedInput {
         }
     }
 
-    #[inline]
-    pub fn append<S: AsRef<[u8]>>(&mut self, bytes: S) {
-        self.buf.extend_from_slice(bytes.as_ref());
-    }
-
     pub fn drain(&mut self) -> Option<InputDrain<'_>> {
         if self.buf.is_empty() {
             return None;
@@ -39,6 +34,11 @@ impl BufferedInput {
     }
 
     #[inline]
+    pub fn write(&mut self, bytes: &[u8]) {
+        self.buf.extend_from_slice(bytes);
+    }
+
+    #[inline]
     pub fn write_fmt(&mut self, args: fmt::Arguments) {
         fmt::Write::write_fmt(self, args).unwrap();
     }
@@ -47,7 +47,7 @@ impl BufferedInput {
 impl fmt::Write for BufferedInput {
     #[inline]
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        self.append(s);
+        self.buf.extend_from_slice(s.as_bytes());
         Ok(())
     }
 }

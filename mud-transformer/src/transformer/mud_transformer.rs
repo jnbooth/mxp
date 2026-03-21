@@ -246,9 +246,9 @@ impl Transformer {
     }
 
     fn subnegotiate<T: Negotiate>(&mut self, negotiator: T) {
-        self.input.append([telnet::IAC, telnet::SB, T::CODE]);
+        self.input.write(&[telnet::IAC, telnet::SB, T::CODE]);
         negotiator.negotiate(&mut self.input, &self.config).unwrap();
-        self.input.append([telnet::IAC, telnet::SE]);
+        self.input.write(&[telnet::IAC, telnet::SE]);
     }
 
     fn mxp_close_tags_from(&mut self, pos: usize) {
@@ -453,7 +453,7 @@ impl Transformer {
             Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
             Action::Relocate(relocate) => self.output.append(relocate.into_owned()),
             Action::Reset => self.mxp_reset(),
-            Action::SBr => write!(self.output, " "),
+            Action::SBr => self.output.write_str(" "),
             Action::Send(link) => self.output.set_mxp_link(link.into_owned()),
             Action::Small => self.output.set_mxp_flag(TextStyle::Small),
             Action::Sound(sound) => self.output.append(sound.into_owned()),
@@ -501,7 +501,7 @@ impl Transformer {
 
         if self.phase == Phase::Utf8Character && !is_utf8_continuation(c) {
             let sequence = str::from_utf8(&self.utf8_sequence).unwrap_or("\u{FFFD}");
-            write!(self.output, "{sequence}");
+            self.output.write_str(sequence);
             self.phase = Phase::Normal;
         }
 
@@ -541,7 +541,7 @@ impl Transformer {
                     32..=126 => {
                         // SAFETY: `utf8` is valid UTF-8, since it is a single ASCII byte.
                         let one_ascii = unsafe { str::from_utf8_unchecked(slice::from_ref(&c)) };
-                        self.output.append_text(one_ascii);
+                        self.output.write_str(one_ascii);
                     }
                     b'\n' => {
                         if self.mxp_active {
@@ -553,9 +553,9 @@ impl Transformer {
                                     self.output.start_line();
                                     self.output.start_line();
                                 }
-                                b'.' => write!(self.output, "  "),
+                                b'.' => self.output.write_str("  "),
                                 b' ' | b'\t' | 0x0C => (),
-                                _ => write!(self.output, " "),
+                                _ => self.output.write_str(" "),
                             }
                         } else if self.ignore_next_newline {
                             self.ignore_next_newline = false;
@@ -565,17 +565,17 @@ impl Transformer {
                     }
                     b'\t' if self.in_paragraph => {
                         if last_char != b' ' {
-                            write!(self.output, " ");
+                            self.output.write_str(" ");
                         }
                     }
                     b'\t' => match self.config.tab {
                         TabBehavior::Control => self.output.append(CursorEffect::TabForward(1)),
                         TabBehavior::NextMultipleOf8 => self.output.append_tab(),
-                        tab => write!(self.output, "{}", tab.str()),
+                        tab => self.output.write_str(tab.str()),
                     },
                     ansi::ESC => self.phase = Phase::Esc,
                     telnet::IAC => self.phase = Phase::Iac,
-                    ansi::ENQ => self.input.append(self.ansi.answerback()),
+                    ansi::ENQ => self.input.write(self.ansi.answerback()),
                     ansi::BEL => self.output.append(ControlFragment::Beep),
                     ansi::BS => self.output.append(CursorEffect::Back(1)),
                     ansi::VT => self.output.append(ControlFragment::VerticalTab),
@@ -695,7 +695,7 @@ impl Transformer {
                     telnet::WILL_EOR => true,
                     _ => self.config.will.contains(&c),
                 };
-                self.input.append(telnet::supports_do(c, supported));
+                self.input.write(&telnet::supports_do(c, supported));
                 self.output.append(TelnetFragment::Negotiation {
                     source: TelnetSource::Client,
                     verb: if supported {
@@ -718,7 +718,7 @@ impl Transformer {
                     self.output
                         .append(TelnetFragment::SetEcho { should_echo: true });
                 }
-                self.input.append(telnet::supports_do(c, false));
+                self.input.write(&telnet::supports_do(c, false));
                 self.output.append(TelnetFragment::Negotiation {
                     source: TelnetSource::Client,
                     code: c,
@@ -755,7 +755,7 @@ impl Transformer {
                     },
                     _ => self.config.will.contains(&c),
                 };
-                self.input.append(telnet::supports_will(c, supported));
+                self.input.write(&telnet::supports_will(c, supported));
                 self.output.append(TelnetFragment::Negotiation {
                     source: TelnetSource::Client,
                     verb: if supported {
@@ -783,7 +783,7 @@ impl Transformer {
                     protocol::MNES => self.mnes_variables.clear(),
                     _ => (),
                 }
-                self.input.append(telnet::supports_will(c, false));
+                self.input.write(&telnet::supports_will(c, false));
                 self.output.append(TelnetFragment::Negotiation {
                     source: TelnetSource::Client,
                     verb: TelnetVerb::Wont,

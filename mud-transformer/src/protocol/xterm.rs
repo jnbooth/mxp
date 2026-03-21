@@ -144,7 +144,7 @@ impl Interpreter {
             }
             ansi::SUB => {
                 self.terminate();
-                output.append_text("⸮");
+                output.write_str("⸮");
                 return Outcome::Fail;
             }
             _ => (),
@@ -324,10 +324,9 @@ fn process_request_status(
 /// Request Termcap/Terminfo String
 #[allow(clippy::unnecessary_wraps)]
 fn process_request_term(control_string: &[u8], input: &mut BufferedInput) -> Option<()> {
-    input.append(ansi::DCS);
-    input.append("0+r");
-    input.append(control_string);
-    input.append(ansi::ST);
+    write!(input, "{}0+r", ansi::DCS);
+    input.write(control_string);
+    write!(input, "{}", ansi::ST);
     Some(())
 }
 

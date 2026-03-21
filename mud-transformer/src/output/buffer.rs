@@ -272,21 +272,6 @@ impl BufferedOutput {
         self.append(OutputFragment::LineBreak);
     }
 
-    #[inline]
-    pub fn append_char(&mut self, output: char) {
-        self.text_buf.push(output);
-        for register in &mut self.registers[..self.active_registers] {
-            register.push(output);
-        }
-    }
-
-    pub fn append_text(&mut self, output: &str) {
-        self.text_buf.push_str(output);
-        for register in &mut self.registers[..self.active_registers] {
-            register.push_str(output);
-        }
-    }
-
     pub fn set_ansi_flag(&mut self, flag: TextStyle) {
         self.flush();
         self.ansi_flags |= flag;
@@ -528,18 +513,33 @@ impl BufferedOutput {
     pub fn write_fmt(&mut self, args: fmt::Arguments) {
         fmt::Write::write_fmt(self, args).unwrap();
     }
+
+    #[inline]
+    pub fn write_char(&mut self, output: char) {
+        self.text_buf.push(output);
+        for register in &mut self.registers[..self.active_registers] {
+            register.push(output);
+        }
+    }
+
+    pub fn write_str(&mut self, output: &str) {
+        self.text_buf.push_str(output);
+        for register in &mut self.registers[..self.active_registers] {
+            register.push_str(output);
+        }
+    }
 }
 
 impl fmt::Write for BufferedOutput {
     #[inline]
     fn write_char(&mut self, c: char) -> fmt::Result {
-        self.append_char(c);
+        self.write_char(c);
         Ok(())
     }
 
     #[inline]
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        self.append_text(s);
+        self.write_str(s);
         Ok(())
     }
 }
