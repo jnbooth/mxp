@@ -39,6 +39,11 @@ impl BufferedInput {
     }
 
     #[inline]
+    pub fn write_str(&mut self, s: &str) {
+        self.buf.extend_from_slice(s.as_bytes());
+    }
+
+    #[inline]
     pub fn write_fmt(&mut self, args: fmt::Arguments) {
         fmt::Write::write_fmt(self, args).unwrap();
     }
@@ -47,7 +52,7 @@ impl BufferedInput {
 impl fmt::Write for BufferedInput {
     #[inline]
     fn write_str(&mut self, s: &str) -> fmt::Result {
-        self.buf.extend_from_slice(s.as_bytes());
+        self.write_str(s);
         Ok(())
     }
 }

@@ -639,6 +639,7 @@ impl Transformer {
                             self.output.start_line();
                         }
                     }
+
                     telnet::SB => self.phase = Phase::Sb,
                     telnet::WILL => self.phase = Phase::Will,
                     telnet::WONT => self.phase = Phase::Wont,
@@ -648,6 +649,7 @@ impl Transformer {
                         self.phase = Phase::Normal;
                         self.output.flush();
                     }
+                    telnet::AYT => self.input.write_str("YES"),
                     telnet::EC => {
                         self.phase = Phase::Normal;
                         self.output.append(CursorEffect::Back(1));
