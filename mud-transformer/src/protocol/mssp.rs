@@ -47,12 +47,7 @@ impl Iterator for Iter {
 
 impl fmt::Debug for Iter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fn format(bytes: &Bytes) -> String {
-            String::from_utf8_lossy(bytes).into_owned()
-        }
-        f.debug_map()
-            .entries(self.clone().map(|(k, v)| (format(&k), format(&v))))
-            .finish()
+        f.debug_map().entries(self.clone()).finish()
     }
 }
 
