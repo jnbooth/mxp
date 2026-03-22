@@ -16,7 +16,7 @@ pub struct Iter {
     data: Bytes,
 }
 
-pub fn parse(mut data: Bytes) -> Iter {
+pub fn decode(mut data: Bytes) -> Iter {
     match data.iter().position(|&c| c == VAR) {
         Some(i) => {
             data.advance(i + 1);
@@ -58,7 +58,7 @@ mod tests {
     #[test]
     fn mssp_iter() {
         let data = Bytes::copy_from_slice(b"abc\x01first\x02second\x01third\x02fourth");
-        let values: Vec<_> = parse(data)
+        let values: Vec<_> = decode(data)
             .map(|(x, y)| {
                 (
                     String::from_utf8_lossy(&x).into_owned(),

@@ -37,7 +37,7 @@ fn expect_msdp(fragment: Option<OutputFragment>, name: &str, value: msdp::Value)
     else {
         panic!("expected TelnetFragment::Subnegotiation, got {fragment:?}");
     };
-    let (name, value) = msdp::parse(data).unwrap();
+    let (name, value) = msdp::decode(data).unwrap();
     let name = String::from_utf8_lossy(&name);
     let value = value.into_value();
     let actual = Msdp { name: &name, value };

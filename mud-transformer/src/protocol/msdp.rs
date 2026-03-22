@@ -21,7 +21,7 @@ pub const TABLE_CLOSE: u8 = 4;
 pub const ARRAY_OPEN: u8 = 5;
 pub const ARRAY_CLOSE: u8 = 6;
 
-pub fn parse(mut bytes: Bytes) -> Option<(Bytes, Data)> {
+pub fn decode(mut bytes: Bytes) -> Option<(Bytes, Data)> {
     Data::take_var_and_value(&mut bytes)
 }
 
@@ -327,11 +327,11 @@ pub trait Encodable {
     fn encode(&self, writer: &mut dyn Write) -> io::Result<()>;
 }
 
-pub struct WriteStream<W: Write> {
+pub struct EncodeStream<W: Write> {
     writer: W,
 }
 
-impl<W: Write> WriteStream<W> {
+impl<W: Write> EncodeStream<W> {
     pub fn new(writer: W) -> Self {
         Self { writer }
     }
