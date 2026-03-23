@@ -128,22 +128,21 @@ pub enum Action<S = String> {
     Version,
 }
 
-impl<S: AsRef<str> + Clone> Action<S> {
+impl<S: AsRef<str> + Clone + Default> Action<S> {
     pub(crate) fn decode<'a, A>(action: ActionKind, mut scanner: A) -> crate::Result<Self>
     where
         A: ArgumentScanner<'a, Decoded = S>,
-        S: From<&'a str>,
     {
         Ok(match action {
             ActionKind::Bold => Self::Bold,
             ActionKind::Br => Self::Br,
-            ActionKind::Color => Self::Color(Color::scan(scanner)?),
-            ActionKind::Dest => Self::Dest(Dest::scan(scanner)?),
-            ActionKind::Expire => Self::Expire(Expire::scan(scanner)?),
-            ActionKind::Filter => Self::Filter(Filter::scan(scanner)?),
-            ActionKind::Font => Self::Font(Font::scan(scanner)?),
-            ActionKind::Frame => Self::Frame(Frame::scan(scanner)?),
-            ActionKind::Gauge => Self::Gauge(Gauge::scan(scanner)?),
+            ActionKind::Color => Self::Color(scanner.parse()?),
+            ActionKind::Dest => Self::Dest(scanner.parse()?),
+            ActionKind::Expire => Self::Expire(scanner.parse()?),
+            ActionKind::Filter => Self::Filter(scanner.parse()?),
+            ActionKind::Font => Self::Font(scanner.parse()?),
+            ActionKind::Frame => Self::Frame(scanner.parse()?),
+            ActionKind::Gauge => Self::Gauge(scanner.parse()?),
             ActionKind::H1 => Self::Heading(Heading::H1),
             ActionKind::H2 => Self::Heading(Heading::H2),
             ActionKind::H3 => Self::Heading(Heading::H3),
@@ -152,8 +151,8 @@ impl<S: AsRef<str> + Clone> Action<S> {
             ActionKind::H6 => Self::Heading(Heading::H6),
             ActionKind::Highlight => Self::Highlight,
             ActionKind::Hr => Self::Hr,
-            ActionKind::Hyperlink => Self::Hyperlink(Hyperlink::scan(scanner)?),
-            ActionKind::Image => Self::Image(Image::scan(scanner)?),
+            ActionKind::Hyperlink => Self::Hyperlink(scanner.parse()?),
+            ActionKind::Image => Self::Image(scanner.parse()?),
             ActionKind::Italic => Self::Italic,
             ActionKind::Mxp => {
                 let command = scanner.get_next()?.expect_some("off")?;
@@ -165,7 +164,7 @@ impl<S: AsRef<str> + Clone> Action<S> {
                 }
             }
             ActionKind::Music => {
-                let music = Music::scan(scanner)?;
+                let music: Music<S> = scanner.parse()?;
                 if music.is_off() {
                     Self::MusicOff
                 } else {
@@ -175,26 +174,26 @@ impl<S: AsRef<str> + Clone> Action<S> {
             ActionKind::NoBr => Self::NoBr,
             ActionKind::P => Self::P,
             ActionKind::Password => Self::Password,
-            ActionKind::Relocate => Self::Relocate(Relocate::scan(scanner)?),
+            ActionKind::Relocate => Self::Relocate(scanner.parse()?),
             ActionKind::Reset => Self::Reset,
             ActionKind::SBr => Self::SBr,
-            ActionKind::Send => Self::Send(Send::scan(scanner)?),
+            ActionKind::Send => Self::Send(scanner.parse()?),
             ActionKind::Small => Self::Small,
             ActionKind::Sound => {
-                let sound = Sound::scan(scanner)?;
+                let sound: Sound<S> = scanner.parse()?;
                 if sound.is_off() {
                     Self::SoundOff
                 } else {
                     Self::Sound(sound)
                 }
             }
-            ActionKind::Stat => Self::Stat(Stat::scan(scanner)?),
+            ActionKind::Stat => Self::Stat(scanner.parse()?),
             ActionKind::Strikeout => Self::Strikeout,
-            ActionKind::Support => Self::Support(Support::scan(scanner)?),
+            ActionKind::Support => Self::Support(scanner.parse()?),
             ActionKind::Tt => Self::Tt,
             ActionKind::Underline => Self::Underline,
             ActionKind::User => Self::User,
-            ActionKind::Var => Self::Var(Var::scan(scanner)?),
+            ActionKind::Var => Self::Var(scanner.parse()?),
             ActionKind::Version => {
                 if let Some(styleversion) = scanner.get_next()? {
                     Self::StyleVersion(StyleVersion { styleversion })

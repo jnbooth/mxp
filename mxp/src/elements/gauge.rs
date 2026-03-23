@@ -1,9 +1,7 @@
-use std::borrow::Cow;
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
 use crate::color::RgbColor;
-use crate::parse::Decoder;
 
 /// Displays an MXP entity value as a gauge.
 ///
@@ -67,11 +65,8 @@ impl<S: AsRef<str>> Gauge<S> {
 
 impl_partial_eq!(Gauge);
 
-impl<'a, S: AsRef<str>> Gauge<S> {
-    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str>> FromArgs<'a, S> for Gauge<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(mut scanner: A) -> crate::Result<Self> {
         let entity = scanner.get_next()?.expect_some("EntityName")?;
         let max = scanner.get_next_or("max")?;
         let caption = scanner.get_next_or("caption")?;

@@ -1,8 +1,6 @@
-use std::borrow::Cow;
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _};
-use crate::parse::Decoder;
+use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
 
 /// Displays an MXP entity value as status bar text.
 ///
@@ -61,11 +59,8 @@ impl<S: AsRef<str>> Stat<S> {
 
 impl_partial_eq!(Stat);
 
-impl<'a, S> Stat<S> {
-    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str>> FromArgs<'a, S> for Stat<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(mut scanner: A) -> crate::Result<Self> {
         let entity = scanner.get_next()?.expect_some("EntityName")?;
         let max = scanner.get_next_or("max")?;
         let caption = scanner.get_next_or("caption")?;

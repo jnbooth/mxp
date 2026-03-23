@@ -1,12 +1,10 @@
-use std::borrow::Cow;
 use std::fmt;
 
 use flagset::FlagSet;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
 use crate::keyword::EntityKeyword;
 use crate::node::EntityDefinition;
-use crate::parse::Decoder;
 
 /// The `<VAR>` tag is just like the `<!ENTITY>` tag, except that the value of the variable is
 /// placed between the `<VAR>` and `</VAR>` tags, and this value is displayed to the user.
@@ -74,11 +72,8 @@ impl<S: AsRef<str>> Var<S> {
 
 impl_partial_eq!(Var);
 
-impl<'a, S> Var<S> {
-    pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str>> FromArgs<'a, S> for Var<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(scanner: A) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         let variable = scanner.get_next()?.expect_some("Variable")?;
         let desc = scanner.get_next_or("desc")?;

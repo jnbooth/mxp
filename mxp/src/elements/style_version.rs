@@ -1,8 +1,6 @@
-use std::borrow::Cow;
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _};
-use crate::parse::Decoder;
+use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
 
 /// A MUD sets a style-sheet version number by sending the `<VERSION styleversion>` tag to the
 /// client.
@@ -53,11 +51,8 @@ impl<S: AsRef<str>> StyleVersion<S> {
 
 impl_partial_eq!(StyleVersion);
 
-impl<'a, S> StyleVersion<S> {
-    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str>> FromArgs<'a, S> for StyleVersion<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(mut scanner: A) -> crate::Result<Self> {
         let styleversion = scanner.get_next()?.expect_some("StyleVersion")?;
         scanner.expect_end()?;
         Ok(Self { styleversion })

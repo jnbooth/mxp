@@ -44,6 +44,17 @@ pub(crate) trait ArgumentScanner<'a>: Sized {
             keywords: FlagSet::empty(),
         }
     }
+
+    fn parse<T>(self) -> crate::Result<T>
+    where
+        T: FromArgs<'a, Self::Decoded>,
+    {
+        T::from_args(self)
+    }
+}
+
+pub(crate) trait FromArgs<'a, S>: Sized {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(scanner: A) -> crate::Result<Self>;
 }
 
 pub(crate) struct KeywordArgumentScanner<A, K: Flags> {

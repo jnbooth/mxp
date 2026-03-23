@@ -10,4 +10,4 @@ mod iter;
 pub use iter::{Named, Positional};
 
 mod scanner;
-pub(crate) use scanner::ArgumentScanner;
+pub(crate) use scanner::{ArgumentScanner, FromArgs};

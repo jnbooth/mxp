@@ -1,8 +1,6 @@
-use std::borrow::Cow;
 use std::fmt;
 
-use crate::arguments::ArgumentScanner;
-use crate::parse::Decoder;
+use crate::arguments::{ArgumentScanner, FromArgs};
 
 /// Removes previously displayed links. For example, when moving to a new room, links from the
 /// previous room description are no longer valid and need to be removed.
@@ -50,11 +48,8 @@ impl<S: AsRef<str>> Expire<S> {
 
 impl_partial_eq!(Expire);
 
-impl<'a, S> Expire<S> {
-    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str>> FromArgs<'a, S> for Expire<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(mut scanner: A) -> crate::Result<Self> {
         let name = scanner.get_next()?;
         scanner.expect_end()?;
         Ok(Self { name })

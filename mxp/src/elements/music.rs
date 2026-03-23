@@ -1,10 +1,9 @@
-use std::borrow::Cow;
 use std::fmt;
 use std::str::FromStr;
 
 use super::AudioRepetition;
-use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _};
-use crate::parse::{Decoder, StringVariant, UnrecognizedVariant};
+use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _, FromArgs};
+use crate::parse::{StringVariant, UnrecognizedVariant};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
 enum AudioContinuation {
@@ -158,15 +157,12 @@ impl<'a> Music<&'a str> {
     /// );
     /// ```
     pub fn from_msp(source: &'a str) -> crate::Result<Self> {
-        Self::scan(Arguments::parse(source)?.into_scan())
+        Arguments::parse(source)?.into_scan().parse()
     }
 }
 
-impl<'a, S: AsRef<str>> Music<S> {
-    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str>> FromArgs<'a, S> for Music<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(mut scanner: A) -> crate::Result<Self> {
         let fname = scanner.get_next_or("fname")?.expect_some("fname")?;
         let volume = scanner.get_next_or("v")?.expect_number()?.unwrap_or(100);
         let repeat = scanner

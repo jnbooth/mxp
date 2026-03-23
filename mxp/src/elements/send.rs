@@ -1,9 +1,8 @@
 use std::borrow::Cow;
 use std::{fmt, str};
 
-use crate::arguments::ArgumentScanner;
+use crate::arguments::{ArgumentScanner, FromArgs};
 use crate::keyword::SendKeyword;
-use crate::parse::Decoder;
 
 /// Specifies that a span of text can be clicked on to cause an action.
 ///
@@ -22,7 +21,7 @@ use crate::parse::Decoder;
 ///     }),
 /// );
 /// ```
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
 pub struct Send<S = String> {
     /// Command to send.
     pub href: S,
@@ -37,16 +36,12 @@ pub struct Send<S = String> {
 
 impl Send {
     pub const EMBED_ENTITY: &'static str = "&text;";
-}
 
-impl<S: From<&'static str>> Default for Send<S> {
-    /// Constructs a link with the action `"&text;"`, meaning the surrounded text will be used.
-    fn default() -> Self {
-        Self {
-            href: S::from(Send::EMBED_ENTITY),
-            hint: S::from(Send::EMBED_ENTITY),
-            expire: None,
-            prompt: false,
+    fn embed_text(input: &str, text: &str) -> String {
+        if input.is_empty() {
+            text.to_owned()
+        } else {
+            input.replace(Send::EMBED_ENTITY, text)
         }
     }
 }
@@ -90,9 +85,17 @@ impl<S: AsRef<str>> Send<S> {
     /// ```
     #[must_use = "function returns a new link"]
     pub fn for_text(&self, text: &str) -> Send<String> {
+        let href_str = self.href.as_ref();
+        let hint_str = self.hint.as_ref();
+        let href = Send::embed_text(href_str, text);
+        let hint = if hint_str == href_str {
+            href.clone()
+        } else {
+            Send::embed_text(hint_str, text)
+        };
         Send {
-            href: self.href.as_ref().replace(Send::EMBED_ENTITY, text),
-            hint: self.hint.as_ref().replace(Send::EMBED_ENTITY, text),
+            href,
+            hint,
             expire: self
                 .expire
                 .as_ref()
@@ -161,15 +164,10 @@ impl<'a> Send<&'a str> {
     }
 }
 
-impl<'a, S: Clone + From<&'a str>> Send<S> {
-    pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str> + Clone + Default> FromArgs<'a, S> for Send<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(scanner: A) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
-        let href = scanner
-            .get_next_or("href")?
-            .unwrap_or(Send::EMBED_ENTITY.into());
+        let href = scanner.get_next_or("href")?.unwrap_or_default();
         let hint = scanner.get_next_or("hint")?.unwrap_or_else(|| href.clone());
         let expire = scanner.get_next_or("expire")?;
         let keywords = scanner.into_keywords()?;

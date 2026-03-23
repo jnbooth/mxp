@@ -1,11 +1,9 @@
-use std::borrow::Cow;
 use std::{fmt, slice, vec};
 
 use flagset::FlagSet;
 
-use crate::arguments::ArgumentScanner;
+use crate::arguments::{ArgumentScanner, FromArgs};
 use crate::element::ActionKind;
-use crate::parse::Decoder;
 use crate::responses::SupportResponse;
 
 /// Determines exactly which tags are supported by the client.
@@ -74,11 +72,8 @@ impl<'a, S> IntoIterator for &'a Support<S> {
     }
 }
 
-impl<'a, S> Support<S> {
-    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str>> FromArgs<'a, S> for Support<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(mut scanner: A) -> crate::Result<Self> {
         let mut questions = Vec::new();
         while let Some(question) = scanner.get_next()? {
             questions.push(question);

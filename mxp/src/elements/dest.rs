@@ -1,10 +1,8 @@
-use std::borrow::Cow;
 use std::fmt;
 use std::num::NonZero;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
 use crate::keyword::DestKeyword;
-use crate::parse::Decoder;
 
 /// Positions text at a certain position in a frame.
 ///
@@ -96,11 +94,8 @@ impl<S: AsRef<str>> From<S> for Dest<S> {
     }
 }
 
-impl<'a, S: AsRef<str>> Dest<S> {
-    pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str>> FromArgs<'a, S> for Dest<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(scanner: A) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         let name = scanner.get_next()?;
         let column = scanner

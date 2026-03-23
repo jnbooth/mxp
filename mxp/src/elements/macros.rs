@@ -5,18 +5,6 @@ macro_rules! impl_into_owned {
                 self.map_text(crate::parse::IntoOwnedString::into_owned_string)
             }
         }
-
-        impl<D: crate::parse::Decoder> TryFrom<crate::parse::DecodeScan<'_, D, Cow<'_, str>>>
-            for $t<String>
-        {
-            type Error = crate::Error;
-
-            fn try_from(
-                scanner: crate::parse::DecodeScan<'_, D, Cow<'_, str>>,
-            ) -> crate::Result<Self> {
-                Ok($t::<Cow<'_, str>>::try_from(scanner)?.into_owned())
-            }
-        }
     };
 }
 
@@ -68,30 +56,6 @@ macro_rules! impl_partial_eq {
 
 macro_rules! impl_from_str {
     ($t:ident) => {
-        impl<'a, D: Decoder, S: AsRef<str>> TryFrom<crate::parse::DecodeScan<'a, D, S>>
-            for $t<std::borrow::Cow<'a, str>>
-        {
-            type Error = crate::Error;
-
-            #[inline]
-            fn try_from(scanner: crate::parse::DecodeScan<'a, D, S>) -> crate::Result<Self> {
-                Self::scan(scanner)
-            }
-        }
-
-        impl<'a, D: Decoder> TryFrom<crate::parse::OwnedDecodeScan<'a, D>>
-            for $t<std::borrow::Cow<'a, str>>
-        {
-            type Error = crate::Error;
-
-            #[inline]
-            fn try_from(
-                scanner: crate::parse::OwnedDecodeScan<'a, D>,
-            ) -> Result<Self, Self::Error> {
-                Self::scan(scanner)
-            }
-        }
-
         impl<'a> TryFrom<&'a str> for $t<std::borrow::Cow<'a, str>> {
             type Error = crate::parse::FromStrError;
 

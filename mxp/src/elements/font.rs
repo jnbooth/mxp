@@ -1,12 +1,11 @@
-use std::borrow::Cow;
 use std::fmt;
 use std::num::NonZero;
 
 use flagset::{FlagSet, flags};
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
 use crate::color::RgbColor;
-use crate::parse::{Decoder, UnrecognizedVariant};
+use crate::parse::UnrecognizedVariant;
 
 flags! {
     /// Font modifier applied by the [`color`](Font::color) argument of a [`Font`] tag.
@@ -94,11 +93,8 @@ impl<S: AsRef<str>> Font<S> {
 
 impl_partial_eq!(Font);
 
-impl<'a, S: AsRef<str>> Font<S> {
-    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str>> FromArgs<'a, S> for Font<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(mut scanner: A) -> crate::Result<Self> {
         let face = scanner.get_next_or("face")?;
         let size = scanner
             .get_next_or("size")?

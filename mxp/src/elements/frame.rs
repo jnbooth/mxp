@@ -1,9 +1,8 @@
-use std::borrow::Cow;
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
 use crate::keyword::FrameKeyword;
-use crate::parse::{Decoder, UnrecognizedVariant};
+use crate::parse::UnrecognizedVariant;
 use crate::screen::{Align, Dimension};
 
 /// Action to apply to a [`Frame`].
@@ -294,11 +293,8 @@ enum YesOrNo {
 
 impl_parse_enum!(YesOrNo, No, Yes);
 
-impl<'a, S: AsRef<str> + Clone> Frame<S> {
-    pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str> + Clone> FromArgs<'a, S> for Frame<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(scanner: A) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         let name = scanner.get_next_or("name")?.expect_some("name")?;
         let action = scanner

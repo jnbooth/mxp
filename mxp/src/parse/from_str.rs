@@ -1,10 +1,11 @@
+use std::borrow::Cow;
 use std::error::Error;
 use std::fmt;
 
 use crate::ErrorKind;
-use crate::arguments::Arguments;
+use crate::arguments::{ArgumentScanner, Arguments, FromArgs};
 use crate::element::{ActionKind, AtomicTag};
-use crate::parse::{OwnedDecodeScan, split_name, validate};
+use crate::parse::{split_name, validate};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FromStrError {
@@ -84,7 +85,7 @@ impl<S> HasActionKind for crate::elements::StyleVersion<S> {
 
 pub(crate) fn parse_element<'a, T>(source: &'a str) -> Result<T, FromStrError>
 where
-    T: HasActionKind + TryFrom<OwnedDecodeScan<'a, ()>, Error = crate::Error>,
+    T: HasActionKind + FromArgs<'a, Cow<'a, str>>,
 {
     let source = cleanup_source(source)?;
     let (name, args) = split_name(source);
@@ -96,5 +97,5 @@ where
         .filter(|tag| tag.action == T::ACTION_KIND)
         .ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;
     let args = Arguments::parse(args)?;
-    Ok(args.into_scan().with_decoder(()).try_into()?)
+    Ok(args.into_scan().with_decoder(()).parse()?)
 }

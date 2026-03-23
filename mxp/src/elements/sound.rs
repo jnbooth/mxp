@@ -1,10 +1,8 @@
-use std::borrow::Cow;
 use std::fmt;
 use std::num::{NonZero, ParseIntError, TryFromIntError};
 use std::str::FromStr;
 
-use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _};
-use crate::parse::Decoder;
+use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _, FromArgs};
 
 /// Specifies the number of times a sound/music file should be played.
 ///
@@ -171,15 +169,12 @@ impl<'a> Sound<&'a str> {
     /// );
     /// ```
     pub fn from_msp(source: &'a str) -> crate::Result<Self> {
-        Self::scan(Arguments::parse(source)?.into_scan())
+        Arguments::parse(source)?.into_scan().parse()
     }
 }
 
-impl<'a, S: AsRef<str>> Sound<S> {
-    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str>> FromArgs<'a, S> for Sound<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(mut scanner: A) -> crate::Result<Self> {
         let fname = scanner.get_next_or("fname")?.expect_some("fname")?;
         let volume = scanner.get_next_or("v")?.expect_number()?.unwrap_or(100);
         let repeat = scanner

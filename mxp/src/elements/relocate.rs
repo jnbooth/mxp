@@ -1,9 +1,7 @@
-use std::borrow::Cow;
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
 use crate::keyword::RelocateKeyword;
-use crate::parse::Decoder;
 
 /// Closes the current MUD connection and causes a new connect to open on a new server.
 ///
@@ -61,11 +59,8 @@ impl<S: AsRef<str>> Relocate<S> {
 
 impl_partial_eq!(Relocate);
 
-impl<'a, S: AsRef<str>> Relocate<S> {
-    pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str>> FromArgs<'a, S> for Relocate<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(scanner: A) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         let hostname = scanner.get_next()?.expect_some("Hostname")?;
         let port = scanner.get_next()?.expect_number()?.expect_some("Port")?;

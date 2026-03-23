@@ -1,8 +1,6 @@
-use std::borrow::Cow;
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _};
-use crate::parse::Decoder;
+use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
 
 /// Defines a graphics format and provides a client plugin module that converts the MUD-specific
 /// format to a standard GIF or BMP format.
@@ -66,11 +64,8 @@ impl<S: AsRef<str>> Filter<S> {
 
 impl_partial_eq!(Filter);
 
-impl<'a, S: AsRef<str>> Filter<S> {
-    pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str>> FromArgs<'a, S> for Filter<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(mut scanner: A) -> crate::Result<Self> {
         let src = scanner.get_next_or("src")?.expect_some("src")?;
         let dest = scanner.get_next_or("dest")?;
         let name = scanner.get_next_or("name")?.expect_some("name")?;

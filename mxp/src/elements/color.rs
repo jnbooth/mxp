@@ -1,9 +1,8 @@
 use std::fmt;
 use std::str::FromStr;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
 use crate::color::RgbColor;
-use crate::parse::Decoder;
 
 /// Sets the color of the text.
 ///
@@ -30,11 +29,8 @@ pub struct Color {
     pub back: Option<RgbColor>,
 }
 
-impl Color {
-    pub(crate) fn scan<'a, A>(mut scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a>,
-    {
+impl<'a, S: AsRef<str>> FromArgs<'a, S> for Color {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(mut scanner: A) -> crate::Result<Self> {
         let fore = scanner.get_next_or("fore")?.expect_color()?;
         let back = scanner.get_next_or("back")?.expect_color()?;
         scanner.expect_end()?;
@@ -52,20 +48,6 @@ impl From<RgbColor> for Color {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<crate::parse::DecodeScan<'a, D, S>> for Color {
-    type Error = crate::Error;
-    #[inline]
-    fn try_from(scanner: crate::parse::DecodeScan<'a, D, S>) -> crate::Result<Self> {
-        Self::scan(scanner)
-    }
-}
-impl<'a, D: Decoder> TryFrom<crate::parse::OwnedDecodeScan<'a, D>> for Color {
-    type Error = crate::Error;
-    #[inline]
-    fn try_from(scanner: crate::parse::OwnedDecodeScan<'a, D>) -> Result<Self, Self::Error> {
-        Self::scan(scanner)
-    }
-}
 impl<'a> TryFrom<&'a str> for Color {
     type Error = crate::parse::FromStrError;
     #[inline]

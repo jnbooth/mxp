@@ -1,9 +1,8 @@
 use std::borrow::Cow;
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
 use crate::keyword::ImageKeyword;
-use crate::parse::Decoder;
 use crate::screen::{Align, Dimension};
 
 /// Displays an inline graphics image.
@@ -131,11 +130,8 @@ impl<S: AsRef<str>> Image<S> {
 
 impl_partial_eq!(Image);
 
-impl<'a, S: AsRef<str>> Image<S> {
-    pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
-    where
-        A: ArgumentScanner<'a, Decoded = S>,
-    {
+impl<'a, S: AsRef<str>> FromArgs<'a, S> for Image<S> {
+    fn from_args<A: ArgumentScanner<'a, Decoded = S>>(scanner: A) -> crate::Result<Self> {
         let mut scanner = scanner.with_keywords();
         let fname = scanner.get_next_or("fname")?.expect_some("fname")?;
         let url = scanner.get_next_or("url")?;
