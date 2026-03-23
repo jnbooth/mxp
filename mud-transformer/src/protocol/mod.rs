@@ -3,6 +3,9 @@ pub(crate) mod ansi;
 pub(crate) mod charset;
 pub use charset::OPT as CHARSET;
 
+pub mod gmcp;
+pub use gmcp::OPT as GMCP;
+
 pub(crate) mod mccp;
 pub use mccp::OPT as MCCP2;
 
@@ -38,11 +41,6 @@ pub const ATCP: u8 = 200;
 /// ECHO
 pub const ECHO: u8 = 1;
 
-/// Generic Mud Communication Protocol
-///
-/// https://tintin.mudhalla.net/protocols/gmcp/
-pub const GMCP: u8 = 201;
-
 /// MUD Sound Protocol
 ///
 /// https://www.zuggsoft.com/zmud/msp.htm
@@ -52,9 +50,6 @@ pub const MSP: u8 = 90;
 ///
 /// https://www.zuggsoft.com/zmud/mxp.htm
 pub const MXP: u8 = 91;
-
-/// MUD-specific negotiations
-pub const MUD_SPECIFIC: u8 = 102;
 
 /// Suppress Go-Ahead
 ///
