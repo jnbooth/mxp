@@ -294,37 +294,36 @@ enum YesOrNo {
 
 impl_parse_enum!(YesOrNo, No, Yes);
 
-impl<'a> Frame<Cow<'a, str>> {
+impl<'a, S: AsRef<str> + Clone> Frame<S> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<'a>,
+        A: ArgumentScanner<'a, Decoded = S>,
     {
         let mut scanner = scanner.with_keywords();
-        let name = scanner.decode_next_or("name")?.expect_some("name")?;
+        let name = scanner.get_next_or("name")?.expect_some("name")?;
         let action = scanner
-            .decode_next_or("action")?
+            .get_next_or("action")?
             .expect_variant()?
             .unwrap_or_default();
         let title = scanner
-            .decode_next_or("title")?
+            .get_next_or("title")?
             .unwrap_or_else(|| name.clone());
         let align = scanner
-            .decode_next_or("align")?
+            .get_next_or("align")?
             .expect_variant()?
             .unwrap_or_default();
         let left = scanner
-            .decode_next_or("left")?
+            .get_next_or("left")?
             .expect_number()?
             .unwrap_or_default();
         let top = scanner
-            .decode_next_or("top")?
+            .get_next_or("top")?
             .expect_number()?
             .unwrap_or_default();
-        let width = scanner.decode_next_or("width")?.expect_number()?;
-        let height = scanner.decode_next_or("height")?.expect_number()?;
-        let scrolling =
-            scanner.decode_next_or("scrolling")?.expect_variant()? == Some(YesOrNo::Yes);
-        let dock = scanner.decode_next_or("dock")?;
+        let width = scanner.get_next_or("width")?.expect_number()?;
+        let height = scanner.get_next_or("height")?.expect_number()?;
+        let scrolling = scanner.get_next_or("scrolling")?.expect_variant()? == Some(YesOrNo::Yes);
+        let dock = scanner.get_next_or("dock")?;
         let keywords = scanner.into_keywords()?;
         let layout = if keywords.contains(FrameKeyword::Internal) || dock.is_some() {
             FrameLayout::Internal {

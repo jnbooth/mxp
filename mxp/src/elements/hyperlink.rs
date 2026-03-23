@@ -60,16 +60,14 @@ impl<S: AsRef<str>> Hyperlink<S> {
 
 impl_partial_eq!(Hyperlink);
 
-impl<'a> Hyperlink<Cow<'a, str>> {
+impl<'a, S: Clone> Hyperlink<S> {
     pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<'a>,
+        A: ArgumentScanner<'a, Decoded = S>,
     {
-        let href = scanner.decode_next_or("href")?.expect_some("href")?;
-        let hint = scanner
-            .decode_next_or("hint")?
-            .unwrap_or_else(|| href.clone());
-        let expire = scanner.decode_next_or("expire")?;
+        let href = scanner.get_next_or("href")?.expect_some("href")?;
+        let hint = scanner.get_next_or("hint")?.unwrap_or_else(|| href.clone());
+        let expire = scanner.get_next_or("expire")?;
         scanner.expect_end()?;
         Ok(Self { href, hint, expire })
     }

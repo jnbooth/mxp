@@ -85,67 +85,125 @@ impl Decoder for () {
 }
 
 #[derive(Clone)]
-pub(crate) struct Scan<'a, D: Decoder, S: AsRef<str>> {
-    decoder: D,
+pub(crate) struct Scan<'a, S: AsRef<str>> {
     positional: slice::Iter<'a, S>,
     named: &'a CaseFoldMap<'a, S>,
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> Scan<'a, D, S> {
-    pub fn new(decoder: D, positional: &'a [S], named: &'a CaseFoldMap<'a, S>) -> Self {
+impl<'a, S: AsRef<str>> Scan<'a, S> {
+    pub fn new(positional: &'a [S], named: &'a CaseFoldMap<'a, S>) -> Self {
         Self {
-            decoder,
             positional: positional.iter(),
             named,
         }
     }
+
+    pub fn with_decoder<D: Decoder>(self, decoder: D) -> DecodeScan<'a, D, S> {
+        DecodeScan {
+            decoder,
+            inner: self,
+        }
+    }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> ArgumentScanner<'a> for Scan<'a, D, S> {
-    type Output = &'a S;
+impl<'a, S: AsRef<str>> ArgumentScanner<'a> for Scan<'a, S> {
+    type Raw = &'a S;
+    type Decoded = &'a S;
 
-    fn decode(&self, output: Self::Output) -> crate::Result<Cow<'a, str>> {
-        self.decoder.decode_string(output.as_ref())
+    fn decode(&self, output: Self::Raw) -> crate::Result<Self::Raw> {
+        Ok(output)
     }
 
-    fn get_named(&mut self, name: &str) -> Option<Self::Output> {
+    fn raw_get_named(&mut self, name: &str) -> Option<Self::Raw> {
         self.named.get(name)
     }
 
-    fn get_next(&mut self) -> Option<Self::Output> {
+    fn raw_get_next(&mut self) -> Option<Self::Raw> {
         self.positional.next()
     }
 }
 
 #[derive(Clone)]
-pub(crate) struct OwnedScan<'a, D: Decoder> {
-    decoder: D,
+pub(crate) struct OwnedScan<'a> {
     positional: vec::IntoIter<&'a str>,
     named: CaseFoldMap<'a, &'a str>,
 }
 
-impl<'a, D: Decoder> OwnedScan<'a, D> {
-    pub fn new(decoder: D, positional: Vec<&'a str>, named: CaseFoldMap<'a, &'a str>) -> Self {
+impl<'a> OwnedScan<'a> {
+    pub fn new(positional: Vec<&'a str>, named: CaseFoldMap<'a, &'a str>) -> Self {
         Self {
-            decoder,
             positional: positional.into_iter(),
             named,
         }
     }
+
+    pub fn with_decoder<D: Decoder>(self, decoder: D) -> OwnedDecodeScan<'a, D> {
+        OwnedDecodeScan {
+            decoder,
+            inner: self,
+        }
+    }
 }
 
-impl<'a, D: Decoder> ArgumentScanner<'a> for OwnedScan<'a, D> {
-    type Output = &'a str;
+impl<'a> ArgumentScanner<'a> for OwnedScan<'a> {
+    type Raw = &'a str;
+    type Decoded = &'a str;
 
-    fn decode(&self, output: Self::Output) -> crate::Result<Cow<'a, str>> {
-        self.decoder.decode_string(output.as_ref())
+    fn decode(&self, output: Self::Raw) -> crate::Result<Self::Raw> {
+        Ok(output)
     }
 
-    fn get_named(&mut self, name: &str) -> Option<Self::Output> {
+    fn raw_get_named(&mut self, name: &str) -> Option<Self::Raw> {
         self.named.remove(name)
     }
 
-    fn get_next(&mut self) -> Option<Self::Output> {
+    fn raw_get_next(&mut self) -> Option<Self::Raw> {
         self.positional.next()
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct DecodeScan<'a, D: Decoder, S: AsRef<str>> {
+    decoder: D,
+    inner: Scan<'a, S>,
+}
+
+impl<'a, D: Decoder, S: AsRef<str>> ArgumentScanner<'a> for DecodeScan<'a, D, S> {
+    type Raw = &'a S;
+    type Decoded = Cow<'a, str>;
+
+    fn decode(&self, output: Self::Raw) -> crate::Result<Cow<'a, str>> {
+        self.decoder.decode_string(output.as_ref())
+    }
+
+    fn raw_get_named(&mut self, name: &str) -> Option<Self::Raw> {
+        self.inner.raw_get_named(name)
+    }
+
+    fn raw_get_next(&mut self) -> Option<Self::Raw> {
+        self.inner.raw_get_next()
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct OwnedDecodeScan<'a, D: Decoder> {
+    decoder: D,
+    inner: OwnedScan<'a>,
+}
+
+impl<'a, D: Decoder> ArgumentScanner<'a> for OwnedDecodeScan<'a, D> {
+    type Raw = &'a str;
+    type Decoded = Cow<'a, str>;
+
+    fn decode(&self, output: Self::Raw) -> crate::Result<Cow<'a, str>> {
+        self.decoder.decode_string(output.as_ref())
+    }
+
+    fn raw_get_named(&mut self, name: &str) -> Option<Self::Raw> {
+        self.inner.raw_get_named(name)
+    }
+
+    fn raw_get_next(&mut self) -> Option<Self::Raw> {
+        self.inner.raw_get_next()
     }
 }

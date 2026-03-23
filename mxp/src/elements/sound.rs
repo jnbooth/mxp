@@ -1,9 +1,9 @@
 use std::borrow::Cow;
 use std::fmt;
-use std::num::{NonZero, ParseIntError};
+use std::num::{NonZero, ParseIntError, TryFromIntError};
 use std::str::FromStr;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _};
 use crate::parse::Decoder;
 
 /// Specifies the number of times a sound/music file should be played.
@@ -44,6 +44,14 @@ impl FromStr for AudioRepetition {
     }
 }
 
+impl TryFrom<u32> for AudioRepetition {
+    type Error = TryFromIntError;
+
+    fn try_from(value: u32) -> Result<Self, Self::Error> {
+        value.try_into().map(Self::Count)
+    }
+}
+
 /// Sound triggers are WAV format files intended for sound effects.
 ///
 /// See [MXP specification: `<SOUND>`](https://www.zuggsoft.com/zmud/mxp.htm#MSP%20Compatibility)
@@ -52,14 +60,12 @@ impl FromStr for AudioRepetition {
 /// # Examples
 ///
 /// ```
-/// use mxp::AudioRepetition;
-///
 /// assert_eq!(
 ///     "<SOUND 'weather/rain.wav' V=80 L=3 P=10 T=combat U='http://example.org:5000/sound'>".parse::<mxp::Sound>(),
 ///     Ok(mxp::Sound {
 ///         fname: "weather/rain.wav".into(),
 ///         volume: 80,
-///         repeat: AudioRepetition::Count(3.try_into().unwrap()),
+///         repeat: 3.try_into().unwrap(),
 ///         priority: 10,
 ///         class: Some("combat".into()),
 ///         url: Some("http://example.org:5000/sound".into()),
@@ -144,20 +150,45 @@ impl<S: AsRef<str>> Sound<S> {
 
 impl_partial_eq!(Sound);
 
-impl<'a> Sound<Cow<'a, str>> {
+impl<'a> Sound<&'a str> {
+    /// Parses a !!SOUND element from an MSP string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let msp_string = "!!SOUND(weather/rain.wav V=80 L=3 P=10 T=combat U='http://example.org:5000/sound)";
+    /// let msp_trimmed = &msp_string[8..msp_string.len() - 1];
+    /// assert_eq!(
+    ///     mxp::Sound::from_msp(msp_trimmed),
+    ///     Ok(mxp::Sound {
+    ///         fname: "weather/rain.wav".into(),
+    ///         volume: 80,
+    ///         repeat: 3.try_into().unwrap(),
+    ///         priority: 10,
+    ///         class: Some("combat".into()),
+    ///         url: Some("http://example.org:5000/sound".into()),
+    ///     }),
+    /// );
+    /// ```
+    pub fn from_msp(source: &'a str) -> crate::Result<Self> {
+        Self::scan(Arguments::parse(source)?.into_scan())
+    }
+}
+
+impl<'a, S: AsRef<str>> Sound<S> {
     pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<'a>,
+        A: ArgumentScanner<'a, Decoded = S>,
     {
-        let fname = scanner.decode_next_or("fname")?.expect_some("fname")?;
-        let volume = scanner.decode_next_or("v")?.expect_number()?.unwrap_or(100);
+        let fname = scanner.get_next_or("fname")?.expect_some("fname")?;
+        let volume = scanner.get_next_or("v")?.expect_number()?.unwrap_or(100);
         let repeat = scanner
-            .decode_next_or("l")?
+            .get_next_or("l")?
             .expect_number()?
             .unwrap_or_default();
-        let priority = scanner.decode_next_or("p")?.expect_number()?.unwrap_or(50);
-        let class = scanner.decode_next_or("t")?;
-        let url = scanner.decode_next_or("u")?;
+        let priority = scanner.get_next_or("p")?.expect_number()?.unwrap_or(50);
+        let class = scanner.get_next_or("t")?;
+        let url = scanner.get_next_or("u")?;
         scanner.expect_end()?;
         Ok(Self {
             fname,

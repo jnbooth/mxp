@@ -14,7 +14,7 @@ pub use into_owned_string::IntoOwnedString;
 
 mod decoder;
 pub use decoder::Decoder;
-pub(crate) use decoder::{OwnedScan, Scan};
+pub(crate) use decoder::{DecodeScan, OwnedDecodeScan, OwnedScan, Scan};
 
 mod validation;
 pub use validation::{is_valid, validate, validate_utf8};

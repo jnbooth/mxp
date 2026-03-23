@@ -50,12 +50,12 @@ impl<S: AsRef<str>> Expire<S> {
 
 impl_partial_eq!(Expire);
 
-impl<'a> Expire<Cow<'a, str>> {
+impl<'a, S> Expire<S> {
     pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<'a>,
+        A: ArgumentScanner<'a, Decoded = S>,
     {
-        let name = scanner.decode_next()?;
+        let name = scanner.get_next()?;
         scanner.expect_end()?;
         Ok(Self { name })
     }

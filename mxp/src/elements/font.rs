@@ -94,22 +94,22 @@ impl<S: AsRef<str>> Font<S> {
 
 impl_partial_eq!(Font);
 
-impl<'a> Font<Cow<'a, str>> {
+impl<'a, S: AsRef<str>> Font<S> {
     pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<'a>,
+        A: ArgumentScanner<'a, Decoded = S>,
     {
-        let face = scanner.decode_next_or("face")?;
+        let face = scanner.get_next_or("face")?;
         let size = scanner
-            .decode_next_or("size")?
+            .get_next_or("size")?
             .expect_number()?
             .and_then(NonZero::new);
-        let fore = scanner.decode_next_or("color")?;
-        let back = scanner.decode_next_or("back")?.expect_color()?;
+        let fore = scanner.get_next_or("color")?;
+        let back = scanner.get_next_or("back")?.expect_color()?;
         let mut color: Option<RgbColor> = None;
         let mut style: FlagSet<FontStyle> = FlagSet::empty();
         if let Some(fore) = fore {
-            for effect in fore.split(',') {
+            for effect in fore.as_ref().split(',') {
                 let effect = effect.trim_ascii();
                 if let Ok(flag) = effect.parse::<FontStyle>() {
                     style |= flag;

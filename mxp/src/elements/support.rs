@@ -74,13 +74,13 @@ impl<'a, S> IntoIterator for &'a Support<S> {
     }
 }
 
-impl<'a> Support<Cow<'a, str>> {
+impl<'a, S> Support<S> {
     pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<'a>,
+        A: ArgumentScanner<'a, Decoded = S>,
     {
         let mut questions = Vec::new();
-        while let Some(question) = scanner.decode_next()? {
+        while let Some(question) = scanner.get_next()? {
             questions.push(question);
         }
         Ok(Self { questions })

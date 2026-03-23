@@ -61,14 +61,14 @@ impl<S: AsRef<str>> Stat<S> {
 
 impl_partial_eq!(Stat);
 
-impl<'a> Stat<Cow<'a, str>> {
+impl<'a, S> Stat<S> {
     pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<'a>,
+        A: ArgumentScanner<'a, Decoded = S>,
     {
-        let entity = scanner.decode_next()?.expect_some("EntityName")?;
-        let max = scanner.decode_next_or("max")?;
-        let caption = scanner.decode_next_or("caption")?;
+        let entity = scanner.get_next()?.expect_some("EntityName")?;
+        let max = scanner.get_next_or("max")?;
+        let caption = scanner.get_next_or("caption")?;
         scanner.expect_end()?;
         Ok(Self {
             entity,

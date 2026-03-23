@@ -3,7 +3,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use super::AudioRepetition;
-use crate::arguments::{ArgumentScanner, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _};
 use crate::parse::{Decoder, StringVariant, UnrecognizedVariant};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]
@@ -50,14 +50,12 @@ impl fmt::Display for AudioContinuation {
 /// # Examples
 ///
 /// ```
-/// use mxp::AudioRepetition;
-///
 /// assert_eq!(
 ///     "<MUSIC 'berlioz/fantas?' V=80 L=3 C=1 T=music U='http://example.org:5000/music'>".parse::<mxp::Music>(),
 ///     Ok(mxp::Music {
 ///         fname: "berlioz/fantas?".into(),
 ///         volume: 80,
-///         repeat: AudioRepetition::Count(3.try_into().unwrap()),
+///         repeat: 3.try_into().unwrap(),
 ///         continual: true,
 ///         class: Some("music".into()),
 ///         url: Some("http://example.org:5000/music".into()),
@@ -139,21 +137,46 @@ impl<S: AsRef<str>> Music<S> {
 
 impl_partial_eq!(Music);
 
-impl<'a> Music<Cow<'a, str>> {
+impl<'a> Music<&'a str> {
+    /// Parses a !!MUSIC element from an MSP string.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let msp_string = "!!MUSIC(fugue.mid V=80 L=3 C=1 T=music U=http://example.org:5000/music)";
+    /// let msp_trimmed = &msp_string[8..msp_string.len() - 1];
+    /// assert_eq!(
+    ///     mxp::Music::from_msp(msp_trimmed),
+    ///     Ok(mxp::Music {
+    ///         fname: "fugue.mid",
+    ///         volume: 80,
+    ///         repeat: 3.try_into().unwrap(),
+    ///         continual: true,
+    ///         class: Some("music"),
+    ///         url: Some("http://example.org:5000/music"),
+    ///     }),
+    /// );
+    /// ```
+    pub fn from_msp(source: &'a str) -> crate::Result<Self> {
+        Self::scan(Arguments::parse(source)?.into_scan())
+    }
+}
+
+impl<'a, S: AsRef<str>> Music<S> {
     pub(crate) fn scan<A>(mut scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<'a>,
+        A: ArgumentScanner<'a, Decoded = S>,
     {
-        let fname = scanner.decode_next_or("fname")?.expect_some("fname")?;
-        let volume = scanner.decode_next_or("v")?.expect_number()?.unwrap_or(100);
+        let fname = scanner.get_next_or("fname")?.expect_some("fname")?;
+        let volume = scanner.get_next_or("v")?.expect_number()?.unwrap_or(100);
         let repeat = scanner
-            .decode_next_or("l")?
+            .get_next_or("l")?
             .expect_number()?
             .unwrap_or_default();
         let continual =
-            scanner.decode_next_or("c")?.expect_variant()? == Some(AudioContinuation::Continue);
-        let class = scanner.decode_next_or("t")?;
-        let url = scanner.decode_next_or("u")?;
+            scanner.get_next_or("c")?.expect_variant()? == Some(AudioContinuation::Continue);
+        let class = scanner.get_next_or("t")?;
+        let url = scanner.get_next_or("u")?;
         scanner.expect_end()?;
         Ok(Self {
             fname,

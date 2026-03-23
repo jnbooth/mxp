@@ -35,8 +35,8 @@ impl Color {
     where
         A: ArgumentScanner<'a>,
     {
-        let fore = scanner.decode_next_or("fore")?.expect_color()?;
-        let back = scanner.decode_next_or("back")?.expect_color()?;
+        let fore = scanner.get_next_or("fore")?.expect_color()?;
+        let back = scanner.get_next_or("back")?.expect_color()?;
         scanner.expect_end()?;
         Ok(Self { fore, back })
     }
@@ -52,17 +52,17 @@ impl From<RgbColor> for Color {
     }
 }
 
-impl<'a, D: Decoder, S: AsRef<str>> TryFrom<crate::parse::Scan<'a, D, S>> for Color {
+impl<'a, D: Decoder, S: AsRef<str>> TryFrom<crate::parse::DecodeScan<'a, D, S>> for Color {
     type Error = crate::Error;
     #[inline]
-    fn try_from(scanner: crate::parse::Scan<'a, D, S>) -> crate::Result<Self> {
+    fn try_from(scanner: crate::parse::DecodeScan<'a, D, S>) -> crate::Result<Self> {
         Self::scan(scanner)
     }
 }
-impl<'a, D: Decoder> TryFrom<crate::parse::OwnedScan<'a, D>> for Color {
+impl<'a, D: Decoder> TryFrom<crate::parse::OwnedDecodeScan<'a, D>> for Color {
     type Error = crate::Error;
     #[inline]
-    fn try_from(scanner: crate::parse::OwnedScan<'a, D>) -> Result<Self, Self::Error> {
+    fn try_from(scanner: crate::parse::OwnedDecodeScan<'a, D>) -> Result<Self, Self::Error> {
         Self::scan(scanner)
     }
 }

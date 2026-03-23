@@ -131,20 +131,20 @@ impl<S: AsRef<str>> Image<S> {
 
 impl_partial_eq!(Image);
 
-impl<'a> Image<Cow<'a, str>> {
+impl<'a, S: AsRef<str>> Image<S> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<'a>,
+        A: ArgumentScanner<'a, Decoded = S>,
     {
         let mut scanner = scanner.with_keywords();
-        let fname = scanner.decode_next_or("fname")?.expect_some("fname")?;
-        let url = scanner.decode_next_or("url")?;
-        let class = scanner.decode_next_or("t")?;
-        let height = scanner.decode_next_or("h")?.expect_number()?;
-        let width = scanner.decode_next_or("w")?.expect_number()?;
-        let hspace = scanner.decode_next_or("hspace")?.expect_number()?;
-        let vspace = scanner.decode_next_or("vspace")?.expect_number()?;
-        let align = scanner.decode_next_or("align")?.expect_variant()?;
+        let fname = scanner.get_next_or("fname")?.expect_some("fname")?;
+        let url = scanner.get_next_or("url")?;
+        let class = scanner.get_next_or("t")?;
+        let height = scanner.get_next_or("h")?.expect_number()?;
+        let width = scanner.get_next_or("w")?.expect_number()?;
+        let hspace = scanner.get_next_or("hspace")?.expect_number()?;
+        let vspace = scanner.get_next_or("vspace")?.expect_number()?;
+        let align = scanner.get_next_or("align")?.expect_variant()?;
         let keywords = scanner.into_keywords()?;
         let is_map = keywords.contains(ImageKeyword::IsMap);
         Ok(Self {

@@ -7,7 +7,7 @@ use uncased::Uncased;
 
 use super::iter::{Named, Positional};
 use crate::CaseFoldMap;
-use crate::parse::{ArgumentParser, Decoder, OwnedScan, Scan, validate};
+use crate::parse::{ArgumentParser, OwnedScan, Scan, validate};
 use crate::{Error, ErrorKind};
 
 /// Parsed arguments of an MXP command.
@@ -105,8 +105,8 @@ impl<'a, S> Arguments<'a, S> {
 }
 
 impl<S: AsRef<str>> Arguments<'_, S> {
-    pub(crate) fn scan<D: Decoder>(&self, decoder: D) -> Scan<'_, D, S> {
-        Scan::new(decoder, &self.positional, &self.named)
+    pub(crate) fn scan(&self) -> Scan<'_, S> {
+        Scan::new(&self.positional, &self.named)
     }
 }
 
@@ -141,8 +141,8 @@ impl<'a> Arguments<'a> {
         ArgumentParser::new(source).try_into()
     }
 
-    pub(crate) fn into_scan<D: Decoder>(self, decoder: D) -> OwnedScan<'a, D> {
-        OwnedScan::new(decoder, self.positional, self.named)
+    pub(crate) fn into_scan(self) -> OwnedScan<'a> {
+        OwnedScan::new(self.positional, self.named)
     }
 }
 

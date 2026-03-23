@@ -65,11 +65,11 @@ impl<'a> EntityDefinition<'a> {
         }
         validate(name, ErrorKind::InvalidEntityName)?;
         let args = Arguments::parse(args)?;
-        let mut scanner = args.scan(()).with_keywords();
-        let Some(value) = scanner.get_next() else {
+        let mut scanner = args.scan().with_keywords();
+        let Some(value) = scanner.get_next()? else {
             return Err(Error::new(source, ErrorKind::EmptyElementInDefinition));
         };
-        let desc = scanner.get_named("desc").copied();
+        let desc = scanner.get_named("desc")?.copied();
         let keywords = scanner.into_keywords()?;
         Ok(Self {
             name,

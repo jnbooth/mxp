@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::fmt;
 use std::str::FromStr;
 
@@ -129,10 +128,11 @@ pub enum Action<S = String> {
     Version,
 }
 
-impl<'a> Action<Cow<'a, str>> {
-    pub(crate) fn decode<A>(action: ActionKind, mut scanner: A) -> crate::Result<Self>
+impl<S: AsRef<str> + Clone> Action<S> {
+    pub(crate) fn decode<'a, A>(action: ActionKind, mut scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<'a>,
+        A: ArgumentScanner<'a, Decoded = S>,
+        S: From<&'a str>,
     {
         Ok(match action {
             ActionKind::Bold => Self::Bold,
@@ -156,11 +156,12 @@ impl<'a> Action<Cow<'a, str>> {
             ActionKind::Image => Self::Image(Image::scan(scanner)?),
             ActionKind::Italic => Self::Italic,
             ActionKind::Mxp => {
-                let command = scanner.decode_next()?.expect_some("off")?;
-                if command.eq_ignore_ascii_case("off") {
+                let command = scanner.get_next()?.expect_some("off")?;
+                let s = command.as_ref();
+                if s.eq_ignore_ascii_case("off") {
                     Self::MxpOff
                 } else {
-                    return Err(Error::new(command, ErrorKind::UnexpectedArgument));
+                    return Err(Error::new(s, ErrorKind::UnexpectedArgument));
                 }
             }
             ActionKind::Music => {
@@ -195,7 +196,7 @@ impl<'a> Action<Cow<'a, str>> {
             ActionKind::User => Self::User,
             ActionKind::Var => Self::Var(Var::scan(scanner)?),
             ActionKind::Version => {
-                if let Some(styleversion) = scanner.decode_next()? {
+                if let Some(styleversion) = scanner.get_next()? {
                     Self::StyleVersion(StyleVersion { styleversion })
                 } else {
                     Self::Version
@@ -273,7 +274,7 @@ impl FromStr for Action<String> {
             .ok_or_else(|| FromStrError::UnexpectedTag(name.to_owned()))?;
         let args = Arguments::parse(args)?;
         tag.check_arguments(&args)?;
-        Ok(Action::decode(tag.action, args.scan(()))?.into_owned())
+        Ok(Action::decode(tag.action, args.scan().with_decoder(()))?.into_owned())
     }
 }
 

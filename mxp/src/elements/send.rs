@@ -161,19 +161,17 @@ impl<'a> Send<&'a str> {
     }
 }
 
-impl<'a> Send<Cow<'a, str>> {
+impl<'a, S: Clone + From<&'a str>> Send<S> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<'a>,
+        A: ArgumentScanner<'a, Decoded = S>,
     {
         let mut scanner = scanner.with_keywords();
         let href = scanner
-            .decode_next_or("href")?
+            .get_next_or("href")?
             .unwrap_or(Send::EMBED_ENTITY.into());
-        let hint = scanner
-            .decode_next_or("hint")?
-            .unwrap_or_else(|| href.clone());
-        let expire = scanner.decode_next_or("expire")?;
+        let hint = scanner.get_next_or("hint")?.unwrap_or_else(|| href.clone());
+        let expire = scanner.get_next_or("expire")?;
         let keywords = scanner.into_keywords()?;
         Ok(Self {
             href,

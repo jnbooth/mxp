@@ -53,19 +53,19 @@ impl<'a> ElementDefinition<'a> {
         validate(name, ErrorKind::InvalidElementName)?;
 
         let args = Arguments::parse(args)?;
-        let mut iter = args.scan(()).with_keywords();
+        let mut iter = args.scan().with_keywords();
 
-        let items = match iter.get_next() {
+        let items = match iter.get_next()? {
             Some(&arg) => ElementItem::parse_all(arg)?,
             None => Vec::new(),
         };
 
-        let attributes = match iter.get_named("att") {
+        let attributes = match iter.get_named("att")? {
             Some(&atts) => ArgumentParser::new(atts).try_into()?,
             None => AttributeList::default(),
         };
 
-        let tag = match iter.get_named("tag") {
+        let tag = match iter.get_named("tag")? {
             Some(&tag) => match tag.parse() {
                 Ok(tag) if Mode(tag).is_user_defined() => Some(Mode(tag)),
                 _ => {
@@ -75,7 +75,7 @@ impl<'a> ElementDefinition<'a> {
             None => None,
         };
 
-        let flag = match iter.get_named("flag") {
+        let flag = match iter.get_named("flag")? {
             Some(&flag) => Some(ElementFlag::parse(flag)?),
             None => None,
         };

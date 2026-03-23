@@ -29,8 +29,7 @@ impl ElementItem {
     where
         D: Decoder,
     {
-        let scanner = self.arguments.scan(decoder);
-        Action::decode(self.tag.action, scanner)
+        Action::decode(self.tag.action, self.arguments.scan().with_decoder(decoder))
             .map_err(|e| e.with_context(format_args!(" for <{}>", self.tag.name)))
     }
 

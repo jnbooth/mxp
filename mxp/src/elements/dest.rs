@@ -96,19 +96,19 @@ impl<S: AsRef<str>> From<S> for Dest<S> {
     }
 }
 
-impl<'a> Dest<Cow<'a, str>> {
+impl<'a, S: AsRef<str>> Dest<S> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<'a>,
+        A: ArgumentScanner<'a, Decoded = S>,
     {
         let mut scanner = scanner.with_keywords();
-        let name = scanner.decode_next()?;
+        let name = scanner.get_next()?;
         let column = scanner
-            .decode_next_or("x")?
+            .get_next_or("x")?
             .expect_number()?
             .and_then(NonZero::new);
         let line = scanner
-            .decode_next_or("y")?
+            .get_next_or("y")?
             .expect_number()?
             .and_then(NonZero::new);
         let keywords = scanner.into_keywords()?;

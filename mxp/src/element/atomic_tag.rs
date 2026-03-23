@@ -49,7 +49,7 @@ impl AtomicTag {
         decoder: D,
     ) -> crate::Result<Action<Cow<'a, str>>> {
         self.check_arguments(args)?;
-        Action::decode(self.action, args.scan(decoder))
+        Action::decode(self.action, args.scan().with_decoder(decoder))
     }
 
     /// Returns `true` if this library's definition of the tag supports a specific argument.

@@ -61,17 +61,14 @@ impl<S: AsRef<str>> Relocate<S> {
 
 impl_partial_eq!(Relocate);
 
-impl<'a> Relocate<Cow<'a, str>> {
+impl<'a, S: AsRef<str>> Relocate<S> {
     pub(crate) fn scan<A>(scanner: A) -> crate::Result<Self>
     where
-        A: ArgumentScanner<'a>,
+        A: ArgumentScanner<'a, Decoded = S>,
     {
         let mut scanner = scanner.with_keywords();
-        let hostname = scanner.decode_next()?.expect_some("Hostname")?;
-        let port = scanner
-            .decode_next()?
-            .expect_number()?
-            .expect_some("Port")?;
+        let hostname = scanner.get_next()?.expect_some("Hostname")?;
+        let port = scanner.get_next()?.expect_number()?.expect_some("Port")?;
         let keywords = scanner.into_keywords()?;
         Ok(Self {
             hostname,

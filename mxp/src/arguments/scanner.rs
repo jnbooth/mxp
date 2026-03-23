@@ -1,4 +1,3 @@
-use std::borrow::Cow;
 use std::str::FromStr;
 
 use flagset::{FlagSet, Flags};
@@ -6,28 +5,35 @@ use flagset::{FlagSet, Flags};
 use crate::{Error, ErrorKind};
 
 pub(crate) trait ArgumentScanner<'a>: Sized {
-    type Output: AsRef<str>;
+    type Raw: AsRef<str>;
+    type Decoded: AsRef<str>;
 
-    fn decode(&self, raw: Self::Output) -> crate::Result<Cow<'a, str>>;
-    fn get_named(&mut self, name: &str) -> Option<Self::Output>;
-    fn get_next(&mut self) -> Option<Self::Output>;
-    fn get_next_or(&mut self, name: &str) -> Option<Self::Output> {
-        self.get_named(name).or_else(|| self.get_next())
+    fn decode(&self, raw: Self::Raw) -> crate::Result<Self::Decoded>;
+    fn raw_get_named(&mut self, name: &str) -> Option<Self::Raw>;
+    fn raw_get_next(&mut self) -> Option<Self::Raw>;
+    fn raw_get_next_or(&mut self, name: &str) -> Option<Self::Raw> {
+        self.raw_get_named(name).or_else(|| self.raw_get_next())
     }
-    fn decode_next(&mut self) -> crate::Result<Option<Cow<'a, str>>> {
-        match self.get_next() {
+    fn get_named(&mut self, name: &str) -> crate::Result<Option<Self::Decoded>> {
+        match self.raw_get_named(name) {
+            Some(named) => Ok(Some(self.decode(named)?)),
+            None => Ok(None),
+        }
+    }
+    fn get_next(&mut self) -> crate::Result<Option<Self::Decoded>> {
+        match self.raw_get_next() {
             Some(next) => Ok(Some(self.decode(next)?)),
             None => Ok(None),
         }
     }
-    fn decode_next_or(&mut self, name: &str) -> crate::Result<Option<Cow<'a, str>>> {
-        match self.get_next_or(name) {
+    fn get_next_or(&mut self, name: &str) -> crate::Result<Option<Self::Decoded>> {
+        match self.raw_get_next_or(name) {
             Some(next) => Ok(Some(self.decode(next)?)),
             None => Ok(None),
         }
     }
     fn expect_end(mut self) -> crate::Result<()> {
-        match self.get_next() {
+        match self.raw_get_next() {
             Some(next) => Err(Error::new(next.as_ref(), ErrorKind::UnexpectedArgument)),
             None => Ok(()),
         }
@@ -51,9 +57,10 @@ where
     K: Flags + FromStr,
 {
     pub fn into_keywords(mut self) -> crate::Result<FlagSet<K>> {
-        while let Some(next) = self.inner.decode_next()? {
+        while let Some(next) = self.inner.get_next()? {
+            let next = next.as_ref();
             self.keywords |=
-                K::from_str(&next).map_err(|_| Error::new(next, ErrorKind::UnexpectedArgument))?;
+                K::from_str(next).map_err(|_| Error::new(next, ErrorKind::UnexpectedArgument))?;
         }
         Ok(self.keywords)
     }
@@ -64,18 +71,19 @@ where
     A: ArgumentScanner<'a>,
     K: Flags + FromStr,
 {
-    type Output = A::Output;
+    type Raw = A::Raw;
+    type Decoded = A::Decoded;
 
-    fn decode(&self, output: Self::Output) -> crate::Result<Cow<'a, str>> {
+    fn decode(&self, output: Self::Raw) -> crate::Result<Self::Decoded> {
         self.inner.decode(output)
     }
 
-    fn get_named(&mut self, name: &str) -> Option<Self::Output> {
-        self.inner.get_named(name)
+    fn raw_get_named(&mut self, name: &str) -> Option<Self::Raw> {
+        self.inner.raw_get_named(name)
     }
 
-    fn get_next(&mut self) -> Option<Self::Output> {
-        while let Some(next) = self.inner.get_next() {
+    fn raw_get_next(&mut self) -> Option<Self::Raw> {
+        while let Some(next) = self.inner.raw_get_next() {
             match next.as_ref().parse::<K>() {
                 Ok(keyword) => self.keywords |= keyword,
                 Err(_) => return Some(next),

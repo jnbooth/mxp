@@ -72,14 +72,14 @@ impl fmt::Display for LineTagDefinition<'_> {
 impl<'a> LineTagDefinition<'a> {
     pub(super) fn parse(source: &'a str) -> crate::Result<Self> {
         let args = Arguments::parse(source)?;
-        let mut scanner = args.scan(()).with_keywords();
-        let index = Mode(scanner.get_next().expect_number()?.expect_some("Tag")?);
+        let mut scanner = args.scan().with_keywords();
+        let index = Mode(scanner.get_next()?.expect_number()?.expect_some("Tag")?);
         if !index.is_user_defined() {
             return Err(Error::new(index.to_string(), ErrorKind::IllegalLineTag));
         }
-        let window = scanner.get_named("windowname").copied();
-        let fore = scanner.get_named("fore").expect_color()?;
-        let back = scanner.get_named("back").expect_color()?;
+        let window = scanner.get_named("windowname")?.copied();
+        let fore = scanner.get_named("fore")?.expect_color()?;
+        let back = scanner.get_named("back")?.expect_color()?;
         let keywords = scanner.into_keywords()?;
         let gag = if keywords.contains(LineTagKeyword::Gag) {
             Some(true)
