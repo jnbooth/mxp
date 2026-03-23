@@ -580,11 +580,11 @@ impl Transformer {
                     ansi::BS => self.output.append(CursorEffect::Back(1)),
                     ansi::VT => self.output.append(ControlFragment::VerticalTab),
                     ansi::FF => self.output.append(OutputFragment::PageBreak),
-                    128.. => {
+                    128..248 => {
                         self.utf8_sequence.push(c);
                         self.phase = Phase::Utf8Character;
                     }
-                    ..32 | ansi::DEL => (),
+                    ..32 | ansi::DEL | 248.. => (),
                 }
             }
 
@@ -675,9 +675,7 @@ impl Transformer {
                 });
                 let supported = match c {
                     protocol::MCCP2 => !self.config.disable_compression,
-                    protocol::SGA | protocol::MUD_SPECIFIC | protocol::CHARSET | protocol::MNES => {
-                        true
-                    }
+                    protocol::SGA | protocol::CHARSET | protocol::MNES => true,
                     protocol::ECHO if self.config.no_echo_off => false,
                     protocol::ECHO => {
                         self.output
@@ -734,11 +732,7 @@ impl Transformer {
                     code: c,
                 });
                 let supported = match c {
-                    protocol::SGA
-                    | protocol::MUD_SPECIFIC
-                    | protocol::ECHO
-                    | protocol::CHARSET
-                    | protocol::MNES => true,
+                    protocol::SGA | protocol::ECHO | protocol::CHARSET | protocol::MNES => true,
                     protocol::MTTS => {
                         self.ttype_negotiator.reset();
                         true
