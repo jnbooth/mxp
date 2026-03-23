@@ -691,7 +691,7 @@ impl Transformer {
                         }
                     },
                     telnet::WILL_EOR => true,
-                    _ => self.config.will.contains(&c),
+                    _ => self.config.will.contains(c),
                 };
                 self.input.write(&telnet::supports_do(c, supported));
                 self.output.append(TelnetFragment::Negotiation {
@@ -746,7 +746,7 @@ impl Transformer {
                             true
                         }
                     },
-                    _ => self.config.will.contains(&c),
+                    _ => self.config.will.contains(c),
                 };
                 self.input.write(&telnet::supports_will(c, supported));
                 self.output.append(TelnetFragment::Negotiation {
@@ -801,16 +801,6 @@ impl Transformer {
                 self.phase = Phase::Normal;
                 let data = self.subnegotiation_data.split().freeze();
                 match self.subnegotiation_type {
-                    protocol::MCCP2 => {
-                        if !self.config.disable_compression {
-                            self.decompress.set_active(true);
-                        }
-                    }
-                    protocol::MXP => {
-                        if self.config.use_mxp == UseMxp::Command {
-                            self.mxp_on();
-                        }
-                    }
                     protocol::MTTS => {
                         if !self.config.terminal_identification.is_empty()
                             && matches!(&*data, [mtts::SEND, ..])
@@ -819,14 +809,24 @@ impl Transformer {
                             self.ttype_negotiator.advance();
                         }
                     }
-                    protocol::CHARSET => {
-                        self.charsets = charset::Charsets::from(&data);
-                        self.subnegotiate(self.charsets);
-                    }
                     protocol::MNES => {
                         if matches!(&*data, [mnes::SEND, ..]) {
                             self.mnes_variables = mnes::Variables::from(&data);
                             self.subnegotiate(self.mnes_variables);
+                        }
+                    }
+                    protocol::CHARSET => {
+                        self.charsets = charset::Charsets::from(&data);
+                        self.subnegotiate(self.charsets);
+                    }
+                    protocol::MCCP2 => {
+                        if !self.config.disable_compression {
+                            self.decompress.set_active(true);
+                        }
+                    }
+                    protocol::MXP => {
+                        if self.config.use_mxp == UseMxp::Command {
+                            self.mxp_on();
                         }
                     }
                     _ => (),

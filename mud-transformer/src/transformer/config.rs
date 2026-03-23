@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::fmt;
 use std::net::IpAddr;
 
@@ -7,6 +6,59 @@ use mxp::RgbColor;
 use mxp::responses::{SupportResponse, VersionResponse};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
+pub struct ByteSet {
+    bits: [u8; 32],
+}
+
+impl ByteSet {
+    pub const fn new() -> Self {
+        Self { bits: [0; 32] }
+    }
+
+    pub const fn clear(&mut self) {
+        *self = Self::new();
+    }
+
+    pub const fn contains(&self, i: u8) -> bool {
+        self.byte(i) & Self::bit(i) != 0
+    }
+
+    pub const fn insert(&mut self, i: u8) {
+        *self.byte_mut(i) |= Self::bit(i);
+    }
+
+    pub const fn remove(&mut self, i: u8) {
+        *self.byte_mut(i) &= !Self::bit(i);
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = u8> {
+        (0..=255).filter(|i| self.contains(*i))
+    }
+
+    const fn byte(&self, i: u8) -> u8 {
+        self.bits[i as usize >> 3]
+    }
+
+    const fn byte_mut(&mut self, i: u8) -> &mut u8 {
+        &mut self.bits[i as usize >> 3]
+    }
+
+    const fn bit(i: u8) -> u8 {
+        1 << (i & 7)
+    }
+}
+
+impl FromIterator<u8> for ByteSet {
+    fn from_iter<T: IntoIterator<Item = u8>>(iter: T) -> Self {
+        let mut map = Self::new();
+        for item in iter {
+            map.insert(item);
+        }
+        map
+    }
+}
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
@@ -207,7 +259,7 @@ pub struct TransformerConfig {
     pub version: String,
     /// Custom Telnet protocols to support, sent during a telnet `WILL` negotiation.
     /// Default: empty.
-    pub will: HashSet<u8>,
+    pub will: ByteSet,
     /// Client supports some XTerm features, such as setting window titles and minimizing windows.
     /// Default: false.
     pub window_controls: bool,
@@ -245,7 +297,7 @@ impl TransformerConfig {
             terminal_identification: String::new(),
             use_mxp: UseMxp::Command,
             version: String::new(),
-            will: HashSet::new(),
+            will: ByteSet::new(),
             window_controls: false,
         }
     }
