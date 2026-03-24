@@ -1,12 +1,5 @@
 //! Constants for special characters used by Telnet protocols.
 
-/// IAC WILL END-OF-RECORD.
-///
-/// Specified in [RFC 885](https://datatracker.ietf.org/doc/html/rfc885):
-/// > The sender of this command requests permission to begin transmission of the Telnet
-/// > END-OF-RECORD (EOR) code when transmitting data characters, or the sender of this command
-/// > confirms it will now begin transmission of EORs with transmitted data characters.
-pub const WILL_EOR: u8 = 0x19;
 /// IAC END-OF-RECORD.
 ///
 /// Specified in [RFC 885](https://datatracker.ietf.org/doc/html/rfc885):

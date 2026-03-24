@@ -8,6 +8,21 @@ use mxp::responses::{SupportResponse, VersionResponse};
 use serde::{Deserialize, Serialize};
 
 use super::byteset::ByteSet;
+use crate::protocol;
+
+const ALWAYS_WILL: ByteSet = {
+    let mut will = ByteSet::new();
+    will.insert(protocol::ECHO);
+    will.insert(protocol::SGA);
+    will.insert(protocol::STATUS);
+    will.insert(protocol::MTTS);
+    will.insert(protocol::EOR);
+    will.insert(protocol::MNES);
+    will.insert(protocol::CHARSET);
+    will.insert(protocol::MCCP2);
+    will.insert(protocol::MXP);
+    will
+};
 
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
@@ -253,6 +268,19 @@ impl TransformerConfig {
             actions -= action;
         }
         actions
+    }
+
+    pub(crate) fn postprocess_will(&mut self) {
+        self.will |= ALWAYS_WILL;
+        if self.no_echo_off {
+            self.will.remove(protocol::ECHO);
+        }
+        if self.disable_compression {
+            self.will.remove(protocol::MCCP2);
+        }
+        if self.use_mxp == UseMxp::Never {
+            self.will.remove(protocol::MXP);
+        }
     }
 
     pub(crate) fn support_response<I>(&self, questions: I) -> SupportResponse<I>

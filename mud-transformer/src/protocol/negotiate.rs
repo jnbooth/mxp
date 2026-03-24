@@ -1,4 +1,5 @@
 use std::fmt;
+use std::ops::Not;
 
 use crate::TransformerConfig;
 use crate::escape::telnet;
@@ -21,4 +22,17 @@ pub enum TelnetVerb {
     Wont = telnet::WONT as _,
     Do = telnet::DO as _,
     Dont = telnet::DONT as _,
+}
+
+impl Not for TelnetVerb {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        match self {
+            Self::Will => Self::Wont,
+            Self::Wont => Self::Will,
+            Self::Do => Self::Dont,
+            Self::Dont => Self::Do,
+        }
+    }
 }

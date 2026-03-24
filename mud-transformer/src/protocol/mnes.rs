@@ -15,7 +15,6 @@ pub const SEND: u8 = 1;
 pub const INFO: u8 = 2;
 
 pub const VAR: u8 = 0;
-#[allow(unused)]
 pub const VAL: u8 = 1;
 
 flags! {

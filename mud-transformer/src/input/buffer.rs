@@ -58,24 +58,29 @@ impl fmt::Write for BufferedInput {
 }
 
 impl io::Write for BufferedInput {
+    #[inline]
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.buf.extend_from_slice(buf);
         Ok(buf.len())
     }
 
+    #[inline]
     fn flush(&mut self) -> io::Result<()> {
         Ok(())
     }
 
+    #[inline]
     fn write_vectored(&mut self, bufs: &[io::IoSlice<'_>]) -> io::Result<usize> {
         self.buf.write_vectored(bufs)
     }
 
+    #[inline]
     fn write_all(&mut self, buf: &[u8]) -> io::Result<()> {
         self.buf.extend_from_slice(buf);
         Ok(())
     }
 
+    #[inline]
     fn write_fmt(&mut self, args: fmt::Arguments<'_>) -> io::Result<()> {
         self.write_fmt(args);
         Ok(())

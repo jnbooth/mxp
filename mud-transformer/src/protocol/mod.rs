@@ -18,6 +18,14 @@ pub use status::OPT as STATUS; // 5
 pub mod mtts;
 pub use mtts::OPT as MTTS; // 24
 
+/// IAC WILL END-OF-RECORD.
+///
+/// Specified in [RFC 885](https://datatracker.ietf.org/doc/html/rfc885):
+/// > The sender of this command requests permission to begin transmission of the Telnet
+/// > END-OF-RECORD (EOR) code when transmitting data characters, or the sender of this command
+/// > confirms it will now begin transmission of EORs with transmitted data characters.
+pub const EOR: u8 = 25;
+
 pub(crate) mod naws;
 pub use naws::OPT as NAWS; // 31
 
@@ -46,7 +54,7 @@ pub const MXP: u8 = 91;
 
 /// Zenith MUD Protocol
 ///
-/// http://zmp.sourcemud.org/spec.shtml
+/// https://discworld.starturtle.net/external/protocols/zmp.html
 pub const ZMP: u8 = 93;
 
 /// Aardwolf Protocol

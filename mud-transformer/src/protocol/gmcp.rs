@@ -1,7 +1,5 @@
-#[cfg(feature = "json")]
 use std::io::{self, Write};
 
-#[cfg(feature = "json")]
 use crate::escape::telnet;
 
 /// Generic Mud Communication Protocol
@@ -12,9 +10,26 @@ pub const OPT: u8 = 201;
 #[cfg(feature = "json")]
 pub use serde_json::from_slice as decode;
 
-#[cfg(feature = "json")]
-pub fn encode<T: serde::Serialize, W: Write>(mut writer: W, value: &T) -> io::Result<()> {
+pub fn encode_command<S, W>(mut writer: W, command: &S) -> io::Result<()>
+where
+    S: AsRef<[u8]>,
+    W: Write,
+{
     writer.write_all(&[telnet::IAC, telnet::SB, OPT])?;
+    writer.write_all(command.as_ref())?;
+    writer.write_all(&[telnet::IAC, telnet::SE])
+}
+
+#[cfg(feature = "json")]
+pub fn encode<S, T, W>(mut writer: W, command: &S, value: &T) -> io::Result<()>
+where
+    S: AsRef<[u8]>,
+    T: serde::Serialize,
+    W: Write,
+{
+    writer.write_all(&[telnet::IAC, telnet::SB, OPT])?;
+    writer.write_all(command.as_ref())?;
+    writer.write_all(b" ")?;
     serde_json::to_writer(&mut writer, value)?;
     writer.write_all(&[telnet::IAC, telnet::SE])
 }
