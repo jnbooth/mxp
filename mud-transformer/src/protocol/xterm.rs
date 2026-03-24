@@ -383,7 +383,7 @@ fn parse_osc(control_string: &Bytes) -> Option<(u8, ByteString)> {
         }
     }
 
-    let offset = control_string.len() - iter.as_slice().len();
+    let offset = control_string.len() - iter.len();
     let text_bytes = control_string.slice(offset..);
     let text = ByteString::try_from(text_bytes).ok()?;
     Some((code, text))

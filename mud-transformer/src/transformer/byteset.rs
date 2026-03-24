@@ -60,10 +60,7 @@ impl ByteSet {
     }
 
     pub fn iter(&self) -> ByteSetIter<'_> {
-        ByteSetIter {
-            set: self,
-            inner: 0..=255,
-        }
+        self.into_iter()
     }
 
     const fn byte(&self, i: u8) -> u8 {
@@ -151,7 +148,10 @@ impl<'a> IntoIterator for &'a ByteSet {
     type Item = u8;
     type IntoIter = ByteSetIter<'a>;
     fn into_iter(self) -> Self::IntoIter {
-        self.iter()
+        ByteSetIter {
+            set: self,
+            inner: 0..=255,
+        }
     }
 }
 

@@ -1,5 +1,6 @@
-use std::fmt;
+use std::io::Write;
 use std::ops::Not;
+use std::{fmt, io};
 
 use crate::TransformerConfig;
 use crate::escape::telnet;
@@ -35,4 +36,18 @@ impl Not for TelnetVerb {
             Self::Dont => Self::Do,
         }
     }
+}
+
+pub(crate) fn write_escaping_iac<W: Write>(mut writer: W, bytes: &[u8]) -> io::Result<()> {
+    let mut escaping = false;
+    for slice in bytes.split(|&c| c == telnet::IAC) {
+        if escaping {
+            writer.write_all(&[telnet::IAC, telnet::IAC])?;
+        } else {
+            writer.write_all(&[telnet::IAC])?;
+            escaping = true;
+        }
+        writer.write_all(slice)?;
+    }
+    Ok(())
 }

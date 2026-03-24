@@ -256,6 +256,60 @@ impl Transformer {
         self.input.write(&[telnet::IAC, telnet::SE]);
     }
 
+    fn process_subnegotiation(&mut self, subnegotiation_type: u8, data: &[u8]) {
+        match subnegotiation_type {
+            protocol::STATUS => {
+                if data != [status::SEND] {
+                    return;
+                }
+                self.input
+                    .write(&[telnet::IAC, telnet::SB, protocol::STATUS, status::IS]);
+                status::encode(&mut self.input, telnet::WILL, &self.config.will).unwrap();
+                status::encode(&mut self.input, telnet::DO, &*self.doing).unwrap();
+                self.input.write(&[telnet::IAC, telnet::SE]);
+            }
+            protocol::MTTS => {
+                if data != [mtts::SEND] || self.config.terminal_identification.is_empty() {
+                    return;
+                }
+                self.subnegotiate(self.ttype_negotiator);
+                self.ttype_negotiator.advance();
+            }
+            protocol::MNES => {
+                let [mnes::SEND, request @ ..] = data else {
+                    return;
+                };
+                self.mnes_variables = mnes::Variables::from(request);
+                self.subnegotiate(self.mnes_variables);
+            }
+            protocol::CHARSET => {
+                let [charset::REQUEST, request @ ..] = data else {
+                    return;
+                };
+                let charsets = match request.try_into() {
+                    Ok(charsets) => charsets,
+                    Err(e) => {
+                        eprintln!("[TELNET] error decoding charsets: {e}");
+                        return;
+                    }
+                };
+                self.charsets = charsets;
+                self.subnegotiate(self.charsets);
+            }
+            protocol::MCCP2 => {
+                if !self.config.disable_compression {
+                    self.decompress.set_active(true);
+                }
+            }
+            protocol::MXP => {
+                if self.config.use_mxp == UseMxp::Command {
+                    self.mxp_on();
+                }
+            }
+            _ => (),
+        }
+    }
+
     fn mxp_close_tags_from(&mut self, pos: usize) {
         if let Some(span_index) = self.mxp_tags.truncate(pos) {
             self.output.truncate_spans(span_index, &mut self.mxp_state);
@@ -785,44 +839,11 @@ impl Transformer {
                 let data = self.subnegotiation_data.split().freeze();
                 if c != telnet::SE {
                     eprintln!(
-                        "Telnet subnegotiation terminated with {c} instead of {}: {data:?}",
+                        "[TELNET] subnegotiation terminated with {c} instead of {}: {data:?}",
                         telnet::SE,
                     );
                 }
-                match self.subnegotiation_type {
-                    protocol::STATUS if *data == [status::SEND] => {
-                        self.input
-                            .write(&[telnet::IAC, telnet::SB, protocol::STATUS, status::IS]);
-                        status::encode(&mut self.input, telnet::WILL, &self.config.will).unwrap();
-                        status::encode(&mut self.input, telnet::DO, &*self.doing).unwrap();
-                        self.input.write(&[telnet::IAC, telnet::SE]);
-                    }
-                    protocol::MTTS if *data == [mtts::SEND] => {
-                        if !self.config.terminal_identification.is_empty() {
-                            self.subnegotiate(self.ttype_negotiator);
-                            self.ttype_negotiator.advance();
-                        }
-                    }
-                    protocol::MNES if matches!(&*data, [mnes::SEND, ..]) => {
-                        self.mnes_variables = mnes::Variables::from(&data);
-                        self.subnegotiate(self.mnes_variables);
-                    }
-                    protocol::CHARSET => {
-                        self.charsets = charset::Charsets::from(&data);
-                        self.subnegotiate(self.charsets);
-                    }
-                    protocol::MCCP2 => {
-                        if !self.config.disable_compression {
-                            self.decompress.set_active(true);
-                        }
-                    }
-                    protocol::MXP => {
-                        if self.config.use_mxp == UseMxp::Command {
-                            self.mxp_on();
-                        }
-                    }
-                    _ => (),
-                }
+                self.process_subnegotiation(self.subnegotiation_type, &data);
                 self.output.append(TelnetFragment::Subnegotiation {
                     code: self.subnegotiation_type,
                     data,

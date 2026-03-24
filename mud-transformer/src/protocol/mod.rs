@@ -26,13 +26,13 @@ pub use mtts::OPT as MTTS; // 24
 /// > confirms it will now begin transmission of EORs with transmitted data characters.
 pub const EOR: u8 = 25;
 
-pub(crate) mod naws;
+pub mod naws;
 pub use naws::OPT as NAWS; // 31
 
 pub mod mnes;
 pub use mnes::OPT as MNES; // 39
 
-pub(crate) mod charset;
+pub mod charset;
 pub use charset::OPT as CHARSET; // 42
 
 pub mod msdp;

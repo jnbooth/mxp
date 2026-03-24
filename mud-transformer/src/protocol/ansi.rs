@@ -597,28 +597,28 @@ impl Interpreter {
     }
 
     const fn sequence_rect(&self) -> Option<(Rect, &[Option<u16>])> {
-        let [t, l, b, r, remaining @ ..] = self.sequence.as_slice() else {
+        let &[t, l, b, r, ref remaining @ ..] = self.sequence.as_slice() else {
             return None;
         };
         let rect = Rect {
-            top: *t,
-            left: *l,
-            bottom: *b,
-            right: *r,
+            top: t,
+            left: l,
+            bottom: b,
+            right: r,
         };
         Some((rect, remaining))
     }
 
     fn exact_sequence_rect<const N: usize>(&self) -> Option<(Rect, &[Option<u16>; N])> {
-        let [t, l, b, r, remaining @ ..] = self.sequence.as_slice() else {
+        let &[t, l, b, r, ref remaining @ ..] = self.sequence.as_slice() else {
             return None;
         };
         let remaining = remaining.try_into().ok()?;
         let rect = Rect {
-            top: *t,
-            left: *l,
-            bottom: *b,
-            right: *r,
+            top: t,
+            left: l,
+            bottom: b,
+            right: r,
         };
         Some((rect, remaining))
     }

@@ -80,11 +80,11 @@ impl Negotiator {
         Self { sequence: 0 }
     }
 
-    pub fn reset(&mut self) {
+    pub const fn reset(&mut self) {
         self.sequence = 0;
     }
 
-    pub fn advance(&mut self) {
+    pub const fn advance(&mut self) {
         self.sequence = if self.sequence == 2 {
             0
         } else {

@@ -1,3 +1,5 @@
+use std::io::{self, Write};
+
 use crate::escape::telnet;
 
 /// Negotiate About Window Size
@@ -5,18 +7,34 @@ use crate::escape::telnet;
 /// https://datatracker.ietf.org/doc/html/rfc1073
 pub const OPT: u8 = 31;
 
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub struct WindowSize {
+    width: u16,
+    height: u16,
+}
+
+impl WindowSize {
+    pub const fn subnegotiation(self) -> [u8; 9] {
+        let [width_high, width_low] = self.width.to_be_bytes();
+        let [height_high, height_low] = self.height.to_be_bytes();
+        [
+            telnet::IAC,
+            telnet::SB,
+            OPT,
+            width_high,
+            width_low,
+            height_high,
+            height_low,
+            telnet::IAC,
+            telnet::SE,
+        ]
+    }
+
+    pub fn write_to<W: Write>(self, mut writer: W) -> io::Result<()> {
+        writer.write_all(&self.subnegotiation())
+    }
+}
+
 pub const fn subnegotiate(width: u16, height: u16) -> [u8; 9] {
-    let [width_high, width_low] = width.to_be_bytes();
-    let [height_high, height_low] = height.to_be_bytes();
-    [
-        telnet::IAC,
-        telnet::SB,
-        OPT,
-        width_high,
-        width_low,
-        height_high,
-        height_low,
-        telnet::IAC,
-        telnet::SE,
-    ]
+    WindowSize { width, height }.subnegotiation()
 }

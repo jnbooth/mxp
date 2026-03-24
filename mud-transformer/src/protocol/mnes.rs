@@ -1,4 +1,5 @@
 use std::fmt;
+use std::slice::Split;
 
 use flagset::{FlagSet, flags};
 
@@ -16,6 +17,10 @@ pub const INFO: u8 = 2;
 
 pub const VAR: u8 = 0;
 pub const VAL: u8 = 1;
+
+pub fn decode(bytes: &[u8]) -> Split<'_, u8, fn(&u8) -> bool> {
+    bytes.split(|&c| c == VAR)
+}
 
 flags! {
     enum KnownVariable: u8 {
@@ -100,7 +105,7 @@ where
         // Reduce monomorphization
         fn inner(value: &[u8]) -> Variables {
             let mut inner = FlagSet::default();
-            inner.extend(value.split(|&c| c == VAR).filter_map(KnownVariable::parse));
+            inner.extend(decode(value).filter_map(KnownVariable::parse));
             Variables {
                 inner,
                 prefix: "\0", // IS
