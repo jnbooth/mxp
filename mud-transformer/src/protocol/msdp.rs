@@ -26,7 +26,7 @@ pub fn decode(mut bytes: Bytes) -> Option<(Bytes, Data)> {
     Data::take_var_and_value(&mut bytes)
 }
 
-fn write_var<W: Write>(mut writer: W, var: &[u8]) -> io::Result<()> {
+fn write_var<W: Write>(writer: &mut W, var: &[u8]) -> io::Result<()> {
     writer.write_all(&[VAR])?;
     writer.write_all(var)?;
     writer.write_all(&[VAL])
@@ -51,19 +51,24 @@ impl fmt::Debug for Value {
 
 impl Value {
     pub fn write_to<W: Write>(&self, mut writer: W) -> io::Result<()> {
+        self.write_to_mut(&mut writer)
+    }
+
+    // Prevents trait recursion.
+    fn write_to_mut<W: Write>(&self, writer: &mut W) -> io::Result<()> {
         match self {
             Self::String(bytes) => writer.write_all(bytes),
             Self::Array(array) => {
                 for val in array {
                     writer.write_all(&[VAL])?;
-                    val.write_to(&mut writer)?;
+                    val.write_to_mut(writer)?;
                 }
                 Ok(())
             }
             Self::Table(table) => {
                 for (var, val) in table {
-                    write_var(&mut writer, var.as_ref())?;
-                    val.write_to(&mut writer)?;
+                    write_var(writer, var)?;
+                    val.write_to_mut(writer)?;
                 }
                 Ok(())
             }
@@ -298,19 +303,24 @@ impl fmt::Debug for Encode<'_> {
 
 impl Encode<'_> {
     pub fn write_to<W: Write>(&self, mut writer: W) -> io::Result<()> {
+        self.write_to_mut(&mut writer)
+    }
+
+    // Prevents trait recursion.
+    fn write_to_mut<W: Write>(&self, mut writer: &mut W) -> io::Result<()> {
         match *self {
             Self::String(bytes) => writer.write_all(bytes),
             Self::Array(array) => {
                 for val in array {
                     writer.write_all(&[VAL])?;
-                    val.write_to(&mut writer)?;
+                    val.write_to_mut(writer)?;
                 }
                 Ok(())
             }
             Self::Table(table) => {
                 for (var, val) in table {
                     write_var(&mut writer, var)?;
-                    val.write_to(&mut writer)?;
+                    val.write_to_mut(writer)?;
                 }
                 Ok(())
             }
