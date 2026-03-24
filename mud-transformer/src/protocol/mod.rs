@@ -36,10 +36,8 @@ pub use mssp::OPT as MSSP; // 70
 pub(crate) mod mccp;
 pub use mccp::OPT as MCCP2; // 86
 
-/// MUD Sound Protocol
-///
-/// https://www.zuggsoft.com/zmud/msp.htm
-pub const MSP: u8 = 90;
+pub mod msp;
+pub use msp::OPT as MSP; // 90
 
 /// MUD Extension Protocol
 ///
