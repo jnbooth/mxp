@@ -12,6 +12,9 @@ pub const ECHO: u8 = 1;
 /// https://datatracker.ietf.org/doc/html/rfc858
 pub const SGA: u8 = 3;
 
+pub mod status;
+pub use status::OPT as STATUS; // 5
+
 pub mod mtts;
 pub use mtts::OPT as MTTS; // 24
 

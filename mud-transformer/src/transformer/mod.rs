@@ -1,5 +1,8 @@
+mod byteset;
+pub use byteset::ByteSet;
+
 mod config;
-pub use config::{ByteSet, TabBehavior, Tag, TransformerConfig, UseMxp};
+pub use config::{TabBehavior, Tag, TransformerConfig, UseMxp};
 
 mod cursor;
 
