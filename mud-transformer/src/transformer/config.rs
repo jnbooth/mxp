@@ -181,9 +181,6 @@ pub struct TransformerConfig {
     /// Client supports XTerm mouse tracking.
     /// Default: false.
     pub mouse_tracking: bool,
-    /// Ignore server requests to turn local echo off.
-    /// Default: false.
-    pub no_echo_off: bool,
     /// Transmitted in response to an MXP `<PASSWORD>` request.
     /// Default: empty.
     pub password: String,
@@ -245,7 +242,6 @@ impl TransformerConfig {
             ignore_mxp_colors: false,
             linkify_underlined: false,
             mouse_tracking: false,
-            no_echo_off: false,
             password: String::new(),
             player: String::new(),
             proxy: false,
@@ -272,9 +268,6 @@ impl TransformerConfig {
 
     pub(crate) fn postprocess_will(&mut self) {
         self.will |= ALWAYS_WILL;
-        if self.no_echo_off {
-            self.will.remove(protocol::ECHO);
-        }
         if self.disable_compression {
             self.will.remove(protocol::MCCP2);
         }
