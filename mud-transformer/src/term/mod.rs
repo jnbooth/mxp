@@ -1,4 +1,4 @@
-use mxp::escape::ansi;
+use crate::escape::ansi;
 
 mod color;
 pub(crate) use color::TermColor;

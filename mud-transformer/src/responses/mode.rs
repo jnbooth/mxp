@@ -1,7 +1,6 @@
 use std::fmt;
 
-use mxp::escape::ansi::CSI;
-
+use crate::escape::ansi::CSI;
 use crate::term::Mode;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]

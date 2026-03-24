@@ -1,6 +1,6 @@
 use std::fmt;
 
-use mxp::escape::ansi::{CSI, OSC, ST};
+use crate::escape::ansi::{CSI, OSC, ST};
 
 #[derive(Copy, Clone, Debug)]
 pub enum WindowStateReport {

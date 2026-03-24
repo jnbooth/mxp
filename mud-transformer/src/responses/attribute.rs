@@ -1,6 +1,6 @@
 use std::fmt;
 
-use mxp::escape::ansi::CSI;
+use crate::escape::ansi::CSI;
 
 #[derive(Copy, Clone, Debug)]
 pub struct PrimaryAttributeReport;

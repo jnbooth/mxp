@@ -2,8 +2,8 @@ use std::time::Duration;
 use std::{iter, slice};
 
 use mxp::RgbColor;
-use mxp::escape::ansi;
 
+use crate::escape::ansi;
 use crate::input::BufferedInput;
 use crate::output::{BufferedOutput, ControlFragment, OutputFragment, TextStyle};
 use crate::responses::{

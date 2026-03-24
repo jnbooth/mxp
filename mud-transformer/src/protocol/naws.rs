@@ -1,4 +1,4 @@
-use mxp::escape::telnet;
+use crate::escape::telnet;
 
 /// Negotiate About Window Size
 ///

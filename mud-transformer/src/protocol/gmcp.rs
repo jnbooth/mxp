@@ -2,7 +2,7 @@
 use std::io::{self, Write};
 
 #[cfg(feature = "json")]
-use mxp::escape::telnet;
+use crate::escape::telnet;
 
 /// Generic Mud Communication Protocol
 ///

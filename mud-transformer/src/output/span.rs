@@ -6,12 +6,12 @@ use bytestring::ByteString;
 use bytestringmut::ByteStringMut;
 use flagset::{FlagSet, flags};
 use mxp::Heading;
-use mxp::escape::ansi;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
 use super::bytestringmut_ext::ByteStringMutExt as _;
 use super::link::Link;
+use crate::escape::ansi;
 use crate::term::TermColor;
 
 flags! {

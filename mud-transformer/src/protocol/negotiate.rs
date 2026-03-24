@@ -1,8 +1,7 @@
 use std::fmt;
 
-use mxp::escape::telnet;
-
 use crate::TransformerConfig;
+use crate::escape::telnet;
 
 pub(crate) trait Negotiate {
     const OPT: u8;

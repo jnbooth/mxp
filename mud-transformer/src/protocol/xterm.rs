@@ -4,9 +4,9 @@ use std::num::NonZero;
 use bytes::{Bytes, BytesMut};
 use bytestring::ByteString;
 use mxp::RgbColor;
-use mxp::escape::ansi;
 
 pub(crate) use super::ansi::Outcome;
+use crate::escape::ansi;
 use crate::input::BufferedInput;
 use crate::output::{BufferedOutput, ControlFragment, Link, SendTo};
 use crate::responses::{CursorInformationReport, TabStopReport, UnknownSettingReport};

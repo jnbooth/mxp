@@ -6,7 +6,6 @@ use bytes::BytesMut;
 use bytestringmut::ByteStringMut;
 use mxp::element::ElementFlag;
 use mxp::entity::PublishedIter;
-use mxp::escape::{ansi, telnet};
 use mxp::node::{Definition, Tag as TagNode, TagOpen};
 
 use super::config::{TabBehavior, TransformerConfig, UseMxp};
@@ -14,6 +13,7 @@ use super::cursor::ReceiveCursor;
 use super::phase::Phase;
 use super::state::StateLock;
 use super::tag::{Tag, TagList};
+use crate::escape::{ansi, telnet};
 use crate::input::{BufferedInput, InputDrain};
 use crate::output::{
     BufferedOutput, ByteStringMutExt as _, ControlFragment, EntityFragment, MapperFragment,

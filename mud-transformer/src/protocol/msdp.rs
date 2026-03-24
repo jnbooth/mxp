@@ -5,7 +5,8 @@ use std::iter::{self, FusedIterator};
 use std::{fmt, io};
 
 use bytes::{Buf, Bytes};
-use mxp::escape::telnet;
+
+use crate::escape::telnet;
 
 /// MUD Server Data Protocol
 ///

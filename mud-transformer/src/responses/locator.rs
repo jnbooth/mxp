@@ -1,7 +1,8 @@
 use std::fmt;
 
 use flagset::{FlagSet, flags};
-use mxp::escape::ansi::CSI;
+
+use crate::escape::ansi::CSI;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum LocatorReportEvent {

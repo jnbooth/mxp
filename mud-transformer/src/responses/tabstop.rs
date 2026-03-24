@@ -1,7 +1,6 @@
 use std::fmt;
 
-use mxp::escape::ansi::{DCS, ST};
-
+use crate::escape::ansi::{DCS, ST};
 use crate::output::BufferedOutput;
 use crate::term::TabEffect;
 

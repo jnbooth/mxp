@@ -1,6 +1,6 @@
 use std::fmt;
 
-use mxp::escape::ansi::CSI;
+use crate::escape::ansi::CSI;
 
 /// Formats a DECSRC response.
 pub(crate) struct SecureResetConfirmation {

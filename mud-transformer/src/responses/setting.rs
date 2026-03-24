@@ -1,8 +1,8 @@
 use std::fmt;
 
-use mxp::escape::ansi::{DCS, ST};
 use mxp::{FlagSet, RgbColor};
 
+use crate::escape::ansi::{DCS, ST};
 use crate::output::TextStyle;
 use crate::term::TermColor;
 
