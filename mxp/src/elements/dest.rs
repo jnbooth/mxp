@@ -1,7 +1,7 @@
 use std::fmt;
 use std::num::NonZero;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
+use crate::arguments::{ArgumentScanner, ExpectArg, FromArgs};
 use crate::keyword::DestKeyword;
 
 /// Positions text at a certain position in a frame.

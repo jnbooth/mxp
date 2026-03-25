@@ -3,7 +3,7 @@ use std::num::NonZero;
 
 use flagset::{FlagSet, flags};
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
+use crate::arguments::{ArgumentScanner, ExpectArg, FromArgs};
 use crate::color::RgbColor;
 use crate::parse::UnrecognizedVariant;
 

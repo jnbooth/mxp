@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
+use crate::arguments::{ArgumentScanner, ExpectArg, FromArgs};
 use crate::color::RgbColor;
 
 /// Displays an MXP entity value as a gauge.

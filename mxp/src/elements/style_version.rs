@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
+use crate::arguments::{ArgumentScanner, ExpectArg, FromArgs};
 
 /// A MUD sets a style-sheet version number by sending the `<VERSION styleversion>` tag to the
 /// client.

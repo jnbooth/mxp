@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
+use crate::arguments::{ArgumentScanner, ExpectArg, FromArgs};
 
 /// Defines a graphics format and provides a client plugin module that converts the MUD-specific
 /// format to a standard GIF or BMP format.

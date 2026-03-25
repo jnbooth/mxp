@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
+use crate::arguments::{ArgumentScanner, ExpectArg, FromArgs};
 
 /// Opens a web page in the user's web browser.
 ///

@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use super::action_kind::ActionKind;
 use super::atomic_tag::AtomicTag;
-use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, Arguments, ExpectArg};
 use crate::elements::{
     Color, Dest, Expire, Filter, Font, Frame, Gauge, Heading, Hyperlink, Image, Music, Relocate,
     Send, Sound, Stat, StyleVersion, Support, Var,

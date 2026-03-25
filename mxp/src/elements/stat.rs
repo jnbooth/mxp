@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
+use crate::arguments::{ArgumentScanner, ExpectArg, FromArgs};
 
 /// Displays an MXP entity value as status bar text.
 ///

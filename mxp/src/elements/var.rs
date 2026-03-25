@@ -2,7 +2,7 @@ use std::fmt;
 
 use flagset::FlagSet;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
+use crate::arguments::{ArgumentScanner, ExpectArg, FromArgs};
 use crate::keyword::EntityKeyword;
 use crate::node::EntityDefinition;
 

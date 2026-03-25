@@ -2,7 +2,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use super::AudioRepetition;
-use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _, FromArgs};
+use crate::arguments::{ArgumentScanner, Arguments, ExpectArg, FromArgs};
 use crate::parse::{StringVariant, UnrecognizedVariant};
 
 #[derive(Copy, Clone, Default, PartialEq, Eq)]

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, Arguments, ExpectArg as _};
+use crate::arguments::{ArgumentScanner, Arguments, ExpectArg};
 use crate::color::RgbColor;
 use crate::keyword::LineTagKeyword;
 use crate::line::Mode;

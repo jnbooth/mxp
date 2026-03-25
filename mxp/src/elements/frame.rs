@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
+use crate::arguments::{ArgumentScanner, ExpectArg, FromArgs};
 use crate::keyword::FrameKeyword;
 use crate::parse::UnrecognizedVariant;
 use crate::screen::{Align, Dimension};

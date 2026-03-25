@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::arguments::{ArgumentScanner, ExpectArg as _, FromArgs};
+use crate::arguments::{ArgumentScanner, ExpectArg, FromArgs};
 use crate::keyword::RelocateKeyword;
 
 /// Closes the current MUD connection and causes a new connect to open on a new server.
