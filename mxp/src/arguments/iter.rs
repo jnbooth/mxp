@@ -33,10 +33,12 @@ impl<'a, S> Iterator for Named<'a, S> {
         let (k, v) = self.inner.next()?;
         Some((k.as_str(), v))
     }
+
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.inner.size_hint()
     }
+
     #[inline]
     fn count(self) -> usize {
         self.inner.count()
@@ -80,18 +82,22 @@ impl<'a, S> Iterator for Positional<'a, S> {
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.next()
     }
+
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.inner.size_hint()
     }
+
     #[inline]
     fn count(self) -> usize {
         self.inner.count()
     }
+
     #[inline]
     fn nth(&mut self, n: usize) -> Option<Self::Item> {
         self.inner.nth(n)
     }
+
     #[inline]
     fn last(self) -> Option<Self::Item> {
         self.inner.last()

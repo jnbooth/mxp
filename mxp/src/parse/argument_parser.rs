@@ -71,6 +71,7 @@ impl<'a> Iterator for ArgumentParser<'a> {
     }
 
     // A generous size hint reflecting the total number of spaces in the string.
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         self.inner.size_hint()
     }

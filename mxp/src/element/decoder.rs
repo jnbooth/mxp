@@ -73,26 +73,26 @@ impl<'a, D: Decoder + Copy> ElementDecodeIter<'a, D> {
 impl<'a, D: Decoder + Copy> Iterator for ElementDecodeIter<'a, D> {
     type Item = crate::Result<Action<Cow<'a, str>>>;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         Some(self.items.next()?.decode(self.decoder))
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         let exact = self.len();
         (exact, Some(exact))
     }
 }
 
-impl<D> ExactSizeIterator for ElementDecodeIter<'_, D>
-where
-    D: Decoder + Copy,
-{
+impl<D: Decoder + Copy> ExactSizeIterator for ElementDecodeIter<'_, D> {
+    #[inline]
     fn len(&self) -> usize {
         self.items.len()
     }
 }
 
-impl<D> FusedIterator for ElementDecodeIter<'_, D> where D: Decoder + Copy {}
+impl<D: Decoder + Copy> FusedIterator for ElementDecodeIter<'_, D> {}
 
 #[cfg(test)]
 mod tests {

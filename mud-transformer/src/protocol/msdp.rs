@@ -194,6 +194,7 @@ impl fmt::Debug for Array {
 impl Iterator for Array {
     type Item = Data;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         Data::take_value(&mut self.0)
     }
@@ -219,6 +220,7 @@ impl fmt::Debug for Table {
 impl Iterator for Table {
     type Item = (Bytes, Data);
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         Data::take_var_and_value(&mut self.0)
     }

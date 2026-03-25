@@ -79,11 +79,11 @@ impl Iterator for ReceiveCursor<'_> {
     }
 }
 
-impl FusedIterator for ReceiveCursor<'_> {}
-
 impl ExactSizeIterator for ReceiveCursor<'_> {
     #[inline]
     fn len(&self) -> usize {
         self.inner.len()
     }
 }
+
+impl FusedIterator for ReceiveCursor<'_> {}

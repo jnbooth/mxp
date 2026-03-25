@@ -1,6 +1,9 @@
 use std::fmt;
+use std::iter::FusedIterator;
 
 use bytes::{Buf, Bytes};
+
+use crate::count_bytes;
 
 /// MUD Server Status Protocol
 ///
@@ -36,6 +39,7 @@ fn split_until(bytes: &mut Bytes, delim: u8) -> Option<Bytes> {
 impl Iterator for Iter {
     type Item = (Bytes, Bytes);
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let before = split_until(&mut self.data, VAL)?;
         match split_until(&mut self.data, VAR) {
@@ -43,7 +47,22 @@ impl Iterator for Iter {
             None => Some((before, self.data.split_off(0))),
         }
     }
+
+    #[inline]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let exact = self.len();
+        (exact, Some(exact))
+    }
 }
+
+impl ExactSizeIterator for Iter {
+    #[inline]
+    fn len(&self) -> usize {
+        count_bytes(&self.data, VAL)
+    }
+}
+
+impl FusedIterator for Iter {}
 
 impl fmt::Debug for Iter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

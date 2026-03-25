@@ -96,6 +96,7 @@ pub struct Iter<'a> {
 }
 
 impl<'a> Iter<'a> {
+    #[inline]
     fn finish(&mut self) -> Option<&'a [u8]> {
         if self.charsets.is_empty() {
             return None;
@@ -104,20 +105,27 @@ impl<'a> Iter<'a> {
         self.charsets = &[];
         Some(charset)
     }
+
+    #[inline]
+    fn split_around(&self, i: usize) -> (&'a [u8], &'a [u8]) {
+        (&self.charsets[..i], &self.charsets[i + 1..])
+    }
 }
 
 impl<'a> Iterator for Iter<'a> {
     type Item = &'a [u8];
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let Some(pos) = self.charsets.iter().position(|&c| c == self.sep) else {
             return self.finish();
         };
-        let charset = &self.charsets[..pos];
-        self.charsets = &self.charsets[pos + 1..];
+        let (charset, rest) = self.split_around(pos);
+        self.charsets = rest;
         Some(charset)
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
         let exact = self.len();
         (exact, Some(exact))
@@ -125,23 +133,24 @@ impl<'a> Iterator for Iter<'a> {
 }
 
 impl DoubleEndedIterator for Iter<'_> {
+    #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         let Some(pos) = self.charsets.iter().rposition(|&c| c == self.sep) else {
             return self.finish();
         };
-        let charset = &self.charsets[pos + 1..];
-        self.charsets = &self.charsets[..pos];
+        let (rest, charset) = self.split_around(pos);
+        self.charsets = rest;
         Some(charset)
     }
 }
 
 impl ExactSizeIterator for Iter<'_> {
+    #[inline]
     fn len(&self) -> usize {
         if self.charsets.is_empty() {
-            0
-        } else {
-            1 + count_bytes(self.charsets, self.sep)
+            return 0;
         }
+        1 + count_bytes(self.charsets, self.sep)
     }
 }
 

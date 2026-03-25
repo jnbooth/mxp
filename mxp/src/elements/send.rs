@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::iter::FusedIterator;
 use std::{fmt, str};
 
 use crate::arguments::{ArgumentScanner, FromArgs};
@@ -208,6 +209,7 @@ impl fmt::Debug for SendMenu<'_> {
 impl<'a> Iterator for SendMenu<'a> {
     type Item = SendMenuItem<'a>;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let command = self.commands.next()?;
         Some(SendMenuItem {
@@ -216,6 +218,8 @@ impl<'a> Iterator for SendMenu<'a> {
         })
     }
 }
+
+impl FusedIterator for SendMenu<'_> {}
 
 impl<S: AsRef<str>> fmt::Display for Send<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

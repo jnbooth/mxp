@@ -163,31 +163,35 @@ pub struct ByteSetIter<'a> {
 impl Iterator for ByteSetIter<'_> {
     type Item = u8;
 
+    #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         self.inner.find(|&byte| self.set.contains(byte))
     }
 
+    #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (
-            0,
-            Some(((self.inner.end() - self.inner.start()) as usize + 1).min(self.inner.len())),
-        )
+        let range = self.inner.end() - self.inner.start();
+        (0, Some((usize::from(range) + 1).min(self.set.len())))
     }
 
+    #[inline]
     fn min(mut self) -> Option<u8> {
         self.next()
     }
 
+    #[inline]
     fn max(mut self) -> Option<u8> {
         self.next_back()
     }
 
+    #[inline]
     fn is_sorted(self) -> bool {
         true
     }
 }
 
 impl DoubleEndedIterator for ByteSetIter<'_> {
+    #[inline]
     fn next_back(&mut self) -> Option<Self::Item> {
         self.inner.rfind(|&byte| self.set.contains(byte))
     }
