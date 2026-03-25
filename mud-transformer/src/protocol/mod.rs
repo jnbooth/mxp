@@ -41,7 +41,7 @@ pub use msdp::OPT as MSDP; // 69
 pub mod mssp;
 pub use mssp::OPT as MSSP; // 70
 
-pub(crate) mod mccp;
+pub mod mccp;
 pub use mccp::OPT as MCCP2; // 86
 
 pub mod msp;

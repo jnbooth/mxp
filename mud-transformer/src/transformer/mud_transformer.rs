@@ -758,9 +758,14 @@ impl Transformer {
                     verb: TelnetVerb::Wont,
                     code: c,
                 });
-                if c == protocol::ECHO && self.config.will.contains(c) {
-                    self.output
-                        .append(TelnetFragment::SetEcho { should_echo: true });
+                if self.config.will.contains(c) {
+                    match c {
+                        protocol::ECHO => self
+                            .output
+                            .append(TelnetFragment::SetEcho { should_echo: true }),
+                        protocol::MCCP2 => self.decompress.set_active(false),
+                        _ => (),
+                    }
                 }
                 self.input.write(&telnet::supports_do(c, false));
                 self.output.append(TelnetFragment::Negotiation {

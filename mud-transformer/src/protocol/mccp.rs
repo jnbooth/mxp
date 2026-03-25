@@ -1,14 +1,22 @@
+use std::fmt;
 use std::io::{self, BufRead};
 
-use flate2::FlushDecompress;
+use zlib_rs::{Inflate, InflateError, InflateFlush, Status};
 
 /// MUD Client Compression Protocol v2
 pub const OPT: u8 = 86;
 
-#[derive(Debug)]
-pub(crate) struct Decompress {
-    inner: flate2::Decompress,
+pub struct Decompress {
+    inner: Inflate,
     active: bool,
+}
+
+impl fmt::Debug for Decompress {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("Decompress")
+            .field("active", &self.active)
+            .finish_non_exhaustive()
+    }
 }
 
 impl Default for Decompress {
@@ -20,7 +28,7 @@ impl Default for Decompress {
 impl Decompress {
     pub fn new() -> Self {
         Self {
-            inner: flate2::Decompress::new(true),
+            inner: Inflate::new(true, 15),
             active: false,
         }
     }
@@ -34,25 +42,38 @@ impl Decompress {
     }
 
     #[allow(clippy::cast_possible_truncation)]
-    pub fn decompress<R: BufRead>(&mut self, reader: &mut R, buf: &mut [u8]) -> io::Result<usize> {
+    pub fn decompress<R: BufRead>(
+        &mut self,
+        input: &mut R,
+        output: &mut [u8],
+    ) -> io::Result<usize> {
         let total_in = self.inner.total_in();
         let total_out = self.inner.total_out();
         let status = self
             .inner
-            .decompress(reader.fill_buf()?, buf, FlushDecompress::None);
+            .decompress(input.fill_buf()?, output, InflateFlush::NoFlush);
 
         match status {
-            Ok(flate2::Status::Ok) => {
-                reader.consume((self.inner.total_in() - total_in) as usize);
-                Ok((self.inner.total_out() - total_out) as usize)
+            Ok(Status::Ok) => {}
+            Ok(Status::StreamEnd) => {
+                self.active = false;
             }
-            Ok(flate2::Status::BufError) => Ok(0),
-            Ok(flate2::Status::StreamEnd) => Err(io::Error::from(io::ErrorKind::UnexpectedEof)),
-            Err(e) => Err(e.into()),
+            Ok(Status::BufError) => return Ok(0),
+            Err(e) => return Err(io::Error::new(get_error_kind(e), e.as_str())),
         }
+        input.consume((self.inner.total_in() - total_in) as usize);
+        Ok((self.inner.total_out() - total_out) as usize)
     }
 
     pub fn reset(&mut self) {
         self.inner.reset(true);
+    }
+}
+
+fn get_error_kind(error: InflateError) -> io::ErrorKind {
+    match error {
+        InflateError::DataError => io::ErrorKind::InvalidData,
+        InflateError::MemError => io::ErrorKind::OutOfMemory,
+        _ => io::ErrorKind::Other,
     }
 }
