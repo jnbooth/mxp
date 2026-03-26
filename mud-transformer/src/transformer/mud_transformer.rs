@@ -237,8 +237,17 @@ impl Transformer {
             for &byte in &mut iter {
                 self.receive_byte(byte);
                 if !self.decompress.active() {
+                    let mut remainder = Vec::with_capacity(iter.as_slice().len() + 2048);
+                    let mut flush_buf = [0; 1024];
+                    loop {
+                        let flushed_n = self.decompress.finish(&mut flush_buf)?;
+                        if flushed_n == 0 {
+                            break;
+                        }
+                        remainder.extend_from_slice(&flush_buf[..flushed_n]);
+                    }
+                    remainder.extend_from_slice(iter.as_slice());
                     self.decompress.reset();
-                    let remainder = iter.as_slice().to_vec();
                     received += n - remainder.len();
                     received += self.receive(&remainder, buf)?;
                     received += self.receive(cursor.as_slice(), buf)?;

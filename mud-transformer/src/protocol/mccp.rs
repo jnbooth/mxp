@@ -51,19 +51,27 @@ impl Decompress {
     ) -> io::Result<usize> {
         let total_in = self.inner.total_in();
         let total_out = self.inner.total_out();
-        let status = self
-            .inner
-            .decompress(input.fill_buf()?, output, InflateFlush::NoFlush);
-
-        match status {
-            Ok(Status::Ok) => {}
-            Ok(Status::StreamEnd) => {
-                self.active = false;
-            }
-            Ok(Status::BufError) => return Ok(0),
-            Err(e) => return Err(io::Error::new(get_error_kind(e), e.as_str())),
+        let buf = input.fill_buf()?;
+        if buf.is_empty() {
+            return Ok(0);
         }
+        let result = self.inner.decompress(buf, output, InflateFlush::NoFlush);
         input.consume((self.inner.total_in() - total_in) as usize);
+        match result {
+            Ok(Status::Ok) => {}
+            Ok(Status::StreamEnd) => self.active = false,
+            Ok(Status::BufError) => return Err(buf_io_error()),
+            Err(e) => return Err(to_io_error(e)),
+        }
+        Ok((self.inner.total_out() - total_out) as usize)
+    }
+
+    #[allow(clippy::cast_possible_truncation)]
+    pub fn finish(&mut self, output: &mut [u8]) -> io::Result<usize> {
+        let total_out = self.inner.total_out();
+        self.inner
+            .decompress(&[], output, InflateFlush::Finish)
+            .map_err(to_io_error)?;
         Ok((self.inner.total_out() - total_out) as usize)
     }
 
@@ -72,10 +80,17 @@ impl Decompress {
     }
 }
 
-fn get_error_kind(error: InflateError) -> io::ErrorKind {
-    match error {
+#[cold]
+fn buf_io_error() -> io::Error {
+    io::Error::new(io::ErrorKind::WriteZero, "output buffer too small")
+}
+
+#[cold]
+fn to_io_error(error: InflateError) -> io::Error {
+    let kind = match error {
         InflateError::DataError => io::ErrorKind::InvalidData,
         InflateError::MemError => io::ErrorKind::OutOfMemory,
         _ => io::ErrorKind::Other,
-    }
+    };
+    io::Error::new(kind, error.as_str())
 }
