@@ -285,7 +285,7 @@ impl Interpreter {
             18 => set_dynamic(DynamicColor::TektronixCursor, &text, output),
             50 => output.append(ControlFragment::SetFont(text)),
             52 => {
-                let &[selection, b';', ..] = (*text).as_bytes() else {
+                let &[selection, b';', ..] = &**text.as_bytes() else {
                     return None;
                 };
                 let selection = SelectionData::from_code(selection)?;

@@ -1,5 +1,5 @@
 use std::fmt;
-use std::slice::Split;
+use std::slice;
 
 use flagset::{FlagSet, flags};
 
@@ -19,7 +19,10 @@ pub const INFO: u8 = 2;
 pub const VAR: u8 = 0;
 pub const VAL: u8 = 1;
 
-pub fn decode(bytes: &[u8]) -> Split<'_, u8, fn(&u8) -> bool> {
+pub fn decode(bytes: &[u8]) -> slice::Split<'_, u8, fn(&u8) -> bool> {
+    let bytes = match bytes {
+        [VAR, bytes @ ..] | bytes => bytes,
+    };
     bytes.split(|&c| c == VAR)
 }
 

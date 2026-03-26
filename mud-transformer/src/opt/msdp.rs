@@ -426,7 +426,7 @@ impl Encodable for &dyn Encodable {
 
 impl<T: Encodable> Encodable for &T {
     fn encode(&self, writer: &mut dyn Write) -> io::Result<()> {
-        (*self).encode(writer)
+        T::encode(self, writer)
     }
 }
 

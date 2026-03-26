@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::io::Write;
 use std::str;
 use std::{fmt, io};
@@ -5,6 +6,7 @@ use std::{fmt, io};
 use flagset::{FlagSet, flags};
 use mxp::escape::telnet;
 
+pub use crate::protocol::ToBeBytes;
 use crate::protocol::{Negotiate, write_escaping_iac};
 use crate::transformer::TransformerConfig;
 
@@ -21,6 +23,16 @@ pub const TTABLE_NAK: u8 = 7;
 
 /// Default separator used internally
 const SEP: u8 = b' ';
+
+/// Decodes a REQUEST subnegotiation. See [`Request::decode`].
+pub fn decode(request: &[u8]) -> Result<Request<'_>, DecodeError> {
+    Request::decode(request)
+}
+
+/// Encodes an ACCEPTED subnegotiation. See [`Response::encode`].
+pub fn encode_accepted<W: Write>(writer: W, charset: &str) -> io::Result<()> {
+    Response::Accepted(charset).encode(writer)
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DecodeError {
@@ -40,6 +52,8 @@ impl fmt::Display for DecodeError {
         }
     }
 }
+
+impl Error for DecodeError {}
 
 /// `IAC SB CHARSET REQUEST <...> IAC SE`
 ///
@@ -85,7 +99,6 @@ impl<'a> Request<'a> {
 
 impl<'a> IntoIterator for Request<'a> {
     type Item = &'a str;
-
     type IntoIter = str::Split<'a, char>;
 
     #[inline]
@@ -110,51 +123,6 @@ pub struct TTable<'a> {
     /// or part of the characters in one of the specified character sets to the correct characters
     /// in the other character set.
     pub map: &'a [u8],
-}
-
-/// Types that can be converted to byte arrays in big-endian order.
-pub trait ToBeBytes: Copy {
-    /// Resulting array type. Should be `[u8; N]`.
-    type BeBytes;
-
-    /// Converts to a big-endian byte array.
-    fn to_be_bytes(self) -> Self::BeBytes;
-}
-
-impl<C: ToBeBytes> ToBeBytes for &C {
-    type BeBytes = C::BeBytes;
-
-    #[inline]
-    fn to_be_bytes(self) -> Self::BeBytes {
-        (*self).to_be_bytes()
-    }
-}
-
-macro_rules! impl_to_be_bytes {
-    ($t:ty, $n:literal) => {
-        impl ToBeBytes for $t {
-            type BeBytes = [u8; $n];
-
-            #[inline]
-            fn to_be_bytes(self) -> Self::BeBytes {
-                self.to_be_bytes()
-            }
-        }
-    };
-}
-
-impl_to_be_bytes!(u8, 1);
-impl_to_be_bytes!(u16, 2);
-impl_to_be_bytes!(u32, 4);
-impl_to_be_bytes!(u64, 8);
-
-impl ToBeBytes for char {
-    type BeBytes = [u8; 4];
-
-    #[inline]
-    fn to_be_bytes(self) -> Self::BeBytes {
-        u32::from(self).to_be_bytes()
-    }
 }
 
 impl<'a> TTable<'a> {
@@ -251,10 +219,8 @@ pub(crate) struct Charsets {
     inner: FlagSet<Charset>,
 }
 
-impl TryFrom<&[u8]> for Charsets {
-    type Error = DecodeError;
-
-    fn try_from(data: &[u8]) -> Result<Self, Self::Error> {
+impl Charsets {
+    pub fn decode(data: &[u8]) -> Result<Self, DecodeError> {
         let request = Request::decode(data)?;
         let mut flags = FlagSet::default();
         for fragment in request {
@@ -265,14 +231,6 @@ impl TryFrom<&[u8]> for Charsets {
             }
         }
         Ok(Charsets { inner: flags })
-    }
-}
-
-impl TryFrom<&str> for Charsets {
-    type Error = DecodeError;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        Self::try_from(value.as_bytes())
     }
 }
 

@@ -16,6 +16,33 @@ use crate::escape::telnet;
 /// https://tintin.mudhalla.net/protocols/gmcp/
 pub const OPT: u8 = 201;
 
+/// See [`Message::decode`].
+pub fn decode(bytes: Bytes) -> Result<Message, DecodeError> {
+    Message::decode(bytes)
+}
+
+/// Writes the subnegotiation command to a writer, including IAC prefix and suffix.
+pub fn encode_command<W: Write>(mut writer: W, command: &str) -> io::Result<()> {
+    writer.write_all(&[telnet::IAC, telnet::SB, OPT])?;
+    writer.write_all(command.as_bytes())?;
+    writer.write_all(&[telnet::IAC, telnet::SE])
+}
+
+/// Writes the subnegotiation command and data to a writer, including IAC prefix and suffix.
+/// Data is encoded as JSON.
+#[cfg(feature = "json")]
+pub fn encode<T, W>(mut writer: W, command: &str, value: &T) -> io::Result<()>
+where
+    T: Serialize,
+    W: Write,
+{
+    writer.write_all(&[telnet::IAC, telnet::SB, OPT])?;
+    writer.write_all(command.as_bytes())?;
+    writer.write_all(b" ")?;
+    serde_json::to_writer(&mut writer, value)?;
+    writer.write_all(&[telnet::IAC, telnet::SE])
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum DecodeError {
     EmptyString,
@@ -68,10 +95,10 @@ impl Message {
     }
 
     pub fn encode<W: Write>(&self, mut writer: W) -> io::Result<()> {
-        writer.write_all((*self.command).as_bytes())?;
+        writer.write_all(self.command.as_bytes())?;
         if let Some(data) = &self.data {
             writer.write_all(b" ")?;
-            writer.write_all(str::as_bytes(data))?;
+            writer.write_all(data.as_bytes())?;
         }
         Ok(())
     }
@@ -98,30 +125,4 @@ impl Message {
         }
         Some(data.slice_ref(trimmed))
     }
-}
-
-pub fn decode(bytes: Bytes) -> Result<Message, DecodeError> {
-    Message::decode(bytes)
-}
-
-/// Writes the subnegotiation command to a writer, including IAC prefix and suffix.
-pub fn encode_command<W: Write>(mut writer: W, command: &str) -> io::Result<()> {
-    writer.write_all(&[telnet::IAC, telnet::SB, OPT])?;
-    writer.write_all(command.as_bytes())?;
-    writer.write_all(&[telnet::IAC, telnet::SE])
-}
-
-/// Writes the subnegotiation command and data to a writer, including IAC prefix and suffix.
-/// Data is encoded as JSON.
-#[cfg(feature = "json")]
-pub fn encode<T, W>(mut writer: W, command: &str, value: &T) -> io::Result<()>
-where
-    T: Serialize,
-    W: Write,
-{
-    writer.write_all(&[telnet::IAC, telnet::SB, OPT])?;
-    writer.write_all(command.as_bytes())?;
-    writer.write_all(b" ")?;
-    serde_json::to_writer(&mut writer, value)?;
-    writer.write_all(&[telnet::IAC, telnet::SE])
 }
