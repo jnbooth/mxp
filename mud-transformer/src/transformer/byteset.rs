@@ -1,9 +1,9 @@
+use std::fmt;
 use std::iter::FusedIterator;
 use std::ops::{Not, RangeInclusive};
-use std::{fmt, ptr};
 
 #[repr(transparent)]
-#[derive(Clone, Default, PartialEq, Eq)]
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
 pub struct ByteSet {
     bytes: [u8; 32],
 }
@@ -14,23 +14,21 @@ impl ByteSet {
     }
 
     const fn from_u64s(u64s: [u64; 4]) -> Self {
-        // SAFETY: Identical size and layout.
-        unsafe { std::mem::transmute(u64s) }
+        Self {
+            bytes: bytemuck::must_cast(u64s),
+        }
     }
 
     const fn into_u64s(self) -> [u64; 4] {
-        // SAFETY: Identical size and layout.
-        unsafe { std::mem::transmute(self) }
+        bytemuck::must_cast(self.bytes)
     }
 
     const fn as_u64s(&self) -> &[u64; 4] {
-        // SAFETY: Identical size and layout.
-        unsafe { &*(ptr::from_ref(self).cast()) }
+        bytemuck::must_cast_ref(&self.bytes)
     }
 
-    const fn as_u64s_mut(&mut self) -> &mut [u64; 4] {
-        // SAFETY: Identical size and layout.
-        unsafe { &mut *(ptr::from_mut(self).cast()) }
+    fn as_u64s_mut(&mut self) -> &mut [u64; 4] {
+        bytemuck::must_cast_mut(&mut self.bytes)
     }
 
     pub const fn is_empty(&self) -> bool {

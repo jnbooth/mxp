@@ -50,6 +50,7 @@ impl<'a> AttributeListDefinition<'a> {
         let s = match s.as_bytes() {
             [b'\'', s @ .., b'\''] | [b'\'', s @ ..] | [s @ .., b'\''] | s => s,
         };
+        // SAFETY: Valid UTF-8.
         unsafe { str::from_utf8_unchecked(s) }
     }
 }
