@@ -4,7 +4,7 @@ use std::slice::Split;
 use flagset::{FlagSet, flags};
 
 use super::mtts;
-use super::negotiate::Negotiate;
+use crate::protocol::Negotiate;
 use crate::transformer::TransformerConfig;
 
 /// MUD New-Environ Standard

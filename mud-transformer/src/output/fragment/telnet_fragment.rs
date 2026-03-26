@@ -1,7 +1,7 @@
 use bytes::Bytes;
 
 use super::OutputFragment;
-use crate::protocol::negotiate::{TelnetSource, TelnetVerb};
+use crate::{TelnetSource, TelnetVerb};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum TelnetFragment {

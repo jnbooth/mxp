@@ -17,12 +17,12 @@ use super::tag::{Tag, TagList};
 use crate::bytestring_ext::ByteStringMutExt;
 use crate::escape::{ansi, telnet};
 use crate::input::{BufferedInput, InputDrain};
+use crate::opt::{self, charset, mccp, mnes, mtts, status};
 use crate::output::{
     BufferedOutput, ControlFragment, EntityFragment, MapperFragment, MxpFragment, OutputDrain,
     OutputFragment, TelnetFragment, TextStyle, VariableFragment,
 };
-use crate::protocol::negotiate::{Negotiate, TelnetSource, TelnetVerb};
-use crate::protocol::{self, charset, mccp, mnes, mtts, status, xterm};
+use crate::protocol::{Negotiate, TelnetSource, TelnetVerb, xterm};
 use crate::term::{CursorEffect, EraseRange, EraseTarget};
 
 fn input_mxp_auth(input: &mut BufferedInput, auth: &str) {
@@ -268,31 +268,31 @@ impl Transformer {
 
     fn process_subnegotiation(&mut self, subnegotiation_type: u8, data: &[u8]) {
         match subnegotiation_type {
-            protocol::STATUS => {
+            opt::STATUS => {
                 if data != [status::SEND] {
                     return;
                 }
                 self.input
-                    .write(&[telnet::IAC, telnet::SB, protocol::STATUS, status::IS]);
+                    .write(&[telnet::IAC, telnet::SB, opt::STATUS, status::IS]);
                 status::encode(&mut self.input, telnet::WILL, &self.config.will).unwrap();
                 status::encode(&mut self.input, telnet::DO, &*self.doing).unwrap();
                 self.input.write(&[telnet::IAC, telnet::SE]);
             }
-            protocol::MTTS => {
+            opt::MTTS => {
                 if data != [mtts::SEND] || self.config.terminal_identification.is_empty() {
                     return;
                 }
                 self.subnegotiate(self.ttype_negotiator);
                 self.ttype_negotiator.advance();
             }
-            protocol::MNES => {
+            opt::MNES => {
                 let [mnes::SEND, request @ ..] = data else {
                     return;
                 };
                 self.mnes_variables = mnes::Variables::from(request);
                 self.subnegotiate(self.mnes_variables);
             }
-            protocol::CHARSET => {
+            opt::CHARSET => {
                 let [charset::REQUEST, request @ ..] = data else {
                     return;
                 };
@@ -306,12 +306,12 @@ impl Transformer {
                 self.charsets = charsets;
                 self.subnegotiate(self.charsets);
             }
-            protocol::MCCP2 => {
+            opt::MCCP2 => {
                 if !self.config.disable_compression {
                     self.decompress.set_active(true);
                 }
             }
-            protocol::MXP => {
+            opt::MXP => {
                 if self.config.use_mxp == UseMxp::Command {
                     self.mxp_on();
                 }
@@ -742,10 +742,10 @@ impl Transformer {
                 let supported = self.config.will.contains(c);
                 if supported {
                     match c {
-                        protocol::ECHO => self
+                        opt::ECHO => self
                             .output
                             .append(TelnetFragment::SetEcho { should_echo: false }),
-                        protocol::MXP if self.config.use_mxp == UseMxp::Query => self.mxp_on(),
+                        opt::MXP if self.config.use_mxp == UseMxp::Query => self.mxp_on(),
                         _ => (),
                     }
                 }
@@ -770,10 +770,10 @@ impl Transformer {
                 });
                 if self.config.will.contains(c) {
                     match c {
-                        protocol::ECHO => self
+                        opt::ECHO => self
                             .output
                             .append(TelnetFragment::SetEcho { should_echo: true }),
-                        protocol::MCCP2 => self.decompress.set_active(false),
+                        opt::MCCP2 => self.decompress.set_active(false),
                         _ => (),
                     }
                 }
@@ -796,9 +796,9 @@ impl Transformer {
                 if supported {
                     self.doing.insert(c);
                     match c {
-                        protocol::MTTS => self.ttype_negotiator.reset(),
-                        protocol::NAWS => self.output.append(TelnetFragment::Naws),
-                        protocol::MXP if self.config.use_mxp == UseMxp::Query => self.mxp_on(),
+                        opt::MTTS => self.ttype_negotiator.reset(),
+                        opt::NAWS => self.output.append(TelnetFragment::Naws),
+                        opt::MXP if self.config.use_mxp == UseMxp::Query => self.mxp_on(),
                         _ => (),
                     }
                 }
@@ -823,9 +823,9 @@ impl Transformer {
                 });
                 self.phase = Phase::Normal;
                 match c {
-                    protocol::MXP if self.mxp_active => self.mxp_off(),
-                    protocol::MTTS => self.ttype_negotiator.reset(),
-                    protocol::MNES => self.mnes_variables.clear(),
+                    opt::MXP if self.mxp_active => self.mxp_off(),
+                    opt::MTTS => self.ttype_negotiator.reset(),
+                    opt::MNES => self.mnes_variables.clear(),
                     _ => (),
                 }
                 self.input.write(&telnet::supports_will(c, false));

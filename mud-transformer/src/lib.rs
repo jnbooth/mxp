@@ -8,9 +8,11 @@ mod bytestring_ext;
 mod input;
 pub use input::InputDrain;
 
-pub mod protocol;
-pub use protocol::naws::subnegotiate as naws;
-pub use protocol::negotiate::{TelnetSource, TelnetVerb};
+pub mod opt;
+pub use opt::naws::subnegotiate as naws;
+
+mod protocol;
+pub use protocol::{TelnetSource, TelnetVerb};
 
 pub mod output;
 

@@ -5,7 +5,7 @@ use std::{fmt, io};
 use flagset::{FlagSet, flags};
 use mxp::escape::telnet;
 
-use super::negotiate::{Negotiate, write_escaping_iac};
+use crate::protocol::{Negotiate, write_escaping_iac};
 use crate::transformer::TransformerConfig;
 
 /// [RFC 2066](https://datatracker.ietf.org/doc/html/rfc2066): CHARSET

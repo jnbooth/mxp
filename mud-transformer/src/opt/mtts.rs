@@ -1,6 +1,6 @@
 use std::fmt;
 
-use super::negotiate::Negotiate;
+use crate::protocol::Negotiate;
 use crate::transformer::TransformerConfig;
 
 /// MUD Terminal Type Standard
