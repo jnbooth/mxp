@@ -28,7 +28,7 @@ impl WindowSize {
         ]
     }
 
-    pub fn write_to<W: Write>(self, mut writer: W) -> io::Result<()> {
+    pub fn encode<W: Write>(self, mut writer: W) -> io::Result<()> {
         writer.write_all(&self.subnegotiation())
     }
 }

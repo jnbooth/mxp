@@ -50,25 +50,25 @@ impl fmt::Debug for Value {
 }
 
 impl Value {
-    pub fn write_to<W: Write>(&self, mut writer: W) -> io::Result<()> {
-        self.write_to_mut(&mut writer)
+    pub fn encode<W: Write>(&self, mut writer: W) -> io::Result<()> {
+        self.write_to(&mut writer)
     }
 
     // Prevents trait recursion.
-    fn write_to_mut<W: Write>(&self, writer: &mut W) -> io::Result<()> {
+    fn write_to<W: Write>(&self, writer: &mut W) -> io::Result<()> {
         match self {
             Self::String(bytes) => writer.write_all(bytes),
             Self::Array(array) => {
                 for val in array {
                     writer.write_all(&[VAL])?;
-                    val.write_to_mut(writer)?;
+                    val.write_to(writer)?;
                 }
                 Ok(())
             }
             Self::Table(table) => {
                 for (var, val) in table {
                     write_var(writer, var)?;
-                    val.write_to_mut(writer)?;
+                    val.write_to(writer)?;
                 }
                 Ok(())
             }
@@ -104,7 +104,7 @@ impl Data {
         Value::from(self)
     }
 
-    pub fn write_to<W: Write>(&self, mut writer: W) -> io::Result<()> {
+    pub fn encode<W: Write>(&self, mut writer: W) -> io::Result<()> {
         match self {
             Self::String(bytes) => writer.write_all(bytes),
             Self::Array(array) => {
@@ -304,25 +304,25 @@ impl fmt::Debug for Encode<'_> {
 }
 
 impl Encode<'_> {
-    pub fn write_to<W: Write>(&self, mut writer: W) -> io::Result<()> {
-        self.write_to_mut(&mut writer)
+    pub fn encode<W: Write>(&self, mut writer: W) -> io::Result<()> {
+        self.write_to(&mut writer)
     }
 
     // Prevents trait recursion.
-    fn write_to_mut<W: Write>(&self, mut writer: &mut W) -> io::Result<()> {
+    fn write_to<W: Write>(&self, mut writer: &mut W) -> io::Result<()> {
         match *self {
             Self::String(bytes) => writer.write_all(bytes),
             Self::Array(array) => {
                 for val in array {
                     writer.write_all(&[VAL])?;
-                    val.write_to_mut(writer)?;
+                    val.write_to(writer)?;
                 }
                 Ok(())
             }
             Self::Table(table) => {
                 for (var, val) in table {
                     write_var(&mut writer, var)?;
-                    val.write_to_mut(writer)?;
+                    val.write_to(writer)?;
                 }
                 Ok(())
             }
@@ -450,19 +450,19 @@ impl Encodable for Bytes {
 
 impl Encodable for Value {
     fn encode(&self, writer: &mut dyn Write) -> io::Result<()> {
-        self.write_to(writer)
+        self.encode(writer)
     }
 }
 
 impl Encodable for Data {
     fn encode(&self, writer: &mut dyn Write) -> io::Result<()> {
-        self.write_to(writer)
+        self.encode(writer)
     }
 }
 
 impl Encodable for Encode<'_> {
     fn encode(&self, writer: &mut dyn Write) -> io::Result<()> {
-        self.write_to(writer)
+        self.encode(writer)
     }
 }
 
