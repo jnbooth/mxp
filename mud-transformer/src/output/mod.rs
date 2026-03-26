@@ -1,9 +1,6 @@
 mod buffer;
 pub(crate) use buffer::BufferedOutput;
 
-mod bytestringmut_ext;
-pub(crate) use bytestringmut_ext::ByteStringMutExt;
-
 mod fragment;
 pub use fragment::{
     ControlFragment, EntityFragment, MapperFragment, MxpFragment, Output, OutputDrain,

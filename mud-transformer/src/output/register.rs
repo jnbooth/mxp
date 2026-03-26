@@ -3,8 +3,8 @@ use std::ops::{Deref, DerefMut};
 use bytestring::ByteString;
 use bytestringmut::ByteStringMut;
 
-use super::ByteStringMutExt;
 use super::fragment::{EntityFragment, MapperFragment, MxpFragment, VariableFragment};
+use crate::bytestring_ext::ByteStringMutExt;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct OutputRegister {

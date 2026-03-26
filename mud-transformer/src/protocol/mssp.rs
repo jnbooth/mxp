@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn mssp_iter() {
-        let data = Bytes::copy_from_slice(b"abc\x01first\x02second\x01third\x02fourth");
+        let data = Bytes::from_static(b"abc\x01first\x02second\x01third\x02fourth");
         let values: Vec<_> = decode(data)
             .map(|(x, y)| {
                 (

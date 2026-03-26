@@ -9,8 +9,8 @@ use mxp::Heading;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::bytestringmut_ext::ByteStringMutExt as _;
 use super::link::Link;
+use crate::bytestring_ext::ByteStringMutExt;
 use crate::escape::ansi;
 use crate::term::TermColor;
 

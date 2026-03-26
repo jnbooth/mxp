@@ -14,11 +14,12 @@ use super::cursor::ReceiveCursor;
 use super::phase::Phase;
 use super::state::StateLock;
 use super::tag::{Tag, TagList};
+use crate::bytestring_ext::ByteStringMutExt;
 use crate::escape::{ansi, telnet};
 use crate::input::{BufferedInput, InputDrain};
 use crate::output::{
-    BufferedOutput, ByteStringMutExt as _, ControlFragment, EntityFragment, MapperFragment,
-    MxpFragment, OutputDrain, OutputFragment, TelnetFragment, TextStyle, VariableFragment,
+    BufferedOutput, ControlFragment, EntityFragment, MapperFragment, MxpFragment, OutputDrain,
+    OutputFragment, TelnetFragment, TextStyle, VariableFragment,
 };
 use crate::protocol::negotiate::{Negotiate, TelnetSource, TelnetVerb};
 use crate::protocol::{self, charset, mccp, mnes, mtts, status, xterm};
