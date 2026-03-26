@@ -4,8 +4,6 @@ pub use byteset::ByteSet;
 mod config;
 pub use config::{TabBehavior, Tag, TransformerConfig, UseMxp};
 
-mod cursor;
-
 mod phase;
 
 mod state;

@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::num::NonZero;
-use std::{io, mem, slice};
+use std::{mem, slice};
 
 use bytes::BytesMut;
 use bytestringmut::ByteStringMut;
@@ -10,7 +10,6 @@ use mxp::node::{Definition, Tag as TagNode, TagOpen};
 
 use super::byteset::ByteSet;
 use super::config::{TabBehavior, TransformerConfig, UseMxp};
-use super::cursor::ReceiveCursor;
 use super::phase::Phase;
 use super::state::StateLock;
 use super::tag::{Tag, TagList};
@@ -51,6 +50,7 @@ pub struct Transformer {
 
     charsets: charset::Charsets,
     decompress: mccp::Decompress,
+    decompressing: bool,
     mnes_variables: mnes::Variables,
     ttype_negotiator: mtts::Negotiator,
 
@@ -96,6 +96,7 @@ impl Transformer {
 
             charsets: charset::Charsets::new(),
             decompress: mccp::Decompress::new(),
+            decompressing: false,
             mnes_variables: mnes::Variables::new(),
             ttype_negotiator: mtts::Negotiator::new(),
 
@@ -114,7 +115,7 @@ impl Transformer {
     }
 
     pub fn decompressing(&self) -> bool {
-        self.decompress.active()
+        self.decompressing
     }
 
     pub fn mxp_active(&self) -> bool {
@@ -216,48 +217,53 @@ impl Transformer {
         self.output.reset_mxp();
     }
 
-    pub fn receive(&mut self, bytes: &[u8], buf: &mut [u8]) -> io::Result<usize> {
+    pub fn receive(&mut self, mut bytes: &[u8], buf: &mut [u8]) -> usize {
+        let initial_len = bytes.len();
+        if !self.decompressing {
+            bytes = self.receive_bytes(bytes);
+        }
         if bytes.is_empty() {
-            return Ok(0);
+            return bytes.len();
         }
-        let mut received = 0;
-        let mut cursor = ReceiveCursor::new(bytes);
-        if !self.decompress.active() {
-            for byte in &mut cursor {
-                self.receive_byte(byte);
-                if self.decompress.active() {
-                    break;
-                }
-            }
-            received += bytes.len() - cursor.len();
-        }
-        while !cursor.is_empty() {
-            let n = self.decompress.decompress(&mut cursor, buf)?;
-            let mut iter = buf[..n].iter();
-            for &byte in &mut iter {
-                self.receive_byte(byte);
-                if !self.decompress.active() {
-                    let mut remainder = Vec::with_capacity(iter.as_slice().len() + 2048);
-                    let mut flush_buf = [0; 1024];
-                    loop {
-                        let flushed_n = self.decompress.finish(&mut flush_buf)?;
-                        if flushed_n == 0 {
-                            break;
-                        }
-                        remainder.extend_from_slice(&flush_buf[..flushed_n]);
-                    }
-                    remainder.extend_from_slice(iter.as_slice());
-                    self.decompress.reset();
-                    received += n - remainder.len();
-                    received += self.receive(&remainder, buf)?;
-                    received += self.receive(cursor.as_slice(), buf)?;
-                    return Ok(received);
-                }
+        let mut received = initial_len - bytes.len();
+        while self.decompressing {
+            let (n, status) = self.decompress.decompress(&mut bytes, buf);
+            let finished = status != Ok(mccp::Status::Ok);
+            if n == 0 {
+                self.decompressing = !finished;
+                break;
             }
             received += n;
+            self.receive_bytes(&buf[..n]);
+            if self.decompressing
+                && let Err(e) = status
+            {
+                eprintln!("[DECOMPRESS] {e}");
+                self.input.write(&[telnet::IAC, telnet::DONT, opt::MCCP2]);
+            }
+            if finished {
+                self.decompressing = false;
+            }
         }
+        if bytes.is_empty() {
+            return received;
+        }
+        received + self.receive(bytes, buf)
+    }
 
-        Ok(received)
+    fn receive_bytes<'a>(&mut self, bytes: &'a [u8]) -> &'a [u8] {
+        if bytes.is_empty() {
+            return bytes;
+        }
+        let decompressing = self.decompressing;
+        let mut iter = bytes.iter();
+        for &byte in &mut iter {
+            self.receive_byte(byte);
+            if self.decompressing != decompressing {
+                break;
+            }
+        }
+        iter.as_slice()
     }
 
     fn send_negotiation(&mut self, code: u8, verb: TelnetVerb) {
@@ -316,7 +322,7 @@ impl Transformer {
             }
             opt::MCCP2 => {
                 if !self.config.disable_compression {
-                    self.decompress.set_active(true);
+                    self.decompressing = true;
                 }
             }
             opt::MXP => {
@@ -777,7 +783,7 @@ impl Transformer {
                         opt::ECHO => self
                             .output
                             .append(TelnetFragment::SetEcho { should_echo: true }),
-                        opt::MCCP2 => self.decompress.set_active(false),
+                        opt::MCCP2 => self.decompressing = false,
                         _ => (),
                     }
                 }

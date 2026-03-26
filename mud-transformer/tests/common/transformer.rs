@@ -15,7 +15,7 @@ pub fn transform<S: AsRef<[u8]>>(s: S) -> TestTransformer {
 pub fn transform_with<S: AsRef<[u8]>>(config: TransformerConfig, s: S) -> TestTransformer {
     let mut transformer = Transformer::new(config);
     let mut buf = [0; 1024 * 10];
-    transformer.receive(s.as_ref(), &mut buf).unwrap();
+    transformer.receive(s.as_ref(), &mut buf);
     TestTransformer { transformer }
 }
 

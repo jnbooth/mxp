@@ -71,7 +71,7 @@ where
         }
 
         let (received, decompress_buf) = self.buf.split_at_mut(n);
-        self.transformer.receive(received, decompress_buf)?;
+        self.transformer.receive(received, decompress_buf);
 
         if let Some(mut drain) = self.transformer.drain_input() {
             self.stream.write_all_buf(&mut drain).await?;

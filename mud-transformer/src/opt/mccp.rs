@@ -1,14 +1,15 @@
 use std::fmt;
-use std::io::{self, BufRead};
+use std::io::BufRead;
 
-use zlib_rs::{Inflate, InflateError, InflateFlush, Status};
+pub use zlib_rs::{Inflate, InflateError, InflateFlush, ReturnCode, Status};
 
 /// MUD Client Compression Protocol v2
 ///
 /// https://tintin.mudhalla.net/protocols/mccp/
 pub const OPT: u8 = 86;
 
-pub struct Decompress {
+/// The state that is used to decompress an input.
+pub(crate) struct Decompress {
     inner: Inflate,
     active: bool,
 }
@@ -28,6 +29,7 @@ impl Default for Decompress {
 }
 
 impl Decompress {
+    /// Creates a new decompression state.
     pub fn new() -> Self {
         Self {
             inner: Inflate::new(true, 15),
@@ -35,62 +37,64 @@ impl Decompress {
         }
     }
 
-    pub fn active(&self) -> bool {
-        self.active
-    }
-
-    pub fn set_active(&mut self, active: bool) {
-        self.active = active;
-    }
-
     #[allow(clippy::cast_possible_truncation)]
-    pub fn decompress<R: BufRead>(
+    pub fn decompress(
         &mut self,
-        input: &mut R,
+        input: &mut &[u8],
         output: &mut [u8],
-    ) -> io::Result<usize> {
+    ) -> (usize, Result<Status, Error>) {
+        let empty = input.is_empty();
+        let flush = if empty {
+            InflateFlush::SyncFlush
+        } else {
+            InflateFlush::NoFlush
+        };
         let total_in = self.inner.total_in();
         let total_out = self.inner.total_out();
-        let buf = input.fill_buf()?;
-        if buf.is_empty() {
-            return Ok(0);
+        let result = match self.inner.decompress(input, output, flush) {
+            Ok(Status::StreamEnd) => Ok(Status::StreamEnd),
+            Ok(Status::Ok) => Ok(Status::Ok),
+            Ok(Status::BufError) if empty => Ok(Status::Ok),
+            Ok(Status::BufError) => Err(Error::BufError { size: output.len() }),
+            Err(InflateError::NeedDict { dict_id }) => Err(Error::NeedDict { dict_id }),
+            Err(InflateError::StreamError) => Err(Error::StreamError),
+            Err(InflateError::DataError) => Err(Error::DataError),
+            Err(InflateError::MemError) => Err(Error::MemError),
+        };
+        let new_in = (self.inner.total_in() - total_in) as usize;
+        let new_out = (self.inner.total_out() - total_out) as usize;
+        input.consume(new_in);
+        (new_out, result)
+    }
+}
+
+#[allow(clippy::enum_variant_names)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[repr(i32)]
+pub(crate) enum Error {
+    /// Decompressing this input requires a dictionary.
+    NeedDict { dict_id: u32 } = 2,
+    /// The [`Inflate`] is in an inconsistent state, most likely
+    /// due to an invalid configuration parameter.
+    StreamError = -2,
+    /// The input is not a valid deflate stream.
+    DataError = -3,
+    /// A memory allocation failed.
+    MemError = -4,
+    /// Decompression buffer is too small.
+    BufError { size: usize } = -5,
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::NeedDict { .. } => f.write_str("need dictionary"),
+            Self::StreamError => f.write_str("stream error"),
+            Self::DataError => f.write_str("data error"),
+            Self::MemError => f.write_str("insufficient memory"),
+            Self::BufError { .. } => f.write_str("buffer too small"),
         }
-        let result = self.inner.decompress(buf, output, InflateFlush::NoFlush);
-        input.consume((self.inner.total_in() - total_in) as usize);
-        match result {
-            Ok(Status::Ok) => {}
-            Ok(Status::StreamEnd) => self.active = false,
-            Ok(Status::BufError) => return Err(buf_io_error()),
-            Err(e) => return Err(to_io_error(e)),
-        }
-        Ok((self.inner.total_out() - total_out) as usize)
-    }
-
-    #[allow(clippy::cast_possible_truncation)]
-    pub fn finish(&mut self, output: &mut [u8]) -> io::Result<usize> {
-        let total_out = self.inner.total_out();
-        self.inner
-            .decompress(&[], output, InflateFlush::Finish)
-            .map_err(to_io_error)?;
-        Ok((self.inner.total_out() - total_out) as usize)
-    }
-
-    pub fn reset(&mut self) {
-        self.inner.reset(true);
     }
 }
 
-#[cold]
-fn buf_io_error() -> io::Error {
-    io::Error::new(io::ErrorKind::WriteZero, "output buffer too small")
-}
-
-#[cold]
-fn to_io_error(error: InflateError) -> io::Error {
-    let kind = match error {
-        InflateError::DataError => io::ErrorKind::InvalidData,
-        InflateError::MemError => io::ErrorKind::OutOfMemory,
-        _ => io::ErrorKind::Other,
-    };
-    io::Error::new(kind, error.as_str())
-}
+impl std::error::Error for Error {}
