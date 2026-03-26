@@ -160,7 +160,7 @@ impl Transformer {
         if mnes_updates.is_empty() {
             return;
         }
-        self.subnegotiate(mnes_updates);
+        self.send_subnegotiation(mnes_updates);
     }
 
     pub fn xterm_color(&self, i: u8) -> mxp::RgbColor {
@@ -260,13 +260,22 @@ impl Transformer {
         Ok(received)
     }
 
-    fn subnegotiate<T: Negotiate>(&mut self, negotiator: T) {
+    fn send_negotiation(&mut self, code: u8, verb: TelnetVerb) {
+        self.input.write(&[telnet::IAC, verb as u8, code]);
+        self.output.append(TelnetFragment::Negotiation {
+            source: TelnetSource::Client,
+            verb,
+            code,
+        });
+    }
+
+    fn send_subnegotiation<T: Negotiate>(&mut self, negotiator: T) {
         self.input.write(&[telnet::IAC, telnet::SB, T::OPT]);
         negotiator.negotiate(&mut self.input, &self.config).unwrap();
         self.input.write(&[telnet::IAC, telnet::SE]);
     }
 
-    fn process_subnegotiation(&mut self, subnegotiation_type: u8, data: &[u8]) {
+    fn receive_subnegotiation(&mut self, subnegotiation_type: u8, data: &[u8]) {
         match subnegotiation_type {
             opt::STATUS => {
                 if data != [status::SEND] {
@@ -282,7 +291,7 @@ impl Transformer {
                 if data != [mtts::SEND] || self.config.terminal_identification.is_empty() {
                     return;
                 }
-                self.subnegotiate(self.ttype_negotiator);
+                self.send_subnegotiation(self.ttype_negotiator);
                 self.ttype_negotiator.advance();
             }
             opt::MNES => {
@@ -290,21 +299,20 @@ impl Transformer {
                     return;
                 };
                 self.mnes_variables = mnes::Variables::from(request);
-                self.subnegotiate(self.mnes_variables);
+                self.send_subnegotiation(self.mnes_variables);
             }
             opt::CHARSET => {
                 let [charset::REQUEST, request @ ..] = data else {
                     return;
                 };
-                let charsets = match request.try_into() {
+                self.charsets = match charset::Charsets::decode(request) {
                     Ok(charsets) => charsets,
                     Err(e) => {
                         eprintln!("[TELNET] error decoding charsets: {e}");
                         return;
                     }
                 };
-                self.charsets = charsets;
-                self.subnegotiate(self.charsets);
+                self.send_subnegotiation(self.charsets);
             }
             opt::MCCP2 => {
                 if !self.config.disable_compression {
@@ -749,16 +757,12 @@ impl Transformer {
                         _ => (),
                     }
                 }
-                self.input.write(&telnet::supports_do(c, supported));
-                self.output.append(TelnetFragment::Negotiation {
-                    source: TelnetSource::Client,
-                    verb: if supported {
-                        TelnetVerb::Do
-                    } else {
-                        TelnetVerb::Dont
-                    },
-                    code: c,
-                });
+                let verb = if supported {
+                    TelnetVerb::Do
+                } else {
+                    TelnetVerb::Dont
+                };
+                self.send_negotiation(c, verb);
             }
 
             Phase::Wont => {
@@ -777,12 +781,7 @@ impl Transformer {
                         _ => (),
                     }
                 }
-                self.input.write(&telnet::supports_do(c, false));
-                self.output.append(TelnetFragment::Negotiation {
-                    source: TelnetSource::Client,
-                    verb: TelnetVerb::Dont,
-                    code: c,
-                });
+                self.send_negotiation(c, TelnetVerb::Dont);
             }
 
             Phase::Do => {
@@ -802,16 +801,12 @@ impl Transformer {
                         _ => (),
                     }
                 }
-                self.input.write(&telnet::supports_will(c, supported));
-                self.output.append(TelnetFragment::Negotiation {
-                    source: TelnetSource::Client,
-                    verb: if supported {
-                        TelnetVerb::Will
-                    } else {
-                        TelnetVerb::Wont
-                    },
-                    code: c,
-                });
+                let verb = if supported {
+                    TelnetVerb::Will
+                } else {
+                    TelnetVerb::Wont
+                };
+                self.send_negotiation(c, verb);
             }
 
             Phase::Dont => {
@@ -828,12 +823,7 @@ impl Transformer {
                     opt::MNES => self.mnes_variables.clear(),
                     _ => (),
                 }
-                self.input.write(&telnet::supports_will(c, false));
-                self.output.append(TelnetFragment::Negotiation {
-                    source: TelnetSource::Client,
-                    verb: TelnetVerb::Wont,
-                    code: c,
-                });
+                self.send_negotiation(c, TelnetVerb::Wont);
             }
 
             Phase::Sb => {
@@ -858,7 +848,7 @@ impl Transformer {
                         telnet::SE,
                     );
                 }
-                self.process_subnegotiation(self.subnegotiation_type, &data);
+                self.receive_subnegotiation(self.subnegotiation_type, &data);
                 self.output.append(TelnetFragment::Subnegotiation {
                     code: self.subnegotiation_type,
                     data,
