@@ -1,43 +1,25 @@
 use std::fmt;
 use std::iter::FusedIterator;
-use std::ops::{Not, RangeInclusive};
+use std::ops::{Index, Not, RangeInclusive};
 
 #[repr(transparent)]
-#[derive(Copy, Clone, Default, PartialEq, Eq)]
+#[derive(Clone, Default, PartialEq, Eq)]
 pub struct ByteSet {
-    bytes: [u8; 32],
+    bytes: [u64; 4],
 }
 
 impl ByteSet {
     pub const fn new() -> Self {
-        Self { bytes: [0; 32] }
-    }
-
-    const fn from_u64s(u64s: [u64; 4]) -> Self {
-        Self {
-            bytes: bytemuck::must_cast(u64s),
-        }
-    }
-
-    const fn into_u64s(self) -> [u64; 4] {
-        bytemuck::must_cast(self.bytes)
-    }
-
-    const fn as_u64s(&self) -> &[u64; 4] {
-        bytemuck::must_cast_ref(&self.bytes)
-    }
-
-    fn as_u64s_mut(&mut self) -> &mut [u64; 4] {
-        bytemuck::must_cast_mut(&mut self.bytes)
+        Self { bytes: [0; 4] }
     }
 
     pub const fn is_empty(&self) -> bool {
-        let [a, b, c, d] = *self.as_u64s();
+        let [a, b, c, d] = self.bytes;
         a == 0 && b == 0 && c == 0 && d == 0
     }
 
     pub const fn len(&self) -> usize {
-        let [a, b, c, d] = self.as_u64s();
+        let [a, b, c, d] = self.bytes;
         (a.count_ones() + b.count_ones() + c.count_ones() + d.count_ones()) as usize
     }
 
@@ -46,31 +28,26 @@ impl ByteSet {
     }
 
     pub const fn contains(&self, i: u8) -> bool {
-        self.byte(i) & Self::bit(i) != 0
+        let (high, low) = Self::indices(i);
+        self.bytes[high] & low != 0
     }
 
     pub const fn insert(&mut self, i: u8) {
-        *self.byte_mut(i) |= Self::bit(i);
+        let (high, low) = Self::indices(i);
+        self.bytes[high] |= low;
     }
 
     pub const fn remove(&mut self, i: u8) {
-        *self.byte_mut(i) &= !Self::bit(i);
+        let (high, low) = Self::indices(i);
+        self.bytes[high] &= !low;
     }
 
     pub fn iter(&self) -> ByteSetIter<'_> {
         self.into_iter()
     }
 
-    const fn byte(&self, i: u8) -> u8 {
-        self.bytes[i as usize >> 3]
-    }
-
-    const fn byte_mut(&mut self, i: u8) -> &mut u8 {
-        &mut self.bytes[i as usize >> 3]
-    }
-
-    const fn bit(i: u8) -> u8 {
-        1 << (i & 7)
+    const fn indices(i: u8) -> (usize, u64) {
+        (i as usize >> 6, 1 << (i & 63))
     }
 }
 
@@ -80,12 +57,23 @@ impl fmt::Debug for ByteSet {
     }
 }
 
+impl Index<u8> for ByteSet {
+    type Output = bool;
+
+    #[inline]
+    fn index(&self, index: u8) -> &Self::Output {
+        if self.contains(index) { &true } else { &false }
+    }
+}
+
 impl Not for ByteSet {
     type Output = Self;
 
     fn not(self) -> Self::Output {
-        let [a, b, c, d] = self.into_u64s();
-        Self::from_u64s([!a, !b, !c, !d])
+        let [a, b, c, d] = self.bytes;
+        Self {
+            bytes: [!a, !b, !c, !d],
+        }
     }
 }
 
@@ -93,8 +81,8 @@ macro_rules! impl_bitassign {
     ($i:ident, $f:ident) => {
         impl std::ops::$i for ByteSet {
             fn $f(&mut self, rhs: Self) {
-                let [l1, l2, l3, l4] = self.as_u64s_mut();
-                let [r1, r2, r3, r4] = rhs.into_u64s();
+                let [l1, l2, l3, l4] = &mut self.bytes;
+                let [r1, r2, r3, r4] = rhs.bytes;
                 l1.$f(r1);
                 l2.$f(r2);
                 l3.$f(r3);
@@ -114,9 +102,11 @@ macro_rules! impl_bit {
             type Output = Self;
 
             fn $f(self, rhs: Self) -> Self {
-                let [l1, l2, l3, l4] = self.into_u64s();
-                let [r1, r2, r3, r4] = rhs.into_u64s();
-                Self::from_u64s([l1.$f(r1), l2.$f(r2), l3.$f(r3), l4.$f(r4)])
+                let [l1, l2, l3, l4] = self.bytes;
+                let [r1, r2, r3, r4] = rhs.bytes;
+                Self {
+                    bytes: [l1.$f(r1), l2.$f(r2), l3.$f(r3), l4.$f(r4)],
+                }
             }
         }
     };
