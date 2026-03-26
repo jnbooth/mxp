@@ -14,22 +14,19 @@ impl InputDrain<'_> {
     }
 
     #[inline]
-    fn slice(&self) -> &[u8] {
+    fn as_slice(&self) -> &[u8] {
         &self.buf[self.cursor..]
     }
 
     pub fn write_to<W: Write>(&mut self, mut writer: W) -> io::Result<usize> {
-        let n = writer.write(self.slice())?;
+        let n = writer.write(self.as_slice())?;
         self.cursor += n;
         Ok(n)
     }
 
     pub fn write_all_to<W: Write>(&mut self, mut writer: W) -> io::Result<()> {
-        let mut slice = &self.buf[self.cursor..];
-        while !slice.is_empty() {
-            let n = writer.write(slice)?;
-            slice = &slice[n..];
-            self.cursor += n;
+        while !self.is_empty() {
+            self.write_to(&mut writer)?;
         }
         Ok(())
     }
@@ -41,7 +38,7 @@ impl bytes::Buf for InputDrain<'_> {
     }
 
     fn chunk(&self) -> &[u8] {
-        self.slice()
+        self.as_slice()
     }
 
     fn advance(&mut self, cnt: usize) {
@@ -64,35 +61,35 @@ impl Drop for InputDrain<'_> {
 impl Read for InputDrain<'_> {
     #[inline]
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        let n = self.slice().read(buf)?;
+        let n = self.as_slice().read(buf)?;
         self.cursor += n;
         Ok(n)
     }
 
     #[inline]
     fn read_vectored(&mut self, bufs: &mut [IoSliceMut]) -> io::Result<usize> {
-        let n = self.slice().read_vectored(bufs)?;
+        let n = self.as_slice().read_vectored(bufs)?;
         self.cursor += n;
         Ok(n)
     }
 
     #[inline]
     fn read_exact(&mut self, buf: &mut [u8]) -> io::Result<()> {
-        self.slice().read_exact(buf)?;
+        self.as_slice().read_exact(buf)?;
         self.cursor += buf.len();
         Ok(())
     }
 
     #[inline]
     fn read_to_end(&mut self, buf: &mut Vec<u8>) -> io::Result<usize> {
-        let n = self.slice().read_to_end(buf)?;
+        let n = self.as_slice().read_to_end(buf)?;
         self.cursor += n;
         Ok(n)
     }
 
     #[inline]
     fn read_to_string(&mut self, buf: &mut String) -> io::Result<usize> {
-        let n = self.slice().read_to_string(buf)?;
+        let n = self.as_slice().read_to_string(buf)?;
         self.cursor += n;
         Ok(n)
     }
@@ -101,7 +98,7 @@ impl Read for InputDrain<'_> {
 impl BufRead for InputDrain<'_> {
     #[inline]
     fn fill_buf(&mut self) -> io::Result<&[u8]> {
-        Ok(self.slice())
+        Ok(self.as_slice())
     }
 
     #[inline]
