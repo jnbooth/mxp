@@ -4,6 +4,8 @@ use std::io::{self, BufRead};
 use zlib_rs::{Inflate, InflateError, InflateFlush, Status};
 
 /// MUD Client Compression Protocol v2
+///
+/// https://tintin.mudhalla.net/protocols/mccp/
 pub const OPT: u8 = 86;
 
 pub struct Decompress {

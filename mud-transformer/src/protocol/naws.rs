@@ -2,11 +2,7 @@ use std::io::{self, Write};
 
 use crate::escape::telnet;
 
-/// Negotiate About Window Size
-///
-/// Specified in [RFC 1073](https://datatracker.ietf.org/doc/html/rfc1073):
-///
-/// >Sent by the Telnet client to inform the Telnet server of the window width and height.
+/// [RFC 1073](https://datatracker.ietf.org/doc/html/rfc1073): NAWS (Negotiate About Window Size)
 pub const OPT: u8 = 31;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]

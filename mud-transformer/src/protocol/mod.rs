@@ -4,12 +4,10 @@ pub(crate) mod negotiate;
 
 pub(crate) mod xterm;
 
-/// ECHO
+/// [RFC 857](https://datatracker.ietf.org/doc/html/rfc857): ECHO
 pub const ECHO: u8 = 1;
 
-/// Suppress Go-Ahead
-///
-/// https://datatracker.ietf.org/doc/html/rfc858
+/// [RFC 858](https://datatracker.ietf.org/doc/html/rfc858): SUPPRESS-GO-AHEAD
 pub const SGA: u8 = 3;
 
 pub mod status;
@@ -18,12 +16,7 @@ pub use status::OPT as STATUS; // 5
 pub mod mtts;
 pub use mtts::OPT as MTTS; // 24
 
-/// IAC WILL END-OF-RECORD.
-///
-/// Specified in [RFC 885](https://datatracker.ietf.org/doc/html/rfc885):
-/// > The sender of this command requests permission to begin transmission of the Telnet
-/// > END-OF-RECORD (EOR) code when transmitting data characters, or the sender of this command
-/// > confirms it will now begin transmission of EORs with transmitted data characters.
+/// [RFC 885](https://datatracker.ietf.org/doc/html/rfc885): END-OF-RECORD
 pub const EOR: u8 = 25;
 
 pub mod naws;
@@ -47,7 +40,7 @@ pub use mccp::OPT as MCCP2; // 86
 pub mod msp;
 pub use msp::OPT as MSP; // 90
 
-/// MUD Extension Protocol
+/// MUD eXtension Protocol
 ///
 /// https://www.zuggsoft.com/zmud/mxp.htm
 pub const MXP: u8 = 91;

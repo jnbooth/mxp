@@ -2,9 +2,7 @@ use std::io::{self, Write};
 
 use crate::escape::telnet;
 
-/// Telnet Status Option
-///
-/// https://datatracker.ietf.org/doc/html/rfc859
+/// [RFC 859](https://datatracker.ietf.org/doc/html/rfc859): STATUS
 pub const OPT: u8 = 5;
 
 pub const IS: u8 = 0;

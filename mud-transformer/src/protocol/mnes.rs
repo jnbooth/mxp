@@ -8,6 +8,7 @@ use super::negotiate::Negotiate;
 use crate::transformer::TransformerConfig;
 
 /// MUD New-Environ Standard
+///
 /// https://tintin.mudhalla.net/protocols/mnes/
 pub const OPT: u8 = 39;
 

@@ -10,7 +10,7 @@ use super::negotiate::{Negotiate, write_escaping_iac};
 use crate::count_bytes;
 use crate::transformer::TransformerConfig;
 
-/// Negotiate About Character Set
+/// [RFC 2066](https://datatracker.ietf.org/doc/html/rfc2066): CHARSET
 pub const OPT: u8 = 42;
 
 pub const REQUEST: u8 = 1;
