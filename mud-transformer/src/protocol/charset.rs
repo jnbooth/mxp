@@ -1,13 +1,11 @@
-use std::error::Error;
 use std::io::Write;
-use std::iter::FusedIterator;
+use std::str;
 use std::{fmt, io};
 
 use flagset::{FlagSet, flags};
 use mxp::escape::telnet;
 
 use super::negotiate::{Negotiate, write_escaping_iac};
-use crate::count_bytes;
 use crate::transformer::TransformerConfig;
 
 /// [RFC 2066](https://datatracker.ietf.org/doc/html/rfc2066): CHARSET
@@ -26,7 +24,8 @@ const SEP: u8 = b' ';
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum DecodeError {
-    EmptyString,
+    InvalidCharacter(u8),
+    NoCharsets,
     NoVersion,
     UnsupportedVersion(u8),
 }
@@ -34,132 +33,72 @@ pub enum DecodeError {
 impl fmt::Display for DecodeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::EmptyString => f.write_str("received an empty string"),
+            Self::InvalidCharacter(c) => write!(f, "received invalid character {c:#X}"),
+            Self::NoCharsets => f.write_str("charset list is empty"),
             Self::NoVersion => f.write_str("string terminated early"),
             Self::UnsupportedVersion(ver) => write!(f, "expected version 1, got {ver}"),
         }
     }
 }
 
-impl Error for DecodeError {}
-
-#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
+/// `IAC SB CHARSET REQUEST <...> IAC SE`
+///
+/// The sender requests that all text sent to and by it be encoded in one of the specified
+/// character sets.
+#[derive(Clone, Debug)]
 pub struct Request<'a> {
+    /// The sender is willing to accept a mapping (translation table) between any character set
+    /// listed in [`charsets`](Self::charsets) and any character set desired by the receiver.
     pub ttable: bool,
-    pub sep: u8,
-    pub charsets: &'a [u8],
+    /// Sequence of 7-bit ASCII printable characters, consisting of one or more character sets.
+    /// The character sets should appear in order of preference (most preferred first).
+    pub charsets: str::Split<'a, char>,
 }
 
 impl<'a> Request<'a> {
+    /// Decodes a request from a subnegotiation, i.e. `IAC SB CHARSET REQUEST <request> IAC SE`.
     pub fn decode(request: &'a [u8]) -> Result<Self, DecodeError> {
-        let [sep, rest @ ..] = request else {
-            return Err(DecodeError::EmptyString);
-        };
-        let (ttable, rest) = match rest.strip_prefix(b"TTABLE") {
+        let (ttable, rest) = match request.strip_prefix(b"TTABLE") {
             Some([b' ', rest @ ..] | rest) => (true, rest),
-            None => (false, rest),
+            None => (false, request),
         };
         let rest = match rest {
+            [] => return Err(DecodeError::NoVersion),
             [1 | b'1', rest @ ..] => rest,
             [version, ..] => return Err(DecodeError::UnsupportedVersion(*version)),
-            [] => return Err(DecodeError::NoVersion),
         };
+        let (sep, rest) = match rest {
+            [] | [_] => return Err(DecodeError::NoCharsets),
+            [sep, rest @ ..] => (*sep, rest),
+        };
+        if !sep.is_ascii() {
+            return Err(DecodeError::InvalidCharacter(sep));
+        }
+        let charsets = str::from_utf8(rest)
+            .map_err(|e| DecodeError::InvalidCharacter(rest[e.valid_up_to()]))?;
         Ok(Self {
             ttable,
-            sep: *sep,
-            charsets: rest,
+            charsets: charsets.split(sep as char),
         })
-    }
-
-    pub fn iter(self) -> Iter<'a> {
-        self.into_iter()
     }
 }
 
 impl<'a> IntoIterator for Request<'a> {
-    type Item = &'a [u8];
+    type Item = &'a str;
 
-    type IntoIter = Iter<'a>;
+    type IntoIter = str::Split<'a, char>;
 
+    #[inline]
     fn into_iter(self) -> Self::IntoIter {
-        Iter {
-            sep: self.sep,
-            charsets: self.charsets,
-        }
+        self.charsets
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Iter<'a> {
-    sep: u8,
-    charsets: &'a [u8],
-}
-
-impl<'a> Iter<'a> {
-    #[inline]
-    fn finish(&mut self) -> Option<&'a [u8]> {
-        if self.charsets.is_empty() {
-            return None;
-        }
-        let charset = self.charsets;
-        self.charsets = &[];
-        Some(charset)
-    }
-
-    #[inline]
-    fn split_around(&self, i: usize) -> (&'a [u8], &'a [u8]) {
-        (&self.charsets[..i], &self.charsets[i + 1..])
-    }
-}
-
-impl<'a> Iterator for Iter<'a> {
-    type Item = &'a [u8];
-
-    #[inline]
-    fn next(&mut self) -> Option<Self::Item> {
-        let Some(pos) = self.charsets.iter().position(|&c| c == self.sep) else {
-            return self.finish();
-        };
-        let (charset, rest) = self.split_around(pos);
-        self.charsets = rest;
-        Some(charset)
-    }
-
-    #[inline]
-    fn size_hint(&self) -> (usize, Option<usize>) {
-        let exact = self.len();
-        (exact, Some(exact))
-    }
-}
-
-impl DoubleEndedIterator for Iter<'_> {
-    #[inline]
-    fn next_back(&mut self) -> Option<Self::Item> {
-        let Some(pos) = self.charsets.iter().rposition(|&c| c == self.sep) else {
-            return self.finish();
-        };
-        let (rest, charset) = self.split_around(pos);
-        self.charsets = rest;
-        Some(charset)
-    }
-}
-
-impl ExactSizeIterator for Iter<'_> {
-    #[inline]
-    fn len(&self) -> usize {
-        if self.charsets.is_empty() {
-            return 0;
-        }
-        1 + count_bytes(self.charsets, self.sep)
-    }
-}
-
-impl FusedIterator for Iter<'_> {}
-
+/// Translation table for mapping  between character sets.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct TTableEntry<'a> {
+pub struct TTable<'a> {
     /// Sequence of 7-BIT ASCII printable characters which identifies the character set.
-    pub charset: &'a [u8],
+    pub charset: &'a str,
     /// Number of bits nominally required for each character in the corresponding table.
     /// Should be a multiple of 8.
     pub size: u8,
@@ -173,15 +112,19 @@ pub struct TTableEntry<'a> {
     pub map: &'a [u8],
 }
 
+/// Types that can be converted to byte arrays in big-endian order.
 pub trait ToBeBytes: Copy {
+    /// Resulting array type. Should be `[u8; N]`.
     type BeBytes;
 
+    /// Converts to a big-endian byte array.
     fn to_be_bytes(self) -> Self::BeBytes;
 }
 
 impl<C: ToBeBytes> ToBeBytes for &C {
     type BeBytes = C::BeBytes;
 
+    #[inline]
     fn to_be_bytes(self) -> Self::BeBytes {
         (*self).to_be_bytes()
     }
@@ -192,6 +135,7 @@ macro_rules! impl_to_be_bytes {
         impl ToBeBytes for $t {
             type BeBytes = [u8; $n];
 
+            #[inline]
             fn to_be_bytes(self) -> Self::BeBytes {
                 self.to_be_bytes()
             }
@@ -207,15 +151,16 @@ impl_to_be_bytes!(u64, 8);
 impl ToBeBytes for char {
     type BeBytes = [u8; 4];
 
+    #[inline]
     fn to_be_bytes(self) -> Self::BeBytes {
         u32::from(self).to_be_bytes()
     }
 }
 
-impl<'a> TTableEntry<'a> {
-    pub fn new<S, const N: usize, I>(charset: &'a S, chars: I, buf: &'a mut Vec<u8>) -> Self
+impl<'a> TTable<'a> {
+    /// Constructs a `TTable` for the specified character set, using `buf` as the backing buffer.
+    pub fn new<S, const N: usize, I>(charset: &'a str, buf: &'a mut Vec<u8>, chars: I) -> Self
     where
-        S: AsRef<[u8]>,
         I: IntoIterator,
         I::Item: ToBeBytes<BeBytes = [u8; N]>,
     {
@@ -228,55 +173,67 @@ impl<'a> TTableEntry<'a> {
         let total_size = buf.len() - initial_len;
         #[allow(clippy::cast_possible_truncation)]
         Self {
-            charset: charset.as_ref(),
+            charset,
             size: (N * 8) as u8,
             count: (total_size / N) as u32,
             map: &buf[initial_len..],
         }
     }
 
-    pub fn write_metadata_to<W: Write>(&self, mut writer: W, sep: u8) -> io::Result<()> {
-        writer.write_all(self.charset)?;
+    fn encode_metadata<W: Write>(&self, mut writer: W, sep: u8) -> io::Result<()> {
+        writer.write_all(self.charset.as_bytes())?;
         let [_, c1, c2, c3] = self.count.to_be_bytes();
-        writer.write_all(&[sep, self.size, c1, c2, c3])
+        write_escaping_iac(writer, &[sep, self.size, c1, c2, c3])
     }
 
-    pub fn write_map_to<W: Write>(&self, writer: W) -> io::Result<()> {
+    fn encode_map<W: Write>(&self, writer: W) -> io::Result<()> {
         write_escaping_iac(writer, self.map)
     }
 }
 
+/// Response to a [`Request`].
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Response<'a> {
+    /// `IAC SB CHARSET ACCEPTED IAC SE`
+    ///
     /// The receiver is already sending text to and expecting text from the sender to be encoded in
     /// one of the specified character sets.
-    Agree,
+    Agreed,
+    /// `IAC SB CHARSET ACCEPTED <charset> IAC SE`
+    ///
     /// The receiver is capable of handling at least one of the specified character sets.
-    Accept(&'a [u8]),
-    /// The receiver of the CHARSET REQUEST message acknowledges its receipt and is transmitting a pair of tables which define the mapping between specified character sets.
-    TTable(TTableEntry<'a>, TTableEntry<'a>),
-    /// The receiver of the CHARSET REQUEST message acknowledges its receipt but refuses to use any of the requested character sets.
-    Reject,
+    Accepted(&'a str),
+    /// `IAC SB CHARSET TTABLE-IS <...> IAC SE`
+    ///
+    /// The receiver of the CHARSET REQUEST message acknowledges its receipt and is transmitting a
+    /// pair of tables which define the mapping between specified character sets.
+    TTableIs(TTable<'a>, TTable<'a>),
+    /// `IAC SB CHARSET REJECTED IAC SE`
+    ///
+    /// The receiver of the CHARSET REQUEST message acknowledges its receipt but refuses to use any
+    /// of the requested character sets.
+    Rejected,
 }
 
 impl Response<'_> {
-    pub fn write_to<W: Write>(&self, mut writer: W) -> io::Result<()> {
+    /// Writes the subnegotiation data to a writer, including IAC prefix and suffix.
+    pub fn encode<W: Write>(&self, mut writer: W) -> io::Result<()> {
         writer.write_all(&[telnet::IAC, telnet::SB, OPT])?;
         match self {
-            Self::Agree => writer.write_all(&[ACCEPTED])?,
-            Self::Accept(charset) => {
+            Self::Agreed => writer.write_all(&[ACCEPTED])?,
+            Self::Accepted(charset) => {
                 writer.write_all(&[ACCEPTED])?;
-                writer.write_all(charset)?;
+                writer.write_all(charset.as_bytes())?;
             }
-            Self::TTable(a, b) => {
+            Self::TTableIs(a, b) => {
                 writer.write_all(&[TTABLE_IS, 1, SEP])?;
-                a.write_metadata_to(&mut writer, SEP)?;
+                a.encode_metadata(&mut writer, SEP)?;
                 writer.write_all(&[SEP])?;
-                b.write_metadata_to(&mut writer, SEP)?;
-                a.write_map_to(&mut writer)?;
-                b.write_map_to(&mut writer)?;
+                b.encode_metadata(&mut writer, SEP)?;
+                a.encode_map(&mut writer)?;
+                b.encode_map(&mut writer)?;
             }
-            Self::Reject => writer.write_all(&[REJECTED])?,
+            Self::Rejected => writer.write_all(&[REJECTED])?,
         }
         writer.write_all(&[telnet::IAC, telnet::SB])
     }
@@ -301,9 +258,9 @@ impl TryFrom<&[u8]> for Charsets {
         let request = Request::decode(data)?;
         let mut flags = FlagSet::default();
         for fragment in request {
-            if fragment.eq_ignore_ascii_case(b"UTF-8") {
+            if fragment.eq_ignore_ascii_case("UTF-8") {
                 flags |= Charset::Utf8;
-            } else if fragment.eq_ignore_ascii_case(b"US-ASCII") {
+            } else if fragment.eq_ignore_ascii_case("US-ASCII") {
                 flags |= Charset::Ascii;
             }
         }
