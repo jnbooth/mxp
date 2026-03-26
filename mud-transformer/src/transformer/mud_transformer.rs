@@ -6,13 +6,13 @@ use bytes::BytesMut;
 use bytestringmut::ByteStringMut;
 use mxp::element::ElementFlag;
 use mxp::entity::PublishedIter;
-use mxp::node::{Definition, Tag as TagNode, TagOpen};
+use mxp::node::{Definition, Tag, TagOpen};
 
 use super::byteset::ByteSet;
 use super::config::{TabBehavior, TransformerConfig, UseMxp};
 use super::phase::Phase;
 use super::state::StateLock;
-use super::tag::{Tag, TagList};
+use super::tag_list::TagList;
 use crate::bytestring_ext::ByteStringMutExt;
 use crate::escape::{ansi, telnet};
 use crate::input::{BufferedInput, InputDrain};
@@ -418,14 +418,14 @@ impl Transformer {
     fn mxp_collect_element(&mut self, entity_string: &[u8]) -> mxp::Result<()> {
         let secure = self.mxp_mode.use_secure();
         let source = mxp::validate_utf8(entity_string)?;
-        match TagNode::parse(source, secure)? {
-            TagNode::Definition(definition) => self.mxp_define(definition),
-            TagNode::Close(tag) => {
-                let (closed, _) = self.mxp_tags.find_last(secure, tag.name)?;
+        match Tag::parse(source, secure)? {
+            Tag::Definition(definition) => self.mxp_define(definition),
+            Tag::Close(tag) => {
+                let closed = self.mxp_tags.find_last(secure, tag.name)?;
                 self.mxp_close_tags_from(closed);
                 Ok(())
             }
-            TagNode::Open(tag) => {
+            Tag::Open(tag) => {
                 let mxp_state = self.mxp_state.take();
                 let result = self.mxp_start_tag(&tag, secure, &mxp_state);
                 self.mxp_state.set(mxp_state);
@@ -455,11 +455,8 @@ impl Transformer {
         let component = mxp_state.get_component(tag.name, secure)?;
 
         if !component.is_command() {
-            self.mxp_tags.push(Tag {
-                name: component.name().to_owned(),
-                secure,
-                span_index: self.output.span_len(),
-            });
+            self.mxp_tags
+                .open(component, secure, self.output.span_len());
         }
 
         match component {

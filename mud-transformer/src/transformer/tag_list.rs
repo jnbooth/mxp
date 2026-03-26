@@ -1,6 +1,6 @@
 /// Outstanding (unclosed) tags.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub(crate) struct Tag {
+struct Tag {
     /// Name of tag we opened
     pub name: String,
     /// Was it secure mode at the time?
@@ -35,8 +35,12 @@ impl TagList {
         self.inner.clear();
     }
 
-    pub fn push(&mut self, tag: Tag) {
-        self.inner.push(tag);
+    pub fn open(&mut self, component: mxp::Component, secure: bool, span_index: usize) {
+        self.inner.push(Tag {
+            name: component.name().to_owned(),
+            secure,
+            span_index,
+        });
     }
 
     pub fn last_open_index(&self) -> usize {
@@ -46,13 +50,13 @@ impl TagList {
         }
     }
 
-    pub fn find_last(&self, secure: bool, name: &str) -> mxp::Result<(usize, &Tag)> {
+    pub fn find_last(&self, secure: bool, name: &str) -> mxp::Result<usize> {
         for (i, tag) in self.inner.iter().enumerate().rev() {
             if tag.name.eq_ignore_ascii_case(name) {
                 if !secure && tag.secure {
                     return Err(mxp::Error::new(name, mxp::ErrorKind::TagOpenedInSecureMode));
                 }
-                return Ok((i, tag));
+                return Ok(i);
             }
             if !secure && tag.secure {
                 return Err(mxp::Error::new(
