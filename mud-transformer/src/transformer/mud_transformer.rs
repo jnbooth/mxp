@@ -657,6 +657,7 @@ impl Transformer {
                             self.output.start_line();
                         }
                     }
+                    b'\r' => (),
                     b'\t' if self.in_paragraph => {
                         if last_char != b' ' {
                             self.output.write_str(" ");
