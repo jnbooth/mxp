@@ -232,7 +232,7 @@ impl Transformer {
             let (n, status) = self.decompress.decompress(&mut bytes, buf);
             let finished = status != Ok(mccp::Status::Ok);
             if finished {
-                info!(target: "mud", "[DECOMPRESS] Ending gracefully");
+                info!(target: "mud.decompress", "Ending gracefully");
             }
             if n == 0 {
                 self.decompressing = !finished;
@@ -243,7 +243,7 @@ impl Transformer {
             if self.decompressing
                 && let Err(e) = status
             {
-                error!(target: "mud", "[DECOMPRESS] {e}");
+                error!(target: "mud.decompress", "{e}");
                 self.send_negotiation(TelnetVerb::Dont, opt::MCCP2);
             }
             if finished {
@@ -272,7 +272,7 @@ impl Transformer {
     }
 
     fn send_negotiation(&mut self, verb: TelnetVerb, code: u8) {
-        info!(target: "mud", "[TELNET] Sending IAC {verb:?} {code}");
+        info!(target: "mud.telnet", "Sending IAC {verb:?} {code}");
         self.input.write(&[telnet::IAC, verb as u8, code]);
         self.output.append(TelnetFragment::Negotiation {
             source: TelnetSource::Client,
@@ -320,7 +320,7 @@ impl Transformer {
                 self.charsets = match charset::Charsets::decode(request) {
                     Ok(charsets) => charsets,
                     Err(e) => {
-                        error!(target: "mud", "[TELNET] Error decoding charsets: {e}");
+                        error!(target: "mud.telnet", "Error decoding charsets: {e}");
                         return;
                     }
                 };
@@ -328,7 +328,7 @@ impl Transformer {
             }
             opt::MCCP2 => {
                 if !self.config.disable_compression {
-                    info!(target: "mud", "[DECOMPRESS] Beginning decompression");
+                    info!(target: "mud.decompress", "Beginning decompression");
                     self.decompressing = true;
                 }
             }
@@ -351,7 +351,7 @@ impl Transformer {
         if self.mxp_active {
             return;
         }
-        info!(target: "mxp", "MXP enabled");
+        info!(target: "mud.mxp", "MXP enabled");
         self.mxp_active = true;
         self.output.append(TelnetFragment::Mxp { enabled: true });
         self.mxp_mode.set(mxp::Mode::RESET);
@@ -368,7 +368,7 @@ impl Transformer {
         if !self.mxp_active {
             return;
         }
-        info!(target: "mxp", "MXP disabled");
+        info!(target: "mud.mxp", "MXP disabled");
         self.mxp_reset();
         self.mxp_mode_change(Some(mxp::Mode::RESET));
         if self.phase.is_mxp() {
@@ -401,7 +401,7 @@ impl Transformer {
         }
         let mxp_state = self.mxp_state.take();
         if let Err(e) = self.mxp_set_line_tag(&mxp_state) {
-            warn!(target: "mxp", "{e}");
+            warn!(target: "mud.mxp", "{e}");
         }
         self.mxp_state.set(mxp_state);
     }
@@ -573,7 +573,7 @@ impl Transformer {
     fn mxp_unterminated(&mut self, error: mxp::ErrorKind) {
         let entity_string = String::from_utf8_lossy(&self.mxp_entity_string);
         let e = mxp::Error::new(entity_string, error);
-        warn!(target: "mxp", "{e}");
+        warn!(target: "mud.mxp", "{e}");
         self.mxp_entity_string.clear();
         self.mxp_mode.use_secure(); // clear SECURE_ONCE
     }
@@ -593,7 +593,7 @@ impl Transformer {
             let sequence = match str::from_utf8(&self.utf8_sequence) {
                 Ok(sequence) => sequence,
                 Err(e) => {
-                    warn!(target: "mud", "[TELNET] Malformed UTF-8: {:?} ({e})", self.utf8_sequence);
+                    warn!(target: "mud.telnet", "Malformed UTF-8: {:?} ({e})", self.utf8_sequence);
                     "\u{FFFD}"
                 }
             };
@@ -619,7 +619,7 @@ impl Transformer {
                 self.last_char = c;
                 if self.mxp_active && c != b'<' && self.mxp_mode.is_secure_once() {
                     let e = mxp::Error::new(c as char, mxp::ErrorKind::TextAfterSecureOnce);
-                    warn!(target: "mxp", "{e}");
+                    warn!(target: "mud.mxp", "{e}");
                     self.mxp_mode.use_secure();
                 }
                 match c {
@@ -680,7 +680,7 @@ impl Transformer {
                         self.phase = Phase::Utf8Character;
                     }
                     ..32 | ansi::DEL | 248.. => {
-                        info!(target: "mud", "[TELNET] Unhandled control character: {c}");
+                        info!(target: "mud.telnet", "Unhandled control character: {c}");
                     }
                 }
             }
@@ -710,7 +710,7 @@ impl Transformer {
                     xterm::Outcome::Continue => reset = false,
                     xterm::Outcome::Fail => {
                         let ansi = self.ansi.sequence();
-                        warn!(target: "mud", "[TELNET] Escape sequence failed: {ansi}");
+                        warn!(target: "mud.telnet", "Escape sequence failed: {ansi}");
                     }
                     xterm::Outcome::Done => (),
                     xterm::Outcome::Link => {
@@ -804,7 +804,7 @@ impl Transformer {
                             .output
                             .append(TelnetFragment::SetEcho { should_echo: true }),
                         opt::MCCP2 => {
-                            info!(target: "mud", "[DECOMPRESS] Decompression disabled");
+                            info!(target: "mud.decompress", "Decompression disabled");
                             self.decompressing = false;
                         }
                         _ => (),
@@ -872,8 +872,8 @@ impl Transformer {
                 self.phase = Phase::Normal;
                 let data = self.subnegotiation_data.split().freeze();
                 if c != telnet::SE {
-                    error!(target: "mud",
-                        "[TELNET] subnegotiation terminated with {c} instead of SE: {data:?}"
+                    error!(target: "mud.telnet",
+                        "Subnegotiation terminated with {c} instead of SE: {data:?}"
                     );
                 }
                 self.receive_subnegotiation(self.subnegotiation_type, &data);
@@ -892,7 +892,7 @@ impl Transformer {
                         if let Ok(source) = str::from_utf8(&entity_string) {
                             e = e.with_context(format_args!(" (in <{source}>)"));
                         }
-                        warn!(target: "mxp", "{e}");
+                        warn!(target: "mud.mxp", "{e}");
                     }
                     mem::swap(&mut entity_string, &mut self.mxp_entity_string);
                     self.mxp_entity_string.clear();
@@ -933,7 +933,7 @@ impl Transformer {
                 b';' => {
                     self.phase = Phase::Normal;
                     if let Err(e) = self.mxp_collect_entity() {
-                        warn!(target: "mxp", "{e}");
+                        warn!(target: "mud.mxp", "{e}");
                     }
                 }
                 b'&' => self.mxp_unterminated(mxp::ErrorKind::UnterminatedEntity),

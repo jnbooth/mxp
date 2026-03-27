@@ -49,7 +49,7 @@ impl OutputRegister {
             })),
             Ok(None) => None,
             Err(e) => {
-                warn!(target: "mxp", "{e}");
+                warn!(target: "mud.mxp", "{e}");
                 None
             }
         }
