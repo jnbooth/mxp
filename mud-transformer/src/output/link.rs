@@ -15,25 +15,13 @@ pub enum SendTo {
     Internet,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Link {
     pub href: String,
     pub hint: String,
     pub expire: Option<String>,
     pub send_to: SendTo,
     pub menu: bool,
-}
-
-impl Default for Link {
-    fn default() -> Self {
-        Self {
-            href: mxp::Send::EMBED_ENTITY.to_owned(),
-            hint: mxp::Send::EMBED_ENTITY.to_owned(),
-            expire: None,
-            send_to: SendTo::World,
-            menu: false,
-        }
-    }
 }
 
 impl From<mxp::Hyperlink> for Link {
