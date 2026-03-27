@@ -272,7 +272,7 @@ impl Transformer {
     }
 
     fn send_negotiation(&mut self, verb: TelnetVerb, code: u8) {
-        info!(target: "mud.telnet", "Sending IAC {verb:?} {}", opt::display(code));
+        info!(target: "mud.telnet", "Sending IAC {verb} {}", opt::display(code));
         self.input.write(&[telnet::IAC, verb as u8, code]);
         self.output.append(TelnetFragment::Negotiation {
             source: TelnetSource::Client,

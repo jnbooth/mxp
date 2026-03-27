@@ -38,6 +38,17 @@ impl Not for TelnetVerb {
     }
 }
 
+impl fmt::Display for TelnetVerb {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Will => "WILL".fmt(f),
+            Self::Wont => "WONT".fmt(f),
+            Self::Do => "DO".fmt(f),
+            Self::Dont => "DONT".fmt(f),
+        }
+    }
+}
+
 pub(crate) fn write_escaping_iac<W: Write>(mut writer: W, bytes: &[u8]) -> io::Result<()> {
     let mut escaping = false;
     for slice in bytes.split(|&c| c == telnet::IAC) {
