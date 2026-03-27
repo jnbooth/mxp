@@ -9,8 +9,8 @@ use crate::node::LineTagDefinition;
 /// current user-defined line mode.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct LineTag<'a> {
-    pub element: Option<&'a Element>,
     pub properties: &'a LineTagProperties,
+    pub element: Option<&'a Element>,
 }
 
 impl Deref for LineTag<'_> {

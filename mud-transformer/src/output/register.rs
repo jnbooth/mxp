@@ -9,10 +9,10 @@ use crate::bytestring_ext::ByteStringMutExt;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct OutputRegister {
+    register: ByteStringMut,
     entity: Option<mxp::Var<ByteString>>,
     parse_as: Option<mxp::ParseAs>,
     variable: ByteStringMut,
-    register: ByteStringMut,
 }
 
 impl OutputRegister {
