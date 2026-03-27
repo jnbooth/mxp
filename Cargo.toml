@@ -3,7 +3,6 @@ resolver = "2"
 members = ["mxp", "mud-bin-examples", "mud-stream", "mud-transformer"]
 
 [workspace.package]
-version = "1.1.0"
 repository = "https://github.com/jnbooth/mxp"
 license = "MIT"
 edition = "2024"
