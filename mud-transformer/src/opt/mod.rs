@@ -34,10 +34,8 @@ pub use mccp::OPT as MCCP2; // 86
 pub mod msp;
 pub use msp::OPT as MSP; // 90
 
-/// MUD eXtension Protocol
-///
-/// https://www.zuggsoft.com/zmud/mxp.htm
-pub const MXP: u8 = 91;
+pub mod mxp;
+pub use mxp::OPT as MXP; // 91
 
 /// Zenith MUD Protocol
 ///

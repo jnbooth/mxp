@@ -1,6 +1,5 @@
 pub use bytes::Bytes;
 pub use bytestring::ByteString;
-pub use mxp;
 pub use mxp::escape;
 
 mod bytestring_ext;
