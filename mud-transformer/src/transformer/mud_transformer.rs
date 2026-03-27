@@ -521,45 +521,43 @@ impl Transformer {
         match action {
             Action::Bold => self.output.set_mxp_style(TextStyle::Bold),
             Action::Br => self.output.start_line(),
-            Action::Color(color) => self.output.set_mxp_color(color),
-            Action::Dest(dest) => self.output.set_mxp_window(dest),
-            Action::Expire(expire) => self.output.append(expire.into_owned()),
-            Action::Filter(filter) => self.output.append(filter.into_owned()),
-            Action::Font(font) => self.output.set_mxp_font(font),
-            Action::Frame(frame) => self.output.append(frame.into_owned()),
-            Action::Gauge(gauge) => self.output.append(gauge.into_owned()),
-            Action::Heading(heading) => self.output.set_mxp_heading(heading),
+            Action::Color(m) => self.output.set_mxp_color(m),
+            Action::Dest(m) => self.output.set_mxp_window(m),
+            Action::Expire(m) => self.output.append(m.into_owned()),
+            Action::Filter(m) => self.output.append(m.into_owned()),
+            Action::Font(m) => self.output.set_mxp_font(m),
+            Action::Frame(m) => self.output.append(m.into_owned()),
+            Action::Gauge(m) => self.output.append(m.into_owned()),
+            Action::Heading(m) => self.output.set_mxp_heading(m),
             Action::Highlight => self.output.set_mxp_style(TextStyle::Highlight),
             Action::Hr => self.output.append(OutputFragment::Hr),
-            Action::Hyperlink(link) => self.output.set_mxp_link(link.into_owned()),
-            Action::Image(image) => self.output.append(image.into_owned()),
+            Action::Hyperlink(m) => self.output.set_mxp_link(m.into_owned()),
+            Action::Image(m) => self.output.append(m.into_owned()),
             Action::Italic => self.output.set_mxp_style(TextStyle::Italic),
-            Action::Music(music) => self.output.append(music.into_owned()),
+            Action::Music(m) => self.output.append(m.into_owned()),
             Action::MusicOff => self.output.append(MxpFragment::MusicOff),
             Action::MxpOff | Action::Reset => (),
             Action::NoBr => self.ignore_next_newline = true,
             Action::P => self.in_paragraph = true,
             Action::Password => input_mxp_auth(&mut self.input, &self.config.password),
-            Action::Relocate(relocate) => self.output.append(relocate.into_owned()),
+            Action::Relocate(m) => self.output.append(m.into_owned()),
             Action::SBr => self.output.write_str(" "),
-            Action::Send(link) => self.output.set_mxp_link(link.into_owned()),
+            Action::Send(m) => self.output.set_mxp_link(m.into_owned()),
             Action::Small => self.output.set_mxp_style(TextStyle::Small),
-            Action::Sound(sound) => self.output.append(sound.into_owned()),
+            Action::Sound(m) => self.output.append(m.into_owned()),
             Action::SoundOff => self.output.append(MxpFragment::SoundOff),
-            Action::Stat(stat) => self.output.append(stat.into_owned()),
+            Action::Stat(m) => self.output.append(m.into_owned()),
             Action::Strikeout => self.output.set_mxp_style(TextStyle::Strikeout),
-            Action::StyleVersion(styleversion) => {
-                let styleversion = styleversion.into_owned();
-                self.config.style_version = Some(styleversion.styleversion.clone());
-                self.output.append(styleversion);
+            Action::StyleVersion(m) => {
+                let m = m.into_owned();
+                self.config.style_version = Some(m.styleversion.clone());
+                self.output.append(m);
             }
-            Action::Support(support) => {
-                write!(self.input, "{}", self.config.support_response(support));
-            }
+            Action::Support(m) => write!(self.input, "{}", self.config.support_response(m)),
             Action::Tt => self.output.set_mxp_style(TextStyle::NonProportional),
             Action::Underline => self.output.set_mxp_style(TextStyle::Underline),
             Action::User => input_mxp_auth(&mut self.input, &self.config.player),
-            Action::Var(var) => self.output.set_mxp_entity(var),
+            Action::Var(m) => self.output.set_mxp_entity(m),
             Action::Version => write!(self.input, "{}", self.config.version_response()),
         }
     }
