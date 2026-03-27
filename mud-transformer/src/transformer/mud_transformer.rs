@@ -231,7 +231,7 @@ impl Transformer {
         while self.decompressing {
             let (n, status) = self.decompress.decompress(&mut bytes, buf);
             let finished = status != Ok(mccp::Status::Ok);
-            if finished {
+            if status == Ok(mccp::Status::StreamEnd) {
                 info!(target: "mud.decompress", "Ending gracefully");
             }
             if n == 0 {
