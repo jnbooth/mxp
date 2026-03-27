@@ -751,7 +751,7 @@ impl Transformer {
                     verb: TelnetVerb::Will,
                     code: c,
                 });
-                let supported = self.config.will[c];
+                let supported = self.config.will.contains(c);
                 if supported {
                     match c {
                         opt::ECHO => self
@@ -776,7 +776,7 @@ impl Transformer {
                     verb: TelnetVerb::Wont,
                     code: c,
                 });
-                if self.config.will[c] {
+                if self.config.will.contains(c) {
                     match c {
                         opt::ECHO => self
                             .output
@@ -795,7 +795,7 @@ impl Transformer {
                     verb: TelnetVerb::Do,
                     code: c,
                 });
-                let supported = self.config.will[c];
+                let supported = self.config.will.contains(c);
                 if supported {
                     self.doing.insert(c);
                     match c {
