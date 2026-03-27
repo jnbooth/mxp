@@ -2,6 +2,7 @@ use std::ops::{Deref, DerefMut};
 
 use bytestring::ByteString;
 use bytestringmut::ByteStringMut;
+use log::warn;
 
 use super::fragment::{EntityFragment, MapperFragment, MxpFragment, VariableFragment};
 use crate::bytestring_ext::ByteStringMutExt;
@@ -46,8 +47,11 @@ impl OutputRegister {
                 value: entry.value.map(|value| self.variable.share(value)),
                 publish: entry.publish,
             })),
-            Err(e) => Some(MxpFragment::Error(e)),
-            _ => None,
+            Ok(None) => None,
+            Err(e) => {
+                warn!(target: "mxp", "{e}");
+                None
+            }
         }
     }
 }

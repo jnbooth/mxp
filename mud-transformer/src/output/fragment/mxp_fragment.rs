@@ -5,7 +5,6 @@ use super::OutputFragment;
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum MxpFragment {
     Entity(EntityFragment),
-    Error(mxp::Error),
     Expire(mxp::Expire),
     Filter(mxp::Filter),
     Frame(mxp::Frame),
@@ -49,12 +48,6 @@ impl From<MxpFragment> for OutputFragment {
 impl From<EntityFragment> for OutputFragment {
     fn from(value: EntityFragment) -> Self {
         Self::Mxp(MxpFragment::Entity(value))
-    }
-}
-
-impl From<mxp::Error> for OutputFragment {
-    fn from(value: mxp::Error) -> Self {
-        Self::Mxp(MxpFragment::Error(value))
     }
 }
 

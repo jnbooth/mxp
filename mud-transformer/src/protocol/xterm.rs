@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::fmt::Write as _;
 use std::num::NonZero;
 
@@ -43,6 +44,7 @@ pub(crate) struct Interpreter {
     phase: Phase,
     answerback: Vec<u8>,
     code: Option<NonZero<u8>>,
+    sequence: Vec<u8>,
     string: BytesMut,
     mslp_link: Option<Link>,
 }
@@ -64,9 +66,14 @@ impl Interpreter {
         self.mslp_link.take()
     }
 
+    pub fn sequence(&self) -> Cow<'_, str> {
+        String::from_utf8_lossy(&self.sequence)
+    }
+
     pub fn terminate(&mut self) {
         self.phase = Phase::Normal;
         self.string.clear();
+        self.sequence.clear();
     }
 
     pub fn escape(
@@ -75,6 +82,7 @@ impl Interpreter {
         output: &mut BufferedOutput,
         input: &mut BufferedInput,
     ) -> Start {
+        self.sequence.push(code);
         if self.phase == Phase::ControlString {
             if code == ansi::ESC_ST {
                 self.finish_control_string(output, input);
@@ -137,6 +145,7 @@ impl Interpreter {
         output: &mut BufferedOutput,
         input: &mut BufferedInput,
     ) -> Outcome {
+        self.sequence.push(code);
         match code {
             ansi::CAN => {
                 self.terminate();
