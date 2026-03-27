@@ -1,7 +1,5 @@
-use std::fmt;
 use std::iter::FusedIterator;
-
-use bytes::{Buf, Bytes};
+use std::{fmt, slice};
 
 use crate::count_bytes;
 
@@ -15,37 +13,45 @@ pub const VAL: u8 = 2;
 
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone)]
-pub struct Iter {
-    data: Bytes,
+pub struct Iter<'a> {
+    data: slice::Iter<'a, u8>,
 }
 
-pub fn decode(mut data: Bytes) -> Iter {
-    match data.iter().position(|&c| c == VAR) {
-        Some(i) => {
-            data.advance(i + 1);
-            Iter { data }
-        }
-        None => Iter { data: Bytes::new() },
+pub fn decode(data: &[u8]) -> Iter<'_> {
+    match data {
+        [VAR, rest @ ..] => Iter { data: rest.iter() },
+        _ => Iter { data: [].iter() },
     }
 }
 
-fn split_until(bytes: &mut Bytes, delim: u8) -> Option<Bytes> {
-    let i = bytes.iter().position(|&c| c == delim)?;
-    let split = bytes.split_to(i);
-    bytes.advance(1);
-    Some(split)
+impl<'a> Iter<'a> {
+    fn slice_before(&mut self, c: u8) -> Result<&'a [u8], &'a [u8]> {
+        let slice = self.data.as_slice();
+        match self.data.position(|&ch| ch == c) {
+            Some(pos) => Ok(&slice[..pos]),
+            None => Err(slice),
+        }
+    }
+
+    fn slice_after(&mut self, c: u8) -> Result<&'a [u8], &'a [u8]> {
+        let slice = self.data.as_slice();
+        match self.data.rposition(|&ch| ch == c) {
+            Some(pos) => Ok(&slice[pos + 1..]),
+            None => Err(slice),
+        }
+    }
 }
 
-impl Iterator for Iter {
-    type Item = (Bytes, Bytes);
+impl<'a> Iterator for Iter<'a> {
+    type Item = (&'a [u8], &'a [u8]);
 
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
-        let before = split_until(&mut self.data, VAL)?;
-        match split_until(&mut self.data, VAR) {
-            Some(after) => Some((before, after)),
-            None => Some((before, self.data.split_off(0))),
-        }
+        let var = self.slice_before(VAL).ok()?;
+        let val = match self.slice_before(VAR) {
+            Ok(val) | Err(val) => val,
+        };
+        Some((var, val))
     }
 
     #[inline]
@@ -55,16 +61,27 @@ impl Iterator for Iter {
     }
 }
 
-impl ExactSizeIterator for Iter {
+impl DoubleEndedIterator for Iter<'_> {
     #[inline]
-    fn len(&self) -> usize {
-        count_bytes(&self.data, VAL)
+    fn next_back(&mut self) -> Option<Self::Item> {
+        let val = self.slice_after(VAL).ok()?;
+        let var = match self.slice_after(VAR) {
+            Ok(var) | Err(var) => var,
+        };
+        Some((var, val))
     }
 }
 
-impl FusedIterator for Iter {}
+impl ExactSizeIterator for Iter<'_> {
+    #[inline]
+    fn len(&self) -> usize {
+        count_bytes(self.data.as_slice(), VAL)
+    }
+}
 
-impl fmt::Debug for Iter {
+impl FusedIterator for Iter<'_> {}
+
+impl fmt::Debug for Iter<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_map().entries(self.clone()).finish()
     }
@@ -75,13 +92,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn mssp_iter() {
-        let data = Bytes::from_static(b"abc\x01first\x02second\x01third\x02fourth");
+    fn mssp_iter_forward() {
+        let data = b"\x01first\x02second\x01third\x02fourth";
         let values: Vec<_> = decode(data)
             .map(|(x, y)| {
                 (
-                    String::from_utf8_lossy(&x).into_owned(),
-                    String::from_utf8_lossy(&y).into_owned(),
+                    String::from_utf8_lossy(x).into_owned(),
+                    String::from_utf8_lossy(y).into_owned(),
                 )
             })
             .collect();
@@ -89,7 +106,28 @@ mod tests {
             values,
             &[
                 ("first".to_owned(), "second".to_owned()),
-                ("third".to_owned(), "fourth".to_owned())
+                ("third".to_owned(), "fourth".to_owned()),
+            ]
+        );
+    }
+
+    #[test]
+    fn mssp_iter_back() {
+        let data = b"\x01first\x02second\x01third\x02fourth";
+        let values: Vec<_> = decode(data)
+            .rev()
+            .map(|(x, y)| {
+                (
+                    String::from_utf8_lossy(x).into_owned(),
+                    String::from_utf8_lossy(y).into_owned(),
+                )
+            })
+            .collect();
+        assert_eq!(
+            values,
+            &[
+                ("third".to_owned(), "fourth".to_owned()),
+                ("first".to_owned(), "second".to_owned()),
             ]
         );
     }

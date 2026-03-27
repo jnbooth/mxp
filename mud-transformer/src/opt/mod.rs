@@ -61,7 +61,7 @@ pub(crate) fn display(code: u8) -> OptDisplay {
     OptDisplay(code)
 }
 
-pub(crate) struct OptDisplay(pub u8);
+pub(crate) struct OptDisplay(u8);
 
 impl fmt::Display for OptDisplay {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {

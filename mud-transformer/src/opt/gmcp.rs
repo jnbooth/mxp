@@ -3,12 +3,9 @@ use std::fmt;
 use std::io::{self, Write};
 use std::str::Utf8Error;
 
-use bytes::Bytes;
-use bytestring::ByteString;
 #[cfg(feature = "json")]
 use serde::{Deserialize, Serialize};
 
-use crate::bytestring_ext::ByteStringExt;
 use crate::escape::telnet;
 
 /// Generic Mud Communication Protocol
@@ -17,7 +14,7 @@ use crate::escape::telnet;
 pub const OPT: u8 = 201;
 
 /// See [`Message::decode`].
-pub fn decode(bytes: Bytes) -> Result<Message, DecodeError> {
+pub fn decode(bytes: &[u8]) -> Result<Message<&str>, DecodeError> {
     Message::decode(bytes)
 }
 
@@ -74,55 +71,59 @@ impl Error for DecodeError {
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Message {
-    pub command: ByteString,
-    pub data: Option<ByteString>,
+pub struct Message<S> {
+    pub command: S,
+    pub data: Option<S>,
 }
 
-impl Message {
-    pub fn decode(mut bytes: Bytes) -> Result<Self, DecodeError> {
+impl<'a> Message<&'a str> {
+    pub fn decode(bytes: &'a [u8]) -> Result<Self, DecodeError> {
+        fn split_data_from_command(bytes: &[u8]) -> Option<(&[u8], &[u8])> {
+            let pos = bytes.iter().position(|&c| c == b' ' || c == b'\n')?;
+            let (command, data) = bytes.split_at(pos);
+            let trimmed = data.trim_ascii();
+            if trimmed.is_empty() {
+                return None;
+            }
+            Some((command, trimmed))
+        }
+
         if bytes.is_empty() {
             return Err(DecodeError::EmptyString);
         }
-        let data = match Self::split_data_from_command(&mut bytes) {
-            Some(data) => Some(ByteString::from_utf8(data)?),
-            None => None,
+        let (command, data) = match split_data_from_command(bytes) {
+            Some((command, data)) => (command, Some(str::from_utf8(data)?)),
+            None => (bytes, None),
         };
         Ok(Self {
-            command: ByteString::from_utf8(bytes)?,
+            command: str::from_utf8(command)?,
             data,
         })
     }
 
+    #[cfg(feature = "json")]
+    pub fn deserialize<'de, T: Deserialize<'de>>(&'de self) -> serde_json::Result<T> {
+        serde_json::from_str(self.data.unwrap_or_default())
+    }
+}
+
+impl<S: AsRef<[u8]>> Message<S> {
     pub fn encode<W: Write>(&self, mut writer: W) -> io::Result<()> {
-        writer.write_all(self.command.as_bytes())?;
+        writer.write_all(self.command.as_ref())?;
         if let Some(data) = &self.data {
             writer.write_all(b" ")?;
-            writer.write_all(data.as_bytes())?;
+            writer.write_all(data.as_ref())?;
         }
         Ok(())
     }
+}
 
-    #[cfg(feature = "json")]
-    pub fn deserialize<'de, T: Deserialize<'de>>(&'de self) -> serde_json::Result<T> {
-        serde_json::from_str(self.data.as_deref().unwrap_or_default())
-    }
-
-    #[cfg(feature = "json")]
+#[cfg(feature = "json")]
+impl Message<String> {
     pub fn serialize<T: Serialize>(command: String, data: &T) -> serde_json::Result<Self> {
         Ok(Self {
-            command: command.into(),
-            data: Some(serde_json::to_string(data)?.into()),
+            command,
+            data: Some(serde_json::to_string(data)?),
         })
-    }
-
-    fn split_data_from_command(bytes: &mut Bytes) -> Option<Bytes> {
-        let pos = bytes.iter().position(|&c| c == b' ' || c == b'\n')?;
-        let data = bytes.split_off(pos);
-        let trimmed = data.trim_ascii();
-        if trimmed.is_empty() {
-            return None;
-        }
-        Some(data.slice_ref(trimmed))
     }
 }
