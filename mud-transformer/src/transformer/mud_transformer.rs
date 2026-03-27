@@ -3,6 +3,7 @@ use std::num::NonZero;
 use std::{mem, slice};
 
 use bytes::BytesMut;
+use bytestring::ByteString;
 use bytestringmut::ByteStringMut;
 use mxp::element::ElementFlag;
 use mxp::entity::PublishedIter;
@@ -398,11 +399,11 @@ impl Transformer {
     }
 
     fn mxp_set_line_tag(&mut self, mxp_state: &mxp::State) -> mxp::Result<()> {
-        let Some(tag) = self.mxp_mode.line_tag(mxp_state) else {
+        let Some(line_tag) = self.mxp_mode.line_tag(mxp_state) else {
             return Ok(());
         };
-        self.output.set_mxp_line_tag(tag.properties);
-        let Some(element) = tag.element else {
+        self.output.set_mxp_line_tag(line_tag.properties);
+        let Some(element) = line_tag.element else {
             return Ok(());
         };
         self.mxp_open_element(element, &mxp::Arguments::new(), false, mxp_state)
@@ -462,7 +463,7 @@ impl Transformer {
         match component {
             mxp::Component::AtomicTag(atom) => {
                 let action = atom.decode(&tag.arguments, mxp_state)?;
-                self.mxp_apply_action(action, mxp_state);
+                self.mxp_apply_action(action);
                 Ok(())
             }
             mxp::Component::Element(el) => {
@@ -474,6 +475,30 @@ impl Transformer {
         }
     }
 
+    fn mxp_set_flag(&mut self, flag: &ElementFlag, args: &mxp::Arguments, empty: bool) {
+        if !empty {
+            match flag {
+                ElementFlag::ParseAs(parse_as) => self.output.set_mxp_parse_as(*parse_as),
+                ElementFlag::Set(variable) => self.output.set_mxp_variable(variable),
+            }
+            return;
+        }
+        let arg = match args.at(0) {
+            Some(value) => self.mxp_buf.share(value),
+            None => ByteString::new(),
+        };
+        match flag {
+            ElementFlag::ParseAs(parse_as) => self.output.append(MapperFragment {
+                parse_as: *parse_as,
+                value: arg,
+            }),
+            ElementFlag::Set(variable) => self.output.append(VariableFragment {
+                name: self.mxp_buf.share(variable),
+                value: arg,
+            }),
+        }
+    }
+
     fn mxp_open_element(
         &mut self,
         el: &mxp::Element,
@@ -481,36 +506,20 @@ impl Transformer {
         empty: bool,
         mxp_state: &mxp::State,
     ) -> mxp::Result<()> {
-        let empty = empty || el.empty;
-        let empty_arg = if empty {
-            args.at(0).map(|value| self.mxp_buf.share(value))
-        } else {
-            None
-        };
-        match &el.flag {
-            Some(ElementFlag::ParseAs(parse_as)) if empty => self.output.append(MapperFragment {
-                parse_as: *parse_as,
-                value: empty_arg.unwrap_or_default(),
-            }),
-            Some(ElementFlag::Set(variable)) if empty => self.output.append(VariableFragment {
-                name: self.mxp_buf.share(variable),
-                value: empty_arg.unwrap_or_default(),
-            }),
-            Some(ElementFlag::ParseAs(parse_as)) => self.output.set_mxp_parse_as(*parse_as),
-            Some(ElementFlag::Set(variable)) => self.output.set_mxp_variable(variable),
-            None => (),
+        if let Some(flag) = &el.flag {
+            self.mxp_set_flag(flag, args, empty || el.empty);
         }
         for action in el.decode(args, mxp_state) {
-            self.mxp_apply_action(action?, mxp_state);
+            self.mxp_apply_action(action?);
         }
         Ok(())
     }
 
-    fn mxp_apply_action(&mut self, action: mxp::Action<Cow<str>>, mxp_state: &mxp::State) {
+    fn mxp_apply_action(&mut self, action: mxp::Action<Cow<str>>) {
         use mxp::Action;
 
         match action {
-            Action::Bold => self.output.set_mxp_flag(TextStyle::Bold),
+            Action::Bold => self.output.set_mxp_style(TextStyle::Bold),
             Action::Br => self.output.start_line(),
             Action::Color(color) => self.output.set_mxp_color(color),
             Action::Dest(dest) => self.output.set_mxp_window(dest),
@@ -520,11 +529,11 @@ impl Transformer {
             Action::Frame(frame) => self.output.append(frame.into_owned()),
             Action::Gauge(gauge) => self.output.append(gauge.into_owned()),
             Action::Heading(heading) => self.output.set_mxp_heading(heading),
-            Action::Highlight => self.output.set_mxp_flag(TextStyle::Highlight),
+            Action::Highlight => self.output.set_mxp_style(TextStyle::Highlight),
             Action::Hr => self.output.append(OutputFragment::Hr),
             Action::Hyperlink(link) => self.output.set_mxp_link(link.into_owned()),
             Action::Image(image) => self.output.append(image.into_owned()),
-            Action::Italic => self.output.set_mxp_flag(TextStyle::Italic),
+            Action::Italic => self.output.set_mxp_style(TextStyle::Italic),
             Action::Music(music) => self.output.append(music.into_owned()),
             Action::MusicOff => self.output.append(MxpFragment::MusicOff),
             Action::MxpOff | Action::Reset => (),
@@ -534,11 +543,11 @@ impl Transformer {
             Action::Relocate(relocate) => self.output.append(relocate.into_owned()),
             Action::SBr => self.output.write_str(" "),
             Action::Send(link) => self.output.set_mxp_link(link.into_owned()),
-            Action::Small => self.output.set_mxp_flag(TextStyle::Small),
+            Action::Small => self.output.set_mxp_style(TextStyle::Small),
             Action::Sound(sound) => self.output.append(sound.into_owned()),
             Action::SoundOff => self.output.append(MxpFragment::SoundOff),
             Action::Stat(stat) => self.output.append(stat.into_owned()),
-            Action::Strikeout => self.output.set_mxp_flag(TextStyle::Strikeout),
+            Action::Strikeout => self.output.set_mxp_style(TextStyle::Strikeout),
             Action::StyleVersion(styleversion) => {
                 let styleversion = styleversion.into_owned();
                 self.config.style_version = Some(styleversion.styleversion.clone());
@@ -547,16 +556,11 @@ impl Transformer {
             Action::Support(support) => {
                 write!(self.input, "{}", self.config.support_response(support));
             }
-            Action::Tt => self.output.set_mxp_flag(TextStyle::NonProportional),
-            Action::Underline => self.output.set_mxp_flag(TextStyle::Underline),
+            Action::Tt => self.output.set_mxp_style(TextStyle::NonProportional),
+            Action::Underline => self.output.set_mxp_style(TextStyle::Underline),
             Action::User => input_mxp_auth(&mut self.input, &self.config.player),
-            Action::Var(var) => match mxp_state.guard_global_entity(&var.name) {
-                Ok(()) => self.output.set_mxp_entity(var),
-                Err(e) => self.output.append(e),
-            },
-            Action::Version => {
-                write!(self.input, "{}", self.config.version_response());
-            }
+            Action::Var(var) => self.output.set_mxp_entity(var),
+            Action::Version => write!(self.input, "{}", self.config.version_response()),
         }
     }
 

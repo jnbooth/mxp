@@ -370,7 +370,7 @@ impl BufferedOutput {
         self.append(self.flush_with(text, &span));
     }
 
-    pub fn set_mxp_flag(&mut self, flag: TextStyle) {
+    pub fn set_mxp_style(&mut self, flag: TextStyle) {
         if self.spans.set_flag(flag, self.text_buf.is_empty()) && !self.ansi_flags.contains(flag) {
             self.flush_mxp();
         }
