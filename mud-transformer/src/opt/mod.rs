@@ -5,6 +5,8 @@ pub const ECHO: u8 = 1;
 pub const SGA: u8 = 3;
 
 pub mod status;
+use std::fmt;
+
 pub use status::OPT as STATUS; // 5
 
 pub mod mtts;
@@ -54,3 +56,34 @@ pub const ATCP: u8 = 200;
 
 pub mod gmcp;
 pub use gmcp::OPT as GMCP; // 201
+
+pub(crate) fn display(code: u8) -> OptDisplay {
+    OptDisplay(code)
+}
+
+pub(crate) struct OptDisplay(pub u8);
+
+impl fmt::Display for OptDisplay {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self.0 {
+            ECHO => "ECHO".fmt(f),
+            SGA => "SGA".fmt(f),
+            STATUS => "STATUS".fmt(f),
+            MTTS => "MTTS".fmt(f),
+            EOR => "EOR".fmt(f),
+            NAWS => "NAWS".fmt(f),
+            MNES => "MNES".fmt(f),
+            CHARSET => "CHARSET".fmt(f),
+            MSDP => "MSDP".fmt(f),
+            MSSP => "MSSP".fmt(f),
+            MCCP2 => "MCCP2".fmt(f),
+            MSP => "MSP".fmt(f),
+            MXP => "MXP".fmt(f),
+            ZMP => "ZMP".fmt(f),
+            AARDWOLF => "AARDWOLF".fmt(f),
+            ATCP => "ATCP".fmt(f),
+            GMCP => "GMCP".fmt(f),
+            _ => self.0.fmt(f),
+        }
+    }
+}
