@@ -2,7 +2,7 @@ use std::io::{self, Write};
 
 use crate::escape::telnet;
 
-/// [RFC 1073](https://datatracker.ietf.org/doc/html/rfc1073): NAWS (Negotiate About Window Size)
+/// [RFC 1073](https://datatracker.ietf.org/doc/html/rfc1073): Negotiate About Window Size
 pub const OPT: u8 = 31;
 
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]

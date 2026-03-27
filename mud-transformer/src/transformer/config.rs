@@ -13,10 +13,10 @@ use crate::opt;
 const ALWAYS_WILL: ByteSet = {
     let mut will = ByteSet::new();
     will.insert(opt::ECHO);
-    will.insert(opt::SGA);
+    will.insert(opt::SUPPRESS_GO_AHEAD);
     will.insert(opt::STATUS);
     will.insert(opt::MTTS);
-    will.insert(opt::EOR);
+    will.insert(opt::END_OF_RECORD);
     will.insert(opt::MNES);
     will.insert(opt::CHARSET);
     will.insert(opt::MCCP2);

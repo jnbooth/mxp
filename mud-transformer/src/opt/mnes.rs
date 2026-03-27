@@ -18,6 +18,8 @@ pub const INFO: u8 = 2;
 
 pub const VAR: u8 = 0;
 pub const VAL: u8 = 1;
+pub const ESC: u8 = 2;
+pub const USERVAR: u8 = 3;
 
 pub fn decode(bytes: &[u8]) -> slice::Split<'_, u8, fn(&u8) -> bool> {
     let bytes = match bytes {

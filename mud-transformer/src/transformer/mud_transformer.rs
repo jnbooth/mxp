@@ -5,7 +5,7 @@ use std::{mem, slice};
 use bytes::BytesMut;
 use bytestring::ByteString;
 use bytestringmut::ByteStringMut;
-use log::{error, info, warn};
+use log::{debug, error, info, warn};
 use mxp::element::ElementFlag;
 use mxp::entity::PublishedIter;
 use mxp::node::{Definition, Tag, TagOpen};
@@ -18,7 +18,7 @@ use super::tag_list::TagList;
 use crate::bytestring_ext::ByteStringMutExt;
 use crate::escape::{ansi, telnet};
 use crate::input::{BufferedInput, InputDrain};
-use crate::opt::{self, charset, mccp, mnes, mtts, status};
+use crate::opt::{self, charset, mccp2, mnes, mtts, status};
 use crate::output::{
     BufferedOutput, ControlFragment, EntityFragment, MapperFragment, MxpFragment, OutputDrain,
     OutputFragment, TelnetFragment, TextStyle, VariableFragment,
@@ -51,7 +51,7 @@ pub struct Transformer {
     mxp_tags: TagList,
 
     charsets: charset::Charsets,
-    decompress: mccp::Decompress,
+    decompress: mccp2::Decompress,
     decompressing: bool,
     mnes_variables: mnes::Variables,
     ttype_negotiator: mtts::Negotiator,
@@ -97,7 +97,7 @@ impl Transformer {
             mxp_state: mxp::State::with_globals().into(),
 
             charsets: charset::Charsets::new(),
-            decompress: mccp::Decompress::new(),
+            decompress: mccp2::Decompress::new(),
             decompressing: false,
             mnes_variables: mnes::Variables::new(),
             ttype_negotiator: mtts::Negotiator::new(),
@@ -230,8 +230,8 @@ impl Transformer {
         let mut received = initial_len - bytes.len();
         while self.decompressing {
             let (n, status) = self.decompress.decompress(&mut bytes, buf);
-            let finished = status != Ok(mccp::Status::Ok);
-            if status == Ok(mccp::Status::StreamEnd) {
+            let finished = status != Ok(mccp2::Status::Ok);
+            if status == Ok(mccp2::Status::StreamEnd) {
                 info!(target: "mud.decompress", "Ending gracefully");
             }
             if n == 0 {
@@ -317,13 +317,13 @@ impl Transformer {
                 let [charset::REQUEST, request @ ..] = data else {
                     return;
                 };
-                self.charsets = match charset::Charsets::decode(request) {
-                    Ok(charsets) => charsets,
+                match charset::Charsets::decode(request) {
+                    Ok(charsets) => self.charsets = charsets,
                     Err(e) => {
                         error!(target: "mud.telnet", "Error decoding charsets: {e}");
                         return;
                     }
-                };
+                }
                 self.send_subnegotiation(self.charsets);
             }
             opt::MCCP2 => {
@@ -428,7 +428,14 @@ impl Transformer {
         let secure = self.mxp_mode.use_secure();
         let source = mxp::validate_utf8(entity_string)?;
         match Tag::parse(source, secure)? {
-            Tag::Definition(definition) => self.mxp_define(definition),
+            Tag::Definition(definition) => {
+                let is_entity = matches!(definition, Definition::Entity(_));
+                self.mxp_define(definition)?;
+                if !is_entity {
+                    debug!(target: "mud.mxp", "Defined: <{source}>");
+                }
+                Ok(())
+            }
             Tag::Close(tag) => {
                 let closed = self.mxp_tags.find_last(secure, tag.name)?;
                 self.mxp_close_tags_from(closed);
@@ -680,7 +687,7 @@ impl Transformer {
                         self.phase = Phase::Utf8Character;
                     }
                     ..32 | ansi::DEL | 248.. => {
-                        info!(target: "mud.telnet", "Unhandled control character: {c}");
+                        info!(target: "mud.telnet", "Unhandled character: {c:#x}");
                     }
                 }
             }
