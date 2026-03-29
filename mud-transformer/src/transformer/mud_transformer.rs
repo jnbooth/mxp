@@ -5,12 +5,12 @@ use std::{mem, slice};
 use bytes::BytesMut;
 use bytestring::ByteString;
 use bytestringmut::ByteStringMut;
+use bytetable::ByteSet;
 use log::{debug, error, info, warn};
 use mxp::element::ElementFlag;
 use mxp::entity::PublishedIter;
 use mxp::node::{Definition, Tag, TagOpen};
 
-use super::byteset::ByteSet;
 use super::config::{TabBehavior, TransformerConfig, UseMxp};
 use super::phase::Phase;
 use super::state::StateLock;
@@ -295,8 +295,8 @@ impl Transformer {
                 }
                 self.input
                     .write(&[telnet::IAC, telnet::SB, opt::STATUS, status::IS]);
-                status::encode(&mut self.input, telnet::WILL, &self.config.will).unwrap();
-                status::encode(&mut self.input, telnet::DO, &*self.doing).unwrap();
+                status::encode(&mut self.input, telnet::WILL, self.config.will).unwrap();
+                status::encode(&mut self.input, telnet::DO, *self.doing).unwrap();
                 self.input.write(&[telnet::IAC, telnet::SE]);
             }
             opt::MTTS => {

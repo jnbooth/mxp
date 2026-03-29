@@ -1,5 +1,4 @@
-mod byteset;
-pub use byteset::ByteSet;
+pub use bytetable::ByteSet;
 
 mod config;
 pub use config::{TabBehavior, Tag, TransformerConfig, UseMxp};

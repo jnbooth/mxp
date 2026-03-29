@@ -1,13 +1,13 @@
 use std::fmt;
 use std::net::IpAddr;
 
+use bytetable::ByteSet;
 use flagset::{FlagSet, flags};
 use mxp::RgbColor;
 use mxp::responses::{SupportResponse, VersionResponse};
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use super::byteset::ByteSet;
 use crate::opt;
 
 const ALWAYS_WILL: ByteSet = {
