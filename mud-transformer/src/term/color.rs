@@ -83,7 +83,7 @@ pub enum DynamicColor {
 ///
 /// Note: This is a large struct (816 bytes). It should generally be boxed.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub struct XTermPalette {
+pub(crate) struct XTermPalette {
     palette: ByteTable<RgbColor>,
     defaults: [RgbColor; 16],
 }
@@ -97,11 +97,6 @@ impl XTermPalette {
         }
     }
 
-    /// Constructs a palette inside a box using [XTerm defaults](RgbColor::XTERM_256).
-    pub fn new_boxed() -> Box<Self> {
-        Box::default()
-    }
-
     /// Borrows RGB colors as an array.
     #[inline]
     pub const fn as_array(&self) -> &[RgbColor; 256] {
@@ -112,24 +107,6 @@ impl XTermPalette {
     #[inline]
     pub const fn as_array_mut(&mut self) -> &mut [RgbColor; 256] {
         self.palette.as_array_mut()
-    }
-
-    /// Borrows RGB colors as a slice.
-    #[inline]
-    pub const fn as_slice(&self) -> &[RgbColor] {
-        self.palette.as_slice()
-    }
-
-    /// Mutably borrows RGB colors as a slice.
-    #[inline]
-    pub const fn as_mut_slice(&mut self) -> &mut [RgbColor] {
-        self.palette.as_mut_slice()
-    }
-
-    /// Iterator that visits every XTerm color in order. The iterator element type is `RgbColor`.
-    #[inline]
-    pub fn iter(&self) -> array::IntoIter<RgbColor, 256> {
-        self.into_iter()
     }
 
     /// Resets a color to its default value.
@@ -160,10 +137,6 @@ impl XTermPalette {
             }
         }
         self.defaults = defaults;
-    }
-
-    pub fn clear_defaults(&mut self) {
-        self.set_defaults(&[]);
     }
 }
 

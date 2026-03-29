@@ -1,8 +1,8 @@
 use crate::escape::ansi;
 
 mod color;
-pub(crate) use color::TermColor;
-pub use color::{DynamicColor, XTermPalette};
+pub use color::DynamicColor;
+pub(crate) use color::{TermColor, XTermPalette};
 
 mod cursor;
 pub use cursor::{CursorEffect, CursorStyle, EraseRange, EraseTarget, HighlightTracking};
