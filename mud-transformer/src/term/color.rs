@@ -1,9 +1,8 @@
 use std::hash::Hash;
-use std::ops::{
-    Index, IndexMut, Range, RangeFrom, RangeFull, RangeInclusive, RangeTo, RangeToInclusive,
-};
+use std::ops::{Deref, DerefMut};
 use std::{array, fmt};
 
+use bytetable::ByteTable;
 use mxp::RgbColor;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -85,7 +84,7 @@ pub enum DynamicColor {
 /// Note: This is a large struct (816 bytes). It should generally be boxed.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct XTermPalette {
-    palette: [RgbColor; 256],
+    palette: ByteTable<RgbColor>,
     defaults: [RgbColor; 16],
 }
 
@@ -93,7 +92,7 @@ impl XTermPalette {
     /// Constructs a palette using [XTerm defaults](RgbColor::XTERM_256).
     pub const fn new() -> Self {
         Self {
-            palette: RgbColor::XTERM_256,
+            palette: ByteTable::new(RgbColor::XTERM_256),
             defaults: RgbColor::XTERM_16,
         }
     }
@@ -103,30 +102,28 @@ impl XTermPalette {
         Box::default()
     }
 
-    /// Returns the color set for the specified XTerm color index.
-    /// 0 = black, 1 = maroon, etc.
-    #[inline]
-    pub const fn get(&self, i: u8) -> RgbColor {
-        self.palette[i as usize]
-    }
-
-    /// Returns a mutable reference to the color set for the specified XTerm color index.
-    /// 0 = black, 1 = maroon, etc.
-    #[inline]
-    pub const fn get_mut(&mut self, i: u8) -> &mut RgbColor {
-        &mut self.palette[i as usize]
-    }
-
     /// Borrows RGB colors as an array.
     #[inline]
-    pub const fn as_slice(&self) -> &[RgbColor; 256] {
-        &self.palette
+    pub const fn as_array(&self) -> &[RgbColor; 256] {
+        self.palette.as_array()
     }
 
     /// Mutably borrows RGB colors as an array.
     #[inline]
-    pub const fn as_mut_slice(&mut self) -> &mut [RgbColor; 256] {
-        &mut self.palette
+    pub const fn as_array_mut(&mut self) -> &mut [RgbColor; 256] {
+        self.palette.as_array_mut()
+    }
+
+    /// Borrows RGB colors as a slice.
+    #[inline]
+    pub const fn as_slice(&self) -> &[RgbColor] {
+        self.palette.as_slice()
+    }
+
+    /// Mutably borrows RGB colors as a slice.
+    #[inline]
+    pub const fn as_mut_slice(&mut self) -> &mut [RgbColor] {
+        self.palette.as_mut_slice()
     }
 
     /// Iterator that visits every XTerm color in order. The iterator element type is `RgbColor`.
@@ -137,62 +134,36 @@ impl XTermPalette {
 
     /// Resets a color to its default value.
     pub fn reset_color(&mut self, i: u8) {
-        let i_usize = i as usize;
-        self.palette[i_usize] = if i_usize < self.defaults.len() {
-            self.defaults[i_usize]
-        } else {
-            RgbColor::xterm(i)
+        self[i] = match self.defaults.get(i as usize) {
+            Some(default) => *default,
+            None => RgbColor::xterm(i),
         }
     }
 
     /// Resets all colors to their default values.
-    pub const fn reset(&mut self) {
-        self.palette = RgbColor::XTERM_256;
-        self.apply_defaults();
+    pub fn reset(&mut self) {
+        self.palette = ByteTable::new(RgbColor::XTERM_256);
+        self.palette[..16].copy_from_slice(&self.defaults);
     }
 
-    const fn is_default(&self, i: usize) -> bool {
-        self.palette[i].code() == self.defaults[i].code()
-    }
-
-    pub const fn set_defaults(&mut self, defaults: &[RgbColor]) {
-        let defaults_len = defaults.len();
-        let min_len = if defaults_len > 16 { 16 } else { defaults_len };
-        let mut i = 0;
-        while i < min_len {
-            if self.is_default(i) {
-                self.palette[i] = defaults[i];
+    pub fn set_defaults(&mut self, defaults: &[RgbColor]) {
+        let defaults: [RgbColor; 16] = if let Some(defaults) = defaults.first_chunk() {
+            *defaults
+        } else {
+            let mut new_defaults = RgbColor::XTERM_16;
+            new_defaults[..defaults.len()].copy_from_slice(defaults);
+            new_defaults
+        };
+        for ((palette, old), new) in self.palette.iter_mut().zip(&self.defaults).zip(&defaults) {
+            if *palette == *old {
+                *palette = *new;
             }
-            i += 1;
         }
-        while i < 16 {
-            if self.is_default(i) {
-                self.palette[i] = RgbColor::XTERM_16[i];
-            }
-            i += 1;
-        }
-        self.defaults = RgbColor::XTERM_16;
-        let (self_defaults, _) = self.defaults.split_at_mut(min_len);
-        let (defaults, _) = defaults.split_at(min_len);
-        self_defaults.copy_from_slice(defaults);
+        self.defaults = defaults;
     }
 
-    pub const fn clear_defaults(&mut self) {
-        let mut i = 0;
-        while i < 16 {
-            if self.is_default(i) {
-                self.palette[i] = RgbColor::XTERM_16[i];
-            }
-            i += 1;
-        }
-        self.defaults = RgbColor::XTERM_16;
-    }
-
-    const fn apply_defaults(&mut self) {
-        self.palette
-            .first_chunk_mut::<16>()
-            .unwrap()
-            .copy_from_slice(&self.defaults);
+    pub fn clear_defaults(&mut self) {
+        self.set_defaults(&[]);
     }
 }
 
@@ -202,117 +173,19 @@ impl Default for XTermPalette {
     }
 }
 
-impl Index<u8> for XTermPalette {
-    type Output = RgbColor;
+impl Deref for XTermPalette {
+    type Target = ByteTable<RgbColor>;
 
     #[inline]
-    fn index(&self, index: u8) -> &Self::Output {
-        &self.palette[index as usize]
+    fn deref(&self) -> &Self::Target {
+        &self.palette
     }
 }
 
-impl IndexMut<u8> for XTermPalette {
+impl DerefMut for XTermPalette {
     #[inline]
-    fn index_mut(&mut self, index: u8) -> &mut Self::Output {
-        &mut self.palette[index as usize]
-    }
-}
-
-impl Index<RangeFrom<u8>> for XTermPalette {
-    type Output = [RgbColor];
-
-    #[inline]
-    fn index(&self, index: RangeFrom<u8>) -> &Self::Output {
-        &self.palette[index.start as usize..]
-    }
-}
-
-impl IndexMut<RangeFrom<u8>> for XTermPalette {
-    #[inline]
-    fn index_mut(&mut self, index: RangeFrom<u8>) -> &mut Self::Output {
-        &mut self.palette[index.start as usize..]
-    }
-}
-
-impl Index<RangeInclusive<u8>> for XTermPalette {
-    type Output = [RgbColor];
-
-    #[inline]
-    fn index(&self, index: RangeInclusive<u8>) -> &Self::Output {
-        let (start, end) = index.into_inner();
-        &self.palette[start as usize..=end as usize]
-    }
-}
-
-impl IndexMut<RangeInclusive<u8>> for XTermPalette {
-    #[inline]
-    fn index_mut(&mut self, index: RangeInclusive<u8>) -> &mut Self::Output {
-        let (start, end) = index.into_inner();
-        &mut self.palette[start as usize..=end as usize]
-    }
-}
-
-impl Index<Range<u8>> for XTermPalette {
-    type Output = [RgbColor];
-
-    #[inline]
-    fn index(&self, index: Range<u8>) -> &Self::Output {
-        &self.palette[index.start as usize..index.end as usize]
-    }
-}
-
-impl IndexMut<Range<u8>> for XTermPalette {
-    #[inline]
-    fn index_mut(&mut self, index: Range<u8>) -> &mut Self::Output {
-        &mut self.palette[index.start as usize..index.end as usize]
-    }
-}
-
-impl Index<RangeFull> for XTermPalette {
-    type Output = [RgbColor];
-
-    #[inline]
-    fn index(&self, index: RangeFull) -> &Self::Output {
-        &self.palette[index]
-    }
-}
-
-impl IndexMut<RangeFull> for XTermPalette {
-    #[inline]
-    fn index_mut(&mut self, index: RangeFull) -> &mut Self::Output {
-        &mut self.palette[index]
-    }
-}
-
-impl Index<RangeTo<u8>> for XTermPalette {
-    type Output = [RgbColor];
-
-    #[inline]
-    fn index(&self, index: RangeTo<u8>) -> &Self::Output {
-        &self.palette[..index.end as usize]
-    }
-}
-
-impl IndexMut<RangeTo<u8>> for XTermPalette {
-    #[inline]
-    fn index_mut(&mut self, index: RangeTo<u8>) -> &mut Self::Output {
-        &mut self.palette[..index.end as usize]
-    }
-}
-
-impl Index<RangeToInclusive<u8>> for XTermPalette {
-    type Output = [RgbColor];
-
-    #[inline]
-    fn index(&self, index: RangeToInclusive<u8>) -> &Self::Output {
-        &self.palette[..=index.end as usize]
-    }
-}
-
-impl IndexMut<RangeToInclusive<u8>> for XTermPalette {
-    #[inline]
-    fn index_mut(&mut self, index: RangeToInclusive<u8>) -> &mut Self::Output {
-        &mut self.palette[..index.end as usize]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.palette
     }
 }
 
