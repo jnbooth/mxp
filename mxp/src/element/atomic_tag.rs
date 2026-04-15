@@ -64,12 +64,12 @@ impl AtomicTag {
     /// assert!(!COLOR.supports("invalid_arg"));
     /// ```
     pub const fn supports(&self, arg: &str) -> bool {
-        let mut i = 0;
-        while i < self.args.len() {
-            if self.args[i].eq_ignore_ascii_case(arg) {
+        let mut args = self.args;
+        while let [first, rest @ ..] = args {
+            if first.eq_ignore_ascii_case(arg) {
                 return true;
             }
-            i += 1;
+            args = rest;
         }
         false
     }

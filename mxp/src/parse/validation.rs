@@ -11,6 +11,7 @@ pub(crate) fn split_name(s: &str) -> (&str, &str) {
 
 pub(crate) fn strip_terminating_slash(s: &str) -> (&str, bool) {
     match s.as_bytes() {
+        // SAFETY: Valid UTF-8.
         [s @ .., b' ', b'/'] | [s @ .., b'/'] => (unsafe { str::from_utf8_unchecked(s) }, true),
         _ => (s, false),
     }
@@ -66,12 +67,12 @@ pub const fn is_valid(target: &str) -> bool {
     let [b'A'..=b'Z' | b'a'..=b'z', rest @ ..] = target.as_bytes() else {
         return false;
     };
-    let mut i = 0;
-    while i < rest.len() {
-        if !matches!(rest[i], b'0'..=b'9' | b'A'..=b'Z' | b'a'..=b'z' | b'_' | b'-'| b'.') {
+    let mut target = rest;
+    while let [first, rest @ ..] = target {
+        if !matches!(first, b'0'..=b'9' | b'A'..=b'Z' | b'a'..=b'z' | b'_' | b'-'| b'.') {
             return false;
         }
-        i += 1;
+        target = rest;
     }
     true
 }

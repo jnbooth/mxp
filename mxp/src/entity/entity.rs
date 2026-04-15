@@ -70,13 +70,12 @@ impl Entity {
         }
 
         let name = name.as_bytes();
-        let mut i = 0;
-        while i < html_escape::NAMED_ENTITIES.len() {
-            let (key, value) = html_escape::NAMED_ENTITIES[i];
+        let mut entities = html_escape::NAMED_ENTITIES.as_slice();
+        while let [(key, value), rest @ ..] = entities {
             if const_eq(key, name) {
                 return Some(value);
             }
-            i += 1;
+            entities = rest;
         }
         None
     }
