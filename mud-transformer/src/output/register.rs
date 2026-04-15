@@ -8,7 +8,7 @@ use super::fragment::{EntityFragment, MapperFragment, MxpFragment, VariableFragm
 use crate::bytestring_ext::ByteStringMutExt;
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct OutputRegister {
+pub(super) struct OutputRegister {
     register: ByteStringMut,
     entity: Option<mxp::Var<ByteString>>,
     parse_as: Option<mxp::ParseAs>,
