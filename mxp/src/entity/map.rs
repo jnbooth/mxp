@@ -45,10 +45,26 @@ impl<'a> EntityEntry<'a> {
 
 /// Stores all entities for the current environment, both MXP-defined entities (as [`Entity`]) and
 /// global XML entities (as `&'static str`).
-#[derive(Clone, Default, PartialEq, Eq)]
+#[derive(Default, PartialEq, Eq)]
 pub struct EntityMap {
     inner: HashMap<String, Entity>,
     globals: HashMap<&'static [u8], &'static str>,
+}
+
+impl Clone for EntityMap {
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+            globals: self.globals.clone(),
+        }
+    }
+
+    #[inline]
+    fn clone_from(&mut self, source: &Self) {
+        self.inner.clone_from(&source.inner);
+        self.globals.clone_from(&source.globals);
+    }
 }
 
 impl EntityMap {

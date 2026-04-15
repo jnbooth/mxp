@@ -11,9 +11,23 @@ struct Attribute {
     value: Option<String>,
 }
 
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct AttributeList {
     attributes: CaseFoldMap<'static, Attribute>,
+}
+
+impl Clone for AttributeList {
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            attributes: self.attributes.clone(),
+        }
+    }
+
+    #[inline]
+    fn clone_from(&mut self, source: &Self) {
+        self.attributes.clone_from(&source.attributes);
+    }
 }
 
 impl AttributeList {

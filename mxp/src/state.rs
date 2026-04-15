@@ -13,11 +13,29 @@ use crate::parse::Decoder;
 use crate::{Error, ErrorKind};
 
 /// A store of MXP state: elements, entities, and line tags.
-#[derive(Clone, Debug, Default)]
+#[derive(Debug, Default)]
 pub struct State {
     elements: CaseFoldMap<'static, Element>,
     entities: EntityMap,
     line_tags: LineTags,
+}
+
+impl Clone for State {
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            elements: self.elements.clone(),
+            entities: self.entities.clone(),
+            line_tags: self.line_tags.clone(),
+        }
+    }
+
+    #[inline]
+    fn clone_from(&mut self, source: &Self) {
+        self.elements.clone_from(&source.elements);
+        self.entities.clone_from(&source.entities);
+        self.line_tags.clone_from(&source.line_tags);
+    }
 }
 
 impl State {

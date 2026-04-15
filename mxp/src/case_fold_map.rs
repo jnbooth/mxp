@@ -5,9 +5,23 @@ use std::{fmt, iter};
 
 use uncased::{Uncased, UncasedStr};
 
-#[derive(Clone, Default, PartialEq, Eq)]
+#[derive(Default, PartialEq, Eq)]
 pub(crate) struct CaseFoldMap<'a, V> {
     inner: HashMap<Uncased<'a>, V>,
+}
+
+impl<V: Clone> Clone for CaseFoldMap<'_, V> {
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+
+    #[inline]
+    fn clone_from(&mut self, source: &Self) {
+        self.inner.clone_from(&source.inner);
+    }
 }
 
 impl<V: fmt::Debug> fmt::Debug for CaseFoldMap<'_, V> {

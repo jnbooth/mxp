@@ -13,9 +13,23 @@ pub(crate) struct Line {
     pub properties: LineTagProperties,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub(crate) struct LineTags {
     inner: Vec<Line>,
+}
+
+impl Clone for LineTags {
+    #[inline]
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+
+    #[inline]
+    fn clone_from(&mut self, source: &Self) {
+        self.inner.clone_from(&source.inner);
+    }
 }
 
 impl Default for LineTags {
