@@ -9,7 +9,7 @@ pub struct InputDrain<'a> {
 
 impl InputDrain<'_> {
     #[inline]
-    pub const fn is_empty(&self) -> bool {
+    pub fn is_empty(&self) -> bool {
         self.cursor >= self.buf.len()
     }
 
