@@ -35,6 +35,8 @@ where
     I: IntoIterator + Clone,
     I::Item: AsRef<str>,
 {
+    /// Constructs a response from an iterator of questions from the server and a set of supported
+    /// actions.
     pub fn new(iter: I, supported: FlagSet<ActionKind>) -> Self {
         Self { iter, supported }
     }

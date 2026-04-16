@@ -166,7 +166,7 @@ impl ModeState {
 
     /// Returns `true` if the active mode is [`Mode::SECURE_ONCE`].
     ///
-    /// If this function returns `true`, the server must send '<' as its next character to start a
+    /// If this function returns `true`, the server must send `'<'` as its next character to start a
     /// tag.
     #[inline]
     pub const fn is_secure_once(&self) -> bool {

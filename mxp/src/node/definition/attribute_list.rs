@@ -6,6 +6,8 @@ use crate::{Error, ErrorKind};
 /// Syntax tree of an attribute list definition from the server, in the form of
 /// `<!ATTLIST {name} ...>`.
 ///
+/// See [`MXP specification: Attributes`](https://www.zuggsoft.com/zmud/mxp.htm#ATTLIST).
+///
 /// Full definition:
 ///
 /// ```xml

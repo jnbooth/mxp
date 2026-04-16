@@ -77,17 +77,19 @@
 //! fn handle_tag(mxp_state: &mut mxp::State, mut src: &str, secure: bool) -> mxp::Result<()> {
 //!     src = &src[1..src.len() - 1]; // strip < and > from the source
 //!     match Tag::parse(src, secure)? {
-//!         Tag::Definition(definition) => { // <!...>
+//!         // received <!...>, a definition tag
+//!         Tag::Definition(definition) => {
 //!             mxp_state.define(definition)?;
 //!         }
-//!         Tag::Open(tag) => { // <...>
+//!         // received <...>, an opening tag
+//!         Tag::Open(tag) => {
 //!             handle_open(tag, mxp_state, secure)?; // see below
 //!         }
-//!         Tag::Close(tag) => (), // </...>
+//!         // received </...>, a closing tag
+//!         Tag::Close(tag) => (),
 //!     }
 //!     Ok(())
 //! }
-//!
 //!
 //! // Handler function for receiving an opening tag. Called by `handle_tag`.
 //! fn handle_open(tag: TagOpen, mxp_state: &mxp::State, secure: bool) -> mxp::Result<()> {
@@ -162,8 +164,8 @@
 //! [`Tag::parse`] allocates memory if it parses a custom element definition (as
 //! [`node::ElementDefinition`]), which needs to use owned strings because custom elements are
 //! stored long-term in state. Otherwise, it only allocates memory to parse arguments passed to
-//! an opening tag (as [`node::TagOpen`]), and most MXP tags do not have arguments, so no allocation
-//! occurs.
+//! an opening tag (as [`node::TagOpen`]). Most MXP tags do not have arguments, so no allocation is
+//! performed.
 //!
 //! Tag decoding (via [`AtomicTag::decode`] and [`Element::decode`]) uses [`Cow`]s because
 //! attributes may contain entities, in which case they must be decoded to owned strings in order to

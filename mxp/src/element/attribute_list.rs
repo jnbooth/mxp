@@ -11,6 +11,12 @@ struct Attribute {
     value: Option<String>,
 }
 
+/// Predefined attributes belonging to an [`Element`](crate::Element).
+///
+/// Elements can define attributes during their own definition (`<!ELEMENT...>`) or in an attribute
+/// list definition (`<!ATTLIST...>`).
+///
+/// See [MXP specification: Attributes](https://www.zuggsoft.com/zmud/mxp.htm#ATTLIST).
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct AttributeList {
     attributes: CaseFoldMap<'static, Attribute>,
@@ -107,7 +113,7 @@ impl AttributeList {
     }
 
     /// Appends an attribute to the end of the list, optionally with a default value. The
-    /// attribute's [`position`](Self::position`) will be equal to the [`len`] beforehand.
+    /// attribute's [`position`](Self::position) will be equal to the [`len`](Self::len) beforehand.
     ///
     /// # Examples
     ///

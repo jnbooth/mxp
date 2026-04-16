@@ -9,13 +9,18 @@ use crate::case_insensitive::to_ascii_lowercase;
 /// A 24-bit color consisting of a red, green, and blue value.
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct RgbColor {
+    /// Red byte.
     pub r: u8,
+    /// Green byte.
     pub g: u8,
+    /// Blue byte.
     pub b: u8,
 }
 
 impl RgbColor {
+    /// `0x000000`.
     pub const BLACK: Self = Self::hex(0x000000);
+    /// `0xFFFFFF`.
     pub const WHITE: Self = Self::hex(0xFFFFFF);
 
     /// Standard definitions for 3-bit color.

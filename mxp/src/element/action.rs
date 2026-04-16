@@ -106,7 +106,7 @@ pub enum Action<S = String> {
     Strikeout,
     /// [`<VERSION>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control):
     /// The client should cache this style-sheet version number and return it when
-    /// requested by a plain `<VERSION>` request.
+    /// requested by a plain [`<VERSION>`](Self::Version) request.
     StyleVersion(StyleVersion<S>),
     /// [`<SUPPORT>`](https://www.zuggsoft.com/zmud/mxp.htm#Version%20Control):
     /// Prompt client to respond with the commands that it supports.

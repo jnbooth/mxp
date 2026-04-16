@@ -6,33 +6,34 @@ use crate::element::ParseAs;
 ///
 /// See [MXP specification: MXP Line Tags](https://www.zuggsoft.com/zmud/mxp.htm#User-defined%20Line%20Tags).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Mode(pub u8);
+pub struct Mode(
+    /// Line tag index (0..=99).
+    pub u8,
+);
 
 impl Mode {
     /// Only MXP commands in the OPEN category are allowed.
-    /// When a newline is received from the MUD, the mode reverts back to the default mode.
-    /// This mode starts as the default mode.
+    /// When a newline is received from the MUD, the mode reverts back to the *default mode*.
+    ///
+    /// This is the initial *default mode* after connecting to a server.
     pub const OPEN: Self = Self(0);
     /// All tags and commands in MXP are allowed within the line.
-    /// When a newline is received from the MUD, the mode reverts back to the default mode.
+    /// When a newline is received from the MUD, the mode reverts back to the *default mode*.
     pub const SECURE: Self = Self(1);
     /// No MXP or HTML commands are allowed in the line. The line is not parsed for any tags at all.
-    /// When a newline is received from the MUD, the mode reverts back to the Default mode.
+    /// When a newline is received from the MUD, the mode reverts back to the *default mode*.
     pub const LOCKED: Self = Self(2);
-    /// Close all open tags.  Set active mode and default mode to [`OPEN`](Self::OPEN).
-    /// Set text color and properties to default.
+    /// Close all open tags and set text color and properties to default.
+    /// Set [`OPEN`](Self::OPEN) mode. [`OPEN`](Self::OPEN) becomes the new *default mode*.
     pub const RESET: Self = Self(3);
     /// Set [`SECURE`](Self::SECURE) mode for the next tag only.
     /// Must be immediately followed by a `'<'` character to start a tag.
     pub const SECURE_ONCE: Self = Self(4);
-    /// Set [`OPEN`](Self::OPEN) mode. Mode remains in effect until changed.
-    /// [`OPEN`](Self::OPEN) mode becomes the new default mode.
+    /// Set [`OPEN`](Self::OPEN) mode. [`OPEN`](Self::OPEN) becomes the new *default mode*.
     pub const PERM_OPEN: Self = Self(5);
-    /// Set [`SECURE`](Self::SECURE) mode. Mode remains in effect until changed.
-    /// [`SECURE`](Self::SECURE) mode becomes the new default mode.
+    /// Set [`SECURE`](Self::SECURE) mode. [`SECURE`](Self::SECURE) becomes the new *default mode*.
     pub const PERM_SECURE: Self = Self(6);
-    /// Set [`LOCKED`](Self::LOCKED) mode. Mode remains in effect until changed.
-    /// [`LOCKED`](Self::LOCKED) mode becomes the new default mode.
+    /// Set [`LOCKED`](Self::LOCKED) mode. [`LOCKED`](Self::LOCKED) becomes the new *default mode*.
     pub const PERM_LOCKED: Self = Self(7);
 
     /// The line is parsed as the name of a room.
@@ -80,8 +81,8 @@ impl Mode {
 
     /// When this mode is active, the line is tagged for automappers.
     ///
-    /// Line modes between 10 [`ROOM_NAME`](Self::ROOM_NAME) and 19
-    /// [`WELCOME_TEXT`](Self::WELCOME_TEXT) are reserved for automappers.
+    /// Line modes between 10 ([`ROOM_NAME`](Self::ROOM_NAME)) and 19
+    /// ([`WELCOME_TEXT`](Self::WELCOME_TEXT)) are reserved for automappers.
     #[inline]
     pub const fn is_automapping(self) -> bool {
         matches!(self.0, 10..=19)

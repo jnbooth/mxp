@@ -297,8 +297,8 @@ impl EntityMap {
     /// Depending on the keywords provided, this may cause an entity to be inserted, removed,
     /// updated, or replaced.
     ///
-    /// If a new entity is defined, returns an occupied entry referencing the entity in this map.
-    /// If an entity is removed, returns a vacant entry, i.e. `entry.value == None`.
+    /// If an entity is defined or updated, returns an occupied entry referencing the entity in this
+    /// map. If an entity is removed, returns a vacant entry, i.e. `entry.value == None`.
     /// Returns an error if the name is associated with a global XML entity, since those cannot be
     /// changed.
     ///

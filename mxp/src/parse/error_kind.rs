@@ -50,9 +50,9 @@ pub enum ErrorKind {
     /// Example: `<foo>`
     UnknownElement,
 
-    /// `</send bar>`
-    ///
     /// Received a closing tag with arguments.
+    ///
+    /// Example: `</send bar>`
     ArgumentsToClosingTag,
 
     /// Due to receiving a newline character or line mode change from the server, the client
@@ -67,10 +67,12 @@ pub enum ErrorKind {
     /// Example: `\x1B[1z <var> \n \x1B[0z </var>`
     TagOpenedInSecureMode,
 
-    /// `<i></i></bold>`
+    /// Received a close tag with no open tag to close.
+    ///
+    /// Example: `<i></i></bold>`
     UnmatchedCloseTag,
 
-    /// Received something other than a '<' after setting
+    /// Received something other than a `'<'` after setting
     /// [`Mode::SECURE_ONCE`](crate::Mode::SECURE_ONCE).
     ///
     /// Example: `\x1B[4z&quot;`
@@ -95,7 +97,7 @@ pub enum ErrorKind {
 
     /// An ATTLIST added an attribute with the same name as an existing attribute.
     ///
-    /// Example: `<!ELEMENT custom ATT='col=red'><ATTLIST custom 'col=blue'>
+    /// Example: `<!ELEMENT custom ATT='col=red'><ATTLIST custom 'col=blue'>`
     DuplicateAttributeInAttlist,
 
     /// ATTLIST adds attributes to a custom element that was never defined.
@@ -104,6 +106,8 @@ pub enum ErrorKind {
     UnknownElementInAttlist,
 
     /// Received a definition while the line was in OPEN mode.
+    ///
+    /// Example: `\x1B0z <!ELEMENT ...>`
     UnsecuredDefinition,
 
     /// Element definition contains a closing tag.
@@ -113,7 +117,7 @@ pub enum ErrorKind {
 
     /// Element definition contains a nested element definition.
     ///
-    /// `<!ELEMENT foo '<!ELEMENT>'>`
+    /// Example: `<!ELEMENT foo '<!ELEMENT>'>`
     DefinitionInDefinition,
 
     /// Element definition contains an empty element.
@@ -197,27 +201,29 @@ pub enum ErrorKind {
     UnknownColor,
 
     /// Bytes are not valid UTF-8. This is a convenience error kind so that clients can handle UTF-8
-    /// parsing while using `mxp::Result`.
+    /// parsing while using `mxp::Result`. It is returned by [`mxp::validate_utf8`] on error.
+    ///
+    /// [`mxp::validate_utf8`]: crate::validate_utf8
     InvalidUtf8,
 
     /// Received a newline without terminating a comment. This is for clients to use.
     ///
-    /// Example: `<!-- ... \n`
+    /// Example: `<!--...\n`
     UnterminatedComment,
 
     /// Received a newline without terminating an element. This is for clients to use.
     ///
-    /// Example: `< ... \n`
+    /// Example: `<...\n`
     UnterminatedElement,
 
     /// Received a newline without terminating an entity. This is for clients to use.
     ///
-    /// Example: `& ... \n`
+    /// Example: `&...\n`
     UnterminatedEntity,
 
     /// Received a newline without terminating a quote. This is for clients to use.
     ///
-    /// Example: `< ' ... \n`
+    /// Example: `"...\n`
     UnterminatedQuote,
 }
 

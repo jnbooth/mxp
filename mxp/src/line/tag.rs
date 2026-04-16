@@ -9,7 +9,9 @@ use crate::node::LineTagDefinition;
 /// current user-defined line mode.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct LineTag<'a> {
+    /// Properties for the current line mode.
     pub properties: &'a LineTagProperties,
+    /// Element associated with the current line mode.
     pub element: Option<&'a Element>,
 }
 

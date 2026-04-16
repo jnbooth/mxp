@@ -80,7 +80,7 @@ impl Entity {
         None
     }
 
-    /// Constructs new `Entity` with [`EntityVisibility::Default`] visibility and no description.
+    /// Constructs a new `Entity` with [`EntityVisibility::Default`] visibility and no description.
     pub const fn new(value: String) -> Self {
         Self {
             value,
@@ -89,12 +89,12 @@ impl Entity {
         }
     }
 
-    /// Returns `true` if `self.visibility` is [`EntityVisibility::Private`].
+    /// Returns `true` if [`visibility`](Self::visibility) is [`EntityVisibility::Private`].
     pub const fn is_private(&self) -> bool {
         matches!(self.visibility, EntityVisibility::Private)
     }
 
-    /// Returns `true` if `self.visibility` is [`EntityVisibility::Publish`].
+    /// Returns `true` if [`visibility`](Self::visibility) is [`EntityVisibility::Publish`].
     pub const fn is_published(&self) -> bool {
         matches!(self.visibility, EntityVisibility::Publish)
     }

@@ -9,6 +9,8 @@ use crate::{Error, ErrorKind};
 /// Parsed representation of a line tag definition from the server, in the form of
 /// `<!TAG {index} ...>`.
 ///
+/// See [`MXP specification: User-defined Line Tags`](https://www.zuggsoft.com/zmud/mxp.htm#User-defined%20Line%20Tags).
+///
 /// Full definition:
 ///
 /// ```xml

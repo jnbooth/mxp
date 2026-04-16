@@ -13,7 +13,7 @@ use crate::parse::Decoder;
 
 /// User-defined MXP tags.
 ///
-/// An `Element` is a combination of [`AtomicTag`]s, with its own argument schema. When a custom
+/// An `Element` is a combination of [`AtomicTag`]s with its own argument schema. When a custom
 /// element is used, the arguments supplied to it are parsed and passed on to its child
 /// [`items`], each of which applies an [`Action`].
 ///
@@ -31,24 +31,25 @@ pub struct Element {
     pub name: String,
     /// Atomic tags declared in its definition string.
     pub items: Vec<ElementItem>,
-    /// Arguments or attributes declared in the element's definition or in a later `<!ATTLIST>`.
+    /// Attributes declared in the element's definition or in a later `<!ATTLIST>`.
     pub attributes: AttributeList,
     /// Line tag mode, if the element is associated with a user-defined line tag.
     pub line_tag: Option<Mode>,
     /// See [`ElementFlag`].
     pub flag: Option<ElementFlag>,
     /// OPEN elements can be used in any [`Mode`]. By default, elements can only be used if the
-    /// current line mode is not [OPEN](Mode::is_open).
+    /// current line mode is not OPEN ([`Mode::is_open`]).
     pub open: bool,
-    /// Command tags do not have content, so they have no closing tag.
+    /// True if the element is a command tag. Command tags do not have content, so they have no
+    /// closing tag.
     pub empty: bool,
 }
 
 impl Element {
-    /// If [`self.flag`] is [`Some(ElementFlag::ParseAs(parse_as))`], returns `parse_as`.
+    /// If [`self.flag`] is [`Some(ElementFlag::ParseAs(p))`], returns `p`.
     ///
     /// [`self.flag`]: Element::flag
-    ///[`Some(ElementFlag::ParseAs(parse_as))`]: ElementFlag::ParseAs
+    ///[`Some(ElementFlag::ParseAs(p))`]: ElementFlag::ParseAs
     pub fn parse_as(&self) -> Option<ParseAs> {
         match self.flag {
             Some(ElementFlag::ParseAs(parse_as)) => Some(parse_as),
@@ -56,10 +57,10 @@ impl Element {
         }
     }
 
-    /// If [`self.flag`] is [`Some(ElementFlag::Set(variable))`], returns `variable`.
+    /// If [`self.flag`] is [`Some(ElementFlag::Set(v))`], returns `v`.
     ///
     /// [`self.flag`]: Element::flag
-    ///[`Some(ElementFlag::Set(variable))`]: ElementFlag::Set
+    ///[`Some(ElementFlag::Set(v))`]: ElementFlag::Set
     pub fn variable(&self) -> Option<&str> {
         match &self.flag {
             Some(ElementFlag::Set(variable)) => Some(variable),
@@ -77,7 +78,7 @@ impl Element {
         ElementDecodeIter::new(self, args, decoder)
     }
 
-    /// Returns a decoder used with [`ElementItem::decode`].
+    /// Returns a decoder for use with [`ElementItem::decode`].
     pub fn decoder<'a, D>(&'a self, args: &'a Arguments<'a>, decoder: D) -> ElementDecoder<'a, D>
     where
         D: Decoder + Copy,
@@ -86,7 +87,7 @@ impl Element {
     }
 
     /// Retrieves the additional line tag properties defined for this element if [`line_tag`]
-    /// is Some.
+    /// is `Some`.
     ///
     /// [`line_tag`]: Self::line_tag
     pub fn line_tag_properties<'a>(

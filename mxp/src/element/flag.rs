@@ -4,6 +4,12 @@ use super::parse_as::ParseAs;
 use crate::parse::UnrecognizedVariant;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+/// The `FLAG` argument in an [`Element`] definition, which assigns an internal action to the
+/// element.
+///
+/// See [MXP specification: Tag Properties](https://www.zuggsoft.com/zmud/mxp.htm#Tag%20Properties).
+///
+/// [`Element`]: crate::Element
 pub enum ElementFlag {
     /// If specified, text contained by this element should be parsed in a specific way by an
     /// automapper.

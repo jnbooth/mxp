@@ -10,6 +10,8 @@ use crate::{Error, ErrorKind};
 /// Syntax tree of an entity definition from the server, in the form of
 /// `<!ENTITY {name} {value} ...>`.
 ///
+/// See [`MXP specification: Entities`](https://www.zuggsoft.com/zmud/mxp.htm#ENTITY).
+///
 /// Full definition:
 ///
 /// ```xml

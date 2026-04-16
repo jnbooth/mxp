@@ -43,6 +43,12 @@ impl State {
     ///
     /// Unlike `State::default()`, this function populates the state with elements and entities
     /// defined by the MXP protocol specification, allocating memory in the process.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let state = mxp::State::with_globals();
+    /// ```
     pub fn with_globals() -> Self {
         let mut elements = CaseFoldMap::<Element>::new();
         elements.extend(Element::well_known());
@@ -62,7 +68,7 @@ impl State {
     }
 
     /// Alias for `self.entities().guard_global(name)`.
-    /// See [`EntityMap::guard_global`]
+    /// See [`EntityMap::guard_global`].
     pub fn guard_global_entity(&self, name: &str) -> crate::Result<()> {
         self.entities.guard_global(name)
     }
@@ -89,6 +95,28 @@ impl State {
         self.entities.get(name)
     }
 
+    /// Applies a [`<VAR>`] action, using the specified `value` which is the text that was sent by
+    /// the server in between the opening and closing tag (e.g. `<VAR Hp>value</VAR>`). Note that
+    /// if [`var.keywords`] contains [`EntityKeyword::Delete`], or if it contains
+    /// [`EntityKeyword::Remove`] and `value` was the only value in the entity's list, this will set
+    /// the entity to `None`.
+    ///
+    /// Returns an error if the name is associated with a global XML entity, since those cannot be
+    /// changed. Returns `None` if the entity's [`visibility`] is [`EntityVisibility::Private`],
+    /// because private entities are hidden from the client. Otherwise, returns an `EntityEntry`
+    /// whose [`value`] is `Some` if the entity was inserted or updated, and `None` if it was
+    /// removed. As with [`define`], the client can use this to keep track of entity updates,
+    /// especially if the entity has [`EntityVisibility::Publish`].
+    ///
+    /// [`<VAR>`]: Var
+    /// [`var.keywords`]: [`Var::keywords`]
+    /// [`EntityKeyword::Delete`]: crate::keyword::EntityKeyword::Delete
+    /// [`EntityKeyword::Remove`]: crate::keyword::EntityKeyword::Remove
+    /// [`visibility`]: crate::entity::Entity::visibility
+    /// [`EntityVisibility::Private`]: crate::entity::EntityVisibility::Private
+    /// [`value`]: EntityEntry::value
+    /// [`define`]: Self::define
+    /// [`EntityVisibility::Publish`]: crate::entity::EntityVisibility::Publish
     pub fn set_entity<'a, S: AsRef<str>>(
         &'a mut self,
         var: &Var<S>,

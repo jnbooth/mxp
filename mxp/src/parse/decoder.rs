@@ -12,7 +12,7 @@ pub trait Decoder {
     /// Retrieves the definition for an entity by name.
     fn get_entity(&self, name: &str) -> Option<&str>;
 
-    /// Decodes an entity by either parsing a numeric entity (e.g. `"&#32"`) or calling
+    /// Decodes an entity by either parsing a numeric entity (e.g. `"&#32;"`) or calling
     /// [`get_entity`](Self::get_entity).
     fn decode_entity(&self, name: &str) -> crate::Result<DecodedEntity<'_>> {
         let (start, radix) = match name.as_bytes() {

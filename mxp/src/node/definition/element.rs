@@ -7,7 +7,9 @@ use crate::line::Mode;
 use crate::parse::{ArgumentParser, split_name, validate};
 use crate::{Error, ErrorKind};
 
-/// Syntax tree of an entity definition from the server, in the form of `<!ENTITY {name} ...>`.
+/// Syntax tree of an element definition from the server, in the form of `<!ELEMENT {name} ...>`.
+///
+/// See [`MXP specification: Elements`](https://www.zuggsoft.com/zmud/mxp.htm#ELEMENT).
 ///
 /// Full definition:
 ///

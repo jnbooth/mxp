@@ -5,7 +5,10 @@ use std::num::ParseIntError;
 /// An error which is returned when attempting to create an [`RgbColor`](crate::RgbColor) from a
 /// number greater than the maximum hex code value (`0xFFFFFF`).
 #[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
-pub struct HexOutOfRangeError(pub u32);
+pub struct HexOutOfRangeError(
+    /// Value that exceeded the maximum limit of `0xFFFFFF`.
+    pub u32,
+);
 
 impl fmt::Display for HexOutOfRangeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
