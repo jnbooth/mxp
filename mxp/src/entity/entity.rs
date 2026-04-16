@@ -56,16 +56,13 @@ impl Entity {
             if a.len() != b.len() {
                 return false;
             }
-
             while let ([first_a, rest_a @ ..], [first_b, rest_b @ ..]) = (a, b) {
-                if *first_a == *first_b {
-                    a = rest_a;
-                    b = rest_b;
-                } else {
+                if *first_a != *first_b {
                     return false;
                 }
+                a = rest_a;
+                b = rest_b;
             }
-
             true
         }
 
