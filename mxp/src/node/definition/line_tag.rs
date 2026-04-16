@@ -30,12 +30,12 @@ pub struct LineTagDefinition<'a> {
     pub index: Mode,
     /// Window to redirect the text to.
     pub window: Option<&'a str>,
-    /// Text should be gagged from the main MUD window.
-    pub gag: Option<bool>,
     /// Text color.
     pub fore: Option<RgbColor>,
     /// Background color of the text.
     pub back: Option<RgbColor>,
+    /// Text should be gagged from the main MUD window.
+    pub gag: Option<bool>,
     /// If `Some(true)`, activates the line tag. If `Some(false)`, deactivates it.
     pub enable: Option<bool>,
 }
@@ -98,9 +98,9 @@ impl<'a> LineTagDefinition<'a> {
         Ok(Self {
             index,
             window,
-            gag,
             fore,
             back,
+            gag,
             enable,
         })
     }
