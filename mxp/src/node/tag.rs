@@ -9,10 +9,10 @@ use crate::{Error, ErrorKind};
 /// The three types of MXP tag elements sent by the server.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Tag<'a> {
-    /// A definition, e.g. `<!ELEMENT...>`.
-    Definition(Definition<'a>),
     /// A closing tag, e.g. `</BOLD>`.
     Close(TagClose<'a>),
+    /// A definition, e.g. `<!ELEMENT...>`.
+    Definition(Definition<'a>),
     /// An opening tag, e.g. `<BOLD>`.
     Open(TagOpen<'a>),
 }
@@ -20,8 +20,8 @@ pub enum Tag<'a> {
 impl fmt::Display for Tag<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Definition(def) => def.fmt(f),
             Self::Close(tag) => tag.fmt(f),
+            Self::Definition(def) => def.fmt(f),
             Self::Open(tag) => tag.fmt(f),
         }
     }
@@ -31,8 +31,8 @@ impl<'a> Tag<'a> {
     /// Returns the name of the element.
     pub fn name(&self) -> &'a str {
         match self {
-            Self::Definition(definition) => definition.name(),
             Self::Close(tag) => tag.name,
+            Self::Definition(definition) => definition.name(),
             Self::Open(tag) => tag.name,
         }
     }
@@ -151,8 +151,8 @@ impl<'a> TryFrom<Tag<'a>> for Definition<'a> {
 
     fn try_from(value: Tag<'a>) -> Result<Self, Self::Error> {
         let got = match value {
-            Tag::Definition(def) => return Ok(def),
             Tag::Close(_) => "Close",
+            Tag::Definition(def) => return Ok(def),
             Tag::Open(_) => "Open",
         };
         Err(TryFromNodeError {
@@ -167,8 +167,8 @@ impl<'a> TryFrom<Tag<'a>> for TagClose<'a> {
 
     fn try_from(value: Tag<'a>) -> Result<Self, Self::Error> {
         let got = match value {
-            Tag::Definition(_) => "Definition",
             Tag::Close(tag) => return Ok(tag),
+            Tag::Definition(_) => "Definition",
             Tag::Open(_) => "Open",
         };
         Err(TryFromNodeError {
@@ -183,8 +183,8 @@ impl<'a> TryFrom<Tag<'a>> for TagOpen<'a> {
 
     fn try_from(value: Tag<'a>) -> Result<Self, Self::Error> {
         let got = match value {
-            Tag::Definition(_) => "Definition",
             Tag::Close(_) => "Close",
+            Tag::Definition(_) => "Definition",
             Tag::Open(tag) => return Ok(tag),
         };
         Err(TryFromNodeError {

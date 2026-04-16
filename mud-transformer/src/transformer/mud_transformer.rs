@@ -428,17 +428,17 @@ impl Transformer {
         let secure = self.mxp_mode.use_secure();
         let source = mxp::validate_utf8(entity_string)?;
         match Tag::parse(source, secure)? {
+            Tag::Close(tag) => {
+                let closed = self.mxp_tags.find_last(secure, tag.name)?;
+                self.mxp_close_tags_from(closed);
+                Ok(())
+            }
             Tag::Definition(definition) => {
                 let is_entity = matches!(definition, Definition::Entity(_));
                 self.mxp_define(definition)?;
                 if !is_entity {
                     debug!(target: "mud.mxp", "Defined: <{source}>");
                 }
-                Ok(())
-            }
-            Tag::Close(tag) => {
-                let closed = self.mxp_tags.find_last(secure, tag.name)?;
-                self.mxp_close_tags_from(closed);
                 Ok(())
             }
             Tag::Open(tag) => {
