@@ -1,16 +1,39 @@
 use std::borrow::Cow;
 use std::collections::{HashMap, hash_map};
+use std::hash::{BuildHasher, RandomState};
 use std::ops::{Deref, DerefMut};
 use std::{fmt, iter};
 
 use uncased::{Uncased, UncasedStr};
 
-#[derive(Default, PartialEq, Eq)]
-pub(crate) struct CaseFoldMap<'a, V> {
-    inner: HashMap<Uncased<'a>, V>,
+#[derive(Default)]
+pub(crate) struct CaseFoldMap<'a, V, S = RandomState> {
+    inner: HashMap<Uncased<'a>, V, S>,
 }
 
-impl<V: Clone> Clone for CaseFoldMap<'_, V> {
+impl<V, S> PartialEq for CaseFoldMap<'_, V, S>
+where
+    V: PartialEq,
+    S: BuildHasher,
+{
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.inner == other.inner
+    }
+}
+
+impl<V, S> Eq for CaseFoldMap<'_, V, S>
+where
+    V: Eq,
+    S: BuildHasher,
+{
+}
+
+impl<V, S> Clone for CaseFoldMap<'_, V, S>
+where
+    V: Clone,
+    S: Clone,
+{
     #[inline]
     fn clone(&self) -> Self {
         Self {
@@ -24,13 +47,13 @@ impl<V: Clone> Clone for CaseFoldMap<'_, V> {
     }
 }
 
-impl<V: fmt::Debug> fmt::Debug for CaseFoldMap<'_, V> {
+impl<V: fmt::Debug, S> fmt::Debug for CaseFoldMap<'_, V, S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         self.inner.fmt(f)
     }
 }
 
-impl<'a, V> CaseFoldMap<'a, V> {
+impl<V> CaseFoldMap<'_, V> {
     pub fn new() -> Self {
         Self {
             inner: HashMap::new(),
@@ -42,7 +65,9 @@ impl<'a, V> CaseFoldMap<'a, V> {
             inner: HashMap::with_capacity(capacity),
         }
     }
+}
 
+impl<'a, V, S: BuildHasher> CaseFoldMap<'a, V, S> {
     pub fn contains_key(&self, key: &str) -> bool {
         self.inner.contains_key(UncasedStr::new(key))
     }
@@ -64,8 +89,8 @@ impl<'a, V> CaseFoldMap<'a, V> {
     }
 }
 
-impl<'a, V> Deref for CaseFoldMap<'a, V> {
-    type Target = HashMap<Uncased<'a>, V>;
+impl<'a, V, S> Deref for CaseFoldMap<'a, V, S> {
+    type Target = HashMap<Uncased<'a>, V, S>;
 
     #[inline]
     fn deref(&self) -> &Self::Target {
@@ -73,15 +98,16 @@ impl<'a, V> Deref for CaseFoldMap<'a, V> {
     }
 }
 
-impl<V> DerefMut for CaseFoldMap<'_, V> {
+impl<V, S> DerefMut for CaseFoldMap<'_, V, S> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
 }
 
-impl<'a, K, V> Extend<(K, V)> for CaseFoldMap<'a, V>
+impl<'a, K, V, S> Extend<(K, V)> for CaseFoldMap<'a, V, S>
 where
     K: Into<Cow<'a, str>>,
+    S: BuildHasher,
 {
     fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
         self.inner.extend(
@@ -102,7 +128,7 @@ where
     }
 }
 
-impl<'a, V> IntoIterator for &'a CaseFoldMap<'a, V> {
+impl<'a, V, S> IntoIterator for &'a CaseFoldMap<'a, V, S> {
     type Item = (&'a str, &'a V);
 
     type IntoIter = iter::Map<
@@ -115,7 +141,7 @@ impl<'a, V> IntoIterator for &'a CaseFoldMap<'a, V> {
     }
 }
 
-impl<'a, V> IntoIterator for CaseFoldMap<'a, V> {
+impl<'a, V, S> IntoIterator for CaseFoldMap<'a, V, S> {
     type Item = (Uncased<'a>, V);
 
     type IntoIter = hash_map::IntoIter<Uncased<'a>, V>;

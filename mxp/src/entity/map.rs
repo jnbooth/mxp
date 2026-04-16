@@ -2,6 +2,8 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::fmt;
+use std::hash::BuildHasher;
+use std::hash::RandomState;
 
 use super::decoded::DecodedEntity;
 use super::entity::Entity;
@@ -45,13 +47,22 @@ impl<'a> EntityEntry<'a> {
 
 /// Stores all entities for the current environment, both MXP-defined entities (as [`Entity`]) and
 /// global XML entities (as `&'static str`).
-#[derive(Default, PartialEq, Eq)]
-pub struct EntityMap {
-    inner: HashMap<String, Entity>,
-    globals: HashMap<&'static [u8], &'static str>,
+#[derive(Default)]
+pub struct EntityMap<S = RandomState> {
+    inner: HashMap<String, Entity, S>,
+    globals: HashMap<&'static [u8], &'static str, S>,
 }
 
-impl Clone for EntityMap {
+impl<S: BuildHasher> PartialEq for EntityMap<S> {
+    #[inline]
+    fn eq(&self, other: &Self) -> bool {
+        self.inner == other.inner
+    }
+}
+
+impl<S: BuildHasher> Eq for EntityMap<S> {}
+
+impl<S: Clone> Clone for EntityMap<S> {
     #[inline]
     fn clone(&self) -> Self {
         Self {
@@ -96,10 +107,51 @@ impl EntityMap {
     pub fn with_globals() -> Self {
         Self {
             inner: HashMap::new(),
-            globals: Entity::globals(),
+            globals: Entity::globals(RandomState::new()),
+        }
+    }
+}
+
+impl<S: BuildHasher + Clone> EntityMap<S> {
+    /// Constructs a new map with no predefined entities, using the specified hasher.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::hash::RandomState;
+    /// use mxp::entity::EntityMap;
+    ///
+    /// let map = EntityMap::with_hasher(RandomState::new());
+    /// // global entities not recognized
+    /// assert!(map.decode("lt").is_err());
+    /// ```
+    pub fn with_hasher(hasher: S) -> Self {
+        Self {
+            inner: HashMap::with_hasher(hasher.clone()),
+            globals: HashMap::with_hasher(hasher),
         }
     }
 
+    /// Constructs a new map with all global XML entities predefined, using the specified hasher.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::hash::RandomState;
+    /// use mxp::entity::EntityMap;
+    ///
+    /// let map = EntityMap::with_globals_and_hasher(RandomState::new());
+    /// assert_eq!(map.decode("lt"), Ok("<".into()));
+    /// ```
+    pub fn with_globals_and_hasher(hasher: S) -> Self {
+        Self {
+            inner: HashMap::with_hasher(hasher.clone()),
+            globals: Entity::globals(hasher),
+        }
+    }
+}
+
+impl<S: BuildHasher> EntityMap<S> {
     /// Returns `true` if the map contains no custom entities.
     ///
     /// # Examples
@@ -365,7 +417,7 @@ impl EntityMap {
     }
 }
 
-impl Decoder for EntityMap {
+impl<S: BuildHasher> Decoder for EntityMap<S> {
     fn get_entity(&self, name: &str) -> Option<&str> {
         if let Some(&global) = self.globals.get(name.as_bytes()) {
             return Some(global);
@@ -374,7 +426,7 @@ impl Decoder for EntityMap {
     }
 }
 
-impl fmt::Debug for EntityMap {
+impl<S> fmt::Debug for EntityMap<S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let globals = self
             .globals

@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::hash::{BuildHasher, RandomState};
 use std::sync::LazyLock;
 
 use super::visibility::EntityVisibility;
@@ -19,8 +20,9 @@ pub struct Entity {
 }
 
 impl Entity {
-    pub(super) fn globals() -> HashMap<&'static [u8], &'static str> {
-        let mut globals = HashMap::with_capacity(html_escape::NAMED_ENTITIES.len() + 1);
+    pub(super) fn globals<S: BuildHasher>(hasher: S) -> HashMap<&'static [u8], &'static str, S> {
+        let mut globals =
+            HashMap::with_capacity_and_hasher(html_escape::NAMED_ENTITIES.len() + 1, hasher);
         globals.extend(html_escape::NAMED_ENTITIES);
         globals.insert(b"text", "&text;");
         globals
@@ -36,7 +38,7 @@ impl Entity {
     /// ```
     pub fn global<S: AsRef<[u8]>>(name: S) -> Option<&'static str> {
         static GLOBALS: LazyLock<HashMap<&'static [u8], &'static str>> =
-            LazyLock::new(Entity::globals);
+            LazyLock::new(|| Entity::globals(RandomState::new()));
 
         GLOBALS.get(name.as_ref()).copied()
     }
