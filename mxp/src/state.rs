@@ -50,7 +50,7 @@ impl State {
     /// let state = mxp::State::with_globals();
     /// ```
     pub fn with_globals() -> Self {
-        let mut elements = CaseFoldMap::<Element>::new();
+        let mut elements = CaseFoldMap::new();
         elements.extend(Element::well_known());
         Self {
             elements,
