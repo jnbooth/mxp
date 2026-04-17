@@ -50,6 +50,7 @@ impl From<RgbColor> for Color {
 
 impl<'a> TryFrom<&'a str> for Color {
     type Error = crate::parse::FromStrError;
+
     #[inline]
     fn try_from(s: &'a str) -> Result<Self, Self::Error> {
         crate::parse::parse_element(s)
@@ -57,6 +58,7 @@ impl<'a> TryFrom<&'a str> for Color {
 }
 impl FromStr for Color {
     type Err = crate::parse::FromStrError;
+
     #[inline]
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         crate::parse::parse_element::<Color>(s)
