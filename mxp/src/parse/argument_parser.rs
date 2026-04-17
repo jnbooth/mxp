@@ -1,6 +1,7 @@
 use std::iter::FusedIterator;
 use std::slice;
 
+use crate::parse::count_bytes;
 use crate::{Error, ErrorKind};
 
 /// Iterator over the word units of an MXP string, converted into named or unnamed arguments.
@@ -73,7 +74,12 @@ impl<'a> Iterator for ArgumentParser<'a> {
     // A generous size hint reflecting the total number of spaces in the string.
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.inner.size_hint()
+        let slice = self.inner.as_slice();
+        let spaces = count_bytes(slice, b' ');
+        if slice.len() == spaces {
+            return (0, Some(0));
+        }
+        (1, Some(spaces + 1))
     }
 }
 
