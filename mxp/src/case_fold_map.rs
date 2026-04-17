@@ -99,6 +99,7 @@ impl<'a, V, S> Deref for CaseFoldMap<'a, V, S> {
 }
 
 impl<V, S> DerefMut for CaseFoldMap<'_, V, S> {
+    #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.inner
     }
