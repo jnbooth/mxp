@@ -8,7 +8,7 @@ use uncased::{Uncased, UncasedStr};
 
 #[derive(Default)]
 pub(crate) struct CaseFoldMap<'a, V, S = RandomState> {
-    inner: HashMap<Uncased<'a>, V, S>,
+    base: HashMap<Uncased<'a>, V, S>,
 }
 
 impl<V, S> PartialEq for CaseFoldMap<'_, V, S>
@@ -18,7 +18,7 @@ where
 {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.inner == other.inner
+        self.base == other.base
     }
 }
 
@@ -37,55 +37,55 @@ where
     #[inline]
     fn clone(&self) -> Self {
         Self {
-            inner: self.inner.clone(),
+            base: self.base.clone(),
         }
     }
 
     #[inline]
     fn clone_from(&mut self, source: &Self) {
-        self.inner.clone_from(&source.inner);
+        self.base.clone_from(&source.base);
     }
 }
 
 impl<V: fmt::Debug, S> fmt::Debug for CaseFoldMap<'_, V, S> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        self.inner.fmt(f)
+        self.base.fmt(f)
     }
 }
 
 impl<V> CaseFoldMap<'_, V> {
     pub fn new() -> Self {
         Self {
-            inner: HashMap::new(),
+            base: HashMap::new(),
         }
     }
 
     pub fn with_capacity(capacity: usize) -> Self {
         Self {
-            inner: HashMap::with_capacity(capacity),
+            base: HashMap::with_capacity(capacity),
         }
     }
 }
 
 impl<'a, V, S: BuildHasher> CaseFoldMap<'a, V, S> {
     pub fn contains_key(&self, key: &str) -> bool {
-        self.inner.contains_key(UncasedStr::new(key))
+        self.base.contains_key(UncasedStr::new(key))
     }
 
     pub fn get(&self, key: &str) -> Option<&V> {
-        self.inner.get(UncasedStr::new(key))
+        self.base.get(UncasedStr::new(key))
     }
 
     pub fn get_mut(&mut self, key: &str) -> Option<&mut V> {
-        self.inner.get_mut(UncasedStr::new(key))
+        self.base.get_mut(UncasedStr::new(key))
     }
 
     pub fn insert<K: Into<Uncased<'a>>>(&mut self, key: K, value: V) -> Option<V> {
-        self.inner.insert(key.into(), value)
+        self.base.insert(key.into(), value)
     }
 
     pub fn remove(&mut self, key: &str) -> Option<V> {
-        self.inner.remove(UncasedStr::new(key))
+        self.base.remove(UncasedStr::new(key))
     }
 }
 
@@ -94,14 +94,14 @@ impl<'a, V, S> Deref for CaseFoldMap<'a, V, S> {
 
     #[inline]
     fn deref(&self) -> &Self::Target {
-        &self.inner
+        &self.base
     }
 }
 
 impl<V, S> DerefMut for CaseFoldMap<'_, V, S> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.inner
+        &mut self.base
     }
 }
 
@@ -111,7 +111,7 @@ where
     S: BuildHasher,
 {
     fn extend<T: IntoIterator<Item = (K, V)>>(&mut self, iter: T) {
-        self.inner.extend(
+        self.base.extend(
             iter.into_iter()
                 .map(|(key, value)| (Uncased::new(key), value)),
         );
@@ -138,7 +138,7 @@ impl<'a, V, S> IntoIterator for &'a CaseFoldMap<'a, V, S> {
     >;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.inner.iter().map(|(k, v)| (k.as_str(), v))
+        self.base.iter().map(|(k, v)| (k.as_str(), v))
     }
 }
 
@@ -148,6 +148,6 @@ impl<'a, V, S> IntoIterator for CaseFoldMap<'a, V, S> {
     type IntoIter = hash_map::IntoIter<Uncased<'a>, V>;
 
     fn into_iter(self) -> Self::IntoIter {
-        self.inner.into_iter()
+        self.base.into_iter()
     }
 }

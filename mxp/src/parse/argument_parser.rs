@@ -8,30 +8,30 @@ use crate::{Error, ErrorKind};
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone)]
 pub(crate) struct ArgumentParser<'a> {
-    inner: slice::Iter<'a, u8>,
+    iter: slice::Iter<'a, u8>,
 }
 
 impl<'a> ArgumentParser<'a> {
     pub fn new(source: &'a str) -> Self {
         Self {
-            inner: source.as_bytes().iter(),
+            iter: source.as_bytes().iter(),
         }
     }
 
     fn next_arg(&mut self, positional: bool) -> Option<(&'a [u8], bool)> {
-        let mut slice = self.inner.as_slice();
+        let mut slice = self.iter.as_slice();
         if positional {
-            let start = self.inner.position(|&c| c != b' ')?;
+            let start = self.iter.position(|&c| c != b' ')?;
             slice = &slice[start..];
         } else {
-            self.inner.next();
+            self.iter.next();
         }
         let c = *slice.first()?;
         if c == b' ' {
             return None;
         }
         if c == b'"' || c == b'\'' {
-            let slice = match self.inner.position(|&ch| ch == c) {
+            let slice = match self.iter.position(|&ch| ch == c) {
                 Some(pos) => &slice[1..=pos],
                 None => &slice[1..],
             };
@@ -42,7 +42,7 @@ impl<'a> ArgumentParser<'a> {
         } else {
             |&ch| ch == b' '
         };
-        let Some(breakpoint) = self.inner.position(break_condition) else {
+        let Some(breakpoint) = self.iter.position(break_condition) else {
             return Some((slice, false));
         };
         Some((&slice[..=breakpoint], slice[breakpoint + 1] == b'='))
@@ -74,7 +74,7 @@ impl<'a> Iterator for ArgumentParser<'a> {
     // A generous size hint reflecting the total number of spaces in the string.
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let slice = self.inner.as_slice();
+        let slice = self.iter.as_slice();
         let spaces = count_bytes(slice, b' ');
         if slice.len() == spaces {
             return (0, Some(0));

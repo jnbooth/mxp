@@ -216,28 +216,28 @@ flags! {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Charsets {
-    inner: FlagSet<Charset>,
+    set: FlagSet<Charset>,
 }
 
 impl Charsets {
     pub fn decode(data: &[u8]) -> Result<Self, DecodeError> {
         let request = Request::decode(data)?;
-        let mut flags = FlagSet::default();
+        let mut set = FlagSet::default();
         for fragment in request {
             if fragment.eq_ignore_ascii_case("UTF-8") {
-                flags |= Charset::Utf8;
+                set |= Charset::Utf8;
             } else if fragment.eq_ignore_ascii_case("US-ASCII") {
-                flags |= Charset::Ascii;
+                set |= Charset::Ascii;
             }
         }
-        Ok(Charsets { inner: flags })
+        Ok(Charsets { set })
     }
 }
 
 impl Charsets {
     pub const fn new() -> Self {
         Self {
-            inner: FlagSet::empty(),
+            set: FlagSet::empty(),
         }
     }
 }
@@ -250,9 +250,9 @@ impl Default for Charsets {
 
 impl fmt::Display for Charsets {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        if self.inner.contains(Charset::Utf8) {
+        if self.set.contains(Charset::Utf8) {
             f.write_str("\x02UTF-8")
-        } else if self.inner.contains(Charset::Ascii) {
+        } else if self.set.contains(Charset::Ascii) {
             f.write_str("\x02US-ASCII")
         } else {
             f.write_str("\x03")
@@ -265,7 +265,7 @@ impl Negotiate for Charsets {
 
     fn negotiate<W: fmt::Write>(mut self, mut f: W, config: &TransformerConfig) -> fmt::Result {
         if config.disable_utf8 {
-            self.inner -= Charset::Utf8;
+            self.set -= Charset::Utf8;
         }
         write!(f, "{self}")
     }

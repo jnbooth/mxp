@@ -15,20 +15,20 @@ pub(crate) struct Line {
 
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct LineTags {
-    inner: Vec<Line>,
+    base: Vec<Line>,
 }
 
 impl Clone for LineTags {
     #[inline]
     fn clone(&self) -> Self {
         Self {
-            inner: self.inner.clone(),
+            base: self.base.clone(),
         }
     }
 
     #[inline]
     fn clone_from(&mut self, source: &Self) {
-        self.inner.clone_from(&source.inner);
+        self.base.clone_from(&source.base);
     }
 }
 
@@ -40,11 +40,11 @@ impl Default for LineTags {
 
 impl LineTags {
     pub const fn new() -> Self {
-        Self { inner: Vec::new() }
+        Self { base: Vec::new() }
     }
 
     pub fn clear(&mut self) {
-        self.inner.clear();
+        self.base.clear();
     }
 
     pub fn get<'a>(
@@ -53,7 +53,7 @@ impl LineTags {
         elements: &'a CaseFoldMap<Element>,
     ) -> Option<LineTag<'a>> {
         let i = mode.checked_sub(OFFSET)?;
-        let line = self.inner.get(i)?;
+        let line = self.base.get(i)?;
         Some(LineTag {
             element: elements.get(&line.element),
             properties: &line.properties,
@@ -67,10 +67,10 @@ impl LineTags {
         let Some(i) = mode.checked_sub(OFFSET) else {
             return;
         };
-        if self.inner.len() <= i {
-            self.inner.resize_with(i + 1, Default::default);
+        if self.base.len() <= i {
+            self.base.resize_with(i + 1, Default::default);
         }
-        let el = &mut self.inner[i];
+        let el = &mut self.base[i];
         el.element = element;
         el.properties.enable = true;
     }
@@ -86,10 +86,10 @@ impl LineTags {
         let Some(i) = usize::from(update.index.0).checked_sub(OFFSET) else {
             return Err(create_error(&update));
         };
-        if self.inner.len() <= i {
-            self.inner.resize_with(i + 1, Default::default);
+        if self.base.len() <= i {
+            self.base.resize_with(i + 1, Default::default);
         }
-        let tag = &mut self.inner[i];
+        let tag = &mut self.base[i];
         tag.properties.apply(update);
         Ok(())
     }

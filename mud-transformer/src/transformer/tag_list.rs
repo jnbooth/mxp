@@ -11,7 +11,7 @@ struct Tag {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct TagList {
-    inner: Vec<Tag>,
+    base: Vec<Tag>,
 }
 
 impl Default for TagList {
@@ -22,21 +22,21 @@ impl Default for TagList {
 
 impl TagList {
     pub const fn new() -> Self {
-        Self { inner: Vec::new() }
+        Self { base: Vec::new() }
     }
 
     pub fn truncate(&mut self, pos: usize) -> Option<usize> {
-        let span_index = self.inner.get(pos)?.span_index;
-        self.inner.truncate(pos);
+        let span_index = self.base.get(pos)?.span_index;
+        self.base.truncate(pos);
         Some(span_index)
     }
 
     pub fn clear(&mut self) {
-        self.inner.clear();
+        self.base.clear();
     }
 
     pub fn open(&mut self, component: mxp::Component, secure: bool, span_index: usize) {
-        self.inner.push(Tag {
+        self.base.push(Tag {
             name: component.name().to_owned(),
             secure,
             span_index,
@@ -44,14 +44,14 @@ impl TagList {
     }
 
     pub fn last_open_index(&self) -> usize {
-        match self.inner.iter().rposition(|x| x.secure) {
+        match self.base.iter().rposition(|x| x.secure) {
             None => 0,
             Some(i) => i + 1,
         }
     }
 
     pub fn find_last(&self, secure: bool, name: &str) -> mxp::Result<usize> {
-        for (i, tag) in self.inner.iter().enumerate().rev() {
+        for (i, tag) in self.base.iter().enumerate().rev() {
             if tag.name.eq_ignore_ascii_case(name) {
                 if !secure && tag.secure {
                     return Err(mxp::Error::new(name, mxp::ErrorKind::TagOpenedInSecureMode));

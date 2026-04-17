@@ -66,7 +66,7 @@ impl<'a, S> Arguments<'a, S> {
     /// `(&'a str, &'a S)`.
     pub fn named(&self) -> Named<'_, S> {
         Named {
-            inner: self.named.iter(),
+            iter: self.named.iter(),
         }
     }
 
@@ -74,7 +74,7 @@ impl<'a, S> Arguments<'a, S> {
     /// `&'a S`.
     pub fn positional(&self) -> Positional<'_, S> {
         Positional {
-            inner: self.positional.iter(),
+            iter: self.positional.iter(),
         }
     }
 

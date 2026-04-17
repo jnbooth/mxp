@@ -93,7 +93,7 @@ impl KnownVariable {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Variables {
-    inner: FlagSet<KnownVariable>,
+    set: FlagSet<KnownVariable>,
     prefix: &'static str,
 }
 
@@ -110,10 +110,10 @@ where
     fn from(value: T) -> Self {
         // Reduce monomorphization
         fn inner(value: &[u8]) -> Variables {
-            let mut inner = FlagSet::default();
-            inner.extend(decode(value).filter_map(KnownVariable::parse));
+            let mut set = FlagSet::empty();
+            set.extend(decode(value).filter_map(KnownVariable::parse));
             Variables {
-                inner,
+                set,
                 prefix: "\0", // IS
             }
         }
@@ -125,45 +125,45 @@ where
 impl Variables {
     pub const fn new() -> Self {
         Self {
-            inner: FlagSet::empty(),
+            set: FlagSet::empty(),
             prefix: "\0",
         }
     }
 
     pub fn is_empty(self) -> bool {
-        self.inner.is_empty()
+        self.set.is_empty()
     }
 
     pub fn clear(&mut self) {
-        self.inner.clear();
+        self.set.clear();
     }
 
     pub fn changes(self, a: &TransformerConfig, b: &TransformerConfig) -> Self {
         let mut changes = FlagSet::default();
 
-        if self.inner.contains(KnownVariable::Charset) && a.disable_utf8 != b.disable_utf8 {
+        if self.set.contains(KnownVariable::Charset) && a.disable_utf8 != b.disable_utf8 {
             changes |= KnownVariable::Charset;
         }
-        if self.inner.contains(KnownVariable::ClientName)
+        if self.set.contains(KnownVariable::ClientName)
             && a.terminal_identification != b.terminal_identification
         {
             changes |= KnownVariable::ClientName;
         }
-        if self.inner.contains(KnownVariable::ClientVersion) && a.version != b.version {
+        if self.set.contains(KnownVariable::ClientVersion) && a.version != b.version {
             changes |= KnownVariable::ClientVersion;
         }
-        if self.inner.contains(KnownVariable::IpAddress) && a.client_ip != b.client_ip {
+        if self.set.contains(KnownVariable::IpAddress) && a.client_ip != b.client_ip {
             changes |= KnownVariable::IpAddress;
         }
-        if self.inner.contains(KnownVariable::Mtts) && mtts::bitmask(a) != mtts::bitmask(b) {
+        if self.set.contains(KnownVariable::Mtts) && mtts::bitmask(a) != mtts::bitmask(b) {
             changes |= KnownVariable::Mtts;
         }
-        if self.inner.contains(KnownVariable::TerminalType) && mtts::ttype(a) != mtts::ttype(b) {
+        if self.set.contains(KnownVariable::TerminalType) && mtts::ttype(a) != mtts::ttype(b) {
             changes |= KnownVariable::TerminalType;
         }
 
         Self {
-            inner: changes,
+            set: changes,
             prefix: "\x02", // INFO
         }
     }
@@ -174,7 +174,7 @@ impl Negotiate for Variables {
 
     fn negotiate<W: fmt::Write>(self, mut f: W, config: &TransformerConfig) -> fmt::Result {
         f.write_str(self.prefix)?;
-        for variable in self.inner {
+        for variable in self.set {
             variable.negotiate(&mut f, config)?;
         }
         Ok(())

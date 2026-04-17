@@ -64,7 +64,7 @@ impl WindowOp {
         I: IntoIterator<Item = Option<u16>>,
     {
         WindowOpIter {
-            inner: iter.into_iter(),
+            iter: iter.into_iter(),
         }
     }
 }
@@ -72,7 +72,7 @@ impl WindowOp {
 #[must_use = "iterators are lazy and do nothing unless consumed"]
 #[derive(Clone)]
 pub(crate) struct WindowOpIter<I> {
-    inner: I,
+    iter: I,
 }
 
 impl<I> fmt::Debug for WindowOpIter<I>
@@ -91,24 +91,24 @@ where
     type Item = WindowOp;
 
     fn next(&mut self) -> Option<Self::Item> {
-        while let Some(Some(code)) = self.inner.next() {
+        while let Some(Some(code)) = self.iter.next() {
             return Some(match code {
                 1 => WindowOp::SetIconify(false),
                 2 => WindowOp::SetIconify(true),
                 3 => WindowOp::SetPosition {
-                    x: self.inner.next()??,
-                    y: self.inner.next()??,
+                    x: self.iter.next()??,
+                    y: self.iter.next()??,
                 },
                 4 => WindowOp::SetSize {
-                    height: self.inner.next()??,
-                    width: self.inner.next()??,
+                    height: self.iter.next()??,
+                    width: self.iter.next()??,
                 },
                 5 => WindowOp::Raise,
                 6 => WindowOp::Lower,
                 7 => WindowOp::Refresh,
                 8 => WindowOp::SetTextAreaSize {
-                    height: self.inner.next()??,
-                    width: self.inner.next()??,
+                    height: self.iter.next()??,
+                    width: self.iter.next()??,
                 },
                 9 => WindowOp::Restore,
                 10 => WindowOp::Maximize,
@@ -119,7 +119,7 @@ where
                 19 => WindowOp::ReportScreenSize,
                 20 => WindowOp::ReportIconLabel,
                 21 => WindowOp::ReportTitle,
-                24.. => WindowOp::SetLines(self.inner.next()??),
+                24.. => WindowOp::SetLines(self.iter.next()??),
                 _ => continue,
             });
         }
@@ -128,7 +128,7 @@ where
 
     #[inline]
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let (_, upper) = self.inner.size_hint();
+        let (_, upper) = self.iter.size_hint();
         (0, upper)
     }
 }

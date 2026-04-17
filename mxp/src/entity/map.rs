@@ -49,14 +49,14 @@ impl<'a> EntityEntry<'a> {
 /// global XML entities (as `&'static str`).
 #[derive(Default)]
 pub struct EntityMap<S = RandomState> {
-    inner: HashMap<String, Entity, S>,
+    base: HashMap<String, Entity, S>,
     globals: HashMap<&'static [u8], &'static str, S>,
 }
 
 impl<S: BuildHasher> PartialEq for EntityMap<S> {
     #[inline]
     fn eq(&self, other: &Self) -> bool {
-        self.inner == other.inner
+        self.base == other.base
     }
 }
 
@@ -66,14 +66,14 @@ impl<S: Clone> Clone for EntityMap<S> {
     #[inline]
     fn clone(&self) -> Self {
         Self {
-            inner: self.inner.clone(),
+            base: self.base.clone(),
             globals: self.globals.clone(),
         }
     }
 
     #[inline]
     fn clone_from(&mut self, source: &Self) {
-        self.inner.clone_from(&source.inner);
+        self.base.clone_from(&source.base);
         self.globals.clone_from(&source.globals);
     }
 }
@@ -106,7 +106,7 @@ impl EntityMap {
     /// ```
     pub fn with_globals() -> Self {
         Self {
-            inner: HashMap::new(),
+            base: HashMap::new(),
             globals: Entity::globals(RandomState::new()),
         }
     }
@@ -127,7 +127,7 @@ impl<S: BuildHasher + Clone> EntityMap<S> {
     /// ```
     pub fn with_hasher(hasher: S) -> Self {
         Self {
-            inner: HashMap::with_hasher(hasher.clone()),
+            base: HashMap::with_hasher(hasher.clone()),
             globals: HashMap::with_hasher(hasher),
         }
     }
@@ -145,7 +145,7 @@ impl<S: BuildHasher + Clone> EntityMap<S> {
     /// ```
     pub fn with_globals_and_hasher(hasher: S) -> Self {
         Self {
-            inner: HashMap::with_hasher(hasher.clone()),
+            base: HashMap::with_hasher(hasher.clone()),
             globals: Entity::globals(hasher),
         }
     }
@@ -165,7 +165,7 @@ impl<S: BuildHasher> EntityMap<S> {
     /// assert!(!map.is_empty());
     /// ```
     pub fn is_empty(&self) -> bool {
-        self.inner.is_empty()
+        self.base.is_empty()
     }
 
     /// Returns the number of custom entities in the map.
@@ -183,7 +183,7 @@ impl<S: BuildHasher> EntityMap<S> {
     /// assert_eq!(map.len(), 2);
     /// ```
     pub fn len(&self) -> usize {
-        self.inner.len()
+        self.base.len()
     }
 
     /// Clears all custom entities.
@@ -200,7 +200,7 @@ impl<S: BuildHasher> EntityMap<S> {
     /// assert_eq!(map.decode("lt"), Ok("<".into())); // global entities not cleared
     /// ```
     pub fn clear(&mut self) {
-        self.inner.clear();
+        self.base.clear();
     }
 
     /// Decodes an entity by name.
@@ -250,7 +250,7 @@ impl<S: BuildHasher> EntityMap<S> {
     /// ```
     pub fn remove(&mut self, name: &str) -> crate::Result<Option<Entity>> {
         self.guard_global(name)?;
-        Ok(self.inner.remove(name))
+        Ok(self.base.remove(name))
     }
 
     /// Returns `true` if there is a global XML entity associated with the specified name.
@@ -273,7 +273,7 @@ impl<S: BuildHasher> EntityMap<S> {
     /// An iterator visiting all entities which have been marked as PUBLISH by the server, in
     /// arbitrary order. The iterator element type is `&'a` [`EntityInfo`].
     pub fn published(&self) -> PublishedIter<'_> {
-        self.inner.iter().filter_map(|(k, v)| {
+        self.base.iter().filter_map(|(k, v)| {
             v.is_published().then_some(EntityInfo {
                 name: k,
                 description: &v.description,
@@ -298,7 +298,7 @@ impl<S: BuildHasher> EntityMap<S> {
     /// assert_eq!(map.get("lt"), None); // global entities are not queried
     /// ```
     pub fn get(&self, name: &str) -> Option<&str> {
-        let entity = self.inner.get(name)?;
+        let entity = self.base.get(name)?;
         if entity.is_private() {
             return None;
         }
@@ -341,7 +341,7 @@ impl<S: BuildHasher> EntityMap<S> {
     /// ```
     pub fn insert(&mut self, name: String, value: String) -> crate::Result<()> {
         self.guard_global(&name)?;
-        self.inner.insert(name, value.into());
+        self.base.insert(name, value.into());
         Ok(())
     }
 
@@ -368,7 +368,7 @@ impl<S: BuildHasher> EntityMap<S> {
         self.guard_global(name)?;
         let visibility = keywords.into();
         if keywords.contains(EntityKeyword::Delete) {
-            let Some(mut entity) = self.inner.remove(name) else {
+            let Some(mut entity) = self.base.remove(name) else {
                 return Ok(None);
             };
             if visibility != EntityVisibility::Default {
@@ -376,7 +376,7 @@ impl<S: BuildHasher> EntityMap<S> {
             }
             return Ok(Some(Cow::Owned(entity)));
         }
-        let entity = match self.inner.entry(name.to_owned()) {
+        let entity = match self.base.entry(name.to_owned()) {
             Entry::Vacant(_) if keywords.contains(EntityKeyword::Remove) => return Ok(None),
             Entry::Vacant(entry) => entry.insert(Entity {
                 value: value.to_owned(),
@@ -422,7 +422,7 @@ impl<S: BuildHasher> Decoder for EntityMap<S> {
         if let Some(&global) = self.globals.get(name.as_bytes()) {
             return Some(global);
         }
-        Some(self.inner.get(name)?.value.as_str())
+        Some(self.base.get(name)?.value.as_str())
     }
 }
 
@@ -434,7 +434,7 @@ impl<S> fmt::Debug for EntityMap<S> {
             .map(|(&k, &v)| (str::from_utf8(k).unwrap(), v));
         f.debug_map()
             .entries(globals)
-            .entries(self.inner.iter())
+            .entries(self.base.iter())
             .finish()
     }
 }
@@ -484,7 +484,7 @@ mod tests {
         define(&mut map, "key", "value", Some("desc1"), None).ok();
         define(&mut map, "key", "", Some("desc2"), EntityKeyword::Publish).ok();
         assert_eq!(
-            map.inner.get("key"),
+            map.base.get("key"),
             Some(&Entity {
                 value: String::new(),
                 visibility: EntityVisibility::Publish,
