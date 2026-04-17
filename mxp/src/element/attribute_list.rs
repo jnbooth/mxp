@@ -132,6 +132,52 @@ impl AttributeList {
         );
     }
 
+    /// Reserves capacity for at least `additional` more elements to be inserted
+    /// in the `AttributeList`. The collection may reserve more space to speculatively
+    /// avoid frequent reallocations. After calling `reserve`,
+    /// capacity will be greater than or equal to `self.len() + additional`.
+    /// Does nothing if capacity is already sufficient.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the new allocation size overflows [`usize`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let mut attrs = mxp::AttributeList::new();
+    /// attrs.reserve(10);
+    /// ```
+    pub fn reserve(&mut self, additional: usize) {
+        self.attributes.reserve(additional);
+    }
+
+    /// Adds attributes to the list from an attribute list definition, which is parsed to arguments.
+    /// `source` should generally be from the `attributes` field of an [`AttributeListDefinition`].
+    ///
+    /// [`AttributeListDefinition`]: crate::node::AttributeListDefinition
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use mxp::node::{AttributeListDefinition, Tag};
+    ///
+    /// let mut attrs = mxp::AttributeList::new();
+    /// let definition: AttributeListDefinition =
+    ///     Tag::parse("!ATTLIST boldtext 'color=red flags'", true).unwrap().try_into().unwrap();
+    ///
+    /// attrs.append(definition.attributes).unwrap();
+    /// assert_eq!(attrs.get("color"), Some("red"));
+    /// ```
+    pub fn append(&mut self, source: &str) -> crate::Result<()> {
+        let len = self.len();
+        let result = self.append_args(ArgumentParser::new(source));
+        if result.is_err() {
+            self.truncate(len);
+        }
+        result
+    }
+
     /// Removes all attributes from the list with a positional index greater than or equal to the
     /// specified length.
     pub(crate) fn truncate(&mut self, i: usize) {
@@ -152,13 +198,8 @@ impl AttributeList {
     }
 
     /// Adds attributes to the list from parsed arguments.
-    pub(crate) fn append(&mut self, source: &str) -> crate::Result<()> {
-        self.append_args(ArgumentParser::new(source))
-    }
-
-    /// Adds attributes to the list from parsed arguments.
-    pub(crate) fn append_args(&mut self, args: ArgumentParser) -> crate::Result<()> {
-        self.attributes.reserve(args.size_hint().1.unwrap());
+    fn append_args(&mut self, args: ArgumentParser) -> crate::Result<()> {
+        self.reserve(args.size_hint().1.unwrap());
         for entry in args {
             let (name, value) = entry?;
             validate(name, ErrorKind::InvalidArgumentName)?;

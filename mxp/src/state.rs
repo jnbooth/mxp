@@ -208,17 +208,11 @@ impl State {
     }
 
     fn define_attributes(&mut self, definition: &AttributeListDefinition) -> crate::Result<()> {
-        let attributes = &mut self
-            .elements
+        self.elements
             .get_mut(definition.name)
             .ok_or_else(|| Error::new(definition.name, ErrorKind::UnknownElementInAttlist))?
-            .attributes;
-        let len = attributes.len();
-        let result = attributes.append(definition.attributes);
-        if result.is_err() {
-            attributes.truncate(len);
-        }
-        result
+            .attributes
+            .append(definition.attributes)
     }
 
     fn define_element(&mut self, definition: ElementDefinition) {
