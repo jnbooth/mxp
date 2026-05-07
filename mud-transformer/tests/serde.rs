@@ -6,6 +6,7 @@ use serde::de::DeserializeOwned;
 use serde::ser::Serialize;
 
 #[track_caller]
+#[allow(clippy::missing_panics_doc)]
 pub fn roundtrip_bytes<T>(value: &T) -> T
 where
     T: Serialize + DeserializeOwned,

@@ -326,16 +326,12 @@ impl Transformer {
                 }
                 self.send_subnegotiation(self.charsets);
             }
-            opt::MCCP2 => {
-                if !self.config.disable_compression {
-                    info!(target: "mud.decompress", "Beginning decompression");
-                    self.decompressing = true;
-                }
+            opt::MCCP2 if !self.config.disable_compression => {
+                info!(target: "mud.decompress", "Beginning decompression");
+                self.decompressing = true;
             }
-            opt::MXP => {
-                if self.config.use_mxp == UseMxp::Command {
-                    self.mxp_on();
-                }
+            opt::MXP if self.config.use_mxp == UseMxp::Command => {
+                self.mxp_on();
             }
             _ => (),
         }

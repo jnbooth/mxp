@@ -7,18 +7,27 @@ repository = "https://github.com/jnbooth/mxp"
 license = "MIT"
 edition = "2024"
 
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "warn"
+
+[workspace.lints.rustdoc]
+unescaped_backticks = "warn"
+
 [workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
 pedantic = { level = "warn", priority = -1 }
+decimal_bitwise_operands = "allow"
 doc_markdown = "allow"
 many_single_char_names = "allow"
 missing_errors_doc = "allow"
-missing_panics_doc = "allow"
 module_inception = "allow"
 module_name_repetitions = "allow"
 must_use_candidate = "allow"
 struct_excessive_bools = "allow"
 struct_field_names = "allow"
 too_many_lines = "allow"
+undocumented_unsafe_blocks = "warn"
+unnecessary_safety_doc = "warn"
 unreadable_literal = "allow"
 
 [workspace.dependencies]

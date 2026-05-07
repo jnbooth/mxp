@@ -51,8 +51,9 @@ impl Error {
 
     /// Appends additional context to the error message.
     #[must_use = "returns self"]
+    #[allow(clippy::missing_panics_doc)]
     pub fn with_context(mut self, context: fmt::Arguments) -> Self {
-        self.target.write_fmt(context).expect("formatting error");
+        self.target.write_fmt(context).unwrap();
         self
     }
 }
