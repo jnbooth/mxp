@@ -679,6 +679,7 @@ impl Transformer {
                     ansi::VT => self.output.append(ControlFragment::VerticalTab),
                     ansi::FF => self.output.append(OutputFragment::PageBreak),
                     128..248 => {
+                        self.utf8_sequence.clear();
                         self.utf8_sequence.push(c);
                         self.phase = Phase::Utf8Character;
                     }
