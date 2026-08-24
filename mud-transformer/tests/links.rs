@@ -1,6 +1,21 @@
 mod common;
 use common::transform;
-use mud_transformer::output::TextFragment;
+use mud_transformer::output::{Link, SendTo, TextFragment};
+
+#[test]
+fn anchor_embed_text_entity() {
+    let output = transform("\x1B[4z<a href=&text;>https://youtube.com\x1B[4z</a>").output();
+    let expected = &[TextFragment {
+        text: "https://youtube.com".into(),
+        link: Some(Link {
+            send_to: SendTo::Internet,
+            .."https://youtube.com".into()
+        }),
+        ..Default::default()
+    }
+    .into()];
+    assert_eq!(output, expected);
+}
 
 #[test]
 fn basic_link() {

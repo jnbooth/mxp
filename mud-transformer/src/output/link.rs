@@ -83,9 +83,6 @@ impl Link {
     /// See [`Send::for_text`](mxp::Send::for_text).
     #[must_use = "function returns a new link"]
     pub fn for_text(&self, text: &str) -> Self {
-        if self.send_to == SendTo::Internet {
-            return self.clone();
-        }
         Self {
             menu: self.menu,
             send_to: self.send_to,
