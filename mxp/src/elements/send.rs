@@ -212,9 +212,13 @@ impl<'a> Iterator for SendMenu<'a> {
     #[inline]
     fn next(&mut self) -> Option<Self::Item> {
         let command = self.commands.next()?;
+        let label = self.labels.next();
         Some(SendMenuItem {
             command,
-            label: self.labels.next().unwrap_or(command),
+            label: match label {
+                Some("") | None => command,
+                Some(label) => label,
+            },
         })
     }
 }
