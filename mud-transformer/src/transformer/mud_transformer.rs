@@ -62,6 +62,7 @@ pub struct Transformer {
     subnegotiation_type: u8,
     last_char: u8,
     utf8_sequence: Vec<u8>,
+    log: Option<Vec<u8>>,
 
     input: BufferedInput,
     output: BufferedOutput,
@@ -109,10 +110,32 @@ impl Transformer {
 
             last_char: b'\n',
             utf8_sequence: Vec::with_capacity(4),
+            log: None,
             output,
             input: BufferedInput::new(),
 
             config,
+        }
+    }
+
+    pub fn set_logging(&mut self, logging: bool) {
+        if !logging {
+            self.log = None;
+        } else if self.log.is_none() {
+            self.log = Some(Vec::new());
+        }
+    }
+
+    pub fn log(&self) -> &[u8] {
+        match &self.log {
+            Some(log) => log,
+            None => &[],
+        }
+    }
+
+    pub fn clear_log(&mut self) {
+        if let Some(log) = &mut self.log {
+            log.clear();
         }
     }
 
@@ -268,7 +291,14 @@ impl Transformer {
                 break;
             }
         }
-        iter.as_slice()
+        let remaining = iter.as_slice();
+        if let Some(log) = &mut self.log {
+            let decompressed_len = bytes.len() - remaining.len();
+            if decompressed_len != 0 {
+                log.extend_from_slice(&bytes[..decompressed_len]);
+            }
+        }
+        remaining
     }
 
     fn send_negotiation(&mut self, verb: TelnetVerb, code: u8) {
